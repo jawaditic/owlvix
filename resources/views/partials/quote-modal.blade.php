@@ -12,7 +12,7 @@
             </button>
 
             {{-- What we build + what clients say (fills the space above the owl on wider screens) --}}
-            @php($t = config('testimonials'))
+            @php($t = \App\Support\Testimonials::data())
             <div class="quote-proof">
                 <a href="{{ $t['profile_url'] }}" class="quote-proof__rating" target="_blank" rel="noopener">
                     <span aria-hidden="true">★★★★★</span> <strong>{{ $t['rating'] }}</strong> · {{ $t['count'] }} reviews on Fiverr
@@ -22,14 +22,16 @@
                         <li>{{ $svc }}</li>
                     @endforeach
                 </ul>
+                @if (count($t['reviews']))
                 <div class="quote-proof__reviews is-loading" data-rotate-reviews data-reviews aria-busy="true">
                     @foreach ($t['reviews'] as $r)
                         <figure class="quote-proof__review" data-country="{{ $r['code'] }}" @if (! $loop->first) hidden @endif>
                             <blockquote>“{{ \Illuminate\Support\Str::words($r['text'], 30, '…') }}”</blockquote>
-                            <figcaption>{{ $r['flag'] }} <strong>{{ $r['name'] }}</strong> · {{ $r['country'] }}</figcaption>
+                            <figcaption>{{ $r['flag'] }} <strong>{{ $r['name'] }}</strong>@if ($r['country']) · {{ $r['country'] }}@endif</figcaption>
                         </figure>
                     @endforeach
                 </div>
+                @endif
             </div>
             <div class="say">
                 <p class="say__text" aria-live="polite" data-owl-text>Tell me about your project, and get a free quote within one day!</p>

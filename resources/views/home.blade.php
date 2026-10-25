@@ -39,7 +39,7 @@
             <nav class="nav__links" id="nav-links">
                 <a href="#services">Services</a>
                 <a href="#process">Process</a>
-                <a href="#reviews">Reviews</a>
+                @if (count(\App\Support\Testimonials::data()['reviews']))<a href="#reviews">Reviews</a>@endif
                 <a href="#pricing">Pricing</a>
                 <a href="#faq">FAQ</a>
                 <a href="#contact" class="btn btn--sm" data-quote>Get a free quote</a>
@@ -191,7 +191,8 @@
         </section>
 
         {{-- Testimonials (config/testimonials.php) --}}
-        @php($t = config('testimonials'))
+        @php($t = \App\Support\Testimonials::data())
+        @if (count($t['reviews']))
         <section class="section" id="reviews">
             <div class="container">
                 <p class="eyebrow">Client reviews</p>
@@ -203,13 +204,13 @@
                 <div class="reviews is-loading" data-reviews aria-busy="true">
                     @foreach ($t['reviews'] as $r)
                         <figure class="review" data-country="{{ $r['code'] }}">
-                            <span class="review__stars" aria-label="5 out of 5 stars">★★★★★</span>
+                            <span class="review__stars" aria-label="{{ $r['rating'] }} out of 5 stars">{{ str_repeat('★', $r['rating']) }}<span class="review__stars-off">{{ str_repeat('★', 5 - $r['rating']) }}</span></span>
                             <blockquote>“{{ $r['text'] }}”</blockquote>
                             <figcaption>
                                 <span class="review__avatar" aria-hidden="true">{{ strtoupper(substr($r['name'], 0, 1)) }}</span>
                                 <span>
                                     <strong>{{ $r['name'] }}</strong>
-                                    <small>{{ $r['flag'] }} {{ $r['country'] }} · {{ $r['service'] }}</small>
+                                    <small>{{ $r['flag'] }} {{ collect([$r['country'], $r['service']])->filter()->implode(' · ') }}</small>
                                 </span>
                             </figcaption>
                         </figure>
@@ -222,6 +223,8 @@
                 </p>
             </div>
         </section>
+
+        @endif
 
         {{-- Pricing --}}
         <section class="section" id="pricing">

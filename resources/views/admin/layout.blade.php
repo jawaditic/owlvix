@@ -21,6 +21,8 @@
                 <span>Owl<b>vix</b> <small>Admin</small></span>
             </a>
             <nav>
+                <a href="{{ route('admin.messages.index') }}" @class(['is-active' => request()->routeIs('admin.messages.*')])>Messages</a>
+                <a href="{{ route('admin.testimonials.index') }}" @class(['is-active' => request()->routeIs('admin.testimonials.*')])>Reviews</a>
                 <a href="{{ route('home') }}" target="_blank" rel="noopener">View site ↗</a>
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf

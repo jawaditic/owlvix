@@ -678,3 +678,4 @@ body.modal-open { overflow: hidden; }
     animation: spin .8s linear infinite;
 }
 .quote-proof__reviews.is-loading::after { width: 26px; height: 26px; margin: -13px 0 0 -13px; }
+.review__stars-off { color: rgba(255, 255, 255, .15); }

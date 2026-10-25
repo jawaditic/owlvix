@@ -57,15 +57,16 @@
     @endforeach
 
     {{-- What clients say (config/testimonials.php) --}}
-    @php($t = config('testimonials'))
+    @php($t = \App\Support\Testimonials::data())
+    @if (count($t['email']))
     <p style="margin:32px 0 14px;font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#64748b;">What clients say</p>
     @foreach (collect($t['reviews'])->whereIn('name', $t['email']) as $r)
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;">
             <tr>
                 <td style="padding:16px 20px;">
-                    <p style="margin:0 0 6px;color:#f59e0b;font-size:14px;letter-spacing:2px;">★★★★★</p>
+                    <p style="margin:0 0 6px;color:#f59e0b;font-size:14px;letter-spacing:2px;">{{ str_repeat('★', $r['rating']) }}</p>
                     <p style="margin:0 0 10px;color:#334155;font-size:15px;line-height:1.6;">“{{ $r['text'] }}”</p>
-                    <p style="margin:0;font-size:13px;color:#64748b;"><strong style="color:#0f172a;">{{ $r['name'] }}</strong> · {{ $r['flag'] }} {{ $r['country'] }}</p>
+                    <p style="margin:0;font-size:13px;color:#64748b;"><strong style="color:#0f172a;">{{ $r['name'] }}</strong>@if ($r['country']) · {{ $r['flag'] }} {{ $r['country'] }}@endif</p>
                 </td>
             </tr>
         </table>
@@ -74,6 +75,7 @@
         <strong style="color:#0f172a;">{{ $t['rating'] }} ★</strong> from {{ $t['count'] }} reviews on Fiverr ·
         <a href="{{ $t['profile_url'] }}" style="color:#17a85f;font-weight:600;">Read more reviews →</a>
     </p>
+    @endif
 
     {{-- CTA --}}
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:32px 0 0;">
