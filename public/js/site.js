@@ -243,6 +243,55 @@
         doneText: cfg.intro[cfg.intro.length - 1].text,
     });
 
+    /* ---------- Reviews: visitor's own country first ---------- */
+    // Uses the same country lookup as the phone field. Others keep the default order.
+    // A spinner shows until this finishes; after 2.5s we show the default order anyway.
+    const reviewBoxes = document.querySelectorAll('[data-reviews]');
+    const showReviews = () => reviewBoxes.forEach(box => { box.classList.remove('is-loading'); box.removeAttribute('aria-busy'); });
+    const reviewTimeout = setTimeout(showReviews, 2500);
+    lookupCountry().then(code => {
+        clearTimeout(reviewTimeout);
+        reviewBoxes.forEach(box => {
+            if (!box.classList.contains('is-loading')) return; // already shown, don't reshuffle under the reader
+            const mine = [...box.children].filter(el => el.dataset.country === code);
+            mine.reverse().forEach(el => box.prepend(el));
+            if (mine.length && box.hasAttribute('data-rotate-reviews')) {
+                [...box.children].forEach((el, i) => { el.hidden = i > 0; });
+            }
+        });
+        showReviews();
+    });
+
+    /* Popup: show one review at a time, cycling every few seconds */
+    // Keep the box as tall as the longest review, so the owl below never moves
+    const fitTallest = box => {
+        if (!box.offsetWidth) return;
+        const items = [...box.children];
+        const shown = items.map(el => el.hidden);
+        box.style.minHeight = '';
+        let max = 0;
+        items.forEach(el => { items.forEach(o => { o.hidden = o !== el; }); max = Math.max(max, el.offsetHeight); });
+        items.forEach((el, i) => { el.hidden = shown[i]; });
+        box.style.minHeight = max + 'px';
+    };
+    document.querySelectorAll('[data-rotate-reviews]').forEach(box => {
+        new ResizeObserver(() => fitTallest(box)).observe(box.parentElement);
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        setInterval(() => {
+            const items = [...box.children];
+            if (document.hidden || items.length < 2) return;
+            if (box.classList.contains('is-loading')) return;
+            // brief spinner, then the next review
+            box.classList.add('is-loading');
+            setTimeout(() => {
+                const i = items.findIndex(el => !el.hidden);
+                items[i].hidden = true;
+                items[(i + 1) % items.length].hidden = false;
+                box.classList.remove('is-loading');
+            }, 600);
+        }, 5000);
+    });
+
     /* ---------- Free quote popup ---------- */
     const modal = document.getElementById('quote-modal');
     const popupOwl = createOwl(modal.querySelector('.quote-owl'), {

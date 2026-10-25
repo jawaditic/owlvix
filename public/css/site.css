@@ -608,3 +608,73 @@ body.modal-open { overflow: hidden; }
 .rich-editor .ql-container.ql-snow, .rich-editor .ql-editor { height: auto; }
 .rich-editor .ql-toolbar.ql-snow .ql-formats { margin-right: 6px; }
 .rich-editor .ql-toolbar.ql-snow .ql-picker.ql-header { width: 92px; }
+
+/* ---------- Client reviews ---------- */
+#reviews h2 { margin-bottom: 18px; }
+.rating-badge {
+    display: flex; width: max-content; max-width: 100%; margin: 0 auto 44px; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+    padding: 9px 18px; border-radius: 999px; border: 1px solid rgba(30, 199, 115, .35); background: rgba(30, 199, 115, .08);
+    color: #cbd5e1; font-size: .92rem; transition: border-color .15s;
+}
+.rating-badge:hover { border-color: var(--green); }
+.rating-badge strong { color: var(--text); }
+.rating-badge__stars, .review__stars { color: #fbbf24; letter-spacing: 2px; }
+.reviews { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; align-items: stretch; margin-bottom: 24px; }
+.review {
+    margin: 0; padding: 26px; height: 100%; border-radius: var(--radius);
+    background: var(--card); border: 1px solid var(--card-border); transition: border-color .2s, transform .2s;
+}
+.review:hover { border-color: rgba(30, 199, 115, .5); transform: translateY(-3px); }
+.review blockquote { margin: 12px 0 20px; color: #e2e8f0; font-size: 1rem; line-height: 1.6; }
+.review figcaption { display: flex; align-items: center; gap: 12px; }
+.review__avatar {
+    display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; flex: none;
+    background: linear-gradient(135deg, var(--green), var(--blue)); color: #04130b; font: 700 1rem Poppins, sans-serif;
+}
+.review figcaption strong { display: block; font-size: .95rem; }
+.review figcaption small { color: var(--muted); font-size: .84rem; }
+.reviews__more { text-align: center; margin-top: 16px; }
+.reviews__more svg { width: 16px; height: 16px; }
+
+/* ---------- Popup: rating, services and a rotating review above the owl ---------- */
+.quote-owl { justify-content: space-between; }
+.quote-proof { width: 100%; display: grid; gap: 14px; }
+.quote-proof__rating { display: inline-flex; gap: 6px; align-items: center; color: #cbd5e1; font-size: .88rem; width: max-content; }
+.quote-proof__rating span { color: #fbbf24; letter-spacing: 1px; }
+.quote-proof__rating strong { color: var(--text); }
+.quote-proof__rating:hover { color: var(--text); }
+.quote-proof__services { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.quote-proof__services li {
+    padding: 5px 11px; border-radius: 999px; font-size: .8rem; font-weight: 500; color: #a7f3d0;
+    background: rgba(30, 199, 115, .1); border: 1px solid rgba(30, 199, 115, .25);
+}
+.quote-proof__reviews { min-height: 112px; }
+.quote-proof__review {
+    margin: 0; padding: 14px 16px; border-radius: 14px;
+    background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .08);
+}
+.quote-proof__review blockquote { margin: 0 0 8px; font-size: .88rem; line-height: 1.5; color: #e2e8f0; }
+.quote-proof__review figcaption { font-size: .8rem; color: var(--muted); }
+.quote-proof__review figcaption strong { color: #cbd5e1; font-weight: 600; }
+/* Phones: the popup stacks, so keep the owl strip short */
+@media (max-width: 760px) { .quote-proof { display: none; } }
+/* "Tap for sound": bottom-right corner of the owl panel, beside the owl's feet */
+@media (min-width: 761px) {
+    .sound-hint { top: auto; right: 16px; left: auto; bottom: 18px; padding: 7px 13px 7px 10px; font-size: .8rem; }
+    .sound-hint svg { width: 16px; height: 16px; }
+}
+.quote-owl .sound-hint { z-index: 6; }
+@media (min-width: 761px) {
+    .quote-owl .owl-wrap--static { align-self: flex-start; margin-left: 4px; }
+}
+
+/* ---------- Reviews: spinner while we work out the visitor's country ---------- */
+[data-reviews].is-loading { position: relative; min-height: 120px; }
+[data-reviews].is-loading > * { visibility: hidden; }
+.reviews.is-loading { max-height: 320px; overflow: hidden; }
+[data-reviews].is-loading::after {
+    content: ""; position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px;
+    border-radius: 50%; border: 3px solid rgba(30, 199, 115, .2); border-top-color: var(--green);
+    animation: spin .8s linear infinite;
+}
+.quote-proof__reviews.is-loading::after { width: 26px; height: 26px; margin: -13px 0 0 -13px; }

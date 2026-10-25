@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
     <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ filemtime(public_path('css/site.css')) }}">
+    <noscript><style>[data-reviews].is-loading > * { visibility: visible; } [data-reviews].is-loading::after { display: none; }</style></noscript>
 </head>
 <body data-no-popup="{{ session('sent') || $errors->any() ? '1' : '0' }}">
     <div class="bg-grid" aria-hidden="true"></div>
@@ -38,6 +39,7 @@
             <nav class="nav__links" id="nav-links">
                 <a href="#services">Services</a>
                 <a href="#process">Process</a>
+                <a href="#reviews">Reviews</a>
                 <a href="#pricing">Pricing</a>
                 <a href="#faq">FAQ</a>
                 <a href="#contact" class="btn btn--sm" data-quote>Get a free quote</a>
@@ -185,6 +187,39 @@
                         <p>Tested, deployed and handed over with full source code — plus support when you need it.</p>
                     </li>
                 </ol>
+            </div>
+        </section>
+
+        {{-- Testimonials (config/testimonials.php) --}}
+        @php($t = config('testimonials'))
+        <section class="section" id="reviews">
+            <div class="container">
+                <p class="eyebrow">Client reviews</p>
+                <h2>What clients say</h2>
+                <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
+                    <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
+                    <span><strong>{{ $t['rating'] }}</strong> on Fiverr · {{ $t['count'] }} reviews · {{ $t['five_star'] }} five-star</span>
+                </a>
+                <div class="reviews is-loading" data-reviews aria-busy="true">
+                    @foreach ($t['reviews'] as $r)
+                        <figure class="review" data-country="{{ $r['code'] }}">
+                            <span class="review__stars" aria-label="5 out of 5 stars">★★★★★</span>
+                            <blockquote>“{{ $r['text'] }}”</blockquote>
+                            <figcaption>
+                                <span class="review__avatar" aria-hidden="true">{{ strtoupper(substr($r['name'], 0, 1)) }}</span>
+                                <span>
+                                    <strong>{{ $r['name'] }}</strong>
+                                    <small>{{ $r['flag'] }} {{ $r['country'] }} · {{ $r['service'] }}</small>
+                                </span>
+                            </figcaption>
+                        </figure>
+                    @endforeach
+                </div>
+                <p class="reviews__more">
+                    <a href="{{ $t['profile_url'] }}" class="btn btn--ghost" target="_blank" rel="noopener">Read all {{ $t['count'] }} reviews on Fiverr
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
+                    </a>
+                </p>
             </div>
         </section>
 

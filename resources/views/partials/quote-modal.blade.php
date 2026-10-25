@@ -10,6 +10,27 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" class="fill"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
                 <span>Tap for sound</span>
             </button>
+
+            {{-- What we build + what clients say (fills the space above the owl on wider screens) --}}
+            @php($t = config('testimonials'))
+            <div class="quote-proof">
+                <a href="{{ $t['profile_url'] }}" class="quote-proof__rating" target="_blank" rel="noopener">
+                    <span aria-hidden="true">★★★★★</span> <strong>{{ $t['rating'] }}</strong> · {{ $t['count'] }} reviews on Fiverr
+                </a>
+                <ul class="quote-proof__services" aria-label="What we build">
+                    @foreach (['Web apps', 'Mobile apps', 'AI chatbots', 'AI agents', 'Websites', 'Shopify'] as $svc)
+                        <li>{{ $svc }}</li>
+                    @endforeach
+                </ul>
+                <div class="quote-proof__reviews is-loading" data-rotate-reviews data-reviews aria-busy="true">
+                    @foreach ($t['reviews'] as $r)
+                        <figure class="quote-proof__review" data-country="{{ $r['code'] }}" @if (! $loop->first) hidden @endif>
+                            <blockquote>“{{ \Illuminate\Support\Str::words($r['text'], 30, '…') }}”</blockquote>
+                            <figcaption>{{ $r['flag'] }} <strong>{{ $r['name'] }}</strong> · {{ $r['country'] }}</figcaption>
+                        </figure>
+                    @endforeach
+                </div>
+            </div>
             <div class="say">
                 <p class="say__text" aria-live="polite" data-owl-text>Tell me about your project, and get a free quote within one day!</p>
             </div>
