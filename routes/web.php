@@ -30,17 +30,17 @@ Route::get('/thanks/{message}', function (\App\Models\ContactMessage $message) {
 
 // Visitor stats beacon from site.js (no cookies, no IP stored)
 Route::post('/t', [\App\Http\Controllers\TrackController::class, 'store'])
-    ->middleware('throttle:60,1')
+    ->middleware('throttle:60,1,track')
     ->name('track');
 
 Route::post('/contact', [ContactController::class, 'store'])
-    ->middleware('throttle:5,1')
+    ->middleware('throttle:5,1,contact')
     ->name('contact.store');
 
 // Admin dashboard
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'show'])->name('login');
-    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1,admin-login');
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::middleware('admin')->group(function () {

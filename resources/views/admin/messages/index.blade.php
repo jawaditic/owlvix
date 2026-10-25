@@ -43,6 +43,7 @@
             <option value="">Both forms</option>
             <option value="popup" @selected(request('source') === 'popup')>Quote popup</option>
             <option value="contact" @selected(request('source') === 'contact')>Contact form</option>
+            <option value="app" @selected(request('source') === 'app')>Mobile app</option>
         </select>
         <button type="submit" class="btn">Filter</button>
         @if (request()->hasAny(['q', 'status', 'source']))
@@ -62,7 +63,7 @@
                     <span class="tags">
                         @if ($m->service)<em>{{ $m->service }}</em>@endif
                         @if ($m->budget && $m->budget !== 'Not sure yet')<em>{{ $m->budget }}</em>@endif
-                        <em class="src src--{{ $m->source }}">{{ $m->source === 'popup' ? 'Popup' : 'Contact form' }}</em>
+                        <em class="src src--{{ $m->source }}">{{ $m->sourceLabel(true) }}</em>
                         @if ($m->replies_count)<em class="replied">✓ Replied</em>@endif
                     </span>
                     <span class="preview">{{ \Illuminate\Support\Str::limit($m->messageText(), 140) }}</span>

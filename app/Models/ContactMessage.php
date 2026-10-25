@@ -37,6 +37,46 @@ class ContactMessage extends Model
         return explode(' ', trim($this->name))[0] ?: $this->name;
     }
 
+    /** Where it was sent from: "Quote popup", "Contact form" or "Mobile app" ($short: "Popup"). */
+    public function sourceLabel(bool $short = false): string
+    {
+        return match ($this->source) {
+            'popup' => $short ? 'Popup' : 'Quote popup',
+            'app' => 'Mobile app',
+            default => 'Contact form',
+        };
+    }
+
+    /** The shape the mobile app reads. $full adds the message body and replies. */
+    public function toApi(bool $full = false): array
+    {
+        $data = [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'service' => $this->service,
+            'budget' => $this->budget,
+            'source' => $this->source,
+            'source_label' => $this->sourceLabel(),
+            'excerpt' => mb_strimwidth($this->messageText(), 0, 140, '…'),
+            'unread' => $this->isUnread(),
+            'replies_count' => $this->replies_count ?? $this->replies()->count(),
+            'created_at' => $this->created_at?->toIso8601String(),
+        ];
+        if ($full) {
+            $data['message_text'] = $this->messageText();
+            $data['replies'] = $this->replies->map(fn ($r) => [
+                'id' => $r->id,
+                'subject' => $r->subject,
+                'body' => $r->body,
+                'created_at' => $r->created_at?->toIso8601String(),
+            ])->all();
+        }
+
+        return $data;
+    }
+
     public function scopeUnread(Builder $query): Builder
     {
         return $query->whereNull('read_at');

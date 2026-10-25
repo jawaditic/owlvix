@@ -4,9 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Project;
+use App\Support\Reorder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 /** Admin → Portfolio: projects shown in "Our work" on the homepage. */
 class ProjectController extends Controller
@@ -61,13 +60,7 @@ class ProjectController extends Controller
 
     public function move(Project $project, string $direction)
     {
-        $all = Project::ordered()->get()->values();
-        $i = $all->search(fn ($p) => $p->is($project));
-        $j = $direction === 'up' ? $i - 1 : $i + 1;
-        if ($j >= 0 && $j < $all->count()) {
-            [$all[$i], $all[$j]] = [$all[$j], $all[$i]];
-            $all->each(fn ($p, $n) => $p->forceFill(['sort_order' => $n + 1])->save());
-        }
+        Reorder::move(Project::ordered()->get(), $project, $direction);
 
         return back();
     }
@@ -81,29 +74,11 @@ class ProjectController extends Controller
 
     private function validated(Request $request, bool $creating): array
     {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:120'],
-            'category' => ['required', Rule::in(array_keys(Project::CATEGORIES))],
-            'summary' => ['nullable', 'string', 'max:300'],
-            'url' => ['nullable', 'url', 'max:255'],
-            'ios_url' => ['nullable', 'url', 'max:255'],
-            'android_url' => ['nullable', 'url', 'max:255'],
-            'image' => [$creating ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-        ], [
-            'image.required' => 'Please add a screenshot or mockup of the project.',
-            'image.max' => 'The image must be 5 MB or smaller.',
-        ]);
+        $data = $request->validate(Project::rules($creating), Project::RULE_MESSAGES);
         $data['is_published'] = $request->boolean('is_published');
 
         if ($request->hasFile('image')) {
-            $file = $request->file('image');
-            $dir = public_path('uploads/portfolio');
-            if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
-            }
-            $name = Str::slug($data['title']).'-'.Str::lower(Str::random(6)).'.'.$file->extension();
-            $file->move($dir, $name);
-            $data['image'] = 'uploads/portfolio/'.$name;
+            $data['image'] = Project::storeImage($request->file('image'), $data['title']);
         } else {
             unset($data['image']);
         }
