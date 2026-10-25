@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ContactMessage extends Model
 {
-    protected $fillable = ['name', 'email', 'service', 'budget', 'message', 'source', 'ip'];
+    protected $fillable = ['name', 'email', 'phone', 'service', 'budget', 'message', 'source', 'ip'];
 
     protected function casts(): array
     {
@@ -18,6 +18,18 @@ class ContactMessage extends Model
     public function replies(): HasMany
     {
         return $this->hasMany(MessageReply::class)->oldest();
+    }
+
+    /** The project description as safe HTML (it may contain formatting from the editor). */
+    public function messageHtml(): string
+    {
+        return \App\Support\RichText::html($this->message);
+    }
+
+    /** The project description without formatting. */
+    public function messageText(): string
+    {
+        return \App\Support\RichText::plain($this->message);
     }
 
     public function firstName(): string

@@ -85,11 +85,11 @@ class MessageController extends Controller
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Date', 'Name', 'Email', 'Service', 'Budget', 'Source', 'Status', 'Message']);
+            fputcsv($out, ['Date', 'Name', 'Email', 'Phone', 'Service', 'Budget', 'Source', 'Status', 'Message']);
             foreach ($rows as $m) {
                 fputcsv($out, [
-                    $m->created_at->format('Y-m-d H:i'), $m->name, $m->email, $m->service,
-                    $m->budget, $m->source, $m->isUnread() ? 'New' : 'Read', $m->message,
+                    $m->created_at->format('Y-m-d H:i'), $m->name, $m->email, $m->phone, $m->service,
+                    $m->budget, $m->source, $m->isUnread() ? 'New' : 'Read', $m->messageText(),
                 ]);
             }
             fclose($out);
@@ -103,6 +103,7 @@ class MessageController extends Controller
                 $q->where(fn (Builder $w) => $w
                     ->where('name', 'like', "%{$term}%")
                     ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhere('phone', 'like', "%{$term}%")
                     ->orWhere('message', 'like', "%{$term}%"));
             })
             ->when($request->input('status') === 'unread', fn (Builder $q) => $q->unread())

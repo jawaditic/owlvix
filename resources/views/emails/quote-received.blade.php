@@ -31,7 +31,7 @@
                 @if ($enquiry->budget && $enquiry->budget !== 'Not sure yet')
                     <span style="display:inline-block;margin:0 6px 10px 0;padding:4px 12px;border-radius:999px;background:#e0ecff;color:#1e40af;font-size:12px;font-weight:600;">{{ $enquiry->budget }}</span>
                 @endif
-                <div style="border-left:3px solid #1ec773;padding:2px 0 2px 14px;color:#334155;white-space:pre-wrap;">{{ $enquiry->message }}</div>
+                <div style="border-left:3px solid #1ec773;padding:2px 0 2px 14px;color:#334155;line-height:1.6;">{!! $enquiry->messageHtml() !!}</div>
             </td>
         </tr>
     </table>

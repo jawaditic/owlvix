@@ -19,7 +19,7 @@
     </table>
 
     <p style="margin:30px 0 8px;font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#94a3b8;">Your original message · {{ $enquiry->created_at->format('d M Y') }}</p>
-    <div style="border-left:3px solid #e2e8f0;padding:2px 0 2px 14px;color:#64748b;font-size:14px;white-space:pre-wrap;">{{ $enquiry->message }}</div>
+    <div style="border-left:3px solid #e2e8f0;padding:2px 0 2px 14px;color:#64748b;font-size:14px;line-height:1.6;">{!! $enquiry->messageHtml() !!}</div>
 @endsection
 
 @section('footer_note', 'Just reply to this email to continue the conversation.')

@@ -15,12 +15,13 @@
 
         <dl class="facts">
             <div><dt>Received</dt><dd>{{ $message->created_at->format('d M Y, H:i') }}</dd></div>
+            <div><dt>Phone</dt><dd>@if ($message->phone)<a href="tel:{{ preg_replace('/[^\d+]/', '', $message->phone) }}">{{ $message->phone }}</a>@else — @endif</dd></div>
             <div><dt>Needs</dt><dd>{{ $message->service ?: '—' }}</dd></div>
             <div><dt>Budget</dt><dd>{{ $message->budget ?: '—' }}</dd></div>
             <div><dt>Sent from</dt><dd>{{ $message->source === 'popup' ? 'Quote popup' : 'Contact form' }}</dd></div>
         </dl>
 
-        <div class="detail__body">{{ $message->message }}</div>
+        <div class="detail__body rich">{!! $message->messageHtml() !!}</div>
 
         @foreach ($message->replies as $r)
             <div class="reply">

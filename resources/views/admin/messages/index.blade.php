@@ -34,7 +34,7 @@
     @endif
 
     <form method="GET" class="filters">
-        <input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, email or message">
+        <input type="search" name="q" value="{{ request('q') }}" placeholder="Search name, email, phone or message">
         <select name="status">
             <option value="">All</option>
             <option value="unread" @selected(request('status') === 'unread')>New only</option>
@@ -65,7 +65,7 @@
                         <em class="src src--{{ $m->source }}">{{ $m->source === 'popup' ? 'Popup' : 'Contact form' }}</em>
                         @if ($m->replies_count)<em class="replied">✓ Replied</em>@endif
                     </span>
-                    <span class="preview">{{ \Illuminate\Support\Str::limit($m->message, 140) }}</span>
+                    <span class="preview">{{ \Illuminate\Support\Str::limit($m->messageText(), 140) }}</span>
                 </span>
                 <time datetime="{{ $m->created_at->toIso8601String() }}" title="{{ $m->created_at->format('d M Y, H:i') }}">{{ $m->created_at->diffForHumans(short: true) }}</time>
             </a>

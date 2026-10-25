@@ -3,6 +3,9 @@
     $display = "Poppins, 'Segoe UI', Helvetica, Arial, sans-serif";
     $rows = [
         'Email' => '<a href="mailto:'.e($enquiry->email).'" style="color:#17a85f;font-weight:600;">'.e($enquiry->email).'</a>',
+        'Phone' => $enquiry->phone
+            ? '<a href="tel:'.e(preg_replace('/[^\d+]/', '', $enquiry->phone)).'" style="color:#17a85f;font-weight:600;">'.e($enquiry->phone).'</a>'
+            : '—',
         'Needs' => e($enquiry->service ?: '—'),
         'Budget' => e($enquiry->budget ?: '—'),
         'Sent from' => $enquiry->source === 'popup' ? 'Quote popup' : 'Contact form',
@@ -10,7 +13,7 @@
     ];
 @endphp
 
-@section('preheader', e($enquiry->name).' wants: '.e($enquiry->service ?: 'a project').' — '.e(\Illuminate\Support\Str::limit($enquiry->message, 80)))
+@section('preheader', e($enquiry->name).' wants: '.e($enquiry->service ?: 'a project').' — '.e(\Illuminate\Support\Str::limit($enquiry->messageText(), 80)))
 @section('eyebrow', 'New enquiry 🎉')
 @section('headline', e($enquiry->name))
 @section('subline', 'Just sent a request from owlvix.com.')
@@ -26,7 +29,7 @@
     </table>
 
     <p style="margin:26px 0 10px;font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#64748b;">Message</p>
-    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;white-space:pre-wrap;color:#1e293b;">{{ $enquiry->message }}</div>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;color:#1e293b;line-height:1.6;">{!! $enquiry->messageHtml() !!}</div>
 
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;">
         <tr>

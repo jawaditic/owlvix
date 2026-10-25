@@ -19,6 +19,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Patrick+Hand&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
     <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ filemtime(public_path('css/site.css')) }}">
 </head>
 <body data-no-popup="{{ session('sent') || $errors->any() ? '1' : '0' }}">
@@ -48,31 +50,61 @@
         <section class="hero">
             <div class="container hero__inner">
                 <div class="hero__copy">
-                    <span class="pill">7+ years • 200+ projects delivered</span>
-                    <h1>Need a <span class="accent">web app?</span><br>We build it start to finish.</h1>
+                    <span class="pill"><span class="pill__dot" aria-hidden="true"></span>7+ years • 200+ projects delivered</span>
+                    <h1>Need a <span class="accent rotator" data-rotate='["web app?","mobile app?","AI chatbot?","AI agent?"]'>web app?</span>We build it start to finish.</h1>
                     <p class="lead">Owlvix designs, builds and launches web apps, mobile apps and AI tools for growing businesses — from the first sketch to the server it runs on.</p>
-                    <p class="tags">Design <i>•</i> Frontend <i>•</i> Backend <i>•</i> AI <i>•</i> Launch</p>
+                    <ul class="chips" aria-label="What we cover">
+                        <li>Design</li><li>Frontend</li><li>Backend</li><li>AI</li><li>Launch</li>
+                    </ul>
                     <div class="hero__cta">
-                        <a href="#contact" class="btn" data-quote>Get a free quote</a>
+                        <a href="#contact" class="btn btn--glow" data-quote>Get a free quote
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
                         <a href="#services" class="btn btn--ghost">See what we build</a>
                     </div>
+                    <ul class="hero__trust">
+                        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Free quote within 24h</li>
+                        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>You own 100% of the code</li>
+                    </ul>
                 </div>
+
+                {{-- Owl mascot "chatting" in a bubble; owl.js fills [data-owl-text] and moves the beak --}}
                 <div class="hero__art" id="owl-intro">
                     <div class="stage">
-                        <div class="board">
-                            <p class="board__title">Owlvix 101</p>
-                            <p class="board__text" aria-live="polite" data-owl-text>Hoo needs a developer? Tell me your idea and I'll show you how we'd build it.</p>
-                            <button type="button" class="board__play" aria-label="Play the owl's intro" data-owl-play>
+                        <div class="orb" aria-hidden="true"></div>
+                        <div class="ring" aria-hidden="true"></div>
+
+                        <div class="chat glass">
+                            <div class="chat__head">
+                                <img src="{{ asset('favicon.svg') }}" alt="" width="34" height="34" class="chat__avatar">
+                                <div>
+                                    <strong>Owlvix</strong>
+                                    <small><span class="live-dot" aria-hidden="true"></span>Online · replies within 24h</small>
+                                </div>
+                            </div>
+                            <p class="chat__text" aria-live="polite" data-owl-text>Hoo needs a developer? Tell me your idea and I'll show you how we'd build it.</p>
+                            <button type="button" class="board__play chat__play" aria-label="Play the owl's intro" data-owl-play>
                                 <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
                                 <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg>
                                 <span>Hear the intro</span>
                             </button>
-                            <span class="board__chalk" aria-hidden="true"></span>
                         </div>
+
+                        <div class="float float--web glass" aria-hidden="true">
+                            <span class="float__icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+                            <div><strong>Web apps</strong><small>Laravel · React · Vue</small></div>
+                        </div>
+                        <div class="float float--ai glass" aria-hidden="true">
+                            <span class="float__icon float__icon--blue"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
+                            <div><strong>AI agents</strong><small>OpenAI · Claude · Gemini</small></div>
+                        </div>
+                        <div class="float float--mobile glass" aria-hidden="true">
+                            <span class="float__icon"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
+                            <div><strong>Mobile apps</strong><small>iOS &amp; Android</small></div>
+                        </div>
+
                         <div class="owl-wrap">
-                            <img src="{{ asset('images/owl-body.png') }}" alt="Owlvix owl mascot pointing at the board" width="395" height="400" class="owl">
-                            <img src="{{ asset('images/owl-mouth.png') }}" alt="" width="63" height="43" class="owl__mouth" aria-hidden="true">
-                            <svg class="owl__smile" viewBox="0 0 395 400" aria-hidden="true"><path d="M255 187 Q281 196 309 182"/></svg>
+                            @include('partials.owl', ['alt' => 'Owlvix owl mascot'])
                         </div>
                         <div class="glow" aria-hidden="true"></div>
                     </div>
@@ -228,16 +260,18 @@
                     <p class="eyebrow">Get in touch</p>
                     <h2>Tell us about your project</h2>
                     <p class="lead">Send a short message — no forms to sign, no obligation. We reply within one business day with questions or a quote.</p>
-                    <img src="{{ asset('images/owl.png') }}" alt="" width="200" height="203" class="contact__owl" loading="lazy">
+                    <img src="{{ asset('images/owl.png') }}" alt="" width="200" height="210" class="contact__owl" loading="lazy">
                 </div>
 
-                <form class="card form" method="POST" action="{{ route('contact.store') }}#contact" novalidate>
+                <form class="card form" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
                     @csrf
                     <input type="hidden" name="source" value="contact">
                     @if (session('sent'))
                         <div class="alert alert--ok" role="status">Thanks! Your message is in. We'll get back to you within one business day.</div>
                     @endif
-                    @if ($errors->any())
+                    @if ($errors->has('captcha'))
+                        <div class="alert alert--err" role="alert">{{ $errors->first('captcha') }}</div>
+                    @elseif ($errors->any())
                         <div class="alert alert--err" role="alert">Please check the highlighted fields.</div>
                     @endif
 
@@ -271,10 +305,11 @@
                             </select>
                         </label>
                     </div>
-                    <label>Your project
-                        <textarea name="message" rows="5" required minlength="10" maxlength="5000" placeholder="What should it do? Who is it for? Any deadline?" @error('message') aria-invalid="true" @enderror>{{ old('message') }}</textarea>
+                    <div class="field">
+                        <label for="contact-message">Your project</label>
+                        <textarea id="contact-message" name="message" rows="5" required placeholder="What should it do? Who is it for? Any deadline?" data-rich @error('message') aria-invalid="true" @enderror>{{ old('message') }}</textarea>
                         @error('message')<small>{{ $message }}</small>@enderror
-                    </label>
+                    </div>
                     <button type="submit" class="btn btn--block">Send message</button>
                 </form>
             </div>
@@ -296,8 +331,14 @@
 
     <script>
         window.OWLVIX = @json(\App\Support\OwlVoice::sets(['intro', 'quote']));
+        window.OWLVIX.recaptchaKey = @json(config('services.recaptcha.site_key'));
     </script>
+    @if (config('services.recaptcha.site_key'))
+        <script src="https://www.google.com/recaptcha/api.js?render={{ urlencode(config('services.recaptcha.site_key')) }}" async defer></script>
+    @endif
     <script src="{{ asset('js/owl.js') }}?v={{ filemtime(public_path('js/owl.js')) }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script src="{{ asset('js/site.js') }}?v={{ filemtime(public_path('js/site.js')) }}"></script>
 </body>
 </html>

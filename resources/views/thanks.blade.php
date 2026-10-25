@@ -49,9 +49,7 @@
                     <div class="say"><p class="say__text" aria-live="polite" data-owl-text>You'll hear back from us within one business day. Talk soon!</p></div>
                     <div class="owl-wrap owl-wrap--static">
                         <div class="owl-flip">
-                            <img src="{{ asset('images/owl-body.png') }}" alt="Owlvix owl" width="395" height="400" class="owl">
-                            <img src="{{ asset('images/owl-mouth.png') }}" alt="" width="63" height="43" class="owl__mouth" aria-hidden="true">
-                            <svg class="owl__smile" viewBox="0 0 395 400" aria-hidden="true"><path d="M255 187 Q281 196 309 182"/></svg>
+                            @include('partials.owl', ['alt' => 'Owlvix owl'])
                         </div>
                     </div>
                     <div class="glow" aria-hidden="true"></div>

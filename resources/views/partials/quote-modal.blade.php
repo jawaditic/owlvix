@@ -15,9 +15,7 @@
             </div>
             <div class="owl-wrap owl-wrap--static">
                 <div class="owl-flip">
-                    <img src="{{ asset('images/owl-body.png') }}" alt="Owlvix owl" width="395" height="400" class="owl">
-                    <img src="{{ asset('images/owl-mouth.png') }}" alt="" width="63" height="43" class="owl__mouth" aria-hidden="true">
-                    <svg class="owl__smile" viewBox="0 0 395 400" aria-hidden="true"><path d="M255 187 Q281 196 309 182"/></svg>
+                    @include('partials.owl', ['alt' => 'Owlvix owl'])
                 </div>
             </div>
             <button type="button" class="board__play quote-owl__play" aria-label="Play the owl's intro" data-owl-play>
@@ -27,7 +25,7 @@
             </button>
         </div>
 
-        <form class="form quote-form" method="POST" action="{{ route('contact.store') }}#contact">
+        <form class="form quote-form" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
             @csrf
             <p class="eyebrow">Free quote</p>
             <h2 id="quote-title" tabindex="-1" autofocus>Get a free quote</h2>
@@ -47,16 +45,25 @@
                     <input type="email" name="email" required maxlength="150" autocomplete="email">
                 </label>
             </div>
-            <label>What do you need?
-                <select name="service">
-                    @foreach (['Web app', 'Mobile app', 'AI chatbot / agent', 'Website', 'Monthly developer', 'Something else'] as $opt)
-                        <option value="{{ $opt }}">{{ $opt }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <label>Your project
-                <textarea name="message" rows="3" required minlength="10" maxlength="5000" placeholder="A few lines about what you want built"></textarea>
-            </label>
+            <div class="row">
+                {{-- Not wrapped in <label>: the country picker inside has its own buttons --}}
+                <div class="field">
+                    <label for="quote-phone">Phone <span class="optional">(optional)</span></label>
+                    <input type="tel" id="quote-phone" name="phone" maxlength="30" autocomplete="tel" inputmode="tel" data-intl-phone>
+                </div>
+                <label>What do you need?
+                    <select name="service">
+                        @foreach (['Web app', 'Mobile app', 'AI chatbot / agent', 'Website', 'Monthly developer', 'Something else'] as $opt)
+                            <option value="{{ $opt }}">{{ $opt }}</option>
+                        @endforeach
+                    </select>
+                </label>
+            </div>
+            {{-- site.js turns this textarea into a rich text editor (and keeps it in sync for sending) --}}
+            <div class="field">
+                <label for="quote-message">Your project</label>
+                <textarea id="quote-message" name="message" rows="3" required placeholder="A few lines about what you want built" data-rich></textarea>
+            </div>
             <button type="submit" class="btn btn--block">Get my free quote</button>
             <button type="button" class="quote-form__later" data-close>Maybe later</button>
         </form>

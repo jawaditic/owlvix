@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // Google reCAPTCHA v3 (invisible). Leave the keys empty to turn it off, e.g. locally.
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        // 0.0 = very likely a bot, 1.0 = very likely a person. Google suggests 0.5.
+        'min_score' => (float) env('RECAPTCHA_MIN_SCORE', 0.5),
+    ],
+
 ];
