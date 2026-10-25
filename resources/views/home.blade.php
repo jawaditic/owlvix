@@ -21,6 +21,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Patrick+Hand&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
+    {{-- Theme: saved choice, else the device setting. Runs before paint so there's no flash. --}}
+    <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+    <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ filemtime(public_path('css/theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ filemtime(public_path('css/site.css')) }}">
     <noscript><style>[data-reviews].is-loading > * { visibility: visible; } [data-reviews].is-loading::after { display: none; }</style></noscript>
 </head>
@@ -38,10 +41,16 @@
             </button>
             <nav class="nav__links" id="nav-links">
                 <a href="#services">Services</a>
+                <a href="#work">Work</a>
                 <a href="#process">Process</a>
                 @if (count(\App\Support\Testimonials::data()['reviews']))<a href="#reviews">Reviews</a>@endif
                 <a href="#pricing">Pricing</a>
                 <a href="#faq">FAQ</a>
+                <button type="button" class="theme-btn" data-theme-toggle aria-label="Switch to light mode" title="Switch theme">
+                    <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                    <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+                    <span class="theme-btn__label">Theme</span>
+                </button>
                 <a href="#contact" class="btn btn--sm" data-quote>Get a free quote</a>
             </nav>
         </div>
@@ -164,6 +173,52 @@
                 <p class="promise">Clean code you own <i>•</i> Regular updates <i>•</i> On-time delivery</p>
             </div>
         </section>
+
+        {{-- Portfolio (Admin → Portfolio) --}}
+        @php($projects = \Illuminate\Support\Facades\Schema::hasTable('projects') ? \App\Models\Project::published()->ordered()->get() : collect())
+        @if ($projects->isNotEmpty())
+        <section class="section section--alt" id="work">
+            <div class="container">
+                <p class="eyebrow">Our work</p>
+                <h2>Projects we've built</h2>
+                @php($cats = $projects->pluck('category')->unique())
+                @if ($cats->count() > 1)
+                    <div class="work-filter" role="tablist" aria-label="Filter projects">
+                        <button type="button" class="is-active" data-filter="all">All <span>{{ $projects->count() }}</span></button>
+                        @foreach (\App\Models\Project::CATEGORIES as $key => $label)
+                            @if ($cats->contains($key))
+                                <button type="button" data-filter="{{ $key }}">{{ $label }}{{ in_array($key, ['website', 'mobile']) ? 's' : '' }} <span>{{ $projects->where('category', $key)->count() }}</span></button>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+                <div class="work" data-work data-limit="8">
+                    @foreach ($projects as $p)
+                        <article class="work-card" data-category="{{ $p->category }}">
+                            <div class="work-card__img">
+                                <img src="{{ $p->imageUrl() }}" alt="{{ $p->title }} — {{ $p->categoryLabel() }}" loading="lazy" decoding="async">
+                            </div>
+                            <div class="work-card__body">
+                                <span class="work-card__cat">{{ $p->categoryLabel() }}</span>
+                                <h3>{{ $p->title }}</h3>
+                                @if ($p->summary)<p>{{ $p->summary }}</p>@endif
+                                @if ($p->url || $p->ios_url || $p->android_url)
+                                    <div class="work-card__links">
+                                        @if ($p->url)<a href="{{ $p->url }}" target="_blank" rel="noopener nofollow">View site ↗</a>@endif
+                                        @if ($p->ios_url)<a href="{{ $p->ios_url }}" target="_blank" rel="noopener nofollow">App Store ↗</a>@endif
+                                        @if ($p->android_url)<a href="{{ $p->android_url }}" target="_blank" rel="noopener nofollow">Google Play ↗</a>@endif
+                                    </div>
+                                @endif
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+                <p class="work__more" hidden>
+                    <button type="button" class="btn btn--ghost" data-work-more>Show all projects</button>
+                </p>
+            </div>
+        </section>
+        @endif
 
         {{-- Process --}}
         <section class="section section--alt" id="process">
@@ -378,5 +433,6 @@
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script src="{{ asset('js/site.js') }}?v={{ filemtime(public_path('js/site.js')) }}"></script>
+    <script src="{{ asset('js/theme.js') }}?v={{ filemtime(public_path('js/theme.js')) }}"></script>
 </body>
 </html>

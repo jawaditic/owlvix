@@ -243,6 +243,29 @@
         doneText: cfg.intro[cfg.intro.length - 1].text,
     });
 
+    /* ---------- Our work: category filter + "Show all" ---------- */
+    const work = document.querySelector('[data-work]');
+    if (work) {
+        const cards = [...work.children];
+        const limit = Number(work.dataset.limit) || 8;
+        const more = document.querySelector('.work__more');
+        const moreBtn = document.querySelector('[data-work-more]');
+        let filter = 'all', expanded = false;
+        const render = () => {
+            const matching = cards.filter(c => filter === 'all' || c.dataset.category === filter);
+            cards.forEach(c => { c.hidden = true; });
+            matching.forEach((c, i) => { c.hidden = !expanded && i >= limit; });
+            more.hidden = expanded || matching.length <= limit;
+            moreBtn.textContent = `Show all ${matching.length} projects`;
+        };
+        document.querySelectorAll('[data-filter]').forEach(btn => btn.addEventListener('click', () => {
+            document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('is-active', b === btn));
+            filter = btn.dataset.filter; expanded = false; render();
+        }));
+        moreBtn.addEventListener('click', () => { expanded = true; render(); });
+        render();
+    }
+
     /* ---------- Reviews: visitor's own country first ---------- */
     // Uses the same country lookup as the phone field. Others keep the default order.
     // A spinner shows until this finishes; after 2.5s we show the default order anyway.

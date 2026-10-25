@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MessageController;
+use App\Http\Controllers\Admin\ProjectController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
@@ -24,13 +26,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
     Route::middleware('admin')->group(function () {
-        Route::redirect('/', '/admin/messages');
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('messages', [MessageController::class, 'index'])->name('messages.index');
         Route::get('messages/export', [MessageController::class, 'export'])->name('messages.export');
         Route::get('messages/{message}', [MessageController::class, 'show'])->name('messages.show');
         Route::post('messages/{message}/reply', [MessageController::class, 'reply'])->name('messages.reply');
         Route::patch('messages/{message}/read', [MessageController::class, 'toggleRead'])->name('messages.read');
         Route::delete('messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
+
+        // Portfolio ("Our work")
+        Route::post('portfolio/{project}/move/{direction}', [ProjectController::class, 'move'])->whereIn('direction', ['up', 'down'])->name('projects.move');
+        Route::post('portfolio/{project}/toggle', [ProjectController::class, 'toggle'])->name('projects.toggle');
+        Route::resource('portfolio', ProjectController::class)->except('show')
+            ->parameters(['portfolio' => 'project'])->names('projects');
 
         // Reviews shown on the site
         Route::post('reviews/settings', [TestimonialController::class, 'settings'])->name('testimonials.settings');

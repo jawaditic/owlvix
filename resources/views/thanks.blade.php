@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+    {{-- Theme: saved choice, else the device setting. Runs before paint so there's no flash. --}}
+    <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
+    <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ filemtime(public_path('css/theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ filemtime(public_path('css/site.css')) }}">
     <style>
         .thanks { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
@@ -33,6 +36,10 @@
     <div class="bg-grid" aria-hidden="true"></div>
     <div class="thanks">
         <header class="thanks__top">
+            <button type="button" class="theme-btn theme-btn--corner" data-theme-toggle aria-label="Switch to light mode" title="Switch theme">
+                <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+            </button>
             <a href="{{ route('home') }}" class="brand" aria-label="Owlvix home">
                 <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="36" height="36">
                 <span>Owl<span class="accent">vix</span></span>
@@ -94,5 +101,6 @@
             document.addEventListener('keydown', e => { if (e.key !== 'Tab') enableSound(); });
         })();
     </script>
+    <script src="{{ asset('js/theme.js') }}?v={{ filemtime(public_path('js/theme.js')) }}"></script>
 </body>
 </html>

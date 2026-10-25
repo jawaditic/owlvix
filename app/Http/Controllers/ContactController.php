@@ -5,9 +5,8 @@ namespace App\Http\Controllers;
 use App\Mail\NewEnquiry;
 use App\Mail\QuoteReceived;
 use App\Models\ContactMessage;
+use App\Support\Recaptcha;
 use App\Support\RichText;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Http\Request;
 
@@ -46,7 +45,7 @@ class ContactController extends Controller
             'source' => ['nullable', 'in:contact,popup'],
         ]);
 
-        if (! $this->passesRecaptcha($request)) {
+        if (! Recaptcha::passes($request, 'contact')) {
             return redirect()->to(route('home').'#contact')
                 ->withErrors(['captcha' => "We couldn't confirm you're not a robot. Please try again."])
                 ->withInput();
@@ -70,53 +69,5 @@ class ContactController extends Controller
         }
 
         return redirect()->to(route('home').'#contact')->with('sent', true);
-    }
-
-    /**
-     * Ask Google whether this submit came from a person (reCAPTCHA v3).
-     * Skipped when no secret key is set, so local development works without keys.
-     */
-    private function passesRecaptcha(Request $request): bool
-    {
-        $secret = config('services.recaptcha.secret_key');
-        if (blank($secret)) {
-            return true;
-        }
-
-        $token = $request->input('g-recaptcha-response');
-        if (blank($token)) {
-            Log::info('Contact form blocked by reCAPTCHA: no token sent');
-
-            return false;
-        }
-
-        try {
-            $result = Http::asForm()->timeout(5)->post('https://www.google.com/recaptcha/api/siteverify', [
-                'secret' => $secret,
-                'response' => $token,
-                'remoteip' => $request->ip(),
-            ])->json();
-        } catch (\Throwable $e) {
-            // If Google can't be reached, let the visitor through rather than lose a lead.
-            report($e);
-
-            return true;
-        }
-
-        $passed = ($result['success'] ?? false)
-            && ($result['action'] ?? null) === 'contact'
-            && ($result['score'] ?? 0) >= config('services.recaptcha.min_score');
-
-        // Note why a submit was blocked, to help tune RECAPTCHA_MIN_SCORE
-        if (! $passed) {
-            Log::info('Contact form blocked by reCAPTCHA', [
-                'score' => $result['score'] ?? null,
-                'action' => $result['action'] ?? null,
-                'hostname' => $result['hostname'] ?? null,
-                'errors' => $result['error-codes'] ?? [],
-            ]);
-        }
-
-        return $passed;
     }
 }
