@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Owlvix">
+  <defs>
+    <linearGradient id="ov-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34e08b"/>
+      <stop offset="1" stop-color="#14a35c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#ov-bg)"/>
+  <!-- owl head: ear tufts angled outward -->
+  <path d="M7 13 L21 18.5 Q32 15 43 18.5 L57 13 L53.5 29 V37 C53.5 48.5 44 56 32 56 C20 56 10.5 48.5 10.5 37 V29 Z" fill="#070b14"/>
+  <!-- eye discs -->
+  <circle cx="22" cy="33" r="9" fill="#34e08b"/>
+  <circle cx="42" cy="33" r="9" fill="#34e08b"/>
+  <circle cx="22" cy="33" r="5" fill="#070b14"/>
+  <circle cx="42" cy="33" r="5" fill="#070b14"/>
+  <circle cx="23.8" cy="31.2" r="1.6" fill="#fff"/>
+  <circle cx="43.8" cy="31.2" r="1.6" fill="#fff"/>
+  <!-- V beak -->
+  <path d="M28.6 41 L32 47.5 L35.4 41" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
