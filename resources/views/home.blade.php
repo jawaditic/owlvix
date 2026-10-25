@@ -375,7 +375,7 @@
                     <img src="{{ asset('images/owl.png') }}" alt="" width="200" height="210" class="contact__owl" loading="lazy">
                 </div>
 
-                <form class="card form" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
+                <form class="card form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
                     @csrf
                     <input type="hidden" name="source" value="contact">
                     @if (session('sent'))

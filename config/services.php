@@ -40,6 +40,11 @@ return [
         'id' => env('GA_MEASUREMENT_ID'),
     ],
 
+    // Microsoft Clarity (session recordings + heatmaps). Leave empty to turn it off.
+    'clarity' => [
+        'id' => env('CLARITY_PROJECT_ID'),
+    ],
+
     // Google reCAPTCHA v3 (invisible). Leave the keys empty to turn it off, e.g. locally.
     'recaptcha' => [
         'site_key' => env('RECAPTCHA_SITE_KEY'),

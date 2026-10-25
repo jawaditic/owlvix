@@ -48,7 +48,7 @@
             </button>
         </div>
 
-        <form class="form quote-form" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
+        <form class="form quote-form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
             @csrf
             <p class="eyebrow">Free quote</p>
             <h2 id="quote-title" tabindex="-1" autofocus>Get a free quote</h2>

@@ -1,19 +1,51 @@
-{{-- Google Analytics 4. Off when GA_MEASUREMENT_ID is empty, and while you're logged in to the admin
-     (so your own visits don't count). Site scripts send events through window.track(name, params). --}}
-@php($gaId = config('services.google_analytics.id'))
-@if ($gaId && ! session('is_admin'))
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($gaId) }}"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() { dataLayer.push(arguments); }
-        gtag('js', new Date());
-        gtag('config', @json($gaId));
-        window.track = function (name, params) { gtag('event', name, params || {}); };
-        @if (session('sent'))
-            // The server has just saved an enquiry: this is a real lead
-            track('generate_lead', { form: @json(session('lead_source') === 'popup' ? 'quote_popup' : 'contact_form'), service: @json(session('lead_service')) });
-        @endif
-    </script>
-@else
-    <script>window.track = function () {};</script>
-@endif
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Third Party Services
+    |--------------------------------------------------------------------------
+    |
+    | This file is for storing the credentials for third party services such
+    | as Mailgun, Postmark, AWS and more. This file provides the de facto
+    | location for this type of information, allowing packages to have
+    | a conventional file to locate the various service credentials.
+    |
+    */
+
+    'postmark' => [
+        'key' => env('POSTMARK_API_KEY'),
+    ],
+
+    'resend' => [
+        'key' => env('RESEND_API_KEY'),
+    ],
+
+    'ses' => [
+        'key' => env('AWS_ACCESS_KEY_ID'),
+        'secret' => env('AWS_SECRET_ACCESS_KEY'),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+
+    'slack' => [
+        'notifications' => [
+            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
+            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+        ],
+    ],
+
+    // Google Analytics 4, e.g. G-ABC123XYZ. Leave empty to turn it off (e.g. locally).
+    'google_analytics' => [
+        'id' => env('GA_MEASUREMENT_ID'),
+    ],
+
+    // Google reCAPTCHA v3 (invisible). Leave the keys empty to turn it off, e.g. locally.
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        // 0.0 = very likely a bot, 1.0 = very likely a person. Google suggests 0.5.
+        'min_score' => (float) env('RECAPTCHA_MIN_SCORE', 0.5),
+    ],
+
+];
