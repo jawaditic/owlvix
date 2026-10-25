@@ -1,40 +1,58 @@
 /** New-enquiry alerts on the admin's phone (Expo push notifications). */
 
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+type NotificationsModule = typeof import('expo-notifications');
+
+/**
+ * expo-notifications is loaded only where push works. Expo Go on Android doesn't include it any more
+ * and crashes as soon as it's imported, so it must not be imported at the top of this file.
+ */
+let cached: NotificationsModule | null | undefined;
+function notifications(): NotificationsModule | null {
+  if (cached !== undefined) return cached;
+  const expoGoAndroid = Platform.OS === 'android' && Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  if (Platform.OS === 'web' || expoGoAndroid) return (cached = null);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const N: NotificationsModule = require('expo-notifications');
+    N.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
+    return (cached = N);
+  } catch {
+    return (cached = null);
+  }
+}
 
 /**
  * Ask for permission and return this phone's Expo push token, or null when alerts can't be used
- * (web, simulator without push, permission refused, or no EAS project id yet).
+ * (web, Expo Go on Android, simulator without push, permission refused, or no EAS project id yet).
  */
 export async function registerForPush(): Promise<string | null> {
-  if (Platform.OS === 'web' || !Device.isDevice) return null;
+  const N = notifications();
+  if (!N || !Device.isDevice) return null;
 
   if (Platform.OS === 'android') {
     // Same channel id the server sends with (app/Support/Push.php)
-    await Notifications.setNotificationChannelAsync('enquiries', {
+    await N.setNotificationChannelAsync('enquiries', {
       name: 'New enquiries',
-      // eslint-disable-next-line import/namespace -- exported from a sub-module the lint rule doesn't follow
-      importance: Notifications.AndroidImportance.MAX,
+      importance: N.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#1ec773',
     });
   }
 
-  let { status } = await Notifications.getPermissionsAsync();
+  let { status } = await N.getPermissionsAsync();
   if (status !== 'granted') {
-    status = (await Notifications.requestPermissionsAsync()).status;
+    status = (await N.requestPermissionsAsync()).status;
   }
   if (status !== 'granted') return null;
 
@@ -45,7 +63,7 @@ export async function registerForPush(): Promise<string | null> {
   }
 
   try {
-    return (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    return (await N.getExpoPushTokenAsync({ projectId })).data;
   } catch (e) {
     console.warn('Could not get a push token', e);
     return null;
@@ -54,12 +72,14 @@ export async function registerForPush(): Promise<string | null> {
 
 /** Open the enquiry when the admin taps an alert. Returns a function that stops listening. */
 export function onEnquiryTapped(open: (id: number) => void): () => void {
-  const handle = (response: Notifications.NotificationResponse | null) => {
+  const N = notifications();
+  if (!N) return () => {};
+  const handle = (response: import('expo-notifications').NotificationResponse | null) => {
     const data = response?.notification.request.content.data as { type?: string; id?: number } | undefined;
     if (data?.type === 'enquiry' && data.id) open(Number(data.id));
   };
   // The alert that opened the app from closed
-  Notifications.getLastNotificationResponseAsync().then(handle).catch(() => {});
-  const sub = Notifications.addNotificationResponseReceivedListener(handle);
+  N.getLastNotificationResponseAsync().then(handle).catch(() => {});
+  const sub = N.addNotificationResponseReceivedListener(handle);
   return () => sub.remove();
 }

@@ -37,7 +37,7 @@ export default function Home() {
       <View style={{ gap: Space.lg, marginTop: Space.xl }}>
         <Badge label={Hero.pill} />
         <T v="h1" accessibilityRole="header">
-          Need a <Text style={{ color: c.green }}>{Hero.words[word]}</Text>
+          Need {/^[aeiou]/i.test(Hero.words[word]) ? 'an' : 'a'} <Text style={{ color: c.green }}>{Hero.words[word]}</Text>
           {'\n'}We build it start to finish.
         </T>
         <T v="body">{Hero.lead}</T>

@@ -65,7 +65,7 @@ export function Screen({
       <ScrollView
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         contentContainerStyle={[
           styles.screen,
           // On the web build the tab bar floats over the top of the page instead of sitting at the bottom
