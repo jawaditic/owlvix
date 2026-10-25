@@ -227,7 +227,6 @@
             root.classList.toggle('is-talking', on);
             if (btn) {
                 label.textContent = on ? 'Stop' : (played ? 'Replay' : playLabel);
-                btn.setAttribute('aria-label', on ? 'Stop the owl' : 'Play the owl\'s intro');
             }
             cancelAnimationFrame(raf);
             if (on) raf = requestAnimationFrame(tick);

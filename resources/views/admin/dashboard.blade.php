@@ -67,7 +67,7 @@
                 <h2>Enquiries over time</h2>
                 <p class="muted" id="trend-summary"></p>
             </div>
-            <div class="seg" role="tablist" aria-label="Time range">
+            <div class="seg" role="group" aria-label="Time range">
                 <button type="button" data-range="7">7 days</button>
                 <button type="button" data-range="30" class="is-active">30 days</button>
                 <button type="button" data-range="90">90 days</button>

@@ -76,6 +76,13 @@
             quill.root.setAttribute('aria-label', label ? label.textContent.trim() : 'Your project');
             quill.root.setAttribute('role', 'textbox');
             quill.root.setAttribute('aria-multiline', 'true');
+            // Accessibility/SEO: name the style dropdown, and give the link pop-up's
+            // action links a harmless address so they count as proper links
+            box.querySelectorAll('.ql-picker-label').forEach(el => el.setAttribute('aria-label', 'Text style'));
+            box.querySelectorAll('.ql-tooltip a:not([href])').forEach(a => {
+                a.setAttribute('href', '#');
+                a.addEventListener('click', e => e.preventDefault());
+            });
             if (label) label.addEventListener('click', () => quill.focus());
 
             // getSemanticHTML() writes every space as &nbsp;, which stops lines wrapping in emails
@@ -88,6 +95,32 @@
             ta.editorBox = box;
         });
     }
+
+    /* ---------- Google reCAPTCHA: load only when needed ---------- */
+    // Its script is large (~800 KB), so it loads the first time someone starts filling in a form,
+    // not on every page view. The check itself still runs when the form is sent.
+    let recaptchaPromise;
+    const loadRecaptcha = () => recaptchaPromise ||= new Promise((resolve, reject) => {
+        if (!cfg.recaptchaKey) return reject(new Error('no key'));
+        if (window.grecaptcha) return resolve();
+        const sc = document.createElement('script');
+        sc.src = 'https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(cfg.recaptchaKey);
+        sc.async = true;
+        sc.onload = () => resolve();
+        sc.onerror = () => { recaptchaPromise = null; reject(new Error('reCAPTCHA failed to load')); };
+        document.head.appendChild(sc);
+    });
+    document.querySelectorAll('form[data-validate]').forEach(form => {
+        // Real interaction only (isTrusted): the popup focuses its form by itself, and the phone
+        // picker and editor send their own "input" events while starting up
+        const events = ['input', 'keydown', 'pointerdown'];
+        const warm = e => {
+            if (!e.isTrusted) return;
+            events.forEach(ev => form.removeEventListener(ev, warm));
+            loadRecaptcha().catch(() => {});
+        };
+        events.forEach(ev => form.addEventListener(ev, warm));
+    });
 
     /* ---------- Form validation (popup + contact form) ---------- */
     // Each rule returns an error message, or '' when the value is fine.
@@ -196,11 +229,11 @@
             btn.textContent = 'Sending…';
 
             // reCAPTCHA v3: fetch a fresh token from Google, then send the form.
-            // If Google's script didn't load, send anyway and let the server decide.
+            // If Google's script can't load, send anyway and let the server decide.
             const key = cfg.recaptchaKey;
-            if (!key || !window.grecaptcha) return;
+            if (!key) return;
             e.preventDefault();
-            grecaptcha.ready(() => {
+            loadRecaptcha().then(() => grecaptcha.ready(() => {
                 grecaptcha.execute(key, { action: 'contact' }).then(token => {
                     let input = form.querySelector('input[name="g-recaptcha-response"]');
                     if (!input) {
@@ -210,7 +243,7 @@
                     input.value = token;
                     form.submit();
                 }, () => form.submit());
-            });
+            }), () => form.submit());
         });
     });
 
@@ -259,7 +292,7 @@
             moreBtn.textContent = `Show all ${matching.length} projects`;
         };
         document.querySelectorAll('[data-filter]').forEach(btn => btn.addEventListener('click', () => {
-            document.querySelectorAll('[data-filter]').forEach(b => b.classList.toggle('is-active', b === btn));
+            document.querySelectorAll('[data-filter]').forEach(b => { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-pressed', b === btn); });
             filter = btn.dataset.filter; expanded = false; render();
         }));
         moreBtn.addEventListener('click', () => { expanded = true; render(); });

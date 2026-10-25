@@ -10,6 +10,19 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
 
+// Sitemap for search engines: the homepage, with the portfolio images
+Route::get('/sitemap.xml', function () {
+    $projects = \Illuminate\Support\Facades\Schema::hasTable('projects')
+        ? \App\Models\Project::published()->ordered()->get() : collect();
+    $lastmod = collect([
+        filemtime(resource_path('views/home.blade.php')),
+        $projects->max('updated_at')?->timestamp,
+    ])->filter()->max();
+
+    return response()->view('sitemap', ['projects' => $projects, 'lastmod' => date('Y-m-d', $lastmod)])
+        ->header('Content-Type', 'application/xml; charset=UTF-8');
+})->name('sitemap');
+
 // Thank-you page the owl talks on, linked from the confirmation email (signed link per enquiry)
 Route::get('/thanks/{message}', function (\App\Models\ContactMessage $message) {
     return view('thanks', ['enquiry' => $message]);

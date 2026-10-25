@@ -6,7 +6,7 @@
 
     <div class="quote-modal__grid">
         <div class="quote-owl">
-            <button type="button" class="sound-hint" aria-label="Turn on the owl's voice">
+            <button type="button" class="sound-hint">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" class="fill"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
                 <span>Tap for sound</span>
             </button>
@@ -41,7 +41,7 @@
                     @include('partials.owl', ['alt' => 'Owlvix owl'])
                 </div>
             </div>
-            <button type="button" class="board__play quote-owl__play" aria-label="Play the owl's intro" data-owl-play>
+            <button type="button" class="board__play quote-owl__play" data-owl-play>
                 <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
                 <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg>
                 <span>Hear the owl</span>

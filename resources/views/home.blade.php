@@ -5,22 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Owlvix — Web Apps, Mobile Apps & AI, Built Start to Finish</title>
     <meta name="description" content="Owlvix designs and builds web apps, mobile apps, AI chatbots and automation for businesses. Clean code you own, regular updates, on-time delivery.">
-    <meta name="theme-color" content="#070b14">
+    <link rel="canonical" href="{{ url('/') }}">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta name="theme-color" content="#070b14" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
 
+    {{-- Link previews (WhatsApp, Facebook, LinkedIn, X) --}}
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Owlvix">
+    <meta property="og:locale" content="en_US">
     <meta property="og:title" content="Owlvix — Need a web app? We build it start to finish.">
-    <meta property="og:description" content="Design • Frontend • Backend • AI • Launch">
+    <meta property="og:description" content="Web apps, mobile apps and AI tools for growing businesses. Design, frontend, backend, AI and launch — with code you own.">
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:image" content="{{ asset('images/og.png') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="628">
+    <meta property="og:image:alt" content="Owlvix owl mascot next to the text: Need a web app? I build it start to finish.">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Owlvix — Need a web app? We build it start to finish.">
+    <meta name="twitter:description" content="Web apps, mobile apps and AI tools for growing businesses, with code you own.">
+    <meta name="twitter:image" content="{{ asset('images/og.png') }}">
+    <meta name="twitter:image:alt" content="Owlvix owl mascot next to the text: Need a web app? I build it start to finish.">
+
+    @include('partials.structured-data')
 
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+    {{-- Fonts and the phone/editor styles load without blocking the first paint --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Patrick+Hand&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap"></noscript>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css"></noscript>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"></noscript>
     {{-- Theme: saved choice, else the device setting. Runs before paint so there's no flash. --}}
     <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ filemtime(public_path('css/theme.css')) }}">
@@ -62,7 +79,7 @@
             <div class="container hero__inner">
                 <div class="hero__copy">
                     <span class="pill"><span class="pill__dot" aria-hidden="true"></span>7+ years • 200+ projects delivered</span>
-                    <h1>Need a <span class="accent rotator" data-rotate='["web app?","mobile app?","AI chatbot?","AI agent?"]'>web app?</span>We build it start to finish.</h1>
+                    <h1>Need a <span class="accent rotator" data-rotate='["web app?","mobile app?","AI chatbot?","AI agent?"]'>web app?</span> We build it start to finish.</h1>
                     <p class="lead">Owlvix designs, builds and launches web apps, mobile apps and AI tools for growing businesses — from the first sketch to the server it runs on.</p>
                     <ul class="chips" aria-label="What we cover">
                         <li>Design</li><li>Frontend</li><li>Backend</li><li>AI</li><li>Launch</li>
@@ -94,7 +111,7 @@
                                 </div>
                             </div>
                             <p class="chat__text" aria-live="polite" data-owl-text>Hoo needs a developer? Tell me your idea and I'll show you how we'd build it.</p>
-                            <button type="button" class="board__play chat__play" aria-label="Play the owl's intro" data-owl-play>
+                            <button type="button" class="board__play chat__play" data-owl-play>
                                 <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
                                 <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg>
                                 <span>Hear the intro</span>
@@ -183,11 +200,11 @@
                 <h2>Projects we've built</h2>
                 @php($cats = $projects->pluck('category')->unique())
                 @if ($cats->count() > 1)
-                    <div class="work-filter" role="tablist" aria-label="Filter projects">
-                        <button type="button" class="is-active" data-filter="all">All <span>{{ $projects->count() }}</span></button>
+                    <div class="work-filter" role="group" aria-label="Filter projects">
+                        <button type="button" class="is-active" data-filter="all" aria-pressed="true">All <span>{{ $projects->count() }}</span></button>
                         @foreach (\App\Models\Project::CATEGORIES as $key => $label)
                             @if ($cats->contains($key))
-                                <button type="button" data-filter="{{ $key }}">{{ $label }}{{ in_array($key, ['website', 'mobile']) ? 's' : '' }} <span>{{ $projects->where('category', $key)->count() }}</span></button>
+                                <button type="button" data-filter="{{ $key }}" aria-pressed="false">{{ $label }}{{ in_array($key, ['website', 'mobile']) ? 's' : '' }} <span>{{ $projects->where('category', $key)->count() }}</span></button>
                             @endif
                         @endforeach
                     </div>
@@ -196,7 +213,8 @@
                     @foreach ($projects as $p)
                         <article class="work-card" data-category="{{ $p->category }}">
                             <div class="work-card__img">
-                                <img src="{{ $p->imageUrl() }}" alt="{{ $p->title }} — {{ $p->categoryLabel() }}" loading="lazy" decoding="async">
+                                @php([$iw, $ih] = ($p->image && is_file(public_path($p->image))) ? (getimagesize(public_path($p->image)) ?: [720, 480]) : [720, 480])
+                                <img src="{{ $p->imageUrl() }}" alt="{{ $p->title }} — {{ $p->categoryLabel() }} project by Owlvix" width="{{ $iw }}" height="{{ $ih }}" loading="lazy" decoding="async">
                             </div>
                             <div class="work-card__body">
                                 <span class="work-card__cat">{{ $p->categoryLabel() }}</span>
@@ -426,13 +444,12 @@
         window.OWLVIX = @json(\App\Support\OwlVoice::sets(['intro', 'quote']));
         window.OWLVIX.recaptchaKey = @json(config('services.recaptcha.site_key'));
     </script>
-    @if (config('services.recaptcha.site_key'))
-        <script src="https://www.google.com/recaptcha/api.js?render={{ urlencode(config('services.recaptcha.site_key')) }}" async defer></script>
-    @endif
-    <script src="{{ asset('js/owl.js') }}?v={{ filemtime(public_path('js/owl.js')) }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
-    <script src="{{ asset('js/site.js') }}?v={{ filemtime(public_path('js/site.js')) }}"></script>
-    <script src="{{ asset('js/theme.js') }}?v={{ filemtime(public_path('js/theme.js')) }}"></script>
+    {{-- "defer": scripts download in parallel and run in order after the page is parsed, without blocking it.
+         Google reCAPTCHA is loaded by site.js only when someone starts filling in a form. --}}
+    <script src="{{ asset('js/owl.js') }}?v={{ filemtime(public_path('js/owl.js')) }}" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js" defer></script>
+    <script src="{{ asset('js/site.js') }}?v={{ filemtime(public_path('js/site.js')) }}" defer></script>
+    <script src="{{ asset('js/theme.js') }}?v={{ filemtime(public_path('js/theme.js')) }}" defer></script>
 </body>
 </html>

@@ -681,7 +681,7 @@ body.modal-open { overflow: hidden; }
 .work-filter button span { color: var(--muted); font-size: .8rem; margin-left: 4px; }
 .work-filter button:hover { border-color: var(--green); }
 .work-filter button.is-active { background: var(--green); border-color: var(--green); color: var(--on-green); }
-.work-filter button.is-active span { color: var(--on-green); opacity: .7; }
+.work-filter button.is-active span { color: var(--on-green); }
 .work { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 .work-card {
     display: flex; flex-direction: column; border-radius: var(--radius); overflow: hidden;
