@@ -17,6 +17,7 @@
     document.querySelectorAll('[data-theme-toggle]').forEach(b => b.addEventListener('click', () => {
         root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
         try { localStorage.setItem('owlvix-theme', root.dataset.theme); } catch (e) {}
+        window.track?.('theme_switch', { theme: root.dataset.theme });
         sync();
     }));
     // Follow the device setting live, until the visitor picks a theme themselves

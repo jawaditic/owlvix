@@ -1,7 +1,12 @@
-/* Admin dashboard: "Enquiries over time" stacked column chart (quote popup + contact form).
+/* Admin stacked column chart, used for "Enquiries over time" (dashboard) and "Visitors" (traffic).
+   window.DASHBOARD = { daily: [{date, <key>: n, ...}], series: [{key, label}], noun: ['enquiry', 'enquiries'] }
    Plain SVG, no library. 7 and 30 days show one column per day; 90 days groups by week. */
 (() => {
-    const data = (window.DASHBOARD || {}).daily || [];
+    const cfg = window.DASHBOARD || {};
+    const data = cfg.daily || [];
+    const series = cfg.series || [{ key: 'popup', label: 'Quote popup' }, { key: 'contact', label: 'Contact form' }];
+    const noun = cfg.noun || ['enquiry', 'enquiries'];
+    const sum = b => series.reduce((s, x) => s + (b[x.key] || 0), 0);
     const box = document.getElementById('trend');
     const tip = document.getElementById('chart-tip');
     if (!box || !data.length) return;
@@ -18,15 +23,15 @@
     // Group the days for the chosen range
     const bucketsFor = range => {
         const days = data.slice(-range);
-        if (range <= 30) return days.map(d => ({ label: fmtDay(d.date), short: fmtDay(d.date), popup: d.popup, contact: d.contact }));
+        const pick = d => Object.fromEntries(series.map(x => [x.key, d[x.key] || 0]));
+        if (range <= 30) return days.map(d => ({ label: fmtDay(d.date), short: fmtDay(d.date), ...pick(d) }));
         const weeks = [];
         for (let i = 0; i < days.length; i += 7) {
             const w = days.slice(i, i + 7);
             weeks.push({
                 label: `${fmtDay(w[0].date)} – ${fmtDay(w[w.length - 1].date)}`,
                 short: fmtDay(w[0].date),
-                popup: w.reduce((s, d) => s + d.popup, 0),
-                contact: w.reduce((s, d) => s + d.contact, 0),
+                ...Object.fromEntries(series.map(x => [x.key, w.reduce((s, d) => s + (d[x.key] || 0), 0)])),
             });
         }
         return weeks;
@@ -47,7 +52,7 @@
         const W = box.clientWidth || 800, H = 260;
         const pad = { t: 12, r: 8, b: 28, l: 34 };
         const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
-        const { step, max } = niceScale(Math.max(...buckets.map(b => b.popup + b.contact)));
+        const { step, max } = niceScale(Math.max(...buckets.map(sum)));
         const y = v => pad.t + ih - (v / max) * ih;
         const slot = iw / buckets.length;
         const bw = Math.max(3, Math.min(28, slot * 0.62));
@@ -71,13 +76,13 @@
                 el('text', { x: cx, y: H - 8, class: 'tick', 'text-anchor': 'middle' }, svg).textContent = b.short;
             }
 
-            // Stacked column: popup at the bottom, contact form on top, 2px gap between,
+            // Stacked column: first series at the bottom, 2px gap between,
             // rounded only at the top end of the column.
             const x = cx - bw / 2;
             const g = el('g', { class: 'col' }, svg);
-            const total = b.popup + b.contact;
+            const total = sum(b);
             let base = 0;
-            [['popup', 's1'], ['contact', 's2']].forEach(([key, cls]) => {
+            series.map((x, n) => [x.key, 's' + (n + 1)]).forEach(([key, cls]) => {
                 const v = b[key];
                 if (!v) return;
                 const top = y(base + v), bottom = y(base) - (base ? 2 : 0);
@@ -95,10 +100,9 @@
             const hit = el('rect', { x: pad.l + slot * i, y: pad.t, width: slot, height: ih, class: 'hit' }, g);
             hit.addEventListener('mouseenter', () => {
                 g.classList.add('is-hover');
-                tip.innerHTML = `<strong>${b.label}</strong>
-                    <span><i class="sw sw--1"></i>Quote popup <b>${b.popup}</b></span>
-                    <span><i class="sw sw--2"></i>Contact form <b>${b.contact}</b></span>
-                    <span class="chart-tip__total">Total <b>${total}</b></span>`;
+                tip.innerHTML = `<strong>${b.label}</strong>` +
+                    series.map((x, n) => `<span><i class="sw sw--${n + 1}"></i>${x.label} <b>${b[x.key]}</b></span>`).join('') +
+                    `<span class="chart-tip__total">Total <b>${total}</b></span>`;
                 tip.hidden = false;
             });
             hit.addEventListener('mousemove', e => {
@@ -112,14 +116,14 @@
         });
 
         // Summary, legend totals and table view
-        const sumP = buckets.reduce((s, b) => s + b.popup, 0), sumC = buckets.reduce((s, b) => s + b.contact, 0);
+        const totals = Object.fromEntries(series.map(x => [x.key, buckets.reduce((s, b) => s + b[x.key], 0)]));
+        const all = Object.values(totals).reduce((a, c) => a + c, 0);
         document.getElementById('trend-summary').textContent =
-            `${sumP + sumC} ${sumP + sumC === 1 ? 'enquiry' : 'enquiries'} in the last ${range} days` + (range > 30 ? ' (by week)' : '');
-        document.getElementById('leg-popup').textContent = sumP;
-        document.getElementById('leg-contact').textContent = sumC;
+            `${all} ${all === 1 ? noun[0] : noun[1]} in the last ${range} days` + (range > 30 ? ' (by week)' : '');
+        series.forEach(x => { const el = document.getElementById('leg-' + x.key); if (el) el.textContent = totals[x.key]; });
         document.getElementById('trend-table').innerHTML =
-            `<table><thead><tr><th>${range > 30 ? 'Week' : 'Day'}</th><th>Quote popup</th><th>Contact form</th><th>Total</th></tr></thead><tbody>` +
-            buckets.slice().reverse().map(b => `<tr><td>${b.label}</td><td>${b.popup}</td><td>${b.contact}</td><td>${b.popup + b.contact}</td></tr>`).join('') +
+            `<table><thead><tr><th>${range > 30 ? 'Week' : 'Day'}</th>${series.map(x => `<th>${x.label}</th>`).join('')}<th>Total</th></tr></thead><tbody>` +
+            buckets.slice().reverse().map(b => `<tr><td>${b.label}</td>${series.map(x => `<td>${b[x.key]}</td>`).join('')}<td>${sum(b)}</td></tr>`).join('') +
             '</tbody></table>';
     };
 

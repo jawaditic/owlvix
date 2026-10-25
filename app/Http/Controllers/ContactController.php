@@ -68,6 +68,6 @@ class ContactController extends Controller
             report($e);
         }
 
-        return redirect()->to(route('home').'#contact')->with('sent', true);
+        return redirect()->to(route('home').'#contact')->with('sent', true)->with('lead_source', $enquiry->source)->with('lead_service', $enquiry->service);
     }
 }

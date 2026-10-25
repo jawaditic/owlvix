@@ -28,6 +28,11 @@ Route::get('/thanks/{message}', function (\App\Models\ContactMessage $message) {
     return view('thanks', ['enquiry' => $message]);
 })->middleware('signed')->name('thanks');
 
+// Visitor stats beacon from site.js (no cookies, no IP stored)
+Route::post('/t', [\App\Http\Controllers\TrackController::class, 'store'])
+    ->middleware('throttle:60,1')
+    ->name('track');
+
 Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('contact.store');
@@ -46,6 +51,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('messages/{message}/reply', [MessageController::class, 'reply'])->name('messages.reply');
         Route::patch('messages/{message}/read', [MessageController::class, 'toggleRead'])->name('messages.read');
         Route::delete('messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
+
+        Route::get('traffic', [\App\Http\Controllers\Admin\TrafficController::class, 'index'])->name('traffic');
 
         // Portfolio ("Our work")
         Route::post('portfolio/{project}/move/{direction}', [ProjectController::class, 'move'])->whereIn('direction', ['up', 'down'])->name('projects.move');

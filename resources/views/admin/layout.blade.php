@@ -27,6 +27,7 @@
             $unread = \App\Models\ContactMessage::unread()->count();
             $menu = [
                 ['admin.dashboard', 'Dashboard', 'M4 13h6v7H4z M4 4h6v6H4z M14 4h6v9h-6z M14 16h6v4h-6z', null],
+                ['admin.traffic', 'Traffic', 'M4 19V9 M10 19V5 M16 19v-7 M22 19H2', null],
                 ['admin.messages', 'Messages', 'M4 6h16v12H4z M4 7l8 6 8-6', $unread],
                 ['admin.projects', 'Portfolio', 'M4 5h7v6H4z M13 5h7v6h-7z M4 13h7v6H4z M13 13h7v6h-7z', null],
                 ['admin.testimonials', 'Reviews', 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z', null],
@@ -47,7 +48,7 @@
                 <nav class="side__nav" aria-label="Admin">
                     <p class="side__label">Manage</p>
                     @foreach ($menu as [$route, $label, $icon, $badge])
-                        <a href="{{ route($route === 'admin.dashboard' ? $route : $route.'.index') }}" title="{{ $label }}" @class(['side__link', 'is-active' => request()->routeIs($route, $route.'.*')])>
+                        <a href="{{ route(in_array($route, ['admin.dashboard', 'admin.traffic']) ? $route : $route.'.index') }}" title="{{ $label }}" @class(['side__link', 'is-active' => request()->routeIs($route, $route.'.*')])>
                             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="{{ $icon }}"/></svg>
                             <span>{{ $label }}</span>
                             @if ($badge)<em class="side__badge" title="{{ $badge }} unread">{{ $badge }}</em>@endif

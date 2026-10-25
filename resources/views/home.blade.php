@@ -43,6 +43,7 @@
     <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ filemtime(public_path('css/theme.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ filemtime(public_path('css/site.css')) }}">
     <noscript><style>[data-reviews].is-loading > * { visibility: visible; } [data-reviews].is-loading::after { display: none; }</style></noscript>
+    @include('partials.analytics')
 </head>
 <body data-no-popup="{{ session('sent') || $errors->any() ? '1' : '0' }}">
     <div class="bg-grid" aria-hidden="true"></div>

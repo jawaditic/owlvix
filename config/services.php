@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    // Google Analytics 4, e.g. G-ABC123XYZ. Leave empty to turn it off (e.g. locally).
+    'google_analytics' => [
+        'id' => env('GA_MEASUREMENT_ID'),
+    ],
+
     // Google reCAPTCHA v3 (invisible). Leave the keys empty to turn it off, e.g. locally.
     'recaptcha' => [
         'site_key' => env('RECAPTCHA_SITE_KEY'),

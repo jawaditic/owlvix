@@ -282,7 +282,10 @@
             },
         };
 
-        if (btn) btn.addEventListener('click', () => owl.playing ? owl.stop() : owl.start().catch(() => {}));
+        if (btn) btn.addEventListener('click', () => {
+            if (!owl.playing) window.track?.('owl_play', { where: root.id || 'owl' });
+            owl.playing ? owl.stop() : owl.start().catch(() => {});
+        });
         return owl;
     }
 

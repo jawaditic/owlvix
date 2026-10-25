@@ -118,6 +118,7 @@
             if (!e.isTrusted) return;
             events.forEach(ev => form.removeEventListener(ev, warm));
             loadRecaptcha().catch(() => {});
+            window.track?.('form_start', { form: form.classList.contains('quote-form') ? 'quote_popup' : 'contact_form' });
         };
         events.forEach(ev => form.addEventListener(ev, warm));
     });
@@ -294,6 +295,7 @@
         document.querySelectorAll('[data-filter]').forEach(btn => btn.addEventListener('click', () => {
             document.querySelectorAll('[data-filter]').forEach(b => { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-pressed', b === btn); });
             filter = btn.dataset.filter; expanded = false; render();
+            window.track?.('project_filter', { category: filter });
         }));
         moreBtn.addEventListener('click', () => { expanded = true; render(); });
         render();
@@ -378,9 +380,10 @@
     });
     modal.addEventListener('keydown', e => { if (e.key !== 'Escape' && e.key !== 'Tab') enableSound(); });
 
-    const openModal = () => {
+    const openModal = (how = 'button') => {
         if (modal.open) return;
         modal.showModal();
+        window.track?.('quote_open', { trigger: how });
         document.body.classList.add('modal-open');
         tryTalk();
     };
@@ -399,13 +402,27 @@
     document.querySelectorAll('[data-quote]').forEach(a => a.addEventListener('click', e => {
         e.preventDefault();
         links.classList.remove('is-open');
-        openModal();
+        openModal('button');
     }));
 
     // Open automatically on every page load, shortly after the page appears.
     // Skip it right after a form was sent, or when the visitor came straight to the contact form.
     const skip = document.body.dataset.noPopup === '1' || location.hash === '#contact';
     if (!skip) {
-        setTimeout(openModal, 900);
+        setTimeout(() => openModal('auto'), 900);
     }
+
+    /* ---------- Built-in visitor stats (Admin → Traffic) ---------- */
+    // One small message per page view: page, where the visitor came from, country (the same lookup
+    // as the phone flag) and whether this browser has been here before. No cookies, nothing personal.
+    (() => {
+        let returning = false;
+        try { returning = localStorage.getItem('owlvix-seen') === '1'; localStorage.setItem('owlvix-seen', '1'); } catch (e) {}
+        const utm = new URLSearchParams(location.search).get('utm_source') || '';
+        const send = country => {
+            const body = new URLSearchParams({ path: location.pathname, ref: document.referrer || '', country: country || '', new: returning ? '0' : '1', utm });
+            if (!navigator.sendBeacon?.('/t', body)) fetch('/t', { method: 'POST', body, keepalive: true }).catch(() => {});
+        };
+        lookupCountry().then(c => send(/^[a-z]{2}$/.test(c) ? c : ''), () => send(''));
+    })();
 })();

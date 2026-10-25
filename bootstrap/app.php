@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias(['admin' => \App\Http\Middleware\EnsureAdmin::class]);
+        // The stats beacon is sent with navigator.sendBeacon and only records a page view
+        $middleware->validateCsrfTokens(except: ['t']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

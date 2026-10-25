@@ -31,6 +31,7 @@
         .thanks__summary strong { color: var(--text); }
         .thanks .board__play { border-color: var(--card-border); }
     </style>
+    @include('partials.analytics')
 </head>
 <body>
     <div class="bg-grid" aria-hidden="true"></div>
