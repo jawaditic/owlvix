@@ -8,6 +8,7 @@ use App\Models\ContactMessage;
 use App\Support\Recaptcha;
 use App\Support\RichText;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Http\Request;
 
 class ContactController extends Controller
@@ -68,6 +69,8 @@ class ContactController extends Controller
             report($e);
         }
 
-        return redirect()->to(route('home').'#contact')->with('sent', true)->with('lead_source', $enquiry->source)->with('lead_service', $enquiry->service);
+        // Show the thank-you page (the owl talks there). The flash data lets analytics count the lead on it.
+        return redirect()->to(URL::signedRoute('thanks', $enquiry))
+            ->with('sent', true)->with('lead_source', $enquiry->source)->with('lead_service', $enquiry->service);
     }
 }
