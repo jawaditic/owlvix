@@ -335,7 +335,15 @@
         box.style.minHeight = max + 'px';
     };
     document.querySelectorAll('[data-rotate-reviews]').forEach(box => {
-        new ResizeObserver(() => fitTallest(box)).observe(box.parentElement);
+        // Re-measure only when the width changes (fitTallest changes the height itself, which would
+        // otherwise re-trigger this and log "ResizeObserver loop" errors), and do it on the next frame
+        let lastWidth = 0;
+        new ResizeObserver(([entry]) => {
+            const width = Math.round(entry.contentRect.width);
+            if (width === lastWidth) return;
+            lastWidth = width;
+            requestAnimationFrame(() => fitTallest(box));
+        }).observe(box.parentElement);
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         setInterval(() => {
             const items = [...box.children];
