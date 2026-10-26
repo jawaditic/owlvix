@@ -390,7 +390,7 @@
     const closeModal = () => modal.open && modal.close();
 
     modal.addEventListener('close', () => {
-        document.body.classList.remove('modal-open');
+        if (!document.querySelector('dialog[open]')) document.body.classList.remove('modal-open');
         popupOwl.stop(popupOwl.played);
         setMuted(false);
     });
@@ -413,8 +413,9 @@
     }
 
     /* ---------- "Before you go" exit survey (partials/exit-survey) ---------- */
-    // Shown at most once per 30 days, never to someone who sent an enquiry, only after some time on
-    // the page, and never on top of the quote popup or while someone is typing.
+    // Shown at most once per 30 days, never to someone who sent an enquiry, not in the first 3 seconds,
+    // and never while someone is typing. Most visitors leave within seconds, often with the quote popup
+    // still open: if they haven't typed in it, the survey takes its place.
     // Computer: the mouse leaves through the top of the window (towards the tabs / close button).
     // Phone: a fast scroll back up after reading part of the page.
     // Browsers don't allow anything to show while a tab is actually closing, so those exits can't be caught.
@@ -431,12 +432,20 @@
 
         const touch = matchMedia('(pointer: coarse)').matches;
         const start = Date.now();
-        const minTime = touch ? 20000 : 15000;
+        const minTime = 3000;
         let done = false;
 
         const typing = () => document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]');
         const show = trigger => {
-            if (done || Date.now() - start < minTime || document.querySelector('dialog[open]') || typing()) return;
+            if (done || Date.now() - start < minTime || typing()) return;
+            const open = document.querySelector('dialog[open]');
+            if (open) {
+                // Only swap out an untouched quote popup; anything else (or a half-filled form) stays
+                const touched = [...open.querySelectorAll('input:not([type="hidden"]), textarea, .ql-editor')]
+                    .some(f => (f.value ?? f.textContent).trim());
+                if (open !== modal || touched) return;
+                closeModal();
+            }
             done = true;
             store.set('owlvix-survey', String(Date.now()));
             survey.showModal();
@@ -447,13 +456,13 @@
 
         // Computer: pointer leaves through the top edge
         const onLeave = e => { if (!e.relatedTarget && e.clientY <= 0) show('exit_intent'); };
-        // Phone: scrolled at least a screen down, then a fast flick back up (often just before "back")
+        // Phone: scrolled at least half a screen down, then a fast flick back up (often just before "back")
         let maxY = 0, lastY = scrollY, lastT = performance.now();
         const onScroll = () => {
             const y = scrollY, t = performance.now();
             maxY = Math.max(maxY, y);
             const speed = (lastY - y) / Math.max(1, t - lastT); // px per ms, upwards
-            if (maxY > innerHeight && speed > 2.5 && y < maxY - innerHeight * 0.6) show('fast_scroll_up');
+            if (maxY > innerHeight * 0.5 && speed > 2.5 && y < maxY - innerHeight * 0.4) show('fast_scroll_up');
             lastY = y; lastT = t;
         };
         const cleanup = () => {
@@ -467,7 +476,7 @@
         const close = () => survey.open && survey.close();
         survey.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
         survey.addEventListener('click', e => { if (e.target === survey) close(); });
-        survey.addEventListener('close', () => document.body.classList.remove('modal-open'));
+        survey.addEventListener('close', () => { if (!document.querySelector('dialog[open]')) document.body.classList.remove('modal-open'); });
 
         // The form: pick a reason, then (optionally) a comment and email
         const form = survey.querySelector('[data-survey]');
