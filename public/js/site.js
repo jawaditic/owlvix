@@ -254,6 +254,7 @@
     const rotator = document.querySelector('[data-rotate]');
     if (rotator && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
         const words = JSON.parse(rotator.dataset.rotate);
+        const article = document.querySelector('[data-article]');
         let w = 0;
         setInterval(() => {
             if (document.hidden) return;
@@ -261,6 +262,7 @@
             setTimeout(() => {
                 w = (w + 1) % words.length;
                 rotator.textContent = words[w];
+                if (article) article.textContent = /^[aeiou]/i.test(words[w]) ? 'an' : 'a'; // "an AI agent", "a web app"
                 rotator.classList.replace('is-out', 'is-in');
                 rotator.offsetWidth; // apply the start position before animating in
                 rotator.classList.remove('is-in');
@@ -405,11 +407,28 @@
         openModal('button');
     }));
 
-    // Open automatically on every page load, shortly after the page appears.
-    // Skip it right after a form was sent, or when the visitor came straight to the contact form.
+    // Open automatically once the visitor has had a look: after 15 seconds, or after scrolling 40% of the page,
+    // whichever comes first. (Opening it straight away covered the page before people saw what Owlvix does.)
+    // Skip it right after a form was sent, or when the visitor came straight to the contact form, and never
+    // open it over another popup (the exit survey) or while someone is typing in the contact form.
     const skip = document.body.dataset.noPopup === '1' || location.hash === '#contact';
     if (!skip) {
-        setTimeout(() => openModal('auto'), 900);
+        let autoDone = false;
+        const autoOpen = trigger => {
+            if (autoDone) return;
+            if (document.getElementById('exit-survey')?.dataset.shown) { autoDone = true; return; } // one popup per visit is enough
+            if (document.querySelector('dialog[open]') || document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]')) return;
+            autoDone = true;
+            removeEventListener('scroll', onScrollDepth);
+            clearTimeout(timer);
+            openModal(trigger);
+        };
+        const onScrollDepth = () => {
+            const depth = (scrollY + innerHeight) / document.documentElement.scrollHeight;
+            if (depth >= 0.4) autoOpen('auto_scroll');
+        };
+        const timer = setTimeout(() => autoOpen('auto_time'), 15000);
+        addEventListener('scroll', onScrollDepth, { passive: true });
     }
 
     /* ---------- "Before you go" exit survey (partials/exit-survey) ---------- */
@@ -448,6 +467,7 @@
             }
             done = true;
             store.set('owlvix-survey', String(Date.now()));
+            survey.dataset.shown = '1';
             survey.showModal();
             document.body.classList.add('modal-open');
             window.track?.('exit_survey_shown', { trigger });

@@ -80,7 +80,7 @@
             <div class="container hero__inner">
                 <div class="hero__copy">
                     <span class="pill"><span class="pill__dot" aria-hidden="true"></span>7+ years • 200+ projects delivered</span>
-                    <h1>Need a <span class="accent rotator" data-rotate='["web app?","mobile app?","AI chatbot?","AI agent?"]'>web app?</span> We build it start to finish.</h1>
+                    <h1>Need <span data-article>a</span> <span class="accent rotator" data-rotate='["web app?","mobile app?","AI chatbot?","AI agent?"]'>web app?</span> We build it start to finish.</h1>
                     <p class="lead">Owlvix designs, builds and launches web apps, mobile apps and AI tools for growing businesses — from the first sketch to the server it runs on.</p>
                     <ul class="chips" aria-label="What we cover">
                         <li>Design</li><li>Frontend</li><li>Backend</li><li>AI</li><li>Launch</li>
