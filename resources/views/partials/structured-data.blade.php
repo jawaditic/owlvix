@@ -1,4 +1,6 @@
 {{-- Structured data for search engines (schema.org JSON-LD): who Owlvix is, what it offers, and the FAQ.
+     Owlvix is an Organization, not a LocalBusiness/ProfessionalService: it works online with clients worldwide,
+     and Google requires a street address for any LocalBusiness (Semrush flagged it as invalid without one).
      Review stars are deliberately not marked up here: Google ignores ratings a business publishes about itself. --}}
 @php
     $faq = [
@@ -13,7 +15,7 @@
         '@context' => 'https://schema.org',
         '@graph' => [
             [
-                '@type' => 'ProfessionalService',
+                '@type' => 'Organization',
                 '@id' => url('/').'#business',
                 'name' => 'Owlvix',
                 'url' => url('/'),
@@ -22,7 +24,6 @@
                 'description' => 'Owlvix designs, builds and launches web apps, mobile apps and AI tools for growing businesses — from the first sketch to the server it runs on.',
                 'email' => config('mail.from.address'),
                 'areaServed' => 'Worldwide',
-                'priceRange' => '$$',
                 'knowsAbout' => ['Laravel', 'React', 'Next.js', 'Vue', 'React Native', 'Node.js', 'Python', 'Shopify', 'WordPress', 'OpenAI', 'Claude', 'Gemini'],
                 'sameAs' => array_values(array_filter([\App\Support\Testimonials::data()['profile_url'] ?? null])),
                 'hasOfferCatalog' => [
