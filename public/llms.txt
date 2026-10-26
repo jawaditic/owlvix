@@ -1,0 +1,29 @@
+# Owlvix
+
+> Owlvix designs, builds and launches web apps, mobile apps and AI tools for growing businesses — from the first sketch to the server it runs on. 7+ years, 200+ projects delivered, clients worldwide. Free quote within 24 hours, and clients own 100% of the code.
+
+## Services
+
+- [Custom web apps](https://owlvix.com/#services): dashboards, portals, SaaS products and booking systems built with Laravel, React and Vue.
+- [Mobile apps](https://owlvix.com/#services): iOS and Android apps that share one codebase (React Native) and connect to existing systems.
+- [AI chatbots](https://owlvix.com/#services): website and customer support bots trained on a business's own documents, FAQs and products.
+- [AI agents and automation](https://owlvix.com/#services): repetitive tasks and workflows handed to AI that follows the business's rules and reports back.
+- [API integrations](https://owlvix.com/#services): OpenAI, Claude, Gemini, payments, CRMs and ERPs connected to the tools a business already uses.
+- [Websites and Shopify stores](https://owlvix.com/#work): marketing sites, WordPress and Shopify builds.
+- [Hosting and support](https://owlvix.com/#services): setup, deployment, monitoring and fixes after launch.
+
+## How it works
+
+- [Process](https://owlvix.com/#process): 1) share your idea and get a plan with a clear quote; 2) design and build with weekly progress on a live preview; 3) tested launch, full source code handover, and ongoing support.
+- [Pricing](https://owlvix.com/#pricing): fixed projects with a custom quote (clear scope, price and deadline up front), or a monthly developer plan from $100/month for ongoing web, mobile, AI and support work, cancel any time.
+- [FAQ](https://owlvix.com/#faq): most websites take 1–3 weeks and most web apps 3–8 weeks; clients own all code, designs and accounts once paid; Owlvix takes over and extends existing apps; works with OpenAI, Anthropic Claude and Google Gemini; can set up hosting, domains, email and SSL.
+
+## Work and reviews
+
+- [Portfolio](https://owlvix.com/#work): websites, web apps, mobile apps, Shopify stores and AI projects.
+- [Client reviews](https://owlvix.com/#reviews): rated on Fiverr, profile at https://www.fiverr.com/anjtec
+
+## Contact
+
+- [Get a free quote](https://owlvix.com/#contact): send a short project description; Owlvix replies within one business day.
+- Email: quote@owlvix.com

@@ -40,8 +40,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"></noscript>
     {{-- Theme: saved choice, else the device setting. Runs before paint so there's no flash. --}}
     <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
-    <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ filemtime(public_path('css/theme.css')) }}">
-    <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ filemtime(public_path('css/site.css')) }}">
+    <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/theme.css') }}">
+    <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/site.css') }}">
     <noscript><style>[data-reviews].is-loading > * { visibility: visible; } [data-reviews].is-loading::after { display: none; }</style></noscript>
     @include('partials.analytics')
 </head>
@@ -448,10 +448,10 @@
     </script>
     {{-- "defer": scripts download in parallel and run in order after the page is parsed, without blocking it.
          Google reCAPTCHA is loaded by site.js only when someone starts filling in a form. --}}
-    <script src="{{ asset('js/owl.js') }}?v={{ filemtime(public_path('js/owl.js')) }}" defer></script>
+    <script src="{{ \App\Support\Asset::url('js/owl.js') }}" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js" defer></script>
-    <script src="{{ asset('js/site.js') }}?v={{ filemtime(public_path('js/site.js')) }}" defer></script>
-    <script src="{{ asset('js/theme.js') }}?v={{ filemtime(public_path('js/theme.js')) }}" defer></script>
+    <script src="{{ \App\Support\Asset::url('js/site.js') }}" defer></script>
+    <script src="{{ \App\Support\Asset::url('js/theme.js') }}" defer></script>
 </body>
 </html>

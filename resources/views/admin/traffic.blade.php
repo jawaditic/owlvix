@@ -173,5 +173,5 @@
     <div class="chart-tip" id="chart-tip" hidden></div>
     @php($chart = ['daily' => $daily, 'series' => [['key' => 'new', 'label' => 'New'], ['key' => 'returning', 'label' => 'Returning']], 'noun' => ['visitor', 'visitors']])
     <script>window.DASHBOARD = {!! json_encode($chart, JSON_HEX_TAG | JSON_UNESCAPED_UNICODE) !!};</script>
-    <script src="{{ asset('js/admin-dashboard.js') }}?v={{ filemtime(public_path('js/admin-dashboard.js')) }}" defer></script>
+    <script src="{{ \App\Support\Asset::url('js/admin-dashboard.js') }}" defer></script>
 @endsection

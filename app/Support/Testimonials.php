@@ -11,6 +11,12 @@ class Testimonials
 {
     private static ?array $data = null;
 
+    /** Forget the copy kept for this request (tests start each case fresh). */
+    public static function flush(): void
+    {
+        self::$data = null;
+    }
+
     public static function data(): array
     {
         if (self::$data !== null) {

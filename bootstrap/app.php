@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'admin.token' => \App\Http\Middleware\EnsureAdminToken::class,
         ]);
+        // Smaller HTML pages: drop the indentation Blade leaves at the start of each line
+        $middleware->web(append: [\App\Http\Middleware\TrimHtmlWhitespace::class]);
         // The stats beacon is sent with navigator.sendBeacon and only records a page view
         $middleware->validateCsrfTokens(except: ['t']);
     })

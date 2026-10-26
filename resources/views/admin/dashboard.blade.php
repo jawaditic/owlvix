@@ -180,5 +180,5 @@
 
     <div class="chart-tip" id="chart-tip" hidden></div>
     <script>window.DASHBOARD = @json(['daily' => $daily]);</script>
-    <script src="{{ asset('js/admin-dashboard.js') }}?v={{ filemtime(public_path('js/admin-dashboard.js')) }}" defer></script>
+    <script src="{{ \App\Support\Asset::url('js/admin-dashboard.js') }}" defer></script>
 @endsection
