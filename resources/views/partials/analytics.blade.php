@@ -1,5 +1,5 @@
-{{-- Google Analytics 4 + Microsoft Clarity. Each is off when its ID is empty, and both are off while you're
-     logged in to the admin (so your own visits don't count). Site scripts send events through window.track(). --}}
+{{-- Google Analytics 4, Microsoft Clarity and Contentsquare. Each is off when its ID is empty, and all are off while
+     you're logged in to the admin (so your own visits don't count). Site scripts send events through window.track(). --}}
 @php($gaId = config('services.google_analytics.id'))
 @if ($gaId && ! session('is_admin'))
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ urlencode($gaId) }}"></script>
@@ -37,4 +37,21 @@
             @endif
         })();
     </script>
+@endif
+
+@php($csId = config('services.contentsquare.id'))
+@if ($csId && ! session('is_admin'))
+    {{-- Contentsquare: session replays, heatmaps and journeys. Events from window.track() are sent as page events
+         (e.g. "generate_lead"), so replays can be filtered by them. --}}
+    <script>
+        (function () {
+            window._uxa = window._uxa || [];
+            var prev = window.track;
+            window.track = function (name, params) { prev(name, params); _uxa.push(['trackPageEvent', name]); };
+            @if (session('sent'))
+                _uxa.push(['trackPageEvent', 'generate_lead']);
+            @endif
+        })();
+    </script>
+    <script async src="https://t.contentsquare.net/uxa/{{ urlencode($csId) }}.js"></script>
 @endif

@@ -45,6 +45,10 @@ return [
         'id' => env('CLARITY_PROJECT_ID'),
     ],
 
+    'contentsquare' => [
+        'id' => env('CONTENTSQUARE_TAG_ID'),
+    ],
+
     // Google reCAPTCHA v3 (invisible). Leave the keys empty to turn it off, e.g. locally.
     'recaptcha' => [
         'site_key' => env('RECAPTCHA_SITE_KEY'),
