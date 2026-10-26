@@ -84,6 +84,8 @@
         </main>
     </div>
 
+    {{-- This visitor sent an enquiry: never show them the "before you go" survey (site.js) --}}
+    <script>try { localStorage.setItem('owlvix-lead', '1'); } catch (e) {}</script>
     <script>window.OWLVIX = @json(\App\Support\OwlVoice::sets(['thanks']));</script>
     <script src="{{ asset('js/owl.js') }}?v={{ filemtime(public_path('js/owl.js')) }}"></script>
     <script>

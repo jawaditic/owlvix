@@ -412,6 +412,126 @@
         setTimeout(() => openModal('auto'), 900);
     }
 
+    /* ---------- "Before you go" exit survey (partials/exit-survey) ---------- */
+    // Shown at most once per 30 days, never to someone who sent an enquiry, only after some time on
+    // the page, and never on top of the quote popup or while someone is typing.
+    // Computer: the mouse leaves through the top of the window (towards the tabs / close button).
+    // Phone: a fast scroll back up after reading part of the page.
+    // Browsers don't allow anything to show while a tab is actually closing, so those exits can't be caught.
+    (() => {
+        const survey = document.getElementById('exit-survey');
+        if (!survey) return;
+        const store = {
+            get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+            set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} },
+        };
+        const DAYS_30 = 30 * 864e5;
+        const shownAt = Number(store.get('owlvix-survey')) || 0;
+        if (store.get('owlvix-lead') || Date.now() - shownAt < DAYS_30 || document.body.dataset.noPopup === '1') return;
+
+        const touch = matchMedia('(pointer: coarse)').matches;
+        const start = Date.now();
+        const minTime = touch ? 20000 : 15000;
+        let done = false;
+
+        const typing = () => document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]');
+        const show = trigger => {
+            if (done || Date.now() - start < minTime || document.querySelector('dialog[open]') || typing()) return;
+            done = true;
+            store.set('owlvix-survey', String(Date.now()));
+            survey.showModal();
+            document.body.classList.add('modal-open');
+            window.track?.('exit_survey_shown', { trigger });
+            cleanup();
+        };
+
+        // Computer: pointer leaves through the top edge
+        const onLeave = e => { if (!e.relatedTarget && e.clientY <= 0) show('exit_intent'); };
+        // Phone: scrolled at least a screen down, then a fast flick back up (often just before "back")
+        let maxY = 0, lastY = scrollY, lastT = performance.now();
+        const onScroll = () => {
+            const y = scrollY, t = performance.now();
+            maxY = Math.max(maxY, y);
+            const speed = (lastY - y) / Math.max(1, t - lastT); // px per ms, upwards
+            if (maxY > innerHeight && speed > 2.5 && y < maxY - innerHeight * 0.6) show('fast_scroll_up');
+            lastY = y; lastT = t;
+        };
+        const cleanup = () => {
+            document.removeEventListener('mouseout', onLeave);
+            removeEventListener('scroll', onScroll);
+        };
+        if (touch) addEventListener('scroll', onScroll, { passive: true });
+        else document.addEventListener('mouseout', onLeave);
+
+        // Closing
+        const close = () => survey.open && survey.close();
+        survey.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
+        survey.addEventListener('click', e => { if (e.target === survey) close(); });
+        survey.addEventListener('close', () => document.body.classList.remove('modal-open'));
+
+        // The form: pick a reason, then (optionally) a comment and email
+        const form = survey.querySelector('[data-survey]');
+        const more = form.querySelector('[data-survey-more]');
+        const commentLabel = form.querySelector('[data-survey-comment-label]');
+        const comment = form.elements.comment;
+        const error = form.querySelector('[data-survey-error]');
+        const submit = form.querySelector('button[type="submit"]');
+        const showError = msg => { error.textContent = msg; error.hidden = !msg; };
+
+        form.addEventListener('change', e => {
+            if (e.target.name !== 'reason') return;
+            more.hidden = false;
+            submit.disabled = false;
+            const other = e.target.value === 'other';
+            commentLabel.innerHTML = other ? 'Please tell us a few words' : 'Anything else you’d like to tell us? <span class="optional">(optional)</span>';
+            comment.required = other;
+            showError('');
+        });
+
+        const doneText = {
+            price: 'Most quotes are free and without obligation, and our monthly developer plan starts at $100.',
+            info: 'Ask us anything in a quote request. We reply within one business day.',
+            later: 'No rush. Your quote is free whenever you’re ready.',
+        };
+
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const reason = form.elements.reason.value;
+            if (!reason) return showError('Please pick an answer.');
+            if (reason === 'other' && !comment.value.trim()) { comment.focus(); return showError('Please tell us a few words.'); }
+            const email = form.elements.email.value.trim();
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { form.elements.email.focus(); return showError('Please enter a valid email, or leave it empty.'); }
+
+            const body = new FormData(form);
+            body.set('page', location.pathname + location.hash);
+            submit.disabled = true;
+            submit.textContent = 'Sending…';
+            try {
+                const res = await fetch(form.action, { method: 'POST', body, headers: { Accept: 'application/json' } });
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    throw new Error(Object.values(data.errors || {})[0]?.[0] || (res.status === 429 ? 'Too many tries. Please wait a minute.' : 'Something went wrong. Please try again.'));
+                }
+                window.track?.('exit_survey_answered', { reason });
+                survey.querySelector('[data-survey-done-text]').textContent = doneText[reason] || 'We read every answer.';
+                form.hidden = true;
+                const thanks = survey.querySelector('[data-survey-done]');
+                thanks.hidden = false;
+                thanks.querySelector('h2').focus();
+            } catch (err) {
+                showError(err.message);
+                submit.disabled = false;
+                submit.textContent = 'Send';
+            }
+        });
+
+        // "Get a free quote" from the thank-you step opens the quote popup
+        survey.querySelector('[data-survey-quote]').addEventListener('click', () => {
+            close();
+            openModal('exit_survey');
+        });
+    })();
+
     /* ---------- Built-in visitor stats (Admin → Traffic) ---------- */
     // One small message per page view: page, where the visitor came from, country (the same lookup
     // as the phone flag) and whether this browser has been here before. No cookies, nothing personal.

@@ -396,6 +396,14 @@ i { font-style: normal; color: var(--green); padding: 0 6px; }
 
 /* ---------- Free quote popup ---------- */
 body.modal-open { overflow: hidden; }
+/* The dark backdrop is drawn by the page itself (not ::backdrop), and open popups are pinned to the centre
+   with position: fixed. Session replays (Clarity, Contentsquare) rebuild the page from its HTML and can't
+   recreate the browser's "top layer", so without this the popup showed up below the footer in recordings. */
+body.modal-open::after {
+    content: ""; position: fixed; inset: 0; z-index: 999;
+    background: rgba(3, 6, 12, .72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    animation: fade .3s ease;
+}
 .quote-modal {
     width: min(880px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 0;
     border: 1px solid rgba(30, 199, 115, .45); border-radius: 22px;
@@ -403,9 +411,11 @@ body.modal-open { overflow: hidden; }
     box-shadow: 0 30px 80px rgba(var(--shadow-rgb), calc(.6 * var(--shadow-k))), 0 0 0 1px rgba(30, 199, 115, .1);
     overflow: auto;
 }
-.quote-modal::backdrop { background: rgba(3, 6, 12, .72); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
-.quote-modal[open] { animation: pop .35s cubic-bezier(.2, .9, .3, 1.2); }
-.quote-modal[open]::backdrop { animation: fade .3s ease; }
+.quote-modal::backdrop { background: transparent; }
+.quote-modal[open] {
+    position: fixed; inset: 0; margin: auto; height: fit-content; z-index: 1000;
+    animation: pop .35s cubic-bezier(.2, .9, .3, 1.2);
+}
 @keyframes pop { from { opacity: 0; transform: translateY(18px) scale(.96); } }
 @keyframes fade { from { opacity: 0; } }
 
@@ -470,7 +480,7 @@ body.modal-open { overflow: hidden; }
     .quote-form { padding: 22px 18px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .quote-modal[open], .quote-modal[open]::backdrop, .is-talking .say__text::after { animation: none; }
+    .quote-modal[open], body.modal-open::after, .is-talking .say__text::after { animation: none; }
 }
 .quote-form h2:focus { outline: none; }
 
@@ -735,3 +745,36 @@ body.modal-open { overflow: hidden; }
 :root[data-theme="light"] .work-card__img, :root[data-theme="light"] .p-row__thumb { background: #eef1f5; }
 :root[data-theme="light"] .rating-badge__stars, :root[data-theme="light"] .review__stars, :root[data-theme="light"] .quote-proof__rating span { color: #d97706; }
 :root[data-theme="light"] .grecaptcha-badge { box-shadow: 0 0 6px rgba(15, 23, 42, .2) !important; }
+
+/* ---------- "Before you go" exit survey (partials/exit-survey) ---------- */
+.exit-survey { width: min(520px, calc(100% - 32px)); }
+.exit-survey [hidden] { display: none !important; } /* .form and grid styles would otherwise override hidden */
+.exit-survey h2:focus { outline: none; } /* focused only so screen readers start at the question */
+.exit-survey__form, .exit-survey__done { padding: 30px 28px 22px; }
+.exit-survey__head { display: flex; gap: 14px; align-items: center; padding-right: 40px; }
+.exit-survey__head img { flex: none; width: 64px; height: auto; }
+.exit-survey__head .eyebrow { margin: 0 0 4px; }
+.exit-survey__head h2 { margin: 0; font-size: 1.3rem; line-height: 1.3; }
+.exit-survey__options { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.exit-survey__legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.form .exit-survey__option {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer;
+    border: 1px solid var(--card-border); border-radius: 12px; background: var(--field); color: var(--text);
+    transition: border-color .15s, background .15s;
+}
+.form .exit-survey__option:hover { border-color: var(--green); }
+.form .exit-survey__option input { width: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--green); flex: none; }
+.form .exit-survey__option:has(input:checked) { border-color: var(--green); background: rgba(30, 199, 115, .1); }
+.exit-survey__option:has(input:focus-visible) { outline: 2px solid var(--green); outline-offset: 2px; }
+.exit-survey__more { display: grid; gap: 14px; }
+.exit-survey__more textarea { min-height: 84px; }
+.exit-survey__done { display: grid; gap: 12px; justify-items: center; text-align: center; }
+.exit-survey__done img { width: 96px; height: auto; }
+.exit-survey__done h2 { margin: 0; font-size: 1.35rem; }
+.exit-survey__done p { margin: 0 0 6px; }
+.exit-survey__done .btn { margin-top: 4px; }
+@media (max-width: 600px) {
+    .exit-survey__form, .exit-survey__done { padding: 24px 18px 16px; }
+    .exit-survey__head img { width: 48px; }
+    .exit-survey__head h2 { font-size: 1.12rem; }
+}

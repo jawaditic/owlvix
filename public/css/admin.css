@@ -458,3 +458,13 @@ a.content-tile:hover { border-color: rgba(30, 199, 115, .6); }
 .visit-row__main small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .visit-row__meta { display: flex; align-items: center; gap: 10px; font-size: .8rem; color: var(--muted); white-space: nowrap; }
 @media (max-width: 520px) { .hbars--flags li { grid-template-columns: 130px 1fr 36px; } }
+
+/* Feedback (exit survey answers) */
+.feedback-row { grid-template-columns: 10px 1fr 70px auto; }
+.feedback-row .what { gap: 6px; }
+.feedback-row__comment { color: var(--text); white-space: pre-line; }
+.feedback-row__email { color: var(--muted); font-size: .88rem; }
+@media (max-width: 800px) {
+    .feedback-row { grid-template-columns: 10px 1fr auto; }
+    .feedback-row form { grid-column: 2 / -1; justify-self: start; }
+}

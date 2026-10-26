@@ -37,6 +37,11 @@ Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:5,1,contact')
     ->name('contact.store');
 
+// "Before you go" survey shown when a visitor is about to leave (see site.js)
+Route::post('/survey', [\App\Http\Controllers\SurveyController::class, 'store'])
+    ->middleware('throttle:5,1,survey')
+    ->name('survey.store');
+
 // Admin dashboard
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'show'])->name('login');
@@ -53,6 +58,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
 
         Route::get('traffic', [\App\Http\Controllers\Admin\TrafficController::class, 'index'])->name('traffic');
+
+        // Exit survey answers
+        Route::get('feedback', [\App\Http\Controllers\Admin\FeedbackController::class, 'index'])->name('feedback.index');
+        Route::delete('feedback/{response}', [\App\Http\Controllers\Admin\FeedbackController::class, 'destroy'])->name('feedback.destroy');
 
         // Portfolio ("Our work")
         Route::post('portfolio/{project}/move/{direction}', [ProjectController::class, 'move'])->whereIn('direction', ['up', 'down'])->name('projects.move');

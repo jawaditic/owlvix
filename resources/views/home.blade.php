@@ -440,6 +440,7 @@
     </footer>
 
     @include('partials.quote-modal')
+    @include('partials.exit-survey')
 
     <script>
         window.OWLVIX = @json(\App\Support\OwlVoice::sets(['intro', 'quote']));

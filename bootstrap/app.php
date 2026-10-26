@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['t']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // The mobile app always gets JSON errors (validation, not found, too many requests)
-        $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*'));
+        // JSON errors (validation, not found, too many requests) for the mobile app's /api routes, and for any
+        // request that asks for JSON, like the exit survey (this replaces Laravel's default, so it keeps that check)
+        $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*') || $request->expectsJson());
     })->create();

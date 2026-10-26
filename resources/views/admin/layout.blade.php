@@ -25,12 +25,14 @@
     @else
         @php
             $unread = \App\Models\ContactMessage::unread()->count();
+            $newFeedback = \App\Models\SurveyResponse::whereNull('read_at')->count();
             $menu = [
                 ['admin.dashboard', 'Dashboard', 'M4 13h6v7H4z M4 4h6v6H4z M14 4h6v9h-6z M14 16h6v4h-6z', null],
                 ['admin.traffic', 'Traffic', 'M4 19V9 M10 19V5 M16 19v-7 M22 19H2', null],
                 ['admin.messages', 'Messages', 'M4 6h16v12H4z M4 7l8 6 8-6', $unread],
                 ['admin.projects', 'Portfolio', 'M4 5h7v6H4z M13 5h7v6h-7z M4 13h7v6H4z M13 13h7v6h-7z', null],
                 ['admin.testimonials', 'Reviews', 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z', null],
+                ['admin.feedback', 'Feedback', 'M4 5h16v11H9l-5 4z M8 9h8 M8 12h5', $newFeedback],
             ];
         @endphp
         <div class="shell">
