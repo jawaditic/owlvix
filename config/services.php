@@ -49,6 +49,11 @@ return [
         'id' => env('CONTENTSQUARE_TAG_ID'),
     ],
 
+    // IndexNow (Bing etc.): any 32-character code; it's also published at https://owlvix.com/<key>.txt
+    'indexnow' => [
+        'key' => env('INDEXNOW_KEY'),
+    ],
+
     // Google reCAPTCHA v3 (invisible). Leave the keys empty to turn it off, e.g. locally.
     'recaptcha' => [
         'site_key' => env('RECAPTCHA_SITE_KEY'),

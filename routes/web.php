@@ -23,6 +23,13 @@ Route::get('/sitemap.xml', function () {
         ->header('Content-Type', 'application/xml; charset=UTF-8');
 })->name('sitemap');
 
+// IndexNow key file: search engines fetch it to confirm pings come from this site (app/Support/IndexNow.php)
+Route::get('/{key}.txt', function (string $key) {
+    abort_unless(\App\Support\IndexNow::key() !== null && hash_equals(\App\Support\IndexNow::key(), $key), 404);
+
+    return response($key)->header('Content-Type', 'text/plain; charset=UTF-8');
+})->where('key', '[a-zA-Z0-9-]{8,128}');
+
 // Thank-you page the owl talks on, linked from the confirmation email (signed link per enquiry)
 Route::get('/thanks/{message}', function (\App\Models\ContactMessage $message) {
     return view('thanks', ['enquiry' => $message]);
