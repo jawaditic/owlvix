@@ -42,7 +42,7 @@
                 <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
             </button>
             <a href="{{ route('home') }}" class="brand" aria-label="Owlvix home">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="36" height="36">
+                <img src="{{ asset('images/logo-mark.svg') }}" alt="Owlvix logo" width="36" height="36">
                 <span>Owl<span class="accent">vix</span></span>
             </a>
         </header>

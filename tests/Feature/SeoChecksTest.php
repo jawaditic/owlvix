@@ -40,6 +40,15 @@ class SeoChecksTest extends TestCase
         $this->assertSame(['Organization', 'WebSite', 'FAQPage'], $types);
     }
 
+    public function test_every_image_has_alt_text(): void
+    {
+        // Bing Site Scan counts an empty alt="" as missing
+        preg_match_all('/<img\b[^>]*>/', $this->get('/')->getContent(), $m);
+        foreach ($m[0] as $img) {
+            $this->assertMatchesRegularExpression('/\salt="[^"]+"/', $img, "Image without alt text: {$img}");
+        }
+    }
+
     public function test_llms_txt_exists(): void
     {
         $this->assertFileExists(public_path('llms.txt'));

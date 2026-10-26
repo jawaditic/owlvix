@@ -51,7 +51,7 @@
     <header class="nav" id="top">
         <div class="container nav__inner">
             <a href="#top" class="brand" aria-label="Owlvix home">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="36" height="36">
+                <img src="{{ asset('images/logo-mark.svg') }}" alt="Owlvix logo" width="36" height="36">
                 <span>Owl<span class="accent">vix</span></span>
             </a>
             <button class="nav__toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
@@ -105,7 +105,7 @@
 
                         <div class="chat glass">
                             <div class="chat__head">
-                                <img src="{{ asset('favicon.svg') }}" alt="" width="34" height="34" class="chat__avatar">
+                                <img src="{{ asset('favicon.svg') }}" alt="Owlvix" width="34" height="34" class="chat__avatar">
                                 <div>
                                     <strong>Owlvix</strong>
                                     <small><span class="live-dot" aria-hidden="true"></span>Online · replies within 24h</small>
@@ -372,7 +372,7 @@
                     <p class="eyebrow">Get in touch</p>
                     <h2>Tell us about your project</h2>
                     <p class="lead">Send a short message — no forms to sign, no obligation. We reply within one business day with questions or a quote.</p>
-                    <img src="{{ asset('images/owl.png') }}" alt="" width="200" height="210" class="contact__owl" loading="lazy">
+                    <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="200" height="210" class="contact__owl" loading="lazy">
                 </div>
 
                 <form class="card form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
@@ -431,7 +431,7 @@
     <footer class="footer">
         <div class="container footer__inner">
             <a href="#top" class="brand brand--sm">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="28" height="28">
+                <img src="{{ asset('images/logo-mark.svg') }}" alt="Owlvix logo" width="28" height="28">
                 <span>Owl<span class="accent">vix</span></span>
             </a>
             <p>© {{ date('Y') }} Owlvix. Web, mobile & AI development.</p>
