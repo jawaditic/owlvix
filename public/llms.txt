@@ -6,13 +6,13 @@
 
 Full details of every service, who it suits and what is included: https://owlvix.com/services
 
-- [Custom web apps](https://owlvix.com/services#web-apps): dashboards, portals, SaaS products and booking systems built with Laravel, React and Vue.
-- [Mobile apps](https://owlvix.com/services#mobile-apps): iOS and Android apps that share one codebase (React Native) and connect to existing systems.
+- [Custom web apps](https://owlvix.com/web-app-development): dashboards, portals, SaaS products and booking systems built with Laravel, React and Vue.
+- [Mobile apps](https://owlvix.com/mobile-app-development): iOS and Android apps that share one codebase (React Native) and connect to existing systems.
 - [AI chatbots](https://owlvix.com/ai-chatbot-development): website and customer support bots trained on a business's own documents, FAQs and products.
-- [AI agents and automation](https://owlvix.com/services#ai-agents): repetitive tasks and workflows handed to AI that follows the business's rules and reports back.
-- [API integrations](https://owlvix.com/services#integrations): OpenAI, Claude, Gemini, payments, CRMs and ERPs connected to the tools a business already uses.
+- [AI agents and automation](https://owlvix.com/ai-agent-development): repetitive tasks and workflows handed to AI that follows the business's rules and reports back.
+- [API integrations](https://owlvix.com/api-integration-services): OpenAI, Claude, Gemini, payments, CRMs and ERPs connected to the tools a business already uses.
 - [Websites and Shopify stores](https://owlvix.com/services#websites): marketing sites, WordPress and Shopify builds.
-- [Hosting and support](https://owlvix.com/services#integrations): setup, deployment, monitoring and fixes after launch.
+- [Hosting and support](https://owlvix.com/hosting-and-support): setup, deployment, monitoring and fixes after launch.
 
 ## How it works
 

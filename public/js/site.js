@@ -422,38 +422,29 @@
         openModal('button');
     }));
 
-    // Open automatically once the visitor has had a look: after 15 seconds, or after scrolling 40% of the page,
-    // whichever comes first. (Opening it straight away covered the page before people saw what Owlvix does.)
-    // Skip it right after a form was sent, or when the visitor came straight to the contact form, and never
-    // open it over another popup (the exit survey) or while someone is typing in the contact form.
-    // The landing page has the form at the top, so it sets data-auto-quote="off".
+    // Open automatically after 30 seconds on the page, once the visitor has had a look at what Owlvix does.
+    // Skip it right after a form was sent, or when the visitor came straight to the contact form. If another
+    // popup is open or someone is typing at that moment, try again a few seconds later.
+    // The landing and service pages have the form at the top, so they set data-auto-quote="off".
     const skip = document.body.dataset.noPopup === '1' || document.body.dataset.autoQuote === 'off' || location.hash === '#contact';
     if (!skip) {
-        let autoDone = false;
-        const autoOpen = trigger => {
-            if (autoDone) return;
-            if (document.getElementById('exit-survey')?.dataset.shown) { autoDone = true; return; } // one popup per visit is enough
-            if (document.querySelector('dialog[open]') || document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]')) return;
-            autoDone = true;
-            removeEventListener('scroll', onScrollDepth);
-            clearTimeout(timer);
-            openModal(trigger);
+        const autoOpen = () => {
+            if (document.getElementById('exit-survey')?.dataset.shown) return; // one popup per visit is enough
+            if (document.querySelector('dialog[open]') || document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]')) {
+                setTimeout(autoOpen, 5000);
+                return;
+            }
+            openModal('auto_time');
         };
-        const onScrollDepth = () => {
-            const depth = (scrollY + innerHeight) / document.documentElement.scrollHeight;
-            if (depth >= 0.4) autoOpen('auto_scroll');
-        };
-        const timer = setTimeout(() => autoOpen('auto_time'), 15000);
-        addEventListener('scroll', onScrollDepth, { passive: true });
+        setTimeout(autoOpen, 30000);
     }
 
     /* ---------- "Before you go" exit survey (partials/exit-survey) ---------- */
-    // Shown at most once per 30 days, never to someone who sent an enquiry, not in the first 3 seconds,
-    // and never while someone is typing. Most visitors leave within seconds, often with the quote popup
-    // still open: if they haven't typed in it, the survey takes its place.
-    // Computer: the mouse leaves through the top of the window (towards the tabs / close button).
-    // Phone: a fast scroll back up after reading part of the page.
-    // Browsers don't allow anything to show while a tab is actually closing, so those exits can't be caught.
+    // Opens by itself after 1 minute on the page. After that minute it also opens when the visitor is about
+    // to leave: on a computer when the mouse leaves through the top of the window (towards the tabs / close
+    // button), on a phone after a fast scroll back up. Nothing shows in the first minute.
+    // Shown at most once per 30 days, never to someone who sent an enquiry, and never while someone is typing.
+    // An untouched quote popup is swapped for it; a half-filled one is left alone.
     (() => {
         const survey = document.getElementById('exit-survey');
         if (!survey) return;
@@ -467,7 +458,7 @@
 
         const touch = matchMedia('(pointer: coarse)').matches;
         const start = Date.now();
-        const minTime = 3000;
+        const minTime = 60000; // 1 minute
         let done = false;
 
         const typing = () => document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]');
@@ -507,6 +498,9 @@
         };
         if (touch) addEventListener('scroll', onScroll, { passive: true });
         else document.addEventListener('mouseout', onLeave);
+        // After 1 minute it opens by itself (retrying while someone is typing); leaving after that also opens it
+        const timed = () => { if (done) return; if (typing()) { setTimeout(timed, 5000); return; } show('auto_time'); };
+        setTimeout(timed, minTime + 50);
 
         // Closing
         const close = () => survey.open && survey.close();

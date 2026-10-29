@@ -6,7 +6,7 @@
     // The services. "service" is the value the form's "What do you need?" box is set to (Enquiries::SERVICES).
     $services = [
         [
-            'id' => 'web-apps', 'name' => 'Custom Web App Development', 'service' => 'Web app', 'bar' => '',
+            'id' => 'web-apps', 'page' => 'web-app-development', 'name' => 'Custom Web App Development', 'service' => 'Web app', 'bar' => '',
             'icon' => '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
             'intro' => 'Dashboards, client portals, SaaS products, booking systems and internal tools — built around how your business actually works, not squeezed into an off-the-shelf template.',
             'for' => 'Startups launching a product, and businesses replacing spreadsheets or old software.',
@@ -14,7 +14,7 @@
             'tech' => ['Laravel', 'React', 'Next.js', 'Vue', 'Node.js', 'Python'],
         ],
         [
-            'id' => 'mobile-apps', 'name' => 'Mobile App Development', 'service' => 'Mobile app', 'bar' => 'bar--blue',
+            'id' => 'mobile-apps', 'page' => 'mobile-app-development', 'name' => 'Mobile App Development', 'service' => 'Mobile app', 'bar' => 'bar--blue',
             'icon' => '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
             'intro' => 'iOS and Android apps from one shared codebase, so you launch on both stores for close to the price of one — connected to your website, database or existing systems.',
             'for' => 'Businesses that want an app for customers, staff or bookings, and founders with an app idea.',
@@ -30,7 +30,7 @@
             'tech' => ['OpenAI', 'Claude', 'Gemini', 'RAG', 'Vector search'],
         ],
         [
-            'id' => 'ai-agents', 'name' => 'AI Agents & Automation', 'service' => 'AI chatbot / agent', 'bar' => 'bar--blue',
+            'id' => 'ai-agents', 'page' => 'ai-agent-development', 'name' => 'AI Agents & Automation', 'service' => 'AI chatbot / agent', 'bar' => 'bar--blue',
             'icon' => '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
             'intro' => 'Hand repetitive work to AI: sorting emails, entering data, writing reports, updating your CRM. It follows your rules and reports back, so your team spends time on work that needs them.',
             'for' => 'Businesses losing hours each week to copy-paste and manual admin.',
@@ -46,7 +46,7 @@
             'tech' => ['Shopify', 'WordPress', 'Laravel', 'Next.js'],
         ],
         [
-            'id' => 'integrations', 'name' => 'API Integrations, Hosting & Support', 'service' => 'Something else', 'bar' => 'bar--blue',
+            'id' => 'integrations', 'page' => ['api-integration-services', 'hosting-and-support'], 'name' => 'API Integrations, Hosting & Support', 'service' => 'Something else', 'bar' => 'bar--blue',
             'icon' => '<path d="M9 7H6a4 4 0 0 0 0 8h3M15 7h3a4 4 0 0 1 0 8h-3M8 11h8"/>',
             'intro' => 'Connect payments, CRMs, ERPs and AI models to the tools you already use — then keep it all running with hosting, monitoring and fixes. We also take over apps other developers started.',
             'for' => 'Businesses with an existing app or website that needs fixing, extending or looking after.',
@@ -231,9 +231,11 @@
                                     @foreach ($s['gets'] as $g)<li>{{ $g }}</li>@endforeach
                                 </ul>
                                 <a href="#contact" class="btn btn--ghost btn--block" data-service="{{ $s['service'] }}">Get a quote for this</a>
-                                @if (! empty($s['page']) && config('service_pages.'.$s['page']))
-                                    <a href="{{ route('service.'.$s['page']) }}" class="lp-service__more">{{ $s['name'] }} in detail →</a>
-                                @endif
+                                @foreach ((array) ($s['page'] ?? []) as $slug)
+                                    @if (config('service_pages.'.$slug))
+                                        <a href="{{ route('service.'.$slug) }}" class="lp-service__more">{{ config('service_pages.'.$slug.'.name') }} in detail →</a>
+                                    @endif
+                                @endforeach
                             </div>
                         </article>
                     @endforeach

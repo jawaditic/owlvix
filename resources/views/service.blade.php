@@ -4,7 +4,7 @@
     $p = config("service_pages.$slug");
     $url = route("service.$slug");
     $t = \App\Support\Testimonials::data();
-    $projects = \Illuminate\Support\Facades\Schema::hasTable('projects')
+    $projects = ! empty($p['category']) && \Illuminate\Support\Facades\Schema::hasTable('projects')
         ? \App\Models\Project::published()->ordered()->where('category', $p['category'])->limit(6)->get() : collect();
 
     // Other services: their own page if it exists, otherwise their section on /services

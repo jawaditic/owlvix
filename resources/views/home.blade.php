@@ -161,11 +161,13 @@
                         <span class="bar"></span>
                         <h3>Custom Web Apps</h3>
                         <p>Dashboards, portals, SaaS products and booking systems built with Laravel, React and Vue.</p>
+                        <a href="{{ route('service.web-app-development') }}" class="card__more">Learn more about web apps →</a>
                     </article>
                     <article class="card">
                         <span class="bar bar--blue"></span>
                         <h3>Mobile Apps</h3>
                         <p>iOS and Android apps that share one codebase and talk to your existing systems.</p>
+                        <a href="{{ route('service.mobile-app-development') }}" class="card__more">Learn more about mobile apps →</a>
                     </article>
                     <article class="card">
                         <span class="bar"></span>
@@ -177,16 +179,19 @@
                         <span class="bar bar--blue"></span>
                         <h3>AI Agents & Automation</h3>
                         <p>Hand repetitive tasks and workflows to AI that follows your rules and reports back.</p>
+                        <a href="{{ route('service.ai-agent-development') }}" class="card__more">Learn more about AI agents →</a>
                     </article>
                     <article class="card">
                         <span class="bar"></span>
                         <h3>API Integrations</h3>
                         <p>Connect OpenAI, Claude, Gemini, payments, CRMs and ERPs to the tools you already use.</p>
+                        <a href="{{ route('service.api-integration-services') }}" class="card__more">Learn more about integrations →</a>
                     </article>
                     <article class="card">
                         <span class="bar bar--blue"></span>
                         <h3>Hosting & Support</h3>
                         <p>Setup, deployment, monitoring and fixes after launch — you're never left on your own.</p>
+                        <a href="{{ route('service.hosting-and-support') }}" class="card__more">Learn more about support →</a>
                     </article>
                 </div>
                 <p class="promise">Clean code you own <i>•</i> Regular updates <i>•</i> On-time delivery</p>

@@ -43,7 +43,7 @@ class IndexNowTest extends TestCase
             && $r['host'] === 'owlvix.com'
             && $r['key'] === self::KEY
             && $r['keyLocation'] === 'https://owlvix.com/'.self::KEY.'.txt'
-            && $r['urlList'] === ['https://owlvix.com', 'https://owlvix.com/services', 'https://owlvix.com/ai-chatbot-development']);
+            && $r['urlList'] === ['https://owlvix.com', 'https://owlvix.com/services', ...array_map(fn ($s) => 'https://owlvix.com/'.$s, array_keys(config('service_pages')))]);
     }
 
     public function test_nothing_is_sent_without_a_key(): void
