@@ -198,7 +198,7 @@
                         <article class="work-card" data-category="{{ $p->category }}">
                             <div class="work-card__img">
                                 @php([$iw, $ih] = ($p->image && is_file(public_path($p->image))) ? (getimagesize(public_path($p->image)) ?: [720, 480]) : [720, 480])
-                                <img src="{{ $p->imageUrl() }}" alt="{{ $p->title }} — {{ $p->categoryLabel() }} project by Owlvix" width="{{ $iw }}" height="{{ $ih }}" loading="lazy" decoding="async">
+                                @include('partials.picture', ['src' => $p->image, 'alt' => $p->title.' — '.$p->categoryLabel().' project by Owlvix', 'width' => $iw, 'height' => $ih, 'loading' => 'lazy'])
                             </div>
                             <div class="work-card__body">
                                 <span class="work-card__cat">{{ $p->categoryLabel() }}</span>
@@ -251,7 +251,7 @@
         <section class="section" id="about">
             <div class="container">
                 <div class="card about-strip">
-                    <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="120" height="126" loading="lazy">
+                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 120, 'height' => 126, 'loading' => 'lazy'])
                     <div>
                         <p class="eyebrow">Who's behind Owlvix</p>
                         <h2>A small team led by Jawad Ahmad</h2>
@@ -303,7 +303,7 @@
                     <p class="eyebrow">Get in touch</p>
                     <h2>Tell us about your project</h2>
                     <p class="lead">Send a short message — no forms to sign, no obligation. We reply within one business day with questions or a quote.</p>
-                    <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="200" height="210" class="contact__owl" loading="lazy">
+                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 200, 'height' => 210, 'class' => 'contact__owl', 'loading' => 'lazy'])
                 </div>
 
                 <form class="card form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
@@ -372,8 +372,6 @@
     {{-- "defer": scripts download in parallel and run in order after the page is parsed, without blocking it.
          Google reCAPTCHA is loaded by site.js only when someone starts filling in a form. --}}
     <script src="{{ \App\Support\Asset::url('js/owl.js') }}" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js" defer></script>
     <script src="{{ \App\Support\Asset::url('js/site.js') }}" defer></script>
     <script src="{{ \App\Support\Asset::url('js/theme.js') }}" defer></script>
 </body>

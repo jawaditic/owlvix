@@ -48,7 +48,7 @@
                 <li><strong>🇵🇰</strong><span>based in Pakistan, working worldwide</span></li>
             </ul>
         </div>
-        <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="260" height="273" class="about-hero__owl">
+        @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 260, 'height' => 273, 'class' => 'about-hero__owl'])
     </div>
 </section>
 

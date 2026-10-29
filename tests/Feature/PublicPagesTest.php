@@ -84,4 +84,16 @@ class PublicPagesTest extends TestCase
             }
         }
     }
+
+    /** Owl and portfolio images are served as WebP (with the original as fallback). */
+    public function test_images_have_webp_versions(): void
+    {
+        $html = $this->get('/about')->getContent();
+        $this->assertStringContainsString('owl.240w.webp 240w, '.asset('images/owl.520w.webp').' 520w', $html);
+        $this->assertStringContainsString('<img src="'.asset('images/owl.png').'"', $html);
+
+        foreach (glob(public_path('images/portfolio/*.jpg')) as $jpg) {
+            $this->assertFileExists(preg_replace('/\.jpg$/', '.webp', $jpg));
+        }
+    }
 }

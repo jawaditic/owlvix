@@ -298,7 +298,7 @@
         <section class="section lp-cta">
             <div class="container">
                 <div class="card lp-cta__box">
-                    <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="120" height="126" loading="lazy">
+                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 120, 'height' => 126, 'loading' => 'lazy'])
                     <div>
                         <h2>Have a project in mind?</h2>
                         <p>Tell us about it in a few lines. You get a fixed-price quote within one business day — free.</p>

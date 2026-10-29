@@ -32,8 +32,10 @@
         .then(d => (d.country || '').toLowerCase() || localeCountry())
         .catch(localeCountry);
 
-    if (window.intlTelInput) {
+    const setupPhones = () => {
+        if (!window.intlTelInput) return;
         document.querySelectorAll('[data-intl-phone]').forEach(input => {
+            if (input.iti) return;
             input.iti = intlTelInput(input, {
                 initialCountryLookup: lookupCountry,
                 countryOrder: ['us', 'gb', 'ca', 'au', 'ae', 'sa', 'pk', 'in'],
@@ -43,13 +45,15 @@
                 fullscreenParent: input.closest('dialog') || null,
             });
         });
-    }
+    };
 
     /* ---------- "Your project": rich text editor (Quill) ---------- */
     // The original textarea stays in the form (hidden) and always holds the editor's HTML,
     // so the form still sends a normal "message" field. The server cleans the HTML.
-    if (window.Quill) {
+    const setupEditors = () => {
+        if (!window.Quill) return;
         document.querySelectorAll('textarea[data-rich]').forEach(ta => {
+            if (ta.quill) return;
             const box = document.createElement('div');
             box.className = 'rich-editor';
             const area = document.createElement('div');
@@ -100,7 +104,32 @@
             ta.quill = quill;
             ta.editorBox = box;
         });
+    };
+
+    /* ---------- Load the phone picker and editor only when a form is about to be used ---------- */
+    // They add ~200 KB, so they load when a form comes near the screen, someone clicks into a form,
+    // or the quote popup opens. Until then the fields are a plain phone box and text box, which work too.
+    let formLibs;
+    const loadScript = src => new Promise((resolve, reject) => {
+        const sc = document.createElement('script');
+        sc.src = src;
+        sc.onload = resolve;
+        sc.onerror = reject;
+        document.head.appendChild(sc);
+    });
+    const loadFormLibs = () => formLibs ||= Promise.all([
+        window.intlTelInput || loadScript('https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js').then(setupPhones),
+        window.Quill || loadScript('https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js').then(setupEditors),
+    ]).then(() => { setupPhones(); setupEditors(); }).catch(() => { formLibs = null; });
+    if ('IntersectionObserver' in window) {
+        const near = new IntersectionObserver(entries => {
+            if (entries.some(e => e.isIntersecting)) { near.disconnect(); loadFormLibs(); }
+        }, { rootMargin: '400px 0px' });
+        document.querySelectorAll('main form[data-validate]').forEach(f => near.observe(f));
+    } else {
+        loadFormLibs();
     }
+    document.addEventListener('focusin', e => { if (e.target.closest?.('form')) loadFormLibs(); });
 
     /* ---------- Google reCAPTCHA: load only when needed ---------- */
     // Its script is large (~800 KB), so it loads the first time someone starts filling in a form,
@@ -399,6 +428,7 @@
 
     const openModal = (how = 'button') => {
         if (modal.open) return;
+        loadFormLibs();
         modal.showModal();
         window.track?.('quote_open', { trigger: how });
         document.body.classList.add('modal-open');

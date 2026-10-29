@@ -8,7 +8,7 @@
 @section('content')
 <section class="section error-page">
     <div class="container container--narrow">
-        <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="140" height="147">
+        @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 140, 'height' => 147])
         <p class="eyebrow">Error 404</p>
         <h1>Hoo-hoo… this page flew away</h1>
         <p class="lead">The page you're looking for doesn't exist or has moved. Try one of these instead:</p>

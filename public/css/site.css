@@ -927,3 +927,5 @@ body.modal-open::after {
 .prose a.btn--ghost { color: var(--text); }
 .about-strip .eyebrow { color: var(--green); }
 .nav__links a[aria-current="page"] { color: var(--green); font-weight: 600; }
+/* <picture> (WebP with a fallback) adds no box of its own, so layouts styled on the <img> keep working */
+picture { display: contents; }

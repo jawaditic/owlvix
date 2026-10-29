@@ -89,8 +89,29 @@ class Project extends Model
         }
         $name = \Illuminate\Support\Str::slug($title).'-'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(6)).'.'.$file->extension();
         $file->move($dir, $name);
+        self::makeWebp($dir.'/'.$name);
 
         return 'uploads/portfolio/'.$name;
+    }
+
+    /** Save a smaller WebP copy next to a JPG/PNG (shown by partials/picture). Skipped if the server can't. */
+    public static function makeWebp(string $path): void
+    {
+        try {
+            $img = match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+                'jpg', 'jpeg' => function_exists('imagecreatefromjpeg') ? @imagecreatefromjpeg($path) : false,
+                'png' => function_exists('imagecreatefrompng') ? @imagecreatefrompng($path) : false,
+                default => false,
+            };
+            if ($img && function_exists('imagewebp')) {
+                imagepalettetotruecolor($img);
+                imagesavealpha($img, true);
+                imagewebp($img, preg_replace('/\.(jpe?g|png)$/i', '.webp', $path), 80);
+                imagedestroy($img);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /** Uploaded images live in public/uploads/portfolio; the starter images ship with the site. */
@@ -98,6 +119,7 @@ class Project extends Model
     {
         if ($this->image && str_starts_with($this->image, 'uploads/portfolio/')) {
             @unlink(public_path($this->image));
+            @unlink(public_path(preg_replace('/\.(jpe?g|png)$/i', '.webp', $this->image)));
         }
     }
 }

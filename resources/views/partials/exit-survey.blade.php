@@ -8,7 +8,7 @@
     <form class="form exit-survey__form" data-survey action="{{ route('survey.store') }}" method="POST" novalidate>
         @csrf
         <div class="exit-survey__head">
-            <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl" width="64" height="67">
+            @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl', 'width' => 64, 'height' => 67])
             <div>
                 <p class="eyebrow">Before you go</p>
                 <h2 id="exit-title" tabindex="-1" autofocus>What stopped you from getting a quote today?</h2>
@@ -46,7 +46,7 @@
     </form>
 
     <div class="exit-survey__done" data-survey-done hidden>
-        <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl" width="96" height="101">
+        @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl', 'width' => 96, 'height' => 101])
         <h2 tabindex="-1">Thank you, that really helps!</h2>
         <p class="muted" data-survey-done-text>We read every answer.</p>
         <button type="button" class="btn btn--block" data-survey-quote>Get a free quote</button>

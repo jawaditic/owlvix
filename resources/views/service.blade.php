@@ -188,7 +188,7 @@
                     @foreach ($projects as $pr)
                         <article class="work-card">
                             <div class="work-card__img">
-                                <img src="{{ $pr->imageUrl() }}" alt="{{ $pr->title }} — {{ $pr->categoryLabel() }} project by Owlvix" width="720" height="405" loading="lazy" decoding="async">
+                                @include('partials.picture', ['src' => $pr->image, 'alt' => $pr->title.' — '.$pr->categoryLabel().' project by Owlvix', 'width' => 720, 'height' => 405, 'loading' => 'lazy'])
                             </div>
                             <div class="work-card__body">
                                 <span class="work-card__cat">{{ $pr->categoryLabel() }}</span>
@@ -225,7 +225,7 @@
         <section class="section lp-cta">
             <div class="container">
                 <div class="card lp-cta__box">
-                    <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="120" height="126" loading="lazy">
+                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 120, 'height' => 126, 'loading' => 'lazy'])
                     <div>
                         <h2>Ready to talk about your project?</h2>
                         <p>Send a few lines and get a fixed-price quote within one business day — free, with no obligation.</p>

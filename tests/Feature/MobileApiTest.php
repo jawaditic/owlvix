@@ -124,12 +124,15 @@ class MobileApiTest extends TestCase
         ], ['Accept' => 'application/json'])->assertCreated();
         $p = Project::find($res->json('id'));
         $this->assertFileExists(public_path($p->image));
+        $webp = public_path(preg_replace('/\.jpg$/', '.webp', $p->image));
+        $this->assertFileExists($webp, 'A smaller WebP copy is saved next to the upload');
 
         $this->withToken($token)->postJson("/api/admin/projects/{$p->id}", ['title' => 'Renamed', 'category' => 'mobile', 'is_published' => false])
             ->assertOk()->assertJsonPath('title', 'Renamed')->assertJsonPath('is_published', false);
         $this->withToken($token)->postJson("/api/admin/projects/{$p->id}/toggle")->assertJsonPath('is_published', true);
         $this->withToken($token)->deleteJson("/api/admin/projects/{$p->id}")->assertOk();
         $this->assertFileDoesNotExist(public_path($p->image));
+        $this->assertFileDoesNotExist($webp);
     }
 
     public function test_admin_manages_reviews_and_rating_summary(): void
