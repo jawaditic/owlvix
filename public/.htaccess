@@ -11,6 +11,11 @@
     RewriteCond %{HTTP_HOST} ^www\. [NC]
     RewriteRule ^ https://owlvix.com%{REQUEST_URI} [L,R=301]
 
+    # /index.php (or /index.php/services) typed in the address bar is a duplicate of / : redirect it.
+    # THE_REQUEST is the original request line, so Laravel's own internal rewrite to index.php isn't affected.
+    RewriteCond %{THE_REQUEST} \s/+index\.php[\s?/]
+    RewriteRule ^index\.php(?:/(.*))?$ /$1 [L,R=301,NE]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

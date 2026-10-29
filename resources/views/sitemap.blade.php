@@ -18,4 +18,10 @@
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
+    <url>
+        <loc>{{ route('privacy') }}</loc>
+        <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/privacy.blade.php'))) }}</lastmod>
+        <changefreq>yearly</changefreq>
+        <priority>0.2</priority>
+    </url>
 </urlset>

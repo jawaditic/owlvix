@@ -357,21 +357,13 @@
                         @error('message')<small>{{ $message }}</small>@enderror
                     </div>
                     <button type="submit" class="btn btn--block">Send message</button>
+                    <p class="form__privacy">We only use your details to reply to you. <a href="{{ route('privacy') }}">Privacy policy</a></p>
                 </form>
             </div>
         </section>
     </main>
 
-    <footer class="footer">
-        <div class="container footer__inner">
-            <a href="#top" class="brand brand--sm">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="Owlvix logo" width="28" height="28">
-                <span>Owl<span class="accent">vix</span></span>
-            </a>
-            <p>© {{ date('Y') }} Owlvix. Web, mobile & AI development.</p>
-            <nav class="footer__links" aria-label="Footer"><a href="{{ route('landing') }}">Services</a><a href="#contact">Start a project →</a></nav>
-        </div>
-    </footer>
+    @include('partials.footer')
 
     @include('partials.quote-modal')
     @include('partials.exit-survey')

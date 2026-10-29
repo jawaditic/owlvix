@@ -79,6 +79,12 @@
             // Accessibility/SEO: name the style dropdown, and give the link pop-up's
             // action links a harmless address so they count as proper links
             box.querySelectorAll('.ql-picker-label').forEach(el => el.setAttribute('aria-label', 'Text style'));
+            const names = { bold: 'Bold', italic: 'Italic', underline: 'Underline', strike: 'Strikethrough', blockquote: 'Quote', 'code-block': 'Code', link: 'Link', clean: 'Clear formatting' };
+            box.querySelectorAll('.ql-toolbar button').forEach(b => {
+                const key = [...b.classList].find(c => c.startsWith('ql-'))?.slice(3);
+                const name = key === 'list' ? (b.value === 'ordered' ? 'Numbered list' : 'Bullet list') : names[key];
+                if (name && !b.hasAttribute('aria-label')) b.setAttribute('aria-label', name);
+            });
             box.querySelectorAll('.ql-tooltip a:not([href])').forEach(a => {
                 a.setAttribute('href', '#');
                 a.addEventListener('click', e => e.preventDefault());

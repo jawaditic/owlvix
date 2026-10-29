@@ -67,17 +67,23 @@
 
     // Structured data for search engines: the services on this page and its FAQ.
     // Same @id as the Organization on the homepage (partials/structured-data), with its key details repeated here.
-    $org = ['@type' => 'Organization', '@id' => url('/').'#business', 'name' => 'Owlvix', 'url' => url('/'), 'logo' => asset('apple-touch-icon.png'), 'email' => config('mail.from.address')];
+    $org = ['@type' => 'Organization', '@id' => url('/').'#business', 'name' => 'Owlvix', 'url' => url('/'), 'logo' => asset('apple-touch-icon.png'), 'email' => config('mail.from.address'),
+        'sameAs' => array_values(array_filter([$t['profile_url'] ?? null]))];
+    $orgRef = ['@id' => $org['@id']];
     $graph = [
         '@context' => 'https://schema.org',
         '@graph' => [
+            $org,
             [
                 '@type' => 'WebPage',
                 '@id' => route('landing').'#page',
                 'url' => route('landing'),
                 'name' => 'Web, Mobile & AI Development Services',
                 'isPartOf' => ['@type' => 'WebSite', '@id' => url('/').'#website', 'name' => 'Owlvix', 'url' => url('/')],
-                'about' => $org,
+                'description' => 'Web app, mobile app, AI chatbot, AI agent, website and integration development services from Owlvix, with a free fixed-price quote.',
+                'inLanguage' => 'en',
+                'about' => $orgRef,
+                'mainEntity' => ['@id' => route('landing').'#services-list'],
                 'breadcrumb' => ['@type' => 'BreadcrumbList', 'itemListElement' => [
                     ['@type' => 'ListItem', 'position' => 1, 'name' => 'Home', 'item' => url('/')],
                     ['@type' => 'ListItem', 'position' => 2, 'name' => 'Services', 'item' => route('landing')],
@@ -85,10 +91,11 @@
             ],
             [
                 '@type' => 'ItemList',
+                '@id' => route('landing').'#services-list',
                 'name' => 'Owlvix services',
                 'itemListElement' => array_map(fn ($s, $i) => [
                     '@type' => 'ListItem', 'position' => $i + 1,
-                    'item' => ['@type' => 'Service', 'name' => $s['name'], 'description' => $s['intro'], 'url' => route('landing').'#'.$s['id'], 'areaServed' => 'Worldwide', 'provider' => $org],
+                    'item' => ['@type' => 'Service', '@id' => route('landing').'#'.$s['id'], 'name' => $s['name'], 'serviceType' => $s['name'], 'description' => $s['intro'], 'url' => route('landing').'#'.$s['id'], 'areaServed' => 'Worldwide', 'provider' => $orgRef],
                 ], $services, array_keys($services)),
             ],
             [
@@ -185,6 +192,9 @@
                         <li>100% of the source code is yours</li>
                         <li>Free bug fixes after launch</li>
                     </ul>
+                    <a href="#quote-form" class="btn btn--glow lp-hero__jump">Get my free quote
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+                    </a>
                     @if (! empty($t['profile_url']))
                         <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
                             <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
@@ -193,7 +203,7 @@
                     @endif
                 </div>
 
-                <form class="card form lp-form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}" novalidate data-validate>
+                <form class="card form lp-form" id="quote-form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}" novalidate data-validate>
                     @csrf
                     <input type="hidden" name="source" value="landing">
                     <div>
@@ -245,6 +255,7 @@
                         @error('message')<small>{{ $message }}</small>@enderror
                     </div>
                     <button type="submit" class="btn btn--block btn--glow">Get my free quote</button>
+                    <p class="form__privacy">We only use your details to reply to you. <a href="{{ route('privacy') }}">Privacy policy</a></p>
                 </form>
             </div>
         </section>
@@ -384,16 +395,7 @@
         </section>
     </main>
 
-    <footer class="footer">
-        <div class="container footer__inner">
-            <a href="{{ route('home') }}" class="brand brand--sm" aria-label="Owlvix home">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="Owlvix logo" width="28" height="28">
-                <span>Owl<span class="accent">vix</span></span>
-            </a>
-            <p>© {{ date('Y') }} Owlvix. Web, mobile & AI development.</p>
-            <nav class="footer__links" aria-label="Footer"><a href="{{ route('home') }}">Home</a><a href="#contact">Start a project →</a></nav>
-        </div>
-    </footer>
+    @include('partials.footer', ['top' => route('home')])
 
     @include('partials.quote-modal')
     @include('partials.exit-survey')

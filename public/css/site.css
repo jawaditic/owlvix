@@ -838,3 +838,35 @@ body.modal-open::after {
     .grid--4 { grid-template-columns: 1fr; }
     .lp-jump { margin-top: -12px; }
 }
+
+/* ---------- Footer links, form privacy note ---------- */
+.footer__links a { padding: 6px 0; }
+.form__privacy { margin: -6px 0 0; font-size: .85rem; color: var(--muted); text-align: center; }
+.form__privacy a { color: var(--text-2); text-decoration: underline; }
+
+/* Landing page: on phones the form is below the first screen, so show a button that jumps to it */
+.lp-hero__jump { display: none; }
+.lp-form { scroll-margin-top: 84px; }
+@media (max-width: 960px) {
+    .lp-hero__jump { display: inline-flex; margin: 0 0 20px; }
+    .lp-hero__jump:hover svg { transform: translateY(3px); }
+}
+
+/* ---------- Simple pages (privacy policy, 404) ---------- */
+.page-nav { display: flex; align-items: center; gap: 20px; }
+.page-nav a:not(.btn) { color: var(--text-2); font-weight: 500; }
+.prose h1 { font-size: clamp(2rem, 4.5vw, 2.8rem); text-align: center; margin: 0 0 8px; }
+.prose__updated { text-align: center; color: var(--muted); margin-bottom: 40px; }
+.prose h2 { text-align: left; font-size: 1.35rem; margin: 40px 0 12px; }
+.prose p, .prose li { color: var(--text-2); line-height: 1.7; }
+.prose ul { padding-left: 22px; margin: 0 0 16px; }
+.prose li { margin-bottom: 8px; }
+.prose a { color: var(--green); }
+.error-page { text-align: center; }
+.error-page img { width: 140px; height: auto; margin: 0 auto 16px; }
+.error-page h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); margin: 0 0 16px; }
+.error-page .lead { margin: 0 auto 28px; }
+.error-page__links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+@media (max-width: 600px) {
+    .page-nav a:not(.btn) { display: none; }
+}

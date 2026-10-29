@@ -88,6 +88,7 @@
                 <textarea id="quote-message" name="message" rows="3" required placeholder="A few lines about what you want built" data-rich></textarea>
             </div>
             <button type="submit" class="btn btn--block">Get my free quote</button>
+            <p class="form__privacy">We only use your details to reply to you. <a href="{{ route('privacy') }}">Privacy policy</a></p>
             <button type="button" class="quote-form__later" data-close>Maybe later</button>
         </form>
     </div>

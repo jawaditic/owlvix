@@ -32,7 +32,10 @@ class LandingPageTest extends TestCase
         preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $this->get('/services')->getContent(), $m);
         $types = array_column(json_decode($m[1], true)['@graph'], '@type');
 
-        $this->assertSame(['WebPage', 'ItemList', 'FAQPage'], $types);
+        $this->assertSame(['Organization', 'WebPage', 'ItemList', 'FAQPage'], $types);
+        // Services point to the one Organization instead of repeating it
+        $graph = json_decode($m[1], true)['@graph'];
+        $this->assertSame(['@id' => $graph[0]['@id']], $graph[2]['itemListElement'][0]['item']['provider']);
     }
 
     public function test_every_image_has_alt_text(): void
@@ -63,6 +66,11 @@ class LandingPageTest extends TestCase
     public function test_homepage_links_to_the_page(): void
     {
         $this->get('/')->assertSee('href="'.route('landing').'"', false);
+    }
+
+    public function test_phone_visitors_get_a_button_to_the_form(): void
+    {
+        $this->get('/services')->assertSee('href="#quote-form"', false)->assertSee('id="quote-form"', false);
     }
 
     public function test_sitemap_lists_the_page(): void
