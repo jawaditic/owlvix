@@ -8,7 +8,7 @@
             : '—',
         'Needs' => e($enquiry->service ?: '—'),
         'Budget' => e($enquiry->budget ?: '—'),
-        'Sent from' => $enquiry->source === 'popup' ? 'Quote popup' : 'Contact form',
+        'Sent from' => $enquiry->sourceLabel(),
         'Received' => $enquiry->created_at->format('d M Y, H:i'),
     ];
 @endphp

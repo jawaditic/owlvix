@@ -12,4 +12,10 @@
 @endif
 @endforeach
     </url>
+    <url>
+        <loc>{{ route('landing') }}</loc>
+        <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/landing.blade.php'))) }}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
 </urlset>

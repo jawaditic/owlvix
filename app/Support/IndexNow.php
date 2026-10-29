@@ -28,7 +28,13 @@ class IndexNow
         if (! self::key() || ! Cache::add('indexnow:home', true, now()->addMinutes(10))) {
             return;
         }
-        app()->terminating(fn () => self::submit([self::homepage()]));
+        app()->terminating(fn () => self::submit(self::pages()));
+    }
+
+    /** Pages that show the portfolio, reviews or rating: the homepage and the services page. */
+    public static function pages(): array
+    {
+        return [self::homepage(), self::homepage().'/services'];
     }
 
     /** The live site's address from APP_URL (https://owlvix.com), the same from web requests and the command line. */

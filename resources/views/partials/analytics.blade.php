@@ -11,7 +11,7 @@
         window.track = function (name, params) { gtag('event', name, params || {}); };
         @if (session('sent'))
             // The server has just saved an enquiry: this is a real lead
-            track('generate_lead', { form: @json(session('lead_source') === 'popup' ? 'quote_popup' : 'contact_form'), service: @json(session('lead_service')) });
+            track('generate_lead', { form: @json(['popup' => 'quote_popup', 'landing' => 'landing_page'][session('lead_source')] ?? 'contact_form'), service: @json(session('lead_service')) });
         @endif
     </script>
 @else

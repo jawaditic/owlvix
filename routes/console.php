@@ -12,9 +12,9 @@ Artisan::command('admin:password {password}', function (string $password) {
     $this->line(\Illuminate\Support\Facades\Hash::make($password));
 })->purpose('Make a password hash for the admin dashboard');
 
-// Tell Bing (IndexNow) the homepage changed, e.g. after a deploy. Needs INDEXNOW_KEY in .env.
+// Tell Bing (IndexNow) the homepage and services page changed, e.g. after a deploy. Needs INDEXNOW_KEY in .env.
 Artisan::command('indexnow:ping {url?*}', function (array $url) {
-    $urls = $url ?: [\App\Support\IndexNow::homepage()];
+    $urls = $url ?: \App\Support\IndexNow::pages();
     $status = \App\Support\IndexNow::submit($urls);
     if ($status === null) {
         $this->error('Not sent: set INDEXNOW_KEY in .env (or the request failed, see the log).');

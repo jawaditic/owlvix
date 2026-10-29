@@ -40,10 +40,11 @@
             <option value="unread" @selected(request('status') === 'unread')>New only</option>
         </select>
         <select name="source">
-            <option value="">Both forms</option>
+            <option value="">All forms</option>
             <option value="popup" @selected(request('source') === 'popup')>Quote popup</option>
             <option value="contact" @selected(request('source') === 'contact')>Contact form</option>
             <option value="app" @selected(request('source') === 'app')>Mobile app</option>
+            <option value="landing" @selected(request('source') === 'landing')>Landing page</option>
         </select>
         <button type="submit" class="btn">Filter</button>
         @if (request()->hasAny(['q', 'status', 'source']))

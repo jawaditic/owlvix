@@ -189,6 +189,7 @@
                     </article>
                 </div>
                 <p class="promise">Clean code you own <i>•</i> Regular updates <i>•</i> On-time delivery</p>
+                <p class="services__more"><a href="{{ route('landing') }}" class="btn btn--ghost">Explore our development services in detail</a></p>
             </div>
         </section>
 
@@ -264,76 +265,9 @@
             </div>
         </section>
 
-        {{-- Testimonials (config/testimonials.php) --}}
-        @php($t = \App\Support\Testimonials::data())
-        @if (count($t['reviews']))
-        <section class="section" id="reviews">
-            <div class="container">
-                <p class="eyebrow">Client reviews</p>
-                <h2>What clients say</h2>
-                <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
-                    <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
-                    <span><strong>{{ $t['rating'] }}</strong> on Fiverr · {{ $t['count'] }} reviews · {{ $t['five_star'] }} five-star</span>
-                </a>
-                <div class="reviews is-loading" data-reviews aria-busy="true">
-                    @foreach ($t['reviews'] as $r)
-                        <figure class="review" data-country="{{ $r['code'] }}">
-                            <span class="review__stars" aria-label="{{ $r['rating'] }} out of 5 stars">{{ str_repeat('★', $r['rating']) }}<span class="review__stars-off">{{ str_repeat('★', 5 - $r['rating']) }}</span></span>
-                            <blockquote>“{{ $r['text'] }}”</blockquote>
-                            <figcaption>
-                                <span class="review__avatar" aria-hidden="true">{{ strtoupper(substr($r['name'], 0, 1)) }}</span>
-                                <span>
-                                    <strong>{{ $r['name'] }}</strong>
-                                    <small>{{ $r['flag'] }} {{ collect([$r['country'], $r['service']])->filter()->implode(' · ') }}</small>
-                                </span>
-                            </figcaption>
-                        </figure>
-                    @endforeach
-                </div>
-                <p class="reviews__more">
-                    <a href="{{ $t['profile_url'] }}" class="btn btn--ghost" target="_blank" rel="noopener">Read all {{ $t['count'] }} reviews on Fiverr
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
-                    </a>
-                </p>
-            </div>
-        </section>
+        @include('partials.reviews')
 
-        @endif
-
-        {{-- Pricing --}}
-        <section class="section" id="pricing">
-            <div class="container">
-                <p class="eyebrow">Pricing</p>
-                <h2>Two simple ways to work with us</h2>
-                <div class="grid grid--2 pricing">
-                    <article class="card plan">
-                        <h3>Fixed project</h3>
-                        <p class="price"><span>Custom quote</span></p>
-                        <p>Best when you know what you want built — a new app, a website or an AI feature.</p>
-                        <ul class="checks">
-                            <li>Clear scope, price and deadline up front</li>
-                            <li>Weekly progress updates</li>
-                            <li>Full source code handed over</li>
-                            <li>Free bug fixes after launch</li>
-                        </ul>
-                        <a href="#contact" class="btn btn--ghost btn--block" data-service="Fixed project">Get a quote</a>
-                    </article>
-                    <article class="card plan plan--featured">
-                        <span class="badge">Most flexible</span>
-                        <h3>Monthly developer</h3>
-                        <p class="price">from <strong>$100</strong><span>/month</span></p>
-                        <p>Your own developer on call for ongoing work across web, mobile, AI and support.</p>
-                        <ul class="checks">
-                            <li>New features, fixes and updates every month</li>
-                            <li>Web • Mobile • AI • Support</li>
-                            <li>Priority replies</li>
-                            <li>Cancel any time</li>
-                        </ul>
-                        <a href="#contact" class="btn btn--block" data-service="Monthly developer">Start monthly plan</a>
-                    </article>
-                </div>
-            </div>
-        </section>
+        @include('partials.pricing')
 
         {{-- FAQ --}}
         <section class="section section--alt" id="faq">
@@ -435,7 +369,7 @@
                 <span>Owl<span class="accent">vix</span></span>
             </a>
             <p>© {{ date('Y') }} Owlvix. Web, mobile & AI development.</p>
-            <a href="#contact">Start a project →</a>
+            <nav class="footer__links" aria-label="Footer"><a href="{{ route('landing') }}">Services</a><a href="#contact">Start a project →</a></nav>
         </div>
     </footer>
 

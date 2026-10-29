@@ -16,6 +16,7 @@ const FILTERS = [
   { key: 'source=popup', label: 'Popup' },
   { key: 'source=contact', label: 'Contact form' },
   { key: 'source=app', label: 'Mobile app' },
+  { key: 'source=landing', label: 'Landing page' },
 ];
 
 export default function Messages() {

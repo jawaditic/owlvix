@@ -225,7 +225,10 @@ i { font-style: normal; color: var(--green); padding: 0 6px; }
 /* Footer */
 .footer { border-top: 1px solid var(--card-border); padding: 32px 0; background: rgba(var(--bg-rgb), .9); }
 .footer__inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: .92rem; }
-.footer__inner > a:last-child { color: var(--green); font-weight: 600; }
+.footer__inner > a:last-child, .footer__links a:last-child { color: var(--green); font-weight: 600; }
+.footer__links { display: flex; gap: 20px; flex-wrap: wrap; }
+.footer__links a { color: var(--text-2); }
+.services__more { text-align: center; margin-top: 24px; }
 
 /* Responsive */
 @media (max-width: 960px) {
@@ -777,4 +780,61 @@ body.modal-open::after {
     .exit-survey__form, .exit-survey__done { padding: 24px 18px 16px; }
     .exit-survey__head img { width: 48px; }
     .exit-survey__head h2 { font-size: 1.12rem; }
+}
+
+/* ---------- Landing page (/services) ---------- */
+.lp-hero { padding: 64px 0 72px; }
+.lp-hero__inner { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+.lp-hero h1 { font-size: clamp(2.1rem, 4.4vw, 3.4rem); }
+.lp-hero__checks { margin: 24px 0; }
+.lp-form { text-align: left; box-shadow: 0 30px 70px -30px rgba(var(--shadow-rgb), calc(.8 * var(--shadow-k))); }
+.lp-form__title { text-align: left; font-size: 1.5rem; margin: 0 0 4px; }
+.lp-form__note { color: var(--muted); font-size: .92rem; margin: 0; }
+
+.lp-jump { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: -24px 0 40px; }
+.lp-jump a {
+    padding: 8px 16px; border: 1px solid var(--card-border); border-radius: 999px; color: var(--text-2);
+    font-size: .9rem; text-decoration: none; transition: border-color .15s, color .15s;
+}
+.lp-jump a:hover { border-color: var(--green); color: var(--green); }
+
+.lp-services { display: grid; gap: 24px; }
+.lp-service { display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px; scroll-margin-top: 90px; }
+.lp-service:hover { transform: none; }
+.lp-service__icon {
+    display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; margin-bottom: 16px;
+    background: rgba(30, 199, 115, .12); color: var(--green);
+}
+.lp-service__icon.is-blue { background: rgba(79, 140, 255, .14); color: var(--blue); }
+.lp-service__icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lp-service h3 { font-size: 1.45rem; }
+.lp-service__for { color: var(--text-2); }
+.lp-service__for strong { color: var(--text); }
+.lp-service__side { display: flex; flex-direction: column; border-left: 1px solid var(--card-border); padding-left: 40px; }
+.lp-service__side .checks { flex: 1; margin: 12px 0 24px; }
+.lp-service__label { font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: .08em; font-size: .82rem; margin: 0; }
+
+.grid--4 { grid-template-columns: repeat(4, 1fr); }
+
+.lp-cta { padding-top: 24px; }
+.lp-cta__box { display: grid; grid-template-columns: auto 1fr auto; gap: 32px; align-items: center; border-color: rgba(30, 199, 115, .5); }
+.lp-cta__box:hover { transform: none; }
+.lp-cta__box img { width: 120px; height: auto; }
+.lp-cta__box h2 { text-align: left; margin: 0 0 8px; font-size: clamp(1.5rem, 3vw, 2rem); }
+.lp-cta__box p { margin: 0; }
+
+@media (max-width: 960px) {
+    .lp-hero__inner { grid-template-columns: 1fr; }
+    .lp-hero__copy { text-align: center; }
+    .lp-hero__checks { display: inline-block; text-align: left; }
+    .grid--4 { grid-template-columns: repeat(2, 1fr); }
+    .lp-service { grid-template-columns: 1fr; gap: 24px; }
+    .lp-service__side { border-left: 0; padding-left: 0; border-top: 1px solid var(--card-border); padding-top: 24px; }
+    .lp-cta__box { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    .lp-cta__box h2 { text-align: center; }
+}
+@media (max-width: 760px) {
+    .lp-hero { padding: 36px 0 56px; }
+    .grid--4 { grid-template-columns: 1fr; }
+    .lp-jump { margin-top: -12px; }
 }

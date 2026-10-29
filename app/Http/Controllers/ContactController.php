@@ -12,9 +12,12 @@ class ContactController extends Controller
 {
     public function store(Request $request)
     {
+        // Back to the form they used: the landing page or the homepage
+        $back = ($request->input('source') === 'landing' ? route('landing') : route('home')).'#contact';
+
         // Hidden "website" field: real visitors leave it empty, simple bots fill it in.
         if (filled($request->input('website'))) {
-            return redirect()->to(route('home').'#contact')->with('sent', true);
+            return redirect()->to($back)->with('sent', true);
         }
 
         // The project box is a rich text editor: clean its HTML first, then check the length of the words.
@@ -23,7 +26,7 @@ class ContactController extends Controller
         $data = $request->validate(Enquiries::rules());
 
         if (! Recaptcha::passes($request, 'contact')) {
-            return redirect()->to(route('home').'#contact')
+            return redirect()->to($back)
                 ->withErrors(['captcha' => "We couldn't confirm you're not a robot. Please try again."])
                 ->withInput();
         }

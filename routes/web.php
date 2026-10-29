@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'home')->name('home');
 
+// Landing page for ads and search: every service on one page, with the quote form at the top
+Route::view('/services', 'landing')->name('landing');
+
 // Sitemap for search engines: the homepage, with the portfolio images
 Route::get('/sitemap.xml', function () {
     $projects = \Illuminate\Support\Facades\Schema::hasTable('projects')

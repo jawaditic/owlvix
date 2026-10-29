@@ -37,12 +37,13 @@ class ContactMessage extends Model
         return explode(' ', trim($this->name))[0] ?: $this->name;
     }
 
-    /** Where it was sent from: "Quote popup", "Contact form" or "Mobile app" ($short: "Popup"). */
+    /** Where it was sent from: "Quote popup", "Contact form", "Landing page" or "Mobile app" ($short: "Popup"). */
     public function sourceLabel(bool $short = false): string
     {
         return match ($this->source) {
             'popup' => $short ? 'Popup' : 'Quote popup',
             'app' => 'Mobile app',
+            'landing' => 'Landing page',
             default => 'Contact form',
         };
     }

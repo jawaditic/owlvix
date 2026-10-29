@@ -272,12 +272,13 @@
 
     /* Hero: the owl "chats" in the bubble. Plays when the visitor presses the play button. */
     const heroRoot = document.getElementById('owl-intro');
-    const heroText = heroRoot.querySelector('[data-owl-text]').textContent;
-    createOwl(heroRoot, {
-        lines: cfg.intro,
-        idleText: heroText,
-        doneText: cfg.intro[cfg.intro.length - 1].text,
-    });
+    if (heroRoot) {
+        createOwl(heroRoot, {
+            lines: cfg.intro,
+            idleText: heroRoot.querySelector('[data-owl-text]').textContent,
+            doneText: cfg.intro[cfg.intro.length - 1].text,
+        });
+    }
 
     /* ---------- Our work: category filter + "Show all" ---------- */
     const work = document.querySelector('[data-work]');
@@ -419,7 +420,8 @@
     // whichever comes first. (Opening it straight away covered the page before people saw what Owlvix does.)
     // Skip it right after a form was sent, or when the visitor came straight to the contact form, and never
     // open it over another popup (the exit survey) or while someone is typing in the contact form.
-    const skip = document.body.dataset.noPopup === '1' || location.hash === '#contact';
+    // The landing page has the form at the top, so it sets data-auto-quote="off".
+    const skip = document.body.dataset.noPopup === '1' || document.body.dataset.autoQuote === 'off' || location.hash === '#contact';
     if (!skip) {
         let autoDone = false;
         const autoOpen = trigger => {
