@@ -17,11 +17,7 @@
     $graph = [
         '@context' => 'https://schema.org',
         '@graph' => [
-            [
-                '@type' => 'Organization', '@id' => url('/').'#business', 'name' => 'Owlvix', 'url' => url('/'),
-                'logo' => asset('apple-touch-icon.png'), 'email' => config('mail.from.address'),
-                'sameAs' => array_values(array_filter([$t['profile_url'] ?? null])),
-            ],
+            \App\Support\Owlvix::organization(),
             [
                 '@type' => 'WebPage', '@id' => $url.'#page', 'url' => $url, 'name' => $p['name'],
                 'description' => $p['description'], 'inLanguage' => 'en',
@@ -78,29 +74,7 @@
 <body class="lp" data-no-popup="{{ session('sent') || $errors->any() ? '1' : '0' }}" data-auto-quote="off">
     <div class="bg-grid" aria-hidden="true"></div>
 
-    <header class="nav" id="top">
-        <div class="container nav__inner">
-            <a href="{{ route('home') }}" class="brand" aria-label="Owlvix home">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="Owlvix logo" width="36" height="36">
-                <span>Owl<span class="accent">vix</span></span>
-            </a>
-            <button class="nav__toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
-                <span></span><span></span><span></span>
-            </button>
-            <nav class="nav__links" id="nav-links">
-                <a href="{{ route('landing') }}">All services</a>
-                <a href="#how">How it works</a>
-                <a href="#cost">Cost</a>
-                <a href="#faq">FAQ</a>
-                <button type="button" class="theme-btn" data-theme-toggle aria-label="Switch to light mode" title="Switch theme">
-                    <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-                    <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
-                    <span class="theme-btn__label">Theme</span>
-                </button>
-                <a href="#contact" class="btn btn--sm">Get a free quote</a>
-            </nav>
-        </div>
-    </header>
+    @include('partials.site-nav', ['local' => array_merge(['process', 'reviews', 'faq', 'contact'], $projects->isNotEmpty() ? ['work'] : []), 'form' => true])
 
     <main>
         {{-- Hero: the offer and the quote form (service preselected) --}}

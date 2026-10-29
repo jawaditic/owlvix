@@ -48,31 +48,7 @@
 <body data-no-popup="{{ session('sent') || $errors->any() ? '1' : '0' }}">
     <div class="bg-grid" aria-hidden="true"></div>
 
-    <header class="nav" id="top">
-        <div class="container nav__inner">
-            <a href="#top" class="brand" aria-label="Owlvix home">
-                <img src="{{ asset('images/logo-mark.svg') }}" alt="Owlvix logo" width="36" height="36">
-                <span>Owl<span class="accent">vix</span></span>
-            </a>
-            <button class="nav__toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
-                <span></span><span></span><span></span>
-            </button>
-            <nav class="nav__links" id="nav-links">
-                <a href="#services">Services</a>
-                <a href="#work">Work</a>
-                <a href="#process">Process</a>
-                @if (count(\App\Support\Testimonials::data()['reviews']))<a href="#reviews">Reviews</a>@endif
-                <a href="#pricing">Pricing</a>
-                <a href="#faq">FAQ</a>
-                <button type="button" class="theme-btn" data-theme-toggle aria-label="Switch to light mode" title="Switch theme">
-                    <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-                    <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
-                    <span class="theme-btn__label">Theme</span>
-                </button>
-                <a href="#contact" class="btn btn--sm" data-quote>Get a free quote</a>
-            </nav>
-        </div>
-    </header>
+    @include('partials.site-nav')
 
     <main>
         {{-- Hero --}}
@@ -268,6 +244,21 @@
                         <p>Tested, deployed and handed over with full source code — plus support when you need it.</p>
                     </li>
                 </ol>
+            </div>
+        </section>
+
+        {{-- Who's behind Owlvix (full story on /about) --}}
+        <section class="section" id="about">
+            <div class="container">
+                <div class="card about-strip">
+                    <img src="{{ asset('images/owl.png') }}" alt="Owlvix owl mascot" width="120" height="126" loading="lazy">
+                    <div>
+                        <p class="eyebrow">Who's behind Owlvix</p>
+                        <h2>A small team led by Jawad Ahmad</h2>
+                        <p>Owlvix is a web, mobile and AI development studio founded by Jawad Ahmad, based in Pakistan and building software for clients worldwide since 2018. We were previously known as <strong>Anjtec</strong> on Fiverr — that's why the reviews below mention Anjtec and Jawad.</p>
+                    </div>
+                    <a href="{{ route('about') }}" class="btn btn--ghost">About us</a>
+                </div>
             </div>
         </section>
 

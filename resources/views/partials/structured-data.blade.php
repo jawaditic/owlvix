@@ -15,17 +15,7 @@
         '@context' => 'https://schema.org',
         '@graph' => [
             [
-                '@type' => 'Organization',
-                '@id' => url('/').'#business',
-                'name' => 'Owlvix',
-                'url' => url('/'),
-                'logo' => asset('apple-touch-icon.png'),
-                'image' => asset('images/og.png'),
-                'description' => 'Owlvix designs, builds and launches web apps, mobile apps and AI tools for growing businesses — from the first sketch to the server it runs on.',
-                'email' => config('mail.from.address'),
-                'areaServed' => 'Worldwide',
-                'knowsAbout' => ['Laravel', 'React', 'Next.js', 'Vue', 'React Native', 'Node.js', 'Python', 'Shopify', 'WordPress', 'OpenAI', 'Claude', 'Gemini'],
-                'sameAs' => array_values(array_filter([\App\Support\Testimonials::data()['profile_url'] ?? null])),
+                ...\App\Support\Owlvix::organization(),
                 'hasOfferCatalog' => [
                     '@type' => 'OfferCatalog',
                     'name' => 'Services',

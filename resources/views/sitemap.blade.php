@@ -27,6 +27,12 @@
     </url>
 @endforeach
     <url>
+        <loc>{{ route('about') }}</loc>
+        <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/about.blade.php'))) }}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+    <url>
         <loc>{{ route('privacy') }}</loc>
         <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/privacy.blade.php'))) }}</lastmod>
         <changefreq>yearly</changefreq>

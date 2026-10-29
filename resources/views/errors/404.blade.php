@@ -3,6 +3,7 @@
 
 @section('title', 'Page not found')
 @section('robots', 'noindex, follow')
+@section('no-auto-quote', '1')
 
 @section('content')
 <section class="section error-page">

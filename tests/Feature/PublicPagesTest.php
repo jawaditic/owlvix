@@ -57,4 +57,31 @@ class PublicPagesTest extends TestCase
             $this->get('/sitemap.xml')->assertSee('<loc>'.route('service.'.$slug).'</loc>', false);
         }
     }
+
+    public function test_about_page_names_the_founder_and_is_linked_everywhere(): void
+    {
+        $html = $this->get('/about')->assertOk()->assertSee('Jawad Ahmad')->assertSee('Anjtec')->assertSee('Pakistan')->getContent();
+        preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
+        $org = json_decode($m[1], true)['@graph'][1];
+        $this->assertSame(['Organization', 'Jawad Ahmad', 'Anjtec', 'PK'], [$org['@type'], $org['founder']['name'], $org['alternateName'], $org['address']['addressCountry']]);
+
+        foreach (['/', '/services', '/ai-chatbot-development', '/privacy'] as $page) {
+            $this->get($page)->assertSee('href="'.route('about').'"', false);
+        }
+        $this->get('/')->assertSee('id="about"', false);
+        $this->get('/sitemap.xml')->assertSee('<loc>'.route('about').'</loc>', false);
+    }
+
+    /** Every public page has the same main menu, so visitors can always reach About, Work, Pricing... */
+    public function test_every_page_has_the_same_main_menu(): void
+    {
+        foreach (['/', '/services', '/ai-chatbot-development', '/about', '/privacy'] as $page) {
+            $html = $this->get($page)->getContent();
+            preg_match('#<nav class="nav__links".*?</nav>#s', $html, $m);
+            $this->assertNotEmpty($m, $page);
+            foreach (['Services', 'Work', 'Process', 'Pricing', 'FAQ', 'About', 'Get a free quote'] as $label) {
+                $this->assertStringContainsString('>'.$label.'</a>', $m[0], "$page menu is missing $label");
+            }
+        }
+    }
 }

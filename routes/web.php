@@ -12,6 +12,7 @@ Route::view('/', 'home')->name('home');
 
 // Landing page for ads and search: every service on one page, with the quote form at the top
 Route::view('/services', 'landing')->name('landing');
+Route::view('/about', 'about')->name('about');
 Route::view('/privacy', 'privacy')->name('privacy');
 
 // One page per service (content in config/service_pages.php)

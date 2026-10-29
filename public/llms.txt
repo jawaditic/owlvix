@@ -2,6 +2,10 @@
 
 > Owlvix designs, builds and launches web apps, mobile apps and AI tools for growing businesses — from the first sketch to the server it runs on. 7+ years, 200+ projects delivered, clients worldwide. Free quote within 24 hours, and clients own 100% of the code.
 
+## About
+
+- [About Owlvix](https://owlvix.com/about): founded by Jawad Ahmad (founder and lead developer), with a small team of developers and designers. Based in Pakistan, working with clients worldwide; building software since 2018. Formerly known as Anjtec on Fiverr (200+ projects).
+
 ## Services
 
 Full details of every service, who it suits and what is included: https://owlvix.com/services
