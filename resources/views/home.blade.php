@@ -171,6 +171,7 @@
                         <span class="bar"></span>
                         <h3>AI Chatbots</h3>
                         <p>Website and customer support bots trained on your own documents, FAQs and products.</p>
+                        <a href="{{ route('service.ai-chatbot-development') }}" class="card__more">Learn more about AI chatbots →</a>
                     </article>
                     <article class="card">
                         <span class="bar bar--blue"></span>

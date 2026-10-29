@@ -51,7 +51,8 @@ class PublicPagesTest extends TestCase
             foreach ($imgs[0] as $img) {
                 $this->assertMatchesRegularExpression('/\salt="[^"]+"/', $img);
             }
-            // Linked from /services and listed in the sitemap
+            // Linked from the homepage and /services, and listed in the sitemap
+            $this->get('/')->assertSee('href="'.route('service.'.$slug).'"', false);
             $this->get('/services')->assertSee('href="'.route('service.'.$slug).'"', false);
             $this->get('/sitemap.xml')->assertSee('<loc>'.route('service.'.$slug).'</loc>', false);
         }

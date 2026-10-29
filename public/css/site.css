@@ -896,3 +896,5 @@ body.modal-open::after {
     .svc-split { grid-template-columns: 1fr; }
     .svc-gets { position: static; }
 }
+.card__more { display: inline-block; margin-top: 14px; font-weight: 600; color: var(--green); }
+.card__more:hover { text-decoration: underline; }
