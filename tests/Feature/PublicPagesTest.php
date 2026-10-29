@@ -34,4 +34,26 @@ class PublicPagesTest extends TestCase
     {
         $this->assertStringContainsString('RewriteRule ^index\.php(?:/(.*))?$ /$1 [L,R=301,NE]', file_get_contents(public_path('.htaccess')));
     }
+
+    public function test_service_pages_render_with_their_own_schema_and_form(): void
+    {
+        foreach (config('service_pages') as $slug => $page) {
+            $html = $this->get('/'.$slug)->assertOk()
+                ->assertSee('<link rel="canonical" href="'.route('service.'.$slug).'">', false)
+                ->assertSee('<h1>'.e($page['h1']).'</h1>', false)
+                ->assertSee('<option value="'.e($page['service']).'" selected>', false)
+                ->getContent();
+
+            preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
+            $this->assertSame(['Organization', 'WebPage', 'Service', 'FAQPage'], array_column(json_decode($m[1], true)['@graph'], '@type'));
+
+            preg_match_all('/<img\b[^>]*>/', $html, $imgs);
+            foreach ($imgs[0] as $img) {
+                $this->assertMatchesRegularExpression('/\salt="[^"]+"/', $img);
+            }
+            // Linked from /services and listed in the sitemap
+            $this->get('/services')->assertSee('href="'.route('service.'.$slug).'"', false);
+            $this->get('/sitemap.xml')->assertSee('<loc>'.route('service.'.$slug).'</loc>', false);
+        }
+    }
 }

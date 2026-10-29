@@ -8,7 +8,7 @@ Full details of every service, who it suits and what is included: https://owlvix
 
 - [Custom web apps](https://owlvix.com/services#web-apps): dashboards, portals, SaaS products and booking systems built with Laravel, React and Vue.
 - [Mobile apps](https://owlvix.com/services#mobile-apps): iOS and Android apps that share one codebase (React Native) and connect to existing systems.
-- [AI chatbots](https://owlvix.com/services#ai-chatbots): website and customer support bots trained on a business's own documents, FAQs and products.
+- [AI chatbots](https://owlvix.com/ai-chatbot-development): website and customer support bots trained on a business's own documents, FAQs and products.
 - [AI agents and automation](https://owlvix.com/services#ai-agents): repetitive tasks and workflows handed to AI that follows the business's rules and reports back.
 - [API integrations](https://owlvix.com/services#integrations): OpenAI, Claude, Gemini, payments, CRMs and ERPs connected to the tools a business already uses.
 - [Websites and Shopify stores](https://owlvix.com/services#websites): marketing sites, WordPress and Shopify builds.

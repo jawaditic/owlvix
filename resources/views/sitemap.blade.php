@@ -18,6 +18,14 @@
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
+@foreach (array_keys(config('service_pages')) as $slug)
+    <url>
+        <loc>{{ route('service.'.$slug) }}</loc>
+        <lastmod>{{ date('Y-m-d', max(filemtime(config_path('service_pages.php')), filemtime(resource_path('views/service.blade.php')))) }}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+@endforeach
     <url>
         <loc>{{ route('privacy') }}</loc>
         <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/privacy.blade.php'))) }}</lastmod>

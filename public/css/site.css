@@ -870,3 +870,29 @@ body.modal-open::after {
 @media (max-width: 600px) {
     .page-nav a:not(.btn) { display: none; }
 }
+
+/* ---------- Service pages (/ai-chatbot-development etc.) ---------- */
+.crumbs { display: flex; flex-wrap: wrap; gap: 8px; font-size: .88rem; color: var(--muted); margin-bottom: 20px; }
+.crumbs a { color: var(--text-2); }
+.crumbs a:hover { color: var(--green); }
+.crumbs [aria-current] { color: var(--muted); }
+.svc-intro { max-width: 820px; margin: 0 auto 72px; text-align: center; }
+.svc-intro h2 { margin-bottom: 16px; }
+.svc-intro p { color: var(--text-2); font-size: 1.1rem; line-height: 1.75; }
+.svc-split { display: grid; grid-template-columns: 1.3fr 1fr; gap: 48px; align-items: start; }
+.svc-prose h2 { text-align: left; margin-bottom: 20px; }
+.svc-prose .eyebrow { text-align: left; }
+.svc-prose p { color: var(--text-2); line-height: 1.75; margin-bottom: 16px; }
+.svc-prose .chips { margin-top: 24px; }
+.svc-gets { position: sticky; top: 96px; }
+.svc-gets:hover { transform: none; }
+.svc-gets .checks { margin: 16px 0 24px; }
+#cost .svc-prose h2, #cost .eyebrow { text-align: center; }
+.svc-cost__cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+.svc-related { margin: 32px 0 0; align-items: center; }
+.svc-related span { color: var(--muted); font-size: .9rem; }
+.lp-service__more { display: block; text-align: center; margin-top: 14px; font-weight: 600; color: var(--green); }
+@media (max-width: 960px) {
+    .svc-split { grid-template-columns: 1fr; }
+    .svc-gets { position: static; }
+}

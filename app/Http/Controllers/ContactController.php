@@ -12,8 +12,13 @@ class ContactController extends Controller
 {
     public function store(Request $request)
     {
-        // Back to the form they used: the landing page or the homepage
-        $back = ($request->input('source') === 'landing' ? route('landing') : route('home')).'#contact';
+        // Back to the form they used: the homepage, /services or a service page (e.g. /ai-chatbot-development)
+        $back = route('home');
+        if ($request->input('source') === 'landing') {
+            $path = trim((string) parse_url(url()->previous(), PHP_URL_PATH), '/');
+            $back = array_key_exists($path, config('service_pages')) ? route('service.'.$path) : route('landing');
+        }
+        $back .= '#contact';
 
         // Hidden "website" field: real visitors leave it empty, simple bots fill it in.
         if (filled($request->input('website'))) {

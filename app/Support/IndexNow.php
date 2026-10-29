@@ -31,10 +31,11 @@ class IndexNow
         app()->terminating(fn () => self::submit(self::pages()));
     }
 
-    /** Pages that show the portfolio, reviews or rating: the homepage and the services page. */
+    /** Pages that show the portfolio, reviews or rating: the homepage, /services and each service page. */
     public static function pages(): array
     {
-        return [self::homepage(), self::homepage().'/services'];
+        return [self::homepage(), self::homepage().'/services',
+            ...array_map(fn ($slug) => self::homepage().'/'.$slug, array_keys(config('service_pages', [])))];
     }
 
     /** The live site's address from APP_URL (https://owlvix.com), the same from web requests and the command line. */

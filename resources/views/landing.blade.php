@@ -22,7 +22,7 @@
             'tech' => ['React Native', 'Expo', 'Flutter', 'Firebase', 'REST APIs'],
         ],
         [
-            'id' => 'ai-chatbots', 'name' => 'AI Chatbot Development', 'service' => 'AI chatbot / agent', 'bar' => '',
+            'id' => 'ai-chatbots', 'page' => 'ai-chatbot-development', 'name' => 'AI Chatbot Development', 'service' => 'AI chatbot / agent', 'bar' => '',
             'icon' => '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/>',
             'intro' => 'Chatbots for your website, WhatsApp or support desk that answer from your own documents, FAQs and products — and hand over to a person when they should.',
             'for' => 'Teams answering the same customer questions every day, and shops that want to sell around the clock.',
@@ -135,19 +135,7 @@
 
     <script type="application/ld+json">{!! json_encode($graph, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
 
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/css/intlTelInput.min.css"></noscript>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css"></noscript>
-    <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
-    <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/theme.css') }}">
-    <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/site.css') }}">
-    <noscript><style>[data-reviews].is-loading > * { visibility: visible; } [data-reviews].is-loading::after { display: none; }</style></noscript>
-    @include('partials.analytics')
+    @include('partials.head-assets')
 </head>
 {{-- data-auto-quote="off": the form is already at the top, so the quote popup doesn't open by itself here --}}
 <body class="lp" data-no-popup="{{ session('sent') || $errors->any() ? '1' : '0' }}" data-auto-quote="off">
@@ -203,60 +191,7 @@
                     @endif
                 </div>
 
-                <form class="card form lp-form" id="quote-form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}" novalidate data-validate>
-                    @csrf
-                    <input type="hidden" name="source" value="landing">
-                    <div>
-                        <h2 class="lp-form__title">Get your free quote</h2>
-                        <p class="lp-form__note">Reply within one business day · No obligation</p>
-                    </div>
-                    @if (session('sent'))
-                        <div class="alert alert--ok" role="status">Thanks! Your message is in. We'll get back to you within one business day.</div>
-                    @endif
-                    @if ($errors->has('captcha'))
-                        <div class="alert alert--err" role="alert">{{ $errors->first('captcha') }}</div>
-                    @elseif ($errors->any())
-                        <div class="alert alert--err" role="alert">Please check the highlighted fields.</div>
-                    @endif
-
-                    <div class="hp" aria-hidden="true">
-                        <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-                    </div>
-
-                    <div class="row">
-                        <label>Name
-                            <input type="text" name="name" value="{{ old('name') }}" required maxlength="100" autocomplete="name" @error('name') aria-invalid="true" @enderror>
-                            @error('name')<small>{{ $message }}</small>@enderror
-                        </label>
-                        <label>Email
-                            <input type="email" name="email" value="{{ old('email') }}" required maxlength="150" autocomplete="email" @error('email') aria-invalid="true" @enderror>
-                            @error('email')<small>{{ $message }}</small>@enderror
-                        </label>
-                    </div>
-                    <div class="row">
-                        <label>What do you need?
-                            <select name="service" id="service">
-                                @foreach (\App\Support\Enquiries::SERVICES as $opt)
-                                    <option value="{{ $opt }}" @selected(old('service') === $opt)>{{ $opt }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label>Budget
-                            <select name="budget">
-                                @foreach (['Not sure yet', 'Under $500', '$500 – $2,000', '$2,000 – $5,000', '$5,000+'] as $opt)
-                                    <option value="{{ $opt }}" @selected(old('budget') === $opt)>{{ $opt }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                    </div>
-                    <div class="field">
-                        <label for="contact-message">Your project</label>
-                        <textarea id="contact-message" name="message" rows="4" required placeholder="What should it do? Who is it for? Any deadline?" data-rich @error('message') aria-invalid="true" @enderror>{{ old('message') }}</textarea>
-                        @error('message')<small>{{ $message }}</small>@enderror
-                    </div>
-                    <button type="submit" class="btn btn--block btn--glow">Get my free quote</button>
-                    <p class="form__privacy">We only use your details to reply to you. <a href="{{ route('privacy') }}">Privacy policy</a></p>
-                </form>
+                @include('partials.quote-form')
             </div>
         </section>
 
@@ -296,6 +231,9 @@
                                     @foreach ($s['gets'] as $g)<li>{{ $g }}</li>@endforeach
                                 </ul>
                                 <a href="#contact" class="btn btn--ghost btn--block" data-service="{{ $s['service'] }}">Get a quote for this</a>
+                                @if (! empty($s['page']) && config('service_pages.'.$s['page']))
+                                    <a href="{{ route('service.'.$s['page']) }}" class="lp-service__more">{{ $s['name'] }} in detail →</a>
+                                @endif
                             </div>
                         </article>
                     @endforeach
@@ -397,17 +335,6 @@
 
     @include('partials.footer', ['top' => route('home')])
 
-    @include('partials.quote-modal')
-    @include('partials.exit-survey')
-
-    <script>
-        window.OWLVIX = @json(\App\Support\OwlVoice::sets(['quote']));
-        window.OWLVIX.recaptchaKey = @json(config('services.recaptcha.site_key'));
-    </script>
-    <script src="{{ \App\Support\Asset::url('js/owl.js') }}" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@29.5.7/dist/js/intlTelInput.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js" defer></script>
-    <script src="{{ \App\Support\Asset::url('js/site.js') }}" defer></script>
-    <script src="{{ \App\Support\Asset::url('js/theme.js') }}" defer></script>
+    @include('partials.page-scripts')
 </body>
 </html>

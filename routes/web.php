@@ -14,6 +14,11 @@ Route::view('/', 'home')->name('home');
 Route::view('/services', 'landing')->name('landing');
 Route::view('/privacy', 'privacy')->name('privacy');
 
+// One page per service (content in config/service_pages.php)
+foreach (array_keys(config('service_pages')) as $slug) {
+    Route::view('/'.$slug, 'service', ['slug' => $slug])->name('service.'.$slug);
+}
+
 // Sitemap for search engines: the homepage, with the portfolio images
 Route::get('/sitemap.xml', function () {
     $projects = \Illuminate\Support\Facades\Schema::hasTable('projects')
