@@ -54,6 +54,7 @@ Route::view('/redirect-checker', 'tools.redirects')->name('redirect-check');
 Route::view('/robots-txt-checker', 'tools.robots')->name('robots-check');
 Route::view('/domain-age-checker', 'tools.domain')->name('domain-check');
 Route::view('/image-compressor', 'tools.image-compressor')->name('image-compressor');
+Route::view('/email-signature-generator', 'tools.email-signature')->name('email-signature');
 Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
 Route::view('/funnel-builder', 'tools.funnel-builder')->name('funnel-builder');
 // More free builders: the same editor with its own starting templates (App\Support\BuilderKits)

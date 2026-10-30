@@ -2195,3 +2195,45 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .lpb-leads th, .lpb-leads td { padding: 7px 8px; border-bottom: 1px solid var(--card-border); text-align: left; white-space: nowrap; }
 .lpb-leads th { position: sticky; top: 0; background: var(--card); color: var(--muted); font-weight: 700; }
 .lpb-integ h4 { margin: 10px 0 6px !important; }
+
+/* Email signature generator (tools/email-signature) */
+.esig-designs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+.esig-design { display: grid; gap: 8px; justify-items: center; padding: 12px 8px; }
+.esig-design i { display: block; width: 100%; max-width: 92px; height: 46px; border-radius: 8px; background: var(--field); border: 1px solid var(--card-border);
+    background-image: linear-gradient(var(--green), var(--green)), linear-gradient(var(--muted), var(--muted)), linear-gradient(var(--card-border), var(--card-border));
+    background-repeat: no-repeat; background-size: 40% 5px, 55% 4px, 45% 4px; background-position: 40% 12px, 40% 24px, 40% 34px; }
+.esig-design--photo i { background-image: radial-gradient(circle, var(--green) 9px, transparent 10px), linear-gradient(var(--muted), var(--muted)), linear-gradient(var(--card-border), var(--card-border)); background-size: 24px 24px, 45% 4px, 40% 4px; background-position: 10px 11px, 80% 16px, 76% 28px; }
+.esig-design--band i { background-image: linear-gradient(var(--green), var(--green)), linear-gradient(var(--muted), var(--muted)), linear-gradient(var(--card-border), var(--card-border)); background-size: 100% 16px, 50% 4px, 40% 4px; background-position: 0 0, 14px 24px, 14px 34px; }
+.esig-design--compact i { background-size: 60% 5px, 80% 4px, 0 0; background-position: 12px 14px, 12px 26px, 0 0; }
+.esig-design--centered i { background-image: radial-gradient(circle, var(--green) 7px, transparent 8px), linear-gradient(var(--muted), var(--muted)), linear-gradient(var(--card-border), var(--card-border)); background-size: 18px 18px, 50% 4px, 60% 4px; background-position: 50% 4px, 50% 27px, 50% 36px; }
+.esig-design--minimal i { background-size: 50% 5px, 70% 2px, 60% 4px; background-position: 12px 12px, 12px 22px, 12px 32px; }
+.esig-design strong { font-size: .82rem; }
+.esig-form { gap: 14px; }
+.esig-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.esig-hint { margin: 0; font-size: .82rem; color: var(--muted); }
+.esig-form select { padding: 11px 13px; border-radius: 12px; border: 1px solid var(--card-border); background: var(--field); color: var(--text); font: 500 .95rem Inter, sans-serif; }
+.esig-form input[type="color"] { padding: 4px; height: 44px; cursor: pointer; }
+.esig-acc { border-top: 1px solid var(--card-border); padding-top: 12px; display: grid; gap: 12px; }
+.esig-acc[open] { gap: 12px; }
+.esig-acc summary { cursor: pointer; font-weight: 700; color: var(--text); }
+.esig-acc > :not(summary) { margin-top: 12px; }
+.esig-reset { justify-self: start; background: none; border: 0; padding: 0; color: var(--muted); font: 600 .85rem Inter, sans-serif; text-decoration: underline; cursor: pointer; }
+.esig-out { display: grid; gap: 16px; min-width: 0; }
+.esig-out .meta-issues:empty { display: none; }
+.esig-preview-card { padding: 0; overflow: hidden; }
+.esig-preview-card:hover, .esig-how:hover { transform: none; }
+.esig-mail { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: var(--field); border-bottom: 1px solid var(--card-border); font-size: .82rem; }
+.esig-mail span { width: 10px; height: 10px; border-radius: 50%; background: #f87171; }
+.esig-mail span:nth-child(2) { background: #fbbf24; } .esig-mail span:nth-child(3) { background: #34d399; }
+.esig-mail b { margin-left: 8px; color: var(--muted); font-weight: 600; }
+.esig-preview { padding: 28px 24px; background: #ffffff; color: #1f2937; overflow-x: auto; min-height: 180px; }
+.esig-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.esig-copied { margin: -6px 0 0; font-weight: 600; color: var(--green); }
+.esig-copied[hidden] { display: none; }
+.esig-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.esig-tabs button { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--card-border); background: var(--field); color: var(--text-2); font: 600 .85rem Inter, sans-serif; cursor: pointer; }
+.esig-tabs button[aria-selected="true"] { background: var(--green); border-color: var(--green); color: #fff; }
+.esig-how ol { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; color: var(--text-2); font-size: .92rem; }
+.esig-how ol[hidden] { display: none; }
+@media (max-width: 960px) { .esig-designs { grid-template-columns: repeat(3, minmax(0, 1fr)); } .esig-layout { grid-template-columns: 1fr; } .esig-form { position: static; } }
+@media (max-width: 520px) { .esig-2 { grid-template-columns: 1fr; } .esig-designs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

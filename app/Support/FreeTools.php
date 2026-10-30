@@ -24,6 +24,7 @@ class FreeTools
             ['route' => 'portfolio-builder', 'group' => 'build', 'name' => 'Portfolio builder', 'desc' => 'Show your work — photographers, designers, freelancers', 'icon' => 'eye', 'tone' => 'is-blue'],
             ['route' => 'link-in-bio-builder', 'group' => 'build', 'name' => 'Link in bio builder', 'desc' => 'One link for Instagram & TikTok — free Linktree alternative', 'icon' => 'link', 'tone' => ''],
             ['route' => 'coming-soon-builder', 'group' => 'build', 'name' => 'Coming soon page builder', 'desc' => 'Countdown, waitlist form and socials', 'icon' => 'rocket', 'tone' => 'is-blue'],
+            ['route' => 'email-signature', 'group' => 'build', 'name' => 'Email signature generator', 'desc' => 'Gmail & Outlook signatures — 6 designs, copy & paste', 'icon' => 'mail', 'tone' => ''],
             ['route' => 'tech-stack', 'group' => 'build', 'name' => 'Tech stack detector', 'desc' => 'What is a website built with?', 'icon' => 'code', 'tone' => ''],
             ['route' => 'meta-preview', 'group' => 'build', 'name' => 'Meta tag & social preview', 'desc' => 'Google, WhatsApp & social previews', 'icon' => 'eye', 'tone' => 'is-blue'],
             ['route' => 'schema-generator', 'group' => 'build', 'name' => 'Schema markup generator', 'desc' => 'Ready-to-paste JSON-LD for Google', 'icon' => 'clipboard', 'tone' => ''],
