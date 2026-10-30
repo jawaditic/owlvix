@@ -6,6 +6,7 @@ use App\Mail\NewEnquiry;
 use App\Mail\QuoteReceived;
 use App\Models\ContactMessage;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 
 /** A new enquiry from the website forms or the mobile app: the rules it must pass, and what happens once it's in. */
 class Enquiries
@@ -53,6 +54,26 @@ class Enquiries
         ];
     }
 
+    /**
+     * Whether we may send another confirmation email to this address today. The forms email whatever address is
+     * typed in, so this stops anyone using them to flood someone else's inbox: at most 3 a day per address and
+     * 20 a day from one IP. (The owner's copy is always sent.)
+     */
+    public static function mayEmail(string $email, ?string $ip): bool
+    {
+        $keys = ['mail-to:'.sha1(strtolower(trim($email))) => 3, 'mail-ip:'.$ip => 20];
+        foreach ($keys as $key => $max) {
+            if (RateLimiter::tooManyAttempts($key, $max)) {
+                return false;
+            }
+        }
+        foreach (array_keys($keys) as $key) {
+            RateLimiter::hit($key, 86400);
+        }
+
+        return true;
+    }
+
     /** Save the enquiry, then email the visitor and the owner and alert the admin app. */
     public static function create(array $data, ?string $ip): ContactMessage
     {
@@ -64,7 +85,9 @@ class Enquiries
 
         // The message is already saved, so a mail or push problem shouldn't stop the visitor.
         try {
-            Mail::to($enquiry->email, $enquiry->name)->send(new QuoteReceived($enquiry));
+            if (self::mayEmail($enquiry->email, $ip)) {
+                Mail::to($enquiry->email, $enquiry->name)->send(new QuoteReceived($enquiry));
+            }
             if ($owner = config('admin.email')) {
                 Mail::to($owner)->send(new NewEnquiry($enquiry));
             }

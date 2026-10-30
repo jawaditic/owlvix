@@ -3,8 +3,8 @@
 
 @section('preheader', 'We are preparing a full SEO audit of '.$host.'. Expect it within 2 business days.')
 @section('eyebrow', 'Audit requested ✓')
-@section('headline', 'Thanks, '.e($lead->firstName()).'! Your full audit is on its way.')
-@section('subline', 'We are auditing '.e($host).' and will email your report within 2 business days.')
+@section('headline', 'Thanks, '.($lead->firstName()).'! Your full audit is on its way.')
+@section('subline', 'We are auditing '.($host).' and will email your report within 2 business days.')
 @section('owl', '1')
 
 @section('body')

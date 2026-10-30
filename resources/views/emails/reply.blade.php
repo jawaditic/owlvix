@@ -1,8 +1,8 @@
 @extends('emails.layout')
 
-@section('preheader', e(\Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $reply->body), 110)))
+@section('preheader', (\Illuminate\Support\Str::limit(preg_replace('/\s+/', ' ', $reply->body), 110)))
 @section('eyebrow', 'Message from Owlvix')
-@section('headline', 'About your '.e($enquiry->service ? strtolower($enquiry->service) : 'project').' request')
+@section('headline', 'About your '.($enquiry->service ? strtolower($enquiry->service) : 'project').' request')
 @section('subline', 'A personal reply from our team.')
 
 @section('body')

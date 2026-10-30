@@ -177,7 +177,7 @@ class BrokenLinks
             return $result;
         }
         $responses = Http::pool(fn (Pool $pool) => array_map(fn ($u) => $pool->as($u)
-            ->withOptions(['allow_redirects' => false, 'curl' => [CURLOPT_RESOLVE => [$targets[$u]]]])
+            ->withOptions(SafeFetch::options($targets[$u]))
             ->withHeaders(['User-Agent' => self::UA, 'Accept' => $get ? 'text/html,*/*;q=0.8' : '*/*'])
             ->timeout($timeout)->connectTimeout(5)
             ->{$get ? 'get' : 'head'}($u), array_keys($targets)), 10);
@@ -185,6 +185,12 @@ class BrokenLinks
         foreach ($responses as $u => $res) {
             if (! $res instanceof \Illuminate\Http\Client\Response) {
                 $timedOut = $res instanceof \Throwable && str_contains(strtolower($res->getMessage()), 'timed out');
+                // A big file (video, PDF) hit the download cap: it's there, so the link works
+                if ($res instanceof \Throwable && str_contains(strtolower($res->getMessage()), 'maximum file size')) {
+                    $result[$u] = ['ok' => true, 'code' => 200, 'status' => 200, 'url' => $u] + ($get ? ['body' => ''] : []);
+
+                    continue;
+                }
                 $result[$u] = ['ok' => false, 'code' => 0, 'timeout' => $timedOut, 'error' => $timedOut ? "Did not respond within {$timeout} seconds" : 'Could not connect'];
 
                 continue;
@@ -192,7 +198,7 @@ class BrokenLinks
             $code = $res->status();
             $result[$u] = ['ok' => $code >= 200 && $code < 300, 'code' => $code, 'status' => $code, 'url' => $u]
                 + ($res->header('Location') ? ['location' => SafeFetch::absolute($res->header('Location'), $u)] : [])
-                + ($get ? ['body' => substr($res->body(), 0, 3_000_000)] : []);
+                + ($get ? ['body' => (string) SafeFetch::body($res)] : []);
         }
 
         return $result;

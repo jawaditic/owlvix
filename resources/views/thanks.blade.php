@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>Thank you, {{ $enquiry->firstName() }} — Owlvix</title>
+    <title>Thank you — Owlvix</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,7 +31,7 @@
         .thanks__summary strong { color: var(--text); }
         .thanks .board__play { border-color: var(--card-border); }
     </style>
-    @include('partials.analytics')
+    @include('partials.analytics', ['pageLocation' => url('/thanks')])
 </head>
 <body>
     <div class="bg-grid" aria-hidden="true"></div>

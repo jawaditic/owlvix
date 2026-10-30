@@ -22,7 +22,7 @@
             <li>your name and email address;</li>
             <li>your phone number, if you choose to add it;</li>
             <li>the service you need, your budget range and your project description;</li>
-            <li>the IP address the request came from, to help us block spam.</li>
+            <li>the IP address the request came from, to help us block spam. It is deleted after 90 days.</li>
         </ul>
         <p>If you answer our short "before you go" survey, we keep your answer, any comment you write, the page you were on and your email address if you choose to give it.</p>
         <p>We use this information only to reply to you, prepare a quote and work on your project. We send you a confirmation email when your request arrives. We don't sell your information or add you to a mailing list.</p>

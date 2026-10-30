@@ -7,7 +7,7 @@
 @endphp
 
 @section('title', 'About Owlvix — Jawad Ahmad and Team')
-@section('description', 'Owlvix is a web, mobile and AI development studio founded by Jawad Ahmad in Pakistan (Fiverr: @anjtec). Building software since 2018 for clients in the USA, UK and 70+ countries.')
+@section('description', 'Owlvix is a web, mobile and AI development studio founded by Jawad Ahmad (Fiverr: @anjtec), building software since 2018 for clients in 70+ countries.')
 @section('canonical', route('about'))
 
 @section('head')

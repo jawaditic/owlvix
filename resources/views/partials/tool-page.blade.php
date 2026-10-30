@@ -16,7 +16,7 @@
             <label class="speed-form__url">
                 <span class="sr-only">{{ $label ?? 'Website address' }}</span>
                 <span class="speed-form__icon" aria-hidden="true">{!! \App\Support\Icons::svg($icon) !!}</span>
-                <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="{{ $placeholder ?? 'example.com' }}" value="{{ request('url') }}" required maxlength="500">
+                <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="{{ $placeholder ?? 'example.com' }}" value="{{ is_string(request('url')) ? request('url') : '' }}" required maxlength="500">
             </label>
             <button type="submit" class="btn btn--glow">{{ $button }}
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>

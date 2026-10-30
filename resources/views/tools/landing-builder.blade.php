@@ -14,7 +14,7 @@
 @endphp
 
 @section('title', 'Free Website Builder — Drag & Drop, Like Elementor')
-@section('description', 'Free drag-and-drop website builder: 45+ widgets, columns, styling per device, animations, popups, templates and a working contact form. Download or publish. No sign-up to start.')
+@section('description', 'Free drag-and-drop page builder: 45+ widgets, templates, animations, popups and a working contact form. Download or publish. No sign-up to start.')
 @section('canonical', route('landing-builder'))
 @section('no-auto-quote', '1')
 

@@ -6,7 +6,9 @@ use App\Mail\AuditRequested;
 use App\Mail\NewEnquiry;
 use App\Mail\SeoTips;
 use App\Models\ContactMessage;
+use App\Support\Enquiries;
 use App\Support\Push;
+use App\Support\Recaptcha;
 use App\Support\SeoCheck;
 use App\Support\SpeedTest;
 use Illuminate\Http\Request;
@@ -18,7 +20,7 @@ class SeoCheckerController extends Controller
 {
     public function show(Request $request)
     {
-        return view('seo-checker', ['url' => (string) $request->query('url', '')]);
+        return view('seo-checker', ['url' => is_string($request->query('url')) ? $request->query('url') : '']);
     }
 
     public function run(Request $request)
@@ -50,6 +52,9 @@ class SeoCheckerController extends Controller
             'email' => ['required', 'email', 'max:150'],
             'name' => ['nullable', 'string', 'max:100'],
         ], ['email.required' => 'Please enter your email.', 'email.email' => 'Please enter a valid email.']);
+        if (! Recaptcha::passes($request, 'seo_email')) {
+            return response()->json(['ok' => false, 'error' => "We couldn't confirm you're not a robot. Please try again."], 422);
+        }
 
         $url = SpeedTest::normalize($data['url']);
         $report = $url ? SeoCheck::cached($url) : null;
@@ -70,15 +75,16 @@ class SeoCheckerController extends Controller
             'ip' => $request->ip(),
         ]);
 
+        // The lead is saved, so a mail problem is reported but doesn't fail the request (a retry would save it twice)
         try {
-            Mail::to($lead->email, $data['name'] ?: null)->send(new SeoTips($report, $data['name'] ?? null));
+            if (Enquiries::mayEmail($lead->email, $request->ip())) {
+                Mail::to($lead->email, $data['name'] ?: null)->send(new SeoTips($report, $data['name'] ?? null));
+            }
             if ($owner = config('admin.email')) {
                 Mail::to($owner)->send(new NewEnquiry($lead));
             }
         } catch (\Throwable $e) {
             report($e);
-
-            return response()->json(['ok' => false, 'error' => 'We could not send the email right now. Please try again later.'], 502);
         }
         Push::toAdmins('SEO checker lead: '.$lead->email, $report['final_url'].' · score '.$report['score'], ['type' => 'enquiry', 'id' => $lead->id]);
 
@@ -99,6 +105,9 @@ class SeoCheckerController extends Controller
         ], [
             'name.required' => 'Please enter your name.', 'email.required' => 'Please enter your email.', 'email.email' => 'Please enter a valid email.',
         ]);
+        if (! Recaptcha::passes($request, 'seo_audit')) {
+            return response()->json(['ok' => false, 'error' => "We couldn't confirm you're not a robot. Please try again."], 422);
+        }
         $url = SpeedTest::normalize($data['url']);
         if (! $url) {
             return response()->json(['ok' => false, 'error' => 'Please run the free check first, then request the full audit.'], 422);
@@ -124,7 +133,9 @@ class SeoCheckerController extends Controller
         ]);
 
         try {
-            Mail::to($lead->email, $lead->name)->send(new AuditRequested($lead, $url));
+            if (Enquiries::mayEmail($lead->email, $request->ip())) {
+                Mail::to($lead->email, $lead->name)->send(new AuditRequested($lead, $url));
+            }
             if ($owner = config('admin.email')) {
                 Mail::to($owner)->send(new NewEnquiry($lead));
             }

@@ -201,6 +201,7 @@
         const fd = new FormData(ef); fd.append('url', last.url);
         const btn = ef.querySelector('button'); btn.disabled = true; btn.textContent = 'Sending…';
         try {
+            fd.append('g-recaptcha-response', await (window.owlvixCaptcha?.('seo_email') ?? ''));
             const res = await fetch(ef.action, { method: 'POST', body: fd, headers: { Accept: 'application/json' } });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json.ok) throw new Error(json.error || json.errors?.email?.[0] || json.message || 'Could not send. Please try again.');

@@ -165,7 +165,7 @@ class EmailCheck
             $add('Spam protection', 'SPF record', 'fail', count($spf).' SPF records found — having more than one makes SPF fail completely.',
                 'Merge them into one TXT record that starts with v=spf1 and lists every include:.');
         } else {
-            $all = preg_match('/([+\-~?]?)all\b/i', $spf[0], $m) ? ($m[1] ?: '+') : null;
+            $all = preg_match('/(?:^|\s)([+\-~?]?)all(?:\s|$)/i', $spf[0], $m) ? ($m[1] ?: '+') : null;
             [$status, $found, $tip] = match ($all) {
                 '-' => ['pass', 'SPF found, strict (-all): servers you have not listed are rejected.', ''],
                 '~' => ['pass', 'SPF found (~all): emails from unlisted servers are marked as suspicious.', ''],

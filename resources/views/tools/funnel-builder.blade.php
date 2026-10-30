@@ -13,7 +13,7 @@
 @endphp
 
 @section('title', 'Free Funnel Builder — Sales Funnels, Opt-ins & A/B Tests')
-@section('description', 'Build sales funnels for free: opt-in pages, sales pages, upsells and thank-you pages. Collect leads, connect Mailchimp or Brevo, take payments with your own Stripe or PayPal link, and A/B test every step.')
+@section('description', 'Free sales funnel builder: opt-in, sales, upsell and thank-you pages. Collect leads, connect Mailchimp or Brevo, take payments and A/B test every step.')
 @section('canonical', route('funnel-builder'))
 @section('no-auto-quote', '1')
 

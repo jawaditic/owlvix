@@ -7,7 +7,7 @@
         window.dataLayer = window.dataLayer || [];
         function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-        gtag('config', @json($gaId));
+        gtag('config', @json($gaId){!! isset($pageLocation) ? ', '.json_encode(['page_location' => $pageLocation], JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) : '' !!});
         window.track = function (name, params) { gtag('event', name, params || {}); };
         @if (session('sent'))
             // The server has just saved an enquiry: this is a real lead

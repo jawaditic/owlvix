@@ -19,14 +19,20 @@ class ContactController extends Controller
             $back = array_key_exists($path, config('service_pages')) ? route('service.'.$path) : route('landing');
         }
         $back .= '#contact';
+        // The popup works on every page: go back to that page, where it reopens with the errors
+        if ($request->input('source') === 'popup') {
+            $previous = url()->previous();
+            $back = parse_url($previous, PHP_URL_HOST) === $request->getHost() ? strtok($previous, '#') : route('home');
+        }
 
         // Hidden "website" field: real visitors leave it empty, simple bots fill it in.
         if (filled($request->input('website'))) {
-            return redirect()->to($back)->with('sent', true);
+            return redirect()->to($back)->with('sent_fake', true); // looks sent, but isn't counted as a lead
         }
 
         // The project box is a rich text editor: clean its HTML first, then check the length of the words.
-        $request->merge(['message' => RichText::clean($request->input('message'))]);
+        $message = $request->input('message');
+        $request->merge(['message' => RichText::clean(is_string($message) ? $message : null)]);
 
         $data = $request->validate(Enquiries::rules());
 
@@ -39,7 +45,7 @@ class ContactController extends Controller
         $enquiry = Enquiries::create($data, $request->ip());
 
         // Show the thank-you page (the owl talks there). The flash data lets analytics count the lead on it.
-        return redirect()->to(URL::signedRoute('thanks', $enquiry))
+        return redirect()->to(URL::temporarySignedRoute('thanks', now()->addDays(30), $enquiry))
             ->with('sent', true)->with('lead_source', $enquiry->source)->with('lead_service', $enquiry->service);
     }
 }

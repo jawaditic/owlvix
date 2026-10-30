@@ -28,3 +28,7 @@ Artisan::command('indexnow:ping {url?*}', function (array $url) {
 \Illuminate\Support\Facades\Schedule::command('model:prune', [
     '--model' => [\App\Models\BuilderStat::class, \App\Models\BuilderLead::class],
 ])->daily();
+
+// Visitors' IP addresses are kept only to help block spam: forget them after 90 days (the enquiry itself stays).
+\Illuminate\Support\Facades\Schedule::call(fn () => \App\Models\ContactMessage::whereNotNull('ip')
+    ->where('created_at', '<', now()->subDays(90))->update(['ip' => null]))->daily()->name('forget-enquiry-ips');

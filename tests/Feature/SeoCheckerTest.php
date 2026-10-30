@@ -18,6 +18,29 @@ class SeoCheckerTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['services.recaptcha.site_key' => null]); // the captcha has its own test below
+    }
+
+    public function test_email_forms_need_the_captcha_and_cap_emails_per_address(): void
+    {
+        Mail::fake();
+        config(['services.recaptcha.site_key' => 'site', 'services.recaptcha.secret_key' => 'secret']);
+        $this->postJson('/seo-checker/audit', ['url' => 'example.com', 'name' => 'Ana', 'email' => 'ana@example.org'])
+            ->assertStatus(422)->assertJsonPath('ok', false);
+        $this->postJson('/seo-checker/email', ['url' => 'example.com', 'email' => 'ana@example.org'])->assertStatus(422);
+        $this->assertSame(0, ContactMessage::count());
+
+        // At most 3 confirmation emails a day to one address, however they're asked for
+        $this->assertTrue(\App\Support\Enquiries::mayEmail('victim@example.org', '1.1.1.1'));
+        $this->assertTrue(\App\Support\Enquiries::mayEmail('Victim@example.org', '2.2.2.2'));
+        $this->assertTrue(\App\Support\Enquiries::mayEmail('victim@example.org', '3.3.3.3'));
+        $this->assertFalse(\App\Support\Enquiries::mayEmail('victim@example.org', '4.4.4.4'));
+        $this->assertTrue(\App\Support\Enquiries::mayEmail('someone@example.org', '4.4.4.4'));
+    }
+
     private function page(string $html, array $headers = []): array
     {
         return ['ok' => true, 'url' => 'https://example.com/', 'status' => 200, 'headers' => $headers + ['content-type' => ['text/html']], 'body' => $html, 'ms' => 300, 'redirects' => 0];

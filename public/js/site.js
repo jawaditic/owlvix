@@ -585,6 +585,8 @@
         setMuted(false);
     });
     modal.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+    // The server turned the quote down (e.g. a field it didn't accept): show the popup again with the message
+    if (modal.hasAttribute('data-reopen')) openModal('errors');
     // Click on the dark backdrop closes it
     modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 

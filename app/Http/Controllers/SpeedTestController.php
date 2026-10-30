@@ -12,7 +12,7 @@ class SpeedTestController extends Controller
     public function show(Request $request)
     {
         return view('speed-test', [
-            'url' => (string) $request->query('url', ''),
+            'url' => (is_string($request->query('url')) ? $request->query('url') : ''),
             'strategy' => $request->query('strategy') === 'desktop' ? 'desktop' : 'mobile',
         ]);
     }
@@ -44,7 +44,7 @@ class SpeedTestController extends Controller
     /** The report as a branded A4 PDF, built on the server (dompdf) from the cached test result. */
     public function pdf(Request $request)
     {
-        $url = SpeedTest::normalize((string) $request->query('url', ''));
+        $url = SpeedTest::normalize((is_string($request->query('url')) ? $request->query('url') : ''));
         $strategy = $request->query('strategy') === 'desktop' ? 'desktop' : 'mobile';
         abort_unless($url, 404);
 

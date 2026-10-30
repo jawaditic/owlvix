@@ -348,10 +348,12 @@
                 <form class="card form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
                     @csrf
                     <input type="hidden" name="source" value="contact">
-                    @if (session('sent'))
+                    @if (session('sent') || session('sent_fake'))
                         <div class="alert alert--ok" role="status">Thanks! Your message is in. We'll get back to you within one business day.</div>
                     @endif
-                    @if ($errors->has('captcha'))
+                    @if (old('source') === 'popup')
+                        {{-- popup errors show in the popup --}}
+                    @elseif ($errors->has('captcha'))
                         <div class="alert alert--err" role="alert">{{ $errors->first('captcha') }}</div>
                     @elseif ($errors->any())
                         <div class="alert alert--err" role="alert">Please check the highlighted fields.</div>

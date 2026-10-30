@@ -85,12 +85,15 @@ class MessageController extends Controller
 
         return response()->streamDownload(function () use ($rows) {
             $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF"); // UTF-8 mark, so Excel shows accented names correctly
+            // Visitors typed these: a cell starting with = + - @ would run as a formula in Excel or Sheets
+            $cell = fn ($v) => is_string($v) && preg_match('/^[=+\-@\t\r]/', $v) ? "'".$v : $v;
             fputcsv($out, ['Date', 'Name', 'Email', 'Phone', 'Service', 'Budget', 'Source', 'Status', 'Message']);
             foreach ($rows as $m) {
-                fputcsv($out, [
+                fputcsv($out, array_map($cell, [
                     $m->created_at->format('Y-m-d H:i'), $m->name, $m->email, $m->phone, $m->service,
                     $m->budget, $m->source, $m->isUnread() ? 'New' : 'Read', $m->messageText(),
-                ]);
+                ]));
             }
             fclose($out);
         }, 'owlvix-messages-'.now()->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv']);
@@ -99,7 +102,7 @@ class MessageController extends Controller
     private function filtered(Request $request): Builder
     {
         return ContactMessage::query()
-            ->when($request->input('q'), function (Builder $q, string $term) {
+            ->when(is_string($request->input('q')) ? trim($request->input('q')) : null, function (Builder $q, string $term) {
                 $q->where(fn (Builder $w) => $w
                     ->where('name', 'like', "%{$term}%")
                     ->orWhere('email', 'like', "%{$term}%")

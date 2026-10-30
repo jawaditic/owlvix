@@ -10,8 +10,8 @@
 
 @section('preheader', 'Your SEO score is '.$r['score'].'/100 — here is what to fix first on '.$host.'.')
 @section('eyebrow', 'Free SEO check ✓')
-@section('headline', ($name ? 'Hi '.e(strtok($name, ' ')).', h' : 'H').'ere are your SEO tips')
-@section('subline', 'For '.e($host).' — checked '.\Illuminate\Support\Carbon::parse($r['checked_at'])->format('j M Y'))
+@section('headline', ($name ? 'Hi '.(strtok($name, ' ')).', h' : 'H').'ere are your SEO tips')
+@section('subline', 'For '.($host).' — checked '.\Illuminate\Support\Carbon::parse($r['checked_at'])->format('j M Y'))
 
 @section('body')
     {{-- Score --}}

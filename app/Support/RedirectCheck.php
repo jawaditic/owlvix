@@ -31,7 +31,16 @@ class RedirectCheck
         $bare = preg_replace('/^www\./', '', $p['host']);
         $path = ($p['path'] ?? '/').(isset($p['query']) ? '?'.$p['query'] : '');
         $variants = [];
-        foreach (["http://$bare", "https://$bare", "http://www.$bare", "https://www.$bare"] as $v) {
+        // www / non-www only matters for the main domain (example.com, example.co.uk); blog.example.com just gets http/https
+        $labels = explode('.', $bare);
+        $root = count($labels) <= 2 || (count($labels) === 3 && strlen($labels[1]) <= 3 && strlen($labels[2]) === 2);
+        $hosts = $root ? [$bare, "www.$bare"] : [$p['host']];
+        $versions = [];
+        foreach ($hosts as $h) {
+            $versions[] = "http://$h";
+            $versions[] = "https://$h";
+        }
+        foreach ($versions as $v) {
             $c = $v.$path === $url ? $chain : self::follow($v.$path);
             $variants[] = ['url' => $v.$path, 'final' => end($c)['url'], 'code' => end($c)['code'], 'hops' => count($c) - 1, 'error' => end($c)['error'] ?? null];
         }
@@ -75,7 +84,7 @@ class RedirectCheck
         }
         $start = microtime(true);
         try {
-            $res = Http::withOptions(['allow_redirects' => false, 'stream' => true, 'curl' => [CURLOPT_RESOLVE => ["$host:$port:$ip"]]])
+            $res = Http::withOptions(SafeFetch::options("$host:$port:$ip"))
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; OwlvixRedirectChecker/1.0; +https://owlvix.com/redirect-checker)', 'Accept' => 'text/html,*/*;q=0.8'])
                 ->timeout(10)->connectTimeout(6)->get($url);
         } catch (\Throwable $e) {
@@ -83,7 +92,6 @@ class RedirectCheck
                 'error' => str_contains(strtolower($e->getMessage()), 'ssl') || str_contains(strtolower($e->getMessage()), 'certificate') ? 'SSL certificate problem' : 'No response'];
         }
         $ms = (int) round((microtime(true) - $start) * 1000);
-        $res->toPsrResponse()->getBody()->close();
         $headers = [];
         foreach ($res->headers() as $k => $v) {
             $headers[strtolower($k)] = implode(', ', $v);
@@ -132,7 +140,7 @@ class RedirectCheck
             $add('One main address', 'fail', 'Different versions of your address end on different pages: '.implode(', ', $finals).'.',
                 'Pick one version (e.g. https://www.…) and 301-redirect the others to it, so Google does not split your rankings.');
         } elseif ($dead) {
-            $add('One main address', 'warn', count($dead).' of the 4 versions (http/https, with/without www) do not load.', 'Make every version redirect to your main address — some visitors type it differently.');
+            $add('One main address', 'warn', count($dead).' of the '.count($variants).' versions ('.(count($variants) > 2 ? 'http/https, with/without www' : 'http/https').') do not load.', 'Make every version redirect to your main address — some visitors type it differently.');
         } else {
             $add('One main address', 'pass', 'http, https, www and non-www all end on the same address.');
         }

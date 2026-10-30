@@ -21,7 +21,7 @@
                 @csrf
                 <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
                 @if ($standalone ?? false)
-                    <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="Your website, e.g. example.com" required maxlength="500" aria-label="Your website" value="{{ request('url') }}">
+                    <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="Your website, e.g. example.com" required maxlength="500" aria-label="Your website" value="{{ is_string(request('url')) ? request('url') : '' }}">
                 @else
                     <input type="hidden" name="url">
                     <p class="audit-card__for">Audit for <strong data-audit-site>your site</strong></p>
@@ -52,7 +52,9 @@
         if (!af.elements.url.value) { amsg.textContent = 'Please run the free check above first.'; amsg.hidden = false; return; }
         const btn = af.querySelector('button'), label = btn.innerHTML; btn.disabled = true; btn.textContent = 'Sending…';
         try {
-            const res = await fetch(af.action, { method: 'POST', body: new FormData(af), headers: { Accept: 'application/json' } });
+            const fd = new FormData(af);
+            fd.append('g-recaptcha-response', await (window.owlvixCaptcha?.('seo_audit') ?? ''));
+            const res = await fetch(af.action, { method: 'POST', body: fd, headers: { Accept: 'application/json' } });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json.ok) throw new Error(json.error || Object.values(json.errors || {})[0]?.[0] || json.message || 'Could not send. Please try again.');
             amsg.textContent = json.already ? '✓ We already have your request — your audit is on its way.' : '✓ Requested! Check your inbox for a confirmation. Your full audit arrives within 2 business days.';

@@ -2,12 +2,12 @@
 @php
     $font = "Inter, 'Segoe UI', Helvetica, Arial, sans-serif";
     $display = "Poppins, 'Segoe UI', Helvetica, Arial, sans-serif";
-    $thanksUrl = URL::signedRoute('thanks', $enquiry);
+    $thanksUrl = URL::temporarySignedRoute('thanks', now()->addDays(30), $enquiry);
 @endphp
 
 @section('preheader', 'We got your request and will reply within one business day. Our owl recorded a quick message for you.')
 @section('eyebrow', 'Request received ✓')
-@section('headline', 'Thanks, '.e($enquiry->firstName()).'! We\'re on it.')
+@section('headline', 'Thanks, '.($enquiry->firstName()).'! We\'re on it.')
 @section('subline', 'Your request is with our team. Expect a reply within one business day.')
 
 @section('body')
@@ -31,7 +31,7 @@
                 @if ($enquiry->budget && $enquiry->budget !== 'Not sure yet')
                     <span style="display:inline-block;margin:0 6px 10px 0;padding:4px 12px;border-radius:999px;background:#e0ecff;color:#1e40af;font-size:12px;font-weight:600;">{{ $enquiry->budget }}</span>
                 @endif
-                <div style="border-left:3px solid #1ec773;padding:2px 0 2px 14px;color:#334155;line-height:1.6;">{!! $enquiry->messageHtml() !!}</div>
+                <div style="border-left:3px solid #1ec773;padding:2px 0 2px 14px;color:#334155;line-height:1.6;">{{-- Plain text with links taken out: this goes to whatever address was typed, so it must not carry anyone's links --}}{!! nl2br(e(\Illuminate\Support\Str::limit(preg_replace('~\b(?:https?://|www\.)\S+~i', '[link]', $enquiry->messageText()), 700))) !!}</div>
             </td>
         </tr>
     </table>

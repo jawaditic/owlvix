@@ -2,7 +2,7 @@
 @extends('layouts.page')
 
 @section('title', 'Free Tools for Websites & Apps')
-@section('description', 'Free tools from Owlvix: cost and ads ROI calculators, SEO checker, speed test, security, broken link and email checkers, tech stack detector, social preview and schema generator.')
+@section('description', 'Free Owlvix tools: cost and ads ROI calculators, SEO checker, speed test, broken link, email and security checkers, schema generator and more.')
 @section('canonical', route('free-tools'))
 @section('no-auto-quote', '1')
 

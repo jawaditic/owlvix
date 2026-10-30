@@ -212,7 +212,7 @@ class SeoCheck
             $hasSchema ? '' : 'Add JSON-LD schema (Organization or LocalBusiness, Product, FAQ, Article) so Google and AI assistants understand your business and can show richer results.');
 
         $robotsOk = $robots['ok'] && $robots['status'] === 200 && ! str_contains(strtolower(substr($robots['body'] ?? '', 0, 200)), '<html');
-        $blockAll = $robotsOk && preg_match('/user-agent:\s*\*[^#]*?\n\s*disallow:\s*\/\s*(\n|$)/i', $robots['body']);
+        $blockAll = $robotsOk && self::robotsBlocks($robots['body'], 'Googlebot'); // Googlebot's own group, else "*"
         $add('Technical', 'robots.txt', $blockAll ? 'fail' : ($robotsOk ? 'pass' : 'warn'),
             $blockAll ? 'robots.txt blocks the whole site.' : ($robotsOk ? 'Found.' : 'No robots.txt file.'),
             $blockAll ? 'Your robots.txt says "Disallow: /" for all bots, which stops search engines crawling your site. Remove that line.' : ($robotsOk ? '' : 'Add a robots.txt file at the root of your site that allows crawling and links to your sitemap.'));

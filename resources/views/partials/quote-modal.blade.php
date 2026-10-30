@@ -1,5 +1,7 @@
 {{-- Free quote popup: opens once per visit; the owl says a short intro. --}}
-<dialog class="quote-modal" id="quote-modal" aria-labelledby="quote-title">
+{{-- After the server rejects a popup quote, the page reloads with the errors and site.js opens the popup again --}}
+@php($popupErrors = $errors->any() && old('source') === 'popup')
+<dialog class="quote-modal" id="quote-modal" aria-labelledby="quote-title" @if ($popupErrors) data-reopen @endif>
     <button type="button" class="quote-modal__close" aria-label="Close" data-close>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
@@ -57,22 +59,25 @@
             <div class="hp" aria-hidden="true">
                 <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
             </div>
+            @if ($popupErrors)
+                <div class="alert alert--err" role="alert">{{ $errors->first('captcha') ?: $errors->first() }}</div>
+            @endif
             <input type="hidden" name="budget" value="Not sure yet">
             <input type="hidden" name="source" value="popup">
 
             <div class="row">
                 <label>Name
-                    <input type="text" name="name" required maxlength="100" autocomplete="name">
+                    <input type="text" name="name" required maxlength="100" autocomplete="name" value="{{ $popupErrors ? old('name') : '' }}">
                 </label>
                 <label>Email
-                    <input type="email" name="email" required maxlength="150" autocomplete="email">
+                    <input type="email" name="email" required maxlength="150" autocomplete="email" value="{{ $popupErrors ? old('email') : '' }}">
                 </label>
             </div>
             <div class="row">
                 {{-- Not wrapped in <label>: the country picker inside has its own buttons --}}
                 <div class="field">
                     <label for="quote-phone">Phone <span class="optional">(optional)</span></label>
-                    <input type="tel" id="quote-phone" name="phone" maxlength="30" autocomplete="tel" inputmode="tel" data-intl-phone>
+                    <input type="tel" id="quote-phone" name="phone" maxlength="30" autocomplete="tel" inputmode="tel" data-intl-phone value="{{ $popupErrors ? old('phone') : '' }}">
                 </div>
                 <label>What do you need?
                     @include('partials.service-select')
@@ -81,7 +86,7 @@
             {{-- site.js turns this textarea into a rich text editor (and keeps it in sync for sending) --}}
             <div class="field">
                 <label for="quote-message">Your project</label>
-                <textarea id="quote-message" name="message" rows="3" required placeholder="A few lines about what you want built" data-rich></textarea>
+                <textarea id="quote-message" name="message" rows="3" required placeholder="A few lines about what you want built" data-rich>{{ $popupErrors ? old('message') : '' }}</textarea>
             </div>
             <button type="submit" class="btn btn--block">Get my free quote</button>
             <p class="form__privacy">We only use your details to reply to you. <a href="{{ route('privacy') }}">Privacy policy</a></p>

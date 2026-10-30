@@ -11,7 +11,7 @@ class FeedbackController extends Controller
 {
     public function index(Request $request)
     {
-        $reason = array_key_exists($request->input('reason'), SurveyResponse::REASONS) ? $request->input('reason') : null;
+        $reason = is_string($request->input('reason')) && array_key_exists($request->input('reason'), SurveyResponse::REASONS) ? $request->input('reason') : null;
         $responses = SurveyResponse::query()
             ->when($reason, fn ($q) => $q->where('reason', $reason))
             ->latest()->paginate(30)->withQueryString();

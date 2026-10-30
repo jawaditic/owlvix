@@ -13,9 +13,9 @@
     ];
 @endphp
 
-@section('preheader', e($enquiry->name).' wants: '.e($enquiry->service ?: 'a project').' — '.e(\Illuminate\Support\Str::limit($enquiry->messageText(), 80)))
+@section('preheader', ($enquiry->name).' wants: '.($enquiry->service ?: 'a project').' — '.(\Illuminate\Support\Str::limit($enquiry->messageText(), 80)))
 @section('eyebrow', 'New enquiry 🎉')
-@section('headline', e($enquiry->name))
+@section('headline', ($enquiry->name))
 @section('subline', 'Just sent a request from owlvix.com.')
 
 @section('body')
@@ -44,4 +44,4 @@
     </table>
 @endsection
 
-@section('footer_note', 'Replying to this email goes straight to '.e($enquiry->email).'.')
+@section('footer_note', 'Replying to this email goes straight to '.($enquiry->email).'.')
