@@ -10,7 +10,11 @@
     const { uid, esc, clone, hex, slugify, getPath, setPath, styleKey, W } = B;
     const RUNTIME = root.dataset.runtime || location.origin + '/js/builder-runtime.js';
     const FUNNEL = root.dataset.mode === 'funnel'; // /funnel-builder: steps, opt-in forms, payment links, A/B, results
-    const STORE = FUNNEL ? 'owlvix-funnel' : 'owlvix-builder';
+    // Kits (/website-builder, /portfolio-builder, /link-in-bio-builder, /coming-soon-page-builder): same editor, own examples
+    const KIT = !FUNNEL && B.KITS[root.dataset.mode] ? root.dataset.mode : '';
+    const STORE = FUNNEL ? 'owlvix-funnel' : KIT ? 'owlvix-' + KIT : 'owlvix-builder';
+    const EXAMPLES = FUNNEL ? B.FUNNELS : KIT ? B.KITS[KIT].examples : B.EXAMPLES;
+    const fresh = key => (FUNNEL ? B.newFunnel(key) : KIT ? B.newKit(KIT, key) : B.newProject(key));
     const STATS_URL = root.dataset.statsUrl || location.origin + '/fs';
     const SITE_BASE = root.dataset.siteBase || location.origin + '/p/'; // where published sites live, e.g. https://sites.owlvix.com/
     const SITE_HOST = SITE_BASE.replace(/^https?:\/\//, '');
@@ -65,7 +69,7 @@
         try { localStorage.setItem(STORE + '-broken', localStorage.getItem(STORE) || ''); } catch {} // keep it, just in case
         P = null;
     }
-    if (!P) P = FUNNEL ? B.newFunnel('leadmagnet') : B.newProject('agency');
+    if (!P) P = fresh(FUNNEL ? 'leadmagnet' : KIT ? Object.keys(EXAMPLES)[0] : 'agency');
     let pageIdx = 0, device = 'desktop', variant = 'a'; // variant: which A/B version of the step is being edited
     let sel = null; // { kind: 'section'|'col'|'widget', id, target }
     const DEV = () => ({ desktop: 'd', tablet: 't', mobile: 'm' })[device];
@@ -928,10 +932,11 @@
             <div class="lpb-2"><label>Theme<select data-site="theme"><option value="light" ${s.theme !== 'dark' ? 'selected' : ''}>Light</option><option value="dark" ${s.theme === 'dark' ? 'selected' : ''}>Dark</option></select></label>
             <label>Corners<select data-site="radius">${['round', 'soft', 'sharp'].map(k => `<option ${s.radius === k ? 'selected' : ''} value="${k}">${{ round: 'Round', soft: 'Soft', sharp: 'Sharp' }[k]}</option>`).join('')}</select></label></div>
             <label>Button shape<select data-site="buttons">${['pill', 'rounded', 'square'].map(k => `<option ${s.buttons === k ? 'selected' : ''} value="${k}">${{ pill: 'Pill', rounded: 'Rounded', square: 'Square' }[k]}</option>`).join('')}</select></label></details>
-            <details class="lpb-acc"><summary>Header</summary>
-            <label class="lpb-check"><input type="checkbox" data-site="sticky" ${s.sticky !== false ? 'checked' : ''}> Sticky header (stays on top when scrolling)</label>
+            <details class="lpb-acc"${s.bare ? ' open' : ''}><summary>Header</summary>
+            <label class="lpb-check"><input type="checkbox" data-site="bare" ${s.bare ? 'checked' : ''}> Simple page — no header or menu, small footer</label>
+            ${s.bare ? '<p class="lpb-hint">Good for link-in-bio and coming soon pages. Untick to show your name, logo and menu at the top.</p>' : `<label class="lpb-check"><input type="checkbox" data-site="sticky" ${s.sticky !== false ? 'checked' : ''}> Sticky header (stays on top when scrolling)</label>
             <label>Header button text<input data-site="navBtn" value="${esc(s.navBtn || '')}" placeholder="Leave empty to hide"></label>
-            <label>Header button link${linkWidget('site|navLink', s.navLink)}</label>
+            <label>Header button link${linkWidget('site|navLink', s.navLink)}</label>`}
             <label class="lpb-check"><input type="checkbox" data-site="announce.on" ${s.announce?.on ? 'checked' : ''}> Announcement bar above the header</label>
             ${s.announce?.on ? `<label>Bar text<input data-site="announce.text" value="${esc(s.announce.text || '')}"></label><label>Link text (optional)<input data-site="announce.linkText" value="${esc(s.announce.linkText || '')}"></label><label>Link${linkWidget('site|announce.link', s.announce.link)}</label>` : ''}</details>
             <details class="lpb-acc"><summary>Footer &amp; social</summary>
@@ -941,7 +946,7 @@
             <details class="lpb-acc"><summary>Custom CSS</summary>
             <textarea data-site="css" rows="8" class="lpb-code" placeholder=".hero-copy h1 { letter-spacing: -2px; }">${esc(s.css || '')}</textarea><p class="lpb-hint">Added to every page. Scripts are not allowed.</p></details>
             <details class="lpb-acc"><summary>Start over</summary><p class="lpb-hint">Replace everything with an example (you can undo).</p>
-            <div class="lpb-chips">${Object.entries(FUNNEL ? B.FUNNELS : B.EXAMPLES).map(([k, v]) => `<button type="button" class="lpb-chip" data-example="${k}">${esc(v[0])}</button>`).join('')}</div></details>`;
+            <div class="lpb-chips">${Object.entries(EXAMPLES).map(([k, v]) => `<button type="button" class="lpb-chip" data-example="${k}">${esc(v[0])}</button>`).join('')}</div></details>`;
         $$('[data-site-panel] .lpb-acc').forEach(d => { const k = d.querySelector('summary').textContent; if (k in keep) d.open = keep[k]; });
         syncGlobals();
     };
@@ -957,11 +962,11 @@
         if (k.startsWith('colors.')) syncGlobals();
         if (k.startsWith('fonts.') && JSON.stringify([P.site.fonts.heading, P.site.fonts.body]) !== fontBefore) return renderCanvas();
         if (/^(colors|theme|radius|buttons|css|fonts)/.test(k)) refreshCss(); else refreshChrome();
-        if ((k === 'announce.on') && e.type === 'change') drawSite();
+        if ((k === 'announce.on' || k === 'bare') && e.type === 'change') drawSite();
     }));
     sitePanel.addEventListener('click', e => {
         const exb = e.target.closest('[data-example]');
-        if (exb) { const keep = { formAction: P.site.formAction, leadAction: P.site.leadAction, leadFormId: P.site.leadFormId, publishSlug: P.site.publishSlug, ref: P.site.ref }; P = FUNNEL ? B.newFunnel(exb.dataset.example) : B.newProject(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
+        if (exb) { const keep = { formAction: P.site.formAction, leadAction: P.site.leadAction, leadFormId: P.site.leadFormId, publishSlug: P.site.publishSlug, ref: P.site.ref }; P = fresh(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
         const pick = e.target.closest('[data-img-pick]'); if (pick) { picking = pick.dataset.imgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-img-clear]')) { P.site.logo = ''; commit(); refreshChrome(); drawSite(); }
     });
@@ -999,6 +1004,7 @@
         if (!title) return;
         const pg = B.newPage(title.slice(0, 40), P.pages.length, tpl);
         while (P.pages.some(p => p.slug === pg.slug)) pg.slug += '-2';
+        if (P.site.bare) { P.site.bare = false; toast('Header menu turned on so visitors can reach the new page'); } // a simple page has no menu
         P.pages.push(pg); commit(); switchPage(P.pages.length - 1); showTab('page');
         track('builder_add_page', { template: tpl || '' });
     };
@@ -1043,7 +1049,8 @@
         try {
             if (f.size > 40e6) throw new Error();
             const data = B.migrate(JSON.parse(await f.text())); // checks and cleans every value
-            if (!!data.kind !== FUNNEL) throw new Error();
+            if ((data.kind === 'funnel') !== FUNNEL) throw new Error(); // funnels open only in the funnel builder
+            if (KIT) data.kind = KIT; // any other site opens in any builder and becomes this builder's project
             data.pages.forEach(pg => B.render(data, pg, 'edit')); // must draw without errors before it replaces anything
             undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null; persist(); renderAll(); syncHistory();
             toast('Project opened');

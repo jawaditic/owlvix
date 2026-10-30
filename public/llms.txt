@@ -61,6 +61,10 @@ All tools: https://owlvix.com/free-tools
 - [Domain age & expiry checker](https://owlvix.com/domain-age-checker): registrar, creation and expiry dates, transfer lock, DNSSEC and name servers via RDAP (WHOIS fallback).
 - [Landing page builder](https://owlvix.com/landing-page-builder): build a landing page from 4 designs and 6 industry examples (dental, restaurant, consultant, online course, real estate, home services) and download one self-contained HTML file; runs in the browser.
 - [Funnel builder](https://owlvix.com/funnel-builder): free sales funnel builder — opt-in, sales, upsell and thank-you steps; lead collection with CSV export and Mailchimp/Brevo/webhook delivery; payments via the owner's own Stripe/PayPal link; per-step stats and A/B tests.
+- [Website builder](https://owlvix.com/website-builder): free multi-page website builder — ready business sites (consultant, clinic, restaurant, home services, real estate) with Home, About, Services, Contact and Menu pages; download or publish free.
+- [Portfolio builder](https://owlvix.com/portfolio-builder): free portfolio website builder for photographers, designers, developers and artists — work gallery, about, packages, reviews and a working contact form.
+- [Link in bio builder](https://owlvix.com/link-in-bio-builder): free link in bio page (Linktree alternative) for Instagram, TikTok and YouTube — photo, bio, link buttons (web, WhatsApp, email) and social icons.
+- [Coming soon page builder](https://owlvix.com/coming-soon-page-builder): free coming soon, under maintenance and opening soon pages with a countdown, sign-up form and social links.
 - [Image compressor](https://owlvix.com/image-compressor): compresses, resizes and converts images to WebP/JPEG in the browser; nothing is uploaded.
 
 - [Website speed test](https://owlvix.com/website-speed-test): free speed score, Core Web Vitals and top fixes for any URL, powered by Google PageSpeed Insights; downloadable PDF report.

@@ -56,6 +56,11 @@ Route::view('/domain-age-checker', 'tools.domain')->name('domain-check');
 Route::view('/image-compressor', 'tools.image-compressor')->name('image-compressor');
 Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
 Route::view('/funnel-builder', 'tools.funnel-builder')->name('funnel-builder');
+// More free builders: the same editor with its own starting templates (App\Support\BuilderKits)
+Route::view('/website-builder', 'tools.kit-builder', ['kit' => 'website'])->name('website-builder');
+Route::view('/portfolio-builder', 'tools.kit-builder', ['kit' => 'portfolio'])->name('portfolio-builder');
+Route::view('/link-in-bio-builder', 'tools.kit-builder', ['kit' => 'links'])->name('link-in-bio-builder');
+Route::view('/coming-soon-page-builder', 'tools.kit-builder', ['kit' => 'soon'])->name('coming-soon-builder');
 Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
 Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');
 Route::post('/meta-tag-preview', [\App\Http\Controllers\FreeToolsController::class, 'meta'])->middleware('throttle:8,1,tool-meta')->name('meta-preview.run');

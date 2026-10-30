@@ -38,6 +38,31 @@ class FreeToolsTest extends TestCase
         }
     }
 
+    public function test_each_extra_builder_starts_the_editor_in_its_own_mode(): void
+    {
+        foreach (\App\Support\BuilderKits::ROUTES as $kit => $route) {
+            $k = \App\Support\BuilderKits::get($kit);
+            $this->get(route($route))->assertOk()
+                ->assertSee('data-mode="'.$kit.'"', false)
+                ->assertSee('<title>'.e($k['title']), false)
+                ->assertSee('js/landing-builder', false);
+        }
+        $this->get(route('landing-builder'))->assertOk()->assertDontSee('data-mode=', false);
+    }
+
+    public function test_made_with_credit_links_match_the_builder_routes(): void
+    {
+        // builder-engine.js links each published page back to its builder (KIT_PATH)
+        $engine = file_get_contents(public_path('js/builder-engine.js'));
+        preg_match('/const KIT_PATH = (\{[^}]*\})/', $engine, $m);
+        $this->assertNotEmpty($m, 'KIT_PATH not found');
+        preg_match_all("/(\\w+): '([\\w-]+)'/", $m[1], $pairs, PREG_SET_ORDER);
+        $paths = array_column($pairs, 2, 1);
+        foreach (\App\Support\BuilderKits::ROUTES + ['funnel' => 'funnel-builder'] as $kit => $route) {
+            $this->assertSame(ltrim(parse_url(route($route), PHP_URL_PATH), '/'), $paths[$kit] ?? null, $kit);
+        }
+    }
+
     public function test_cost_calculator_settings_are_complete(): void
     {
         $c = config('cost_calculator');

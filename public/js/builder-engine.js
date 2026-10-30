@@ -383,7 +383,7 @@
     const defaultsSite = () => ({
         name: 'Your business', logo: '', colors: { primary: '#4f46e5', secondary: '#0ea5e9', accent: '#f59e0b', text: '#0f172a', bg: '#ffffff' },
         fonts: { heading: 'Poppins', body: 'Inter', base: 17 }, theme: 'light', radius: 'round', buttons: 'pill', navBtn: 'Get in touch', navLink: { to: 'contact' },
-        sticky: true, backTop: false, announce: { on: false, text: 'Free delivery this week only!', link: { to: 'contact' } }, footer: '', social: {}, formAction: '', css: '',
+        sticky: true, bare: false, backTop: false, announce: { on: false, text: 'Free delivery this week only!', link: { to: 'contact' } }, footer: '', social: {}, formAction: '', css: '',
     });
     const defaultsPopup = () => ({ on: false, trigger: 'delay', delay: 6, title: 'Get 10% off your first order', text: 'Leave your details and we will send you the offer today.', btn: 'Claim my offer', link: { to: 'contact' }, image: '' });
 
@@ -402,7 +402,7 @@
         services: ['Home services', 'FixRight Plumbing', '#dc2626', ['24/7 emergency call-outs', 'Fast, reliable plumbing — fixed right the first time', 'Leaks, drains, boilers and bathrooms. Upfront prices and a 12-month guarantee.', 'Get a free quote'],
             [['⚡', 'Here in 60 minutes', 'Emergency call-outs day and night.'], ['💰', 'Upfront prices', 'You approve the price first.'], ['✅', '12-month guarantee', 'If it fails, we come back free.']]],
     };
-    const fill = (sec, p) => { Object.assign(sec.cols[0].widgets[0].p, p); return sec; };
+    const fill = (sec, { v, ...p }) => { const w = sec.cols[0].widgets[0]; if (v) w.v = v; Object.assign(w.p, p); return sec; }; // v = variant (layout)
     const newProject = key => {
         const [, name, color, hero, feats] = EXAMPLES[key] || EXAMPLES.agency;
         const site = defaultsSite(); site.name = name; site.colors.primary = color; site.navBtn = hero[3];
@@ -435,6 +435,7 @@
             pricing: ['Pricing', () => [fill(sectionOf('hero'), { eyebrow: 'Simple, fair prices', title: 'Pricing', text: 'Pick the plan that fits you. Upgrade or cancel any time.', btn: 'Talk to us' }), sectionOf('pricing'), sectionOf('faq'), sectionOf('cta')]],
             contact: ['Contact', () => [fill(sectionOf('hero'), { eyebrow: 'We reply the same day', title: 'Contact us', text: 'Call, message or send the form below.', btn: '' }), sectionOf('contact'), TEMPLATES.sections.visit[1](), sectionOf('map')]],
             sales: ['Sales page with countdown', () => [fill(sectionOf('hero'), { v: 'split', eyebrow: 'Limited offer', title: 'The offer headline that makes people stop', text: 'Explain the result customers get and why now is the time.', btn: 'Get it now' }), TEMPLATES.sections['offer-countdown'][1](), sectionOf('features'), TEMPLATES.sections['reviews-slider'][1](), sectionOf('pricing'), sectionOf('faq'), sectionOf('cta')]],
+            menu: ['Menu', () => [fill(sectionOf('hero'), { eyebrow: 'Fresh every day', title: 'Our menu', text: 'Seasonal dishes made from scratch — ask us about vegan and gluten-free options.', btn: 'Book a table' }), TEMPLATES.sections.menu[1](), TEMPLATES.sections.visit[1](), sectionOf('cta')]],
             soon: ['Coming soon', () => { const s = cols('1', [wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know.</p>' }), 'countdown', 'form']); s.st._ = { d: { align: 'center', minH: 640 } }; s.bg = 'soft'; return [s]; }],
         },
     };
@@ -478,6 +479,104 @@
     const newPage = (title, n, tpl) => {
         const sections = tpl && TEMPLATES.pages[tpl] ? TEMPLATES.pages[tpl][1]() : [fill(sectionOf('hero'), { eyebrow: '', title, text: 'Introduce this page in a sentence or two.' }), sectionOf('textblock'), sectionOf('cta')];
         return { id: uid(), slug: slugify(title) || 'page-' + n, title, menu: true, seo: { title: '', description: '' }, popup: defaultsPopup(), sections };
+    };
+
+    /* Builder kits: the same editor with its own starting projects — /website-builder, /portfolio-builder,
+       /link-in-bio-builder and /coming-soon-page-builder. Each example is [label, () => project]. */
+    const kitSite = (name, color, o = {}) => { const s = Object.assign(defaultsSite(), { name }, o); s.colors.primary = color; return s; };
+    const homePage = sections => ({ id: uid(), slug: 'index', title: 'Home', menu: true, seo: { title: '', description: '' }, popup: defaultsPopup(), sections });
+    const withPages = (P, list) => { list.forEach(([title, tpl]) => P.pages.push(newPage(title, P.pages.length, tpl))); return P; };
+    const styled = (s, st, bg) => { s.st._ = { d: st }; if (bg) s.bg = bg; return s; };
+    /** A portfolio: hero, work gallery (#work), about, one extra section, reviews and contact. */
+    const folio = (name, color, [eyebrow, title, text, btn], captions, about, extra) => {
+        const work = fill(sectionOf('gallery'), { title: 'Selected work', items: captions.map(caption => ({ src: '', caption })) }); work.adv = { id: 'work' };
+        const me = fill(sectionOf('imagetext'), { eyebrow: 'About me', title: about[0], text: `<p>${about[1]}</p>`, btn: 'Work with me' });
+        return { v: 3, site: kitSite(name, color, { navBtn: btn }), pages: [homePage([
+            fill(sectionOf('hero'), { v: 'split', eyebrow, title, text, btn, btn2: 'See my work', link2: { to: 'url', val: '#work' } }),
+            work, me, ...extra(), sectionOf('testimonials'), sectionOf('contact'),
+        ])] };
+    };
+    /** A link-in-bio page: photo, name, short bio, big link buttons and social icons — no header menu. */
+    const bio = (name, color, text, links, nets) => {
+        const avatar = wp('image', { alt: name });
+        avatar.st = { _: { d: { maxw: 112 } } }; // a round profile photo, also while it is still empty
+        avatar.adv = { css: 'selector{width:100%}selector .img-w,selector .pic-empty{border-radius:50%;aspect-ratio:1;min-height:0;padding:0;font-size:.72rem}selector img{height:100%;object-fit:cover}' };
+        const head = wp('heading', { text: name, tag: 'h1' }); head.st = { _: { d: { size: 28, mb: 0 } } };
+        const buttons = links.map(([label, to = 'url']) => wp('button', { text: label, link: { to, val: '' }, kind: 'light', size: 'lg', align: 'full' }));
+        const col = column([avatar, head, wp('text', { html: `<p>${text}</p>` }), ...buttons, wp('social', { items: nets.map(net => ({ net, url: '' })) })]);
+        col.st._ = { d: { maxw: 480, align: 'center' } };
+        const s = styled(section('1', [col]), { minH: 760, align: 'center' }, 'brand');
+        return { v: 3, kind: 'links', site: kitSite(name, color, { bare: true, sticky: false, navBtn: '' }), pages: [homePage([s])] };
+    };
+    const soonSite = (name, color, o = {}) => kitSite(name, color, { bare: true, sticky: false, navBtn: '', ...o });
+    const KITS = {
+        website: { label: 'website', examples: {
+            business: ['Consultant / agency', () => withPages(newProject('agency'), [['About', 'about'], ['Services', 'services'], ['Contact', 'contact']])],
+            clinic: ['Clinic / dentist', () => withPages(newProject('dental'), [['Treatments', 'services'], ['About', 'about'], ['Contact', 'contact']])],
+            restaurant: ['Restaurant / café', () => withPages(newProject('restaurant'), [['Menu', 'menu'], ['About', 'about'], ['Contact', 'contact']])],
+            trades: ['Home services', () => withPages(newProject('services'), [['Services', 'services'], ['Pricing', 'pricing'], ['Contact', 'contact']])],
+            realestate: ['Real estate', () => withPages(newProject('realestate'), [['About', 'about'], ['Services', 'services'], ['Contact', 'contact']])],
+        } },
+        portfolio: { label: 'portfolio', examples: {
+            photographer: ['Photographer', () => folio('Maya Lens Photography', '#111827', ['Wedding & portrait photographer', 'Photos you will look at for the rest of your life', 'Natural, relaxed wedding and family photography in and around the city.', 'Check my dates'],
+                ['Anna & Tom — garden wedding', 'Family session at the beach', 'Studio portrait', 'Engagement shoot', 'City hall wedding', 'Newborn session'],
+                ['Hi, I\'m Maya', 'I have photographed more than 200 weddings. I keep things relaxed, so you can enjoy the day and still get photos that feel like you.'],
+                () => [fill(sectionOf('pricing'), { title: 'Packages', items: [
+                    { name: 'Portrait', price: '$250', period: '', features: '1-hour session\n30 edited photos\nOnline gallery', btn: 'Book a session', featured: false },
+                    { name: 'Wedding', price: '$1,900', period: '', features: '8 hours of coverage\n400+ edited photos\nOnline gallery & prints', btn: 'Check my dates', featured: true },
+                    { name: 'Family', price: '$350', period: '', features: '90-minute session\n50 edited photos\nTwo locations', btn: 'Book a session', featured: false }] })])],
+            designer: ['Designer', () => folio('Studio Juno', '#db2777', ['Brand & web designer', 'Brands people remember — and websites that sell', 'I design logos, brand identities and websites for small businesses that want to look as good as they are.', 'Start a project'],
+                ['Bloom Café — brand identity', 'Northwind — website', 'Fable Books — packaging', 'Kite App — UI design', 'Oak & Co. — logo', 'Harbor Gym — social media kit'],
+                ['Designing for 10 years', 'I worked at two branding agencies before going independent. Now I work directly with founders — no middlemen, no surprises.'],
+                () => [sectionOf('logos'), fill(sectionOf('steps'), { title: 'How we work together', items: [{ title: 'Discovery call', text: 'We talk about your business, customers and goals.' }, { title: 'Concepts', text: 'You get two or three directions to choose from.' }, { title: 'Final files', text: 'Everything you need, ready for print and web.' }] })])],
+            developer: ['Developer', () => folio('Alex Carter', '#2563eb', ['Freelance web developer', 'Fast, reliable websites and web apps', 'I build websites, online stores and custom tools with clean code that is easy to grow.', 'Hire me'],
+                ['Online store — Shopify', 'Booking app — Laravel', 'Company website — WordPress', 'Dashboard — React', 'Landing page — 98 speed score', 'API integration — Stripe'],
+                ['Developer since 2015', 'I have built more than 80 projects for startups and small businesses. I write code that loads fast, ranks well and does not break.'],
+                () => [TEMPLATES.sections['services-3'][1](), TEMPLATES.sections.skills[1]()])],
+            artist: ['Artist / illustrator', () => folio('Ink & Ivy Illustration', '#7c3aed', ['Illustrator & artist', 'Hand-drawn art for books, brands and homes', 'Custom illustrations, portraits and prints — made with care, from sketch to final piece.', 'Commission a piece'],
+                ['Children\'s book — "The Lost Kite"', 'Pet portrait — watercolour', 'Café wall mural', 'Botanical print series', 'Album cover', 'Wedding invitation'],
+                ['Drawing since I could hold a pencil', 'I studied illustration in London and now work from my small studio by the sea. Every piece is drawn by hand.'],
+                () => [fill(sectionOf('steps'), { title: 'How commissions work', items: [{ title: 'Tell me your idea', text: 'Send a few words and any reference photos.' }, { title: 'Sketch & approve', text: 'You see a sketch before I start the final piece.' }, { title: 'Delivered', text: 'Get a high-resolution file or a framed original.' }] })])],
+        } },
+        links: { label: 'link-in-bio page', examples: {
+            creator: ['Creator / influencer', () => bio('Jess Rivera', '#e11d48', '✨ Lifestyle & travel creator · New videos every Friday', [['▶ Watch my latest video'], ['🛍 Shop my favourites'], ['📸 My photo presets'], ['📩 Work with me', 'email']], ['instagram', 'tiktok', 'youtube'])],
+            musician: ['Musician / band', () => bio('The Night Owls', '#7c3aed', '🎸 Indie rock from Manchester · New single out now', [['🎧 Listen on Spotify'], ['🎟 Tour dates & tickets'], ['👕 Merch store'], ['▶ Watch the music video']], ['instagram', 'youtube', 'tiktok'])],
+            shop: ['Small shop', () => bio('Bloom & Co. Flowers', '#16a34a', '🌸 Fresh flowers delivered same day · Order by 2 pm', [['💐 Order flowers online'], ['💬 Order on WhatsApp', 'whatsapp'], ['📍 Visit our shop'], ['⭐ Leave us a review']], ['instagram', 'facebook', 'pinterest'])],
+            coach: ['Coach / consultant', () => bio('Dr. Sam Patel', '#0ea5e9', '🧠 Helping founders beat burnout · Coach & speaker', [['📅 Book a free intro call'], ['📘 Free guide: 5 signs of burnout'], ['🎙 Listen to my podcast'], ['✉️ Email me', 'email']], ['linkedin', 'youtube', 'x'])],
+        } },
+        soon: { label: 'coming soon page', examples: {
+            launch: ['Launching soon (countdown)', () => {
+                const col = column([wp('heading', { text: 'Northwind', tag: 'p' }), wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know — plus get 20% off on launch day.</p>' }), widget('countdown'), wp('form', { btn: 'Notify me', phone: false }), widget('social')]);
+                col.widgets[0].st = { _: { d: { size: 20, weight: 800, transform: 'uppercase', ls: 3 } } }; col.st._ = { d: { maxw: 680 } };
+                return { v: 3, kind: 'soon', site: soonSite('Northwind', '#4f46e5'), pages: [homePage([styled(section('1', [col]), { align: 'center', minH: 760 }, 'soft')])] };
+            }],
+            maintenance: ['Under maintenance', () => {
+                const col = column([wp('heading', { text: '🛠 We\'ll be back soon', tag: 'h1' }), wp('text', { html: '<p>Our website is getting an upgrade. It will be back in a few hours — thanks for your patience.</p>' }), wp('button', { text: 'Email us', link: { to: 'email', val: '' }, align: 'center' }), widget('social')]);
+                col.st._ = { d: { maxw: 620 } };
+                return { v: 3, kind: 'soon', site: soonSite('Your business', '#0ea5e9', { theme: 'dark' }), pages: [homePage([styled(section('1', [col]), { align: 'center', minH: 760 })])] };
+            }],
+            waitlist: ['App waitlist', () => {
+                const s = section('2', [column([wp('heading', { text: 'Coming soon', tag: 'p' }), wp('heading', { text: 'The simplest way to plan your week', tag: 'h1' }), wp('text', { html: '<p>Kite turns your to-do list into a calm, realistic plan. Join the waitlist for early access.</p>' }),
+                    wp('iconlist', { items: [{ icon: 'i:check', text: 'Free for early users' }, { icon: 'i:check', text: 'iPhone, Android and web' }, { icon: 'i:check', text: 'No spam — one email when we launch' }] }), wp('form', { btn: 'Join the waitlist', phone: false })]), column([wp('image', { alt: 'App preview' })])]);
+                s.cols[0].widgets[0].st = { _: { d: { color: 'g:primary', weight: 700, transform: 'uppercase', ls: 2, size: 14 } } };
+                return { v: 3, kind: 'soon', site: soonSite('Kite', '#16a34a'), pages: [homePage([styled(s, { minH: 760 }, 'soft')])] };
+            }],
+            opening: ['Shop opening soon', () => {
+                const col = column([wp('heading', { text: 'Opening on 1 March', tag: 'h1' }), wp('text', { html: '<p>Our new bakery is almost ready! Fresh bread, pastries and the best coffee in town — come and say hello.</p>' }), widget('countdown'), wp('text', { html: '<p>📍 12 Main Street, Your City</p>' }), widget('hours'), widget('social')]);
+                col.st._ = { d: { maxw: 640 } };
+                return { v: 3, kind: 'soon', site: soonSite('Golden Crust Bakery', '#d97706'), pages: [homePage([styled(section('1', [col]), { align: 'center', minH: 760 }, 'soft')])] };
+            }],
+        } },
+    };
+    const KINDS = ['funnel', ...Object.keys(KITS)];
+    // Must match the routes in routes/web.php (FreeToolsTest checks this)
+    const KIT_PATH = { funnel: 'funnel-builder', website: 'website-builder', portfolio: 'portfolio-builder', links: 'link-in-bio-builder', soon: 'coming-soon-page-builder' };
+    /** A new project for a kit (website, portfolio, links, soon), from one of its examples. */
+    const newKit = (kit, key) => {
+        const ex = KITS[kit]?.examples || KITS.website.examples;
+        const P = (ex[key] || Object.values(ex)[0])[1]();
+        P.kind = KITS[kit] ? kit : 'website';
+        return P;
     };
     /** Give a copied section (and everything in it) new ids. */
     const reId = sec => { sec = clone(sec); sec.id = uid(); sec.cols.forEach(c => { c.id = uid(); c.widgets.forEach(w => (w.id = uid())); }); return sec; };
@@ -525,7 +624,7 @@
                 const sel = `.x-${id}` + (target === '_' ? '' : ` .${classKey(target)}`);
                 ['d', 't', 'm'].forEach(k => { const css = dev?.[k] && decl(dev[k], isSection && target === '_'); if (css) rules[k].push(`${sel}{${css}}`); });
                 // Text alignment on a section/column also centres buttons and lists inside it
-                ['d', 't', 'm'].forEach(k => { const a = dev?.[k]?.align; if (a && target === '_') rules[k].push(`.x-${id} .actions,.x-${id} .btn-wrap.al-auto{justify-content:${a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start'}}`); });
+                ['d', 't', 'm'].forEach(k => { const a = dev?.[k]?.align; if (a && target === '_') rules[k].push(`.x-${id} .actions,.x-${id} .btn-wrap.al-auto,.x-${id} .socials{justify-content:${a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start'}}`); });
             });
             if (adv?.css) custom.push(cssSafe(adv.css).replace(/\bselector\b/g, `.x-${id}`));
         };
@@ -615,7 +714,7 @@ ${Array.from({ length: 8 }, (_, i) => `.tabs>input:nth-of-type(${i + 1}):checked
 .paybtn{display:flex;flex-direction:column;align-items:center;gap:8px}.paybtn.al-left{align-items:flex-start}.paybtn.al-right{align-items:flex-end}.paybtn.al-full .btn{width:100%}.paybtn .btn{font-size:1.2rem;padding:20px 38px;box-shadow:0 16px 34px -14px var(--primary)}.paybtn__no{color:var(--muted);font-size:.9rem;margin-top:4px}
 [data-variant=b]{display:none}html.ob-v-b [data-variant=a]{display:none}html.ob-v-b [data-variant=b]{display:block}
 html.ob-ab:not(.ob-ready) main{opacity:0;animation:ob-show 0s 1.2s forwards}@keyframes ob-show{to{opacity:1}}
-.foot{padding:40px 0 28px;border-top:1px solid var(--border);background:var(--alt)}.foot .wrap{display:grid;gap:14px}.foot p{margin:0;color:var(--muted)}.foot .socials a{width:36px;height:36px;font-size:.8rem}.credit{font-size:.85rem}.credit a{color:var(--muted)}
+.foot{padding:40px 0 28px;border-top:1px solid var(--border);background:var(--alt)}.foot--mini{padding:20px 0 64px;text-align:center}.foot--mini .socials{justify-content:center}.foot .wrap{display:grid;gap:14px}.foot p{margin:0;color:var(--muted)}.foot .socials a{width:36px;height:36px;font-size:.8rem}.credit{font-size:.85rem}.credit a{color:var(--muted)}
 @media (min-width:1025px){.hide-d{display:none!important}}@media (min-width:768px) and (max-width:1024px){.hide-t{display:none!important}}@media (max-width:767px){.hide-m{display:none!important}}
 @media (max-width:1024px){.cols.c-4{grid-template-columns:1fr 1fr!important}.g4{grid-template-columns:1fr 1fr}}
 @media (max-width:860px){.hero-split,.split,.contact-grid,.g3{grid-template-columns:1fr}.split.flip-side>:first-child{order:0}.hero-split{text-align:center}.hero-split .actions{justify-content:center}.nav nav>a:not(.btn){display:none}}
@@ -654,15 +753,19 @@ ${cssSafe(s.css || '')}`;
         const s = x.P.site, name = s.name || 'Your business', menu = x.P.pages.filter(p => p.menu);
         const logo = s.logo ? `<img src="${esc(s.logo)}" alt="${esc(name)}" class="logo-pic">` : `<span class="mark">${esc(name.trim()[0]?.toUpperCase() || 'A')}</span>`;
         const bar = s.announce?.on && s.announce.text ? `<div class="ob-bar"${x.edit ? ' data-hdr' : ''}><span${x.edit ? ' data-e="site|announce.text" data-ph="Announcement"' : ''}>${esc(s.announce.text)}</span>${s.announce.linkText ? ` <a href="${esc(href(s.announce.link, x))}">${esc(s.announce.linkText)}</a>` : ''}</div>` : '';
+        if (s.bare) return bar; // simple page (link-in-bio, coming soon): no header or menu
         return `${bar}<header class="nav${s.sticky !== false ? ' is-sticky' : ''}"${x.edit ? ' data-hdr' : ''}><div class="wrap"><a class="brand" href="${x.edit ? '#' : esc(pageHref('index', x))}"><span${x.edit ? ' data-img="site|logo"' : ''}>${logo}</span><span${x.edit ? ' data-e="site|name" data-ph="Business name"' : ''}>${esc(name)}</span></a>
             <nav>${menu.length > 1 ? menu.map(p => `<a href="${x.edit ? '#' : esc(pageHref(p.slug, x))}"${x.edit ? ` data-goto="${esc(p.id)}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('') : ''}
             ${s.navBtn ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}</nav></div></header>`;
     };
     const footer = x => {
         const s = x.P.site, name = s.name || 'Your business';
+        const made = `Made with the <a href="https://owlvix.com/${KIT_PATH[x.P.kind] || 'landing-page-builder'}">free ${KITS[x.P.kind]?.label || (x.P.kind === 'funnel' ? 'funnel' : 'page')} builder by Owlvix</a>`;
         const social = Object.entries(s.social || {}).filter(([, u]) => /^https?:\/\//i.test(u || '')).map(([k, u]) => { const n = SOCIAL[k]; return n ? `<a href="${esc(u)}" style="--sc:${n[2]}" aria-label="${n[0]}" rel="noopener">${n[1]}</a>` : ''; }).join('');
+        if (s.bare) return `<footer class="foot foot--mini"${x.edit ? ' data-ftr' : ''}><div class="wrap">${s.footer || x.edit ? `<p${x.edit ? ' data-e="site|footer" data-ph="A short line (optional)" data-ml' : ''}>${nl(s.footer)}</p>` : ''}
+            ${social ? `<div class="socials sh-round">${social}</div>` : ''}<p class="credit">© ${new Date().getFullYear()} ${esc(name)} · ${made}</p></div></footer>`;
         return `<footer class="foot"${x.edit ? ' data-ftr' : ''}><div class="wrap"><div><b>${esc(name)}</b><p${x.edit ? ' data-e="site|footer" data-ph="A short line about your business (optional)" data-ml' : ''}>${nl(s.footer)}</p></div>
-            ${social ? `<div class="socials sh-round">${social}</div>` : ''}<p class="credit">© ${new Date().getFullYear()} ${esc(name)} · Made with the <a href="https://owlvix.com/landing-page-builder">free page builder by Owlvix</a></p></div></footer>`;
+            ${social ? `<div class="socials sh-round">${social}</div>` : ''}<p class="credit">© ${new Date().getFullYear()} ${esc(name)} · ${made}</p></div></footer>`;
     };
     const popupHtml = (pg, x) => {
         const p = pg.popup; if (!p?.on) return '';
@@ -670,7 +773,7 @@ ${cssSafe(s.css || '')}`;
             ${p.image ? `<div class="pic"><img src="${esc(p.image)}" alt=""></div>` : ''}<div class="ob-pop__in"><h3>${esc(p.title)}</h3>${p.text ? `<p>${nl(p.text)}</p>` : ''}${p.btn ? `<a class="btn" href="${esc(href(p.link, x))}" data-popup-close>${esc(p.btn)}</a>` : ''}</div></div></div>`;
     };
     /** Does this page need the runtime script (animations, sliders, counters, popup…)? */
-    const needsRuntime = (pg, P) => !!(P.kind === 'funnel' || pg.popup?.on || P.site.backTop || P.site.sticky !== false
+    const needsRuntime = (pg, P) => !!(P.kind === 'funnel' || pg.popup?.on || P.site.backTop || (!P.site.bare && P.site.sticky !== false)
         || pg.sections.some(s => s.adv?.anim || s.cols.some(c => c.adv?.anim || c.widgets.some(w => w.adv?.anim || W[w.type]?.runtime))));
     const fontsLink = P => {
         const f = [...new Set([P.site.fonts?.heading, P.site.fonts?.body].filter(n => FONTS[n]))];
@@ -770,7 +873,8 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
             return undefined;
         };
         Object.assign(out, clean(p && typeof p === 'object' ? p : {}) || {});
-        const IMAGE_KEYS = ['image', 'src', 'photo', 'before', 'after', 'logo'];
+        // before/after are photos only on the before/after slider (the animated headline uses them for text)
+        const IMAGE_KEYS = ['image', 'src', 'photo', 'logo', ...(d.type === 'beforeafter' ? ['before', 'after'] : [])];
         const walk = o => { if (!o || typeof o !== 'object') return; Object.keys(o).forEach(k => { if (IMAGE_KEYS.includes(k)) o[k] = IMG(o[k]); else if (k === 'link' || k === 'link2') o[k] = LINK(o[k]); else walk(o[k]); }); };
         walk(out);
         (d.fields || []).forEach(f => { if (f.type === 'select' && !has(f.options, out[f.k])) out[f.k] = Object.keys(f.options)[0]; });
@@ -796,7 +900,7 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
             colors: Object.fromEntries(GLOBAL.map(k => [k, /^#[0-9a-f]{6}$/i.test(s.colors?.[k] || '') ? s.colors[k] : d.colors[k]])),
             fonts: { heading: has(FONTS, s.fonts?.heading) ? s.fonts.heading : d.fonts.heading, body: has(FONTS, s.fonts?.body) ? s.fonts.body : d.fonts.body, base: isFinite(+s.fonts?.base) ? Math.max(13, Math.min(22, +s.fonts.base)) : d.fonts.base },
             theme: s.theme === 'dark' ? 'dark' : 'light', radius: ['round', 'soft', 'sharp'].includes(s.radius) ? s.radius : 'round', buttons: ['pill', 'rounded', 'square'].includes(s.buttons) ? s.buttons : 'pill',
-            navBtn: STR(s.navBtn, 40), navLink: LINK(s.navLink), sticky: s.sticky !== false, backTop: !!s.backTop,
+            navBtn: STR(s.navBtn, 40), navLink: LINK(s.navLink), sticky: s.sticky !== false, bare: !!s.bare, backTop: !!s.backTop,
             announce: { on: !!s.announce?.on, text: STR(s.announce?.text, 200), linkText: STR(s.announce?.linkText, 40), link: LINK(s.announce?.link) },
             footer: STR(s.footer, 500), social: Object.fromEntries(Object.keys(SOCIAL).map(k => [k, /^https?:\/\/[^\s"'<>]+$/i.test(s.social?.[k] || '') ? s.social[k] : ''])),
             formAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.formAction || '') ? s.formAction : '',
@@ -825,14 +929,14 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
         if (!pages.length) throw new Error('Not a project');
         // Ids must be unique on a page (a copied project could repeat them)
         pages.forEach(pg => { const ids = new Set(); [...pg.sections, ...(pg.sectionsB || [])].forEach(sc => [sc, ...sc.cols, ...sc.cols.flatMap(c => c.widgets)].forEach(o => { while (ids.has(o.id)) o.id = uid(); ids.add(o.id); })); });
-        return { v: 3, kind: P.kind === 'funnel' ? 'funnel' : undefined, site, pages };
+        return { v: 3, kind: KINDS.includes(P.kind) ? P.kind : undefined, site, pages };
     };
 
     window.OwlB = {
         uid, esc, nl, clone, hex, slugify, getPath, setPath, sanitize, styleKey, classKey, cssSafe, safeUrl,
         ICONS, icon, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
         widget, column, section, sectionOf, isFull, migrate, newProject, newPage, reId, defaultsSite, defaultsPopup,
-        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, newStep, nextOf, normalize, normalizeSection: SECTION,
+        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, KITS, KIT_PATH, newKit, newStep, nextOf, normalize, normalizeSection: SECTION,
         render, renderSection, renderWidget, header, footer, siteCss, pageCss, needsRuntime, href, pageHref, fontsLink,
     };
 })();

@@ -28,7 +28,7 @@
         <p>We use this information only to reply to you, prepare a quote and work on your project. We send you a confirmation email when your request arrives. We don't sell your information or add you to a mailing list.</p>
 
         <h2>Free landing page builder</h2>
-        <p>The <a href="{{ route('landing-builder') }}">landing page builder</a> runs in your browser, and your drafts stay on your device. If you sign in to publish a page or add a contact form:</p>
+        <p>The <a href="{{ route('landing-builder') }}">landing page builder</a> (and the website, portfolio, link in bio and coming soon builders, which use the same editor) runs in your browser, and your drafts stay on your device. If you sign in to publish a page or add a contact form:</p>
         <ul>
             <li>we keep your email address, which you use to sign in with a one-time code;</li>
             <li>we store the pages you publish and show them at owlvix.com/p/…, until you unpublish them;</li>
