@@ -55,6 +55,7 @@ Route::view('/robots-txt-checker', 'tools.robots')->name('robots-check');
 Route::view('/domain-age-checker', 'tools.domain')->name('domain-check');
 Route::view('/image-compressor', 'tools.image-compressor')->name('image-compressor');
 Route::view('/email-signature-generator', 'tools.email-signature')->name('email-signature');
+Route::view('/form-builder', 'tools.form-builder')->name('form-builder');
 Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
 Route::view('/funnel-builder', 'tools.funnel-builder')->name('funnel-builder');
 // More free builders: the same editor with its own starting templates (App\Support\BuilderKits)
@@ -137,12 +138,19 @@ Route::prefix('builder')->name('builder.')->controller(\App\Http\Controllers\Bui
         Route::get('stats', 'stats')->name('stats');
         Route::get('forms/{id}/integrations', 'integrations')->where('id', '[a-z0-9]{16}')->name('integrations');
         Route::post('forms/{id}/integrations', 'saveIntegrations')->where('id', '[a-z0-9]{16}')->name('integrations.save');
+        // Form builder: your forms and their answers
+        Route::get('surveys', 'surveys')->name('surveys');
+        Route::post('surveys', 'saveSurvey')->name('surveys.save');
+        Route::get('surveys/{id}/responses', 'responses')->where('id', '[a-z0-9]{16}')->name('surveys.responses');
+        Route::post('surveys/{id}/delete', 'deleteSurvey')->where('id', '[a-z0-9]{16}')->name('surveys.delete');
     });
 });
 // Funnel step stats beacon from published pages (sendBeacon from a sandboxed page): no session, cookies or CSRF
 Route::post('/fs', [\App\Http\Controllers\BuilderPublicController::class, 'beacon'])->withoutMiddleware('web')->name('builder.beacon');
 // Contact forms on builder pages (posted from any host, so no CSRF token: see bootstrap/app.php)
 Route::post('/f/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'submit'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.form.submit');
+// Forms made with the form builder: the page people fill in (also embedded in other sites in an iframe)
+Route::get('/form/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'survey'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.survey');
 Route::get('/f/{id}/sent', [\App\Http\Controllers\BuilderPublicController::class, 'sent'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.form.sent');
 // Published builder sites (served with a sandboxing CSP; the page HTML is left exactly as published).
 // With BUILDER_DOMAIN set they live on their own subdomain (https://sites.owlvix.com/{name}) — those routes are

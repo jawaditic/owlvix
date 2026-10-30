@@ -17,6 +17,7 @@ export const FILES = [
     'js/builder-engine.js',
     'js/landing-builder.js',
     'js/builder-runtime.js',
+    'js/form-builder.js',
 ];
 
 for (const file of FILES) {

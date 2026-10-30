@@ -130,7 +130,7 @@ class BuilderController extends Controller
     {
         $data = $this->check($request, [
             'site_name' => ['required', 'string', 'max:100'],
-            'kind' => ['nullable', 'string', 'in:'.implode(',', BuilderForm::KINDS)],
+            'kind' => ['nullable', 'string', 'in:'.implode(',', BuilderForm::PAGE_KINDS)],
             'ref' => ['nullable', 'string', 'regex:/^[a-z0-9]{6,20}$/'],
         ], [
             'site_name.required' => 'Please give your site a name first.', 'site_name.max' => 'Please use a site name under 100 characters.',
@@ -148,7 +148,7 @@ class BuilderController extends Controller
         $form = $account->forms()->where('kind', $kind)
             ->when($ref, fn ($q) => $q->where('ref', $ref), fn ($q) => $q->where('site_name', $name)->whereNull('ref'))->first();
         if (! $form) {
-            if ($account->forms()->count() >= BuilderForm::MAX_PER_ACCOUNT) {
+            if ($account->forms()->where('kind', '!=', 'survey')->count() >= BuilderForm::MAX_PER_ACCOUNT) {
                 return $this->fail('You can have up to '.BuilderForm::MAX_PER_ACCOUNT.' forms.', 422);
             }
             $form = $account->forms()->create(['id' => BuilderForm::newId(), 'site_name' => $name, 'kind' => $kind, 'ref' => $ref]);
@@ -299,6 +299,96 @@ class BuilderController extends Controller
         $leads = $form->leads()->latest('created_at')->latest('id')->limit(1000)->get();
 
         return response()->json(['ok' => true, 'total' => $form->leads()->count(), 'leads' => $leads->map->toApi()->values()]);
+    }
+
+    /* ---------------------------------------------------------------- form builder (/form-builder) */
+
+    /** Your forms made with the form builder, newest first. */
+    public function surveys(Request $request): JsonResponse
+    {
+        $forms = $this->user($request)->forms()->where('kind', 'survey')->withCount('responses')->latest('updated_at')->get();
+
+        return response()->json(['ok' => true, 'forms' => $forms->map(fn (BuilderForm $f) => $this->surveyApi($f))->values()]);
+    }
+
+    /** Create a form, or save changes to one of yours (id). */
+    public function saveSurvey(Request $request): JsonResponse
+    {
+        $schema = \App\Support\SurveySchema::clean($request->input('schema'));
+        if (is_string($schema)) {
+            return $this->fail($schema, 422);
+        }
+        $account = $this->user($request);
+        $id = $request->input('id');
+        if ($id !== null) {
+            $form = $this->ownForm($request, $id);
+            if (! $form || ! $form->isSurvey()) {
+                return $this->fail('Form not found.', 404);
+            }
+            $form->update(['schema' => \App\Support\SurveySchema::keepRemoved($form->schema ?? [], $schema), 'site_name' => $schema['title']]);
+        } else {
+            if (RateLimiter::tooManyAttempts('builder-survey-new:'.$account->id, 20)) {
+                return $this->fail('You have made a lot of forms today. Please try again tomorrow.', 429);
+            }
+            if ($account->forms()->where('kind', 'survey')->count() >= BuilderForm::MAX_SURVEYS) {
+                return $this->fail('You can have up to '.BuilderForm::MAX_SURVEYS.' forms. Delete one you no longer use first.', 422);
+            }
+            RateLimiter::hit('builder-survey-new:'.$account->id, 86400);
+            $form = $account->forms()->create(['id' => BuilderForm::newId(), 'site_name' => $schema['title'], 'kind' => 'survey', 'schema' => $schema]);
+        }
+
+        return response()->json(['ok' => true, 'form' => $this->surveyApi($form->loadCount('responses'))]);
+    }
+
+    /** A form's answers, newest first: JSON for the builder, or a CSV download with ?format=csv. */
+    public function responses(Request $request, string $id)
+    {
+        $form = $this->ownForm($request, $id);
+        if (! $form || ! $form->isSurvey()) {
+            return $this->fail('Form not found.', 404);
+        }
+        $fields = \App\Support\SurveySchema::columns($form->schema ?? []);
+        if ($request->query('format') === 'csv') {
+            $name = 'responses-'.(Str::slug($form->site_name) ?: 'form').'-'.now()->toDateString().'.csv';
+
+            return response()->streamDownload(function () use ($form, $fields) {
+                $out = fopen('php://output', 'w');
+                fwrite($out, "\xEF\xBB\xBF"); // so Excel reads the file as UTF-8
+                fputcsv($out, array_map([self::class, 'csvCell'], ['Date', ...array_column($fields, 'label')]), ',', '"', '');
+                foreach ($form->responses()->latest('created_at')->latest('id')->lazy(500) as $r) {
+                    $row = [$r->created_at?->format('Y-m-d H:i:s')];
+                    foreach ($fields as $f) {
+                        $row[] = \App\Support\SurveySchema::text($r->answers[$f['id']] ?? '');
+                    }
+                    fputcsv($out, array_map([self::class, 'csvCell'], $row), ',', '"', '');
+                }
+                fclose($out);
+            }, $name, ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store']);
+        }
+        $responses = $form->responses()->latest('created_at')->latest('id')->limit(500)->get();
+
+        return response()->json(['ok' => true, 'total' => $form->responses()->count(), 'responses' => $responses->map->toApi()->values()]);
+    }
+
+    /** Delete one of your forms and all its answers. */
+    public function deleteSurvey(Request $request, string $id): JsonResponse
+    {
+        $form = $this->ownForm($request, $id);
+        if (! $form || ! $form->isSurvey()) {
+            return $this->fail('Form not found.', 404);
+        }
+        $form->delete(); // answers go with it (foreign key cascade)
+
+        return response()->json(['ok' => true]);
+    }
+
+    private function surveyApi(BuilderForm $form): array
+    {
+        return [
+            'id' => $form->id, 'title' => $form->site_name, 'schema' => $form->schema, 'url' => $form->publicUrl(),
+            'responses' => (int) ($form->responses_count ?? 0), 'disabled' => (bool) $form->disabled_at,
+            'updated_at' => $form->updated_at?->toIso8601String(),
+        ];
     }
 
     /** Spreadsheet apps run cells that start with = + - @ as formulas: make them plain text. */

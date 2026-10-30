@@ -66,6 +66,7 @@ All tools: https://owlvix.com/free-tools
 - [Link in bio builder](https://owlvix.com/link-in-bio-builder): free link in bio page (Linktree alternative) for Instagram, TikTok and YouTube — photo, bio, link buttons (web, WhatsApp, email) and social icons.
 - [Coming soon page builder](https://owlvix.com/coming-soon-page-builder): free coming soon, under maintenance and opening soon pages with a countdown, sign-up form and social links.
 - [Email signature generator](https://owlvix.com/email-signature-generator): free email signature generator — 6 designs, photo, logo, social icons and a button; copy and paste into Gmail, Outlook or Apple Mail. Runs in the browser.
+- [Form builder](https://owlvix.com/form-builder): free form and survey builder — contact, feedback, RSVP, job application, quote and order forms with 11 question types; share a link or embed it; answers by email, in a table and as CSV.
 - [Image compressor](https://owlvix.com/image-compressor): compresses, resizes and converts images to WebP/JPEG in the browser; nothing is uploaded.
 
 - [Website speed test](https://owlvix.com/website-speed-test): free speed score, Core Web Vitals and top fixes for any URL, powered by Google PageSpeed Insights; downloadable PDF report.

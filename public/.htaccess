@@ -66,7 +66,11 @@
     # Small security headers (also counted by Lighthouse "best practices")
     Header always set X-Content-Type-Options "nosniff"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set X-Frame-Options "SAMEORIGIN"
+    # Forms made with the form builder (/form/{id}, and the answer post /f/{id} that may show it again with errors)
+    # may be embedded on other sites; they send their own frame-ancestors rule
+    <If "%{REQUEST_URI} !~ m#^/(form|f)/[a-z0-9]{16}$#">
+        Header always set X-Frame-Options "SAMEORIGIN"
+    </If>
     # HSTS: browsers always use https for owlvix.com for the next year (the site is https-only).
     # No includeSubDomains, so subdomains such as webmail aren't affected.
     Header always set Strict-Transport-Security "max-age=31536000"

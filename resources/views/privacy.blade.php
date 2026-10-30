@@ -41,7 +41,13 @@
             <li>if you connect an email tool (Mailchimp, Brevo or your own webhook), each new sign-up is also sent there. Your API keys are stored encrypted;</li>
             <li>we count how many times each funnel page is viewed and how many sign-ups it gets, per day. These are totals only: no cookies are used and no IP addresses are stored. The counts are deleted after about 13 months.</li>
         </ul>
-        <p>As a funnel owner you are responsible for telling your visitors how you use their details, and for having their permission to email them.</p>
+        <p>If you make a form with the <a href="{{ route('form-builder') }}">form builder</a>:</p>
+        <ul>
+            <li>we store your form's questions and show the form at owlvix.com/form/…, until you delete it;</li>
+            <li>the answers people send are stored on owlvix.com for you, the form owner, and emailed to you. You can see and download them in the builder. We keep them until you delete the form, which deletes all its answers too;</li>
+            <li>to stop spam we count answers per visitor for an hour using a scrambled (hashed) version of their IP address. The IP address itself is not stored.</li>
+        </ul>
+        <p>As a funnel or form owner you are responsible for telling your visitors how you use their details, and for having their permission to contact them.</p>
         <p>Published pages are public and are not listed in search engines. We may remove any page that breaks the law or is used for spam, scams or phishing. Anyone can report a page with the "Report" link on it.</p>
 
         <h2>Information collected automatically</h2>

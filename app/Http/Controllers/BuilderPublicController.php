@@ -35,11 +35,78 @@ class BuilderPublicController extends Controller
 
     private const BEACON_PER_MINUTE = 120;
 
+    private const SURVEY_PER_IP_HOUR = 10;
+
+    private const SURVEY_PER_DAY = 500;
+
+    /** A form made with the form builder, ready to fill in. ?embed=1 drops the page chrome (for iframes). */
+    public function survey(Request $request, string $id)
+    {
+        $form = $this->form($id);
+        abort_unless($form->isSurvey() && ! empty($form->schema['fields']), 404);
+
+        return $this->surveyPage($form, $request->boolean('embed'), $request->boolean('sent'));
+    }
+
+    /** An answer to a form-builder form: stored for the owner and emailed to them. */
+    private function submitSurvey(Request $request, BuilderForm $form)
+    {
+        $embed = $request->boolean('_embed');
+        $done = redirect()->route('builder.survey', ['id' => $form->id, 'sent' => 1] + ($embed ? ['embed' => 1] : []), 303);
+        if (filled($request->input('_hp'))) { // bots fill the hidden field: pretend it worked
+            return $done;
+        }
+        $schema = $form->schema ?? [];
+        [$answers, $errors] = \App\Support\SurveySchema::answers($schema, $request->all());
+        $links = preg_match_all('#https?://|www\.#i', implode(' ', array_map([\App\Support\SurveySchema::class, 'text'], $answers)));
+        if ($links > self::MAX_LINKS * 2) {
+            $errors[] = 'Please include fewer links in your answers.';
+        }
+        if (! $errors && ! $answers) {
+            $errors[] = 'Please answer at least one question.';
+        }
+        if ($errors) {
+            return $this->surveyPage($form, $embed, false, $errors, $request->all(), 422);
+        }
+
+        if ($this->overLimit('builder-survey', $form, $request, self::SURVEY_PER_IP_HOUR, self::SURVEY_PER_DAY)) {
+            return $this->surveyPage($form, $embed, false, ['Too many answers have been sent from here. Please try again later.'], $request->all(), 429);
+        }
+
+        $response = $form->responses()->create(['answers' => $answers]);
+        DB::table('builder_forms')->where('id', $form->id)->update(['submissions' => DB::raw('submissions + 1'), 'last_submission_at' => now()]);
+
+        $ownerEmail = $form->account->email;
+        \Illuminate\Support\defer(function () use ($ownerEmail, $form, $response) {
+            try {
+                Mail::to($ownerEmail)->send(new \App\Mail\BuilderSurveyResponse($form, $response));
+            } catch (\Throwable $e) {
+                report($e); // the answer is saved either way
+            }
+        });
+
+        return $done;
+    }
+
+    private function surveyPage(BuilderForm $form, bool $embed, bool $sent, array $errors = [], array $old = [], int $status = 200)
+    {
+        return response()->view('builder.survey', ['form' => $form, 's' => $form->schema, 'embed' => $embed, 'sent' => $sent, 'errors_list' => $errors, 'old' => $old], $status)
+            ->header('X-Robots-Tag', 'noindex, nofollow')
+            // Embeddable anywhere; no scripts at all
+            ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; frame-ancestors *; base-uri 'none'")
+            ->header('Cache-Control', 'no-store');
+    }
+
     public function submit(Request $request, string $id)
     {
         $form = $this->form($id);
         if ($form->isLeads()) {
             return $this->submitLead($request, $form);
+        }
+        if ($form->isSurvey()) {
+            abort_unless(! empty($form->schema['fields']), 404);
+
+            return $this->submitSurvey($request, $form);
         }
         $back = $this->safeUrl($request->input('_back'));
         $sent = redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303);
@@ -71,13 +138,9 @@ class BuilderPublicController extends Controller
             return $this->problem($form, $back, ['Please include no more than '.self::MAX_LINKS.' links in your message.'], 422);
         }
 
-        $ipKey = 'builder-form:'.$form->id.':'.$request->ip();
-        $dayKey = 'builder-form-day:'.$form->id;
-        if (RateLimiter::tooManyAttempts($ipKey, self::FORM_PER_IP_HOUR) || RateLimiter::tooManyAttempts($dayKey, self::FORM_PER_DAY)) {
+        if ($this->overLimit('builder-form', $form, $request, self::FORM_PER_IP_HOUR, self::FORM_PER_DAY)) {
             return $this->problem($form, $back, ['Too many messages have been sent from here. Please try again later.'], 429);
         }
-        RateLimiter::hit($ipKey, 3600);
-        RateLimiter::hit($dayKey, 86400);
 
         try {
             Mail::to($form->account->email)->send(new BuilderFormMessage($form, [
@@ -139,14 +202,9 @@ class BuilderPublicController extends Controller
             }
         }
 
-        // Limits are counted by a hash of the IP; the IP itself is never stored
-        $ipKey = 'builder-lead:'.$form->id.':'.sha1($request->ip().'|'.config('app.key'));
-        $dayKey = 'builder-lead-day:'.$form->id;
-        if (RateLimiter::tooManyAttempts($ipKey, self::LEADS_PER_IP_HOUR) || RateLimiter::tooManyAttempts($dayKey, self::LEADS_PER_DAY)) {
+        if ($this->overLimit('builder-lead', $form, $request, self::LEADS_PER_IP_HOUR, self::LEADS_PER_DAY)) {
             return $this->problem($form, $back, ['Too many sign-ups have been sent from here. Please try again later.'], 429);
         }
-        RateLimiter::hit($ipKey, 3600);
-        RateLimiter::hit($dayKey, 86400);
 
         $step = $request->input('_step');
         $step = is_string($step) && preg_match('/^[a-z0-9-]{1,40}$/', $step) ? $step : null;
@@ -305,6 +363,23 @@ class BuilderPublicController extends Controller
         }
 
         return redirect()->route('builder.report', $site->slug)->with('reported', true);
+    }
+
+    /**
+     * Spam limits for one form: per visitor per hour and per form per day. True when over a limit; otherwise the
+     * attempt is counted. Visitors are counted by a hash of their IP; the IP itself is never stored.
+     */
+    private function overLimit(string $name, BuilderForm $form, Request $request, int $perHour, int $perDay): bool
+    {
+        $ipKey = $name.':'.$form->id.':'.sha1($request->ip().'|'.config('app.key'));
+        $dayKey = $name.'-day:'.$form->id;
+        if (RateLimiter::tooManyAttempts($ipKey, $perHour) || RateLimiter::tooManyAttempts($dayKey, $perDay)) {
+            return true;
+        }
+        RateLimiter::hit($ipKey, 3600);
+        RateLimiter::hit($dayKey, 86400);
+
+        return false;
     }
 
     private function form(string $id): BuilderForm
