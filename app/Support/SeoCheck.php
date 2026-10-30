@@ -14,6 +14,49 @@ class SeoCheck
     /** Category weights in the score. */
     private const WEIGHT = ['fail' => 0, 'warn' => 0.5, 'pass' => 1];
 
+    /** Whether robots.txt disallows the whole site for this user agent (its own group, or "*" if it has none). */
+    public static function robotsBlocks(string $robots, string $bot): bool
+    {
+        $groups = [];
+        $agents = [];
+        $inRules = false;
+        foreach (preg_split('/\r?\n/', $robots) as $line) {
+            $line = trim(preg_replace('/#.*/', '', $line));
+            if (! preg_match('/^([a-z-]+)\s*:\s*(.*)$/i', $line, $m)) {
+                continue;
+            }
+            $key = strtolower($m[1]);
+            $val = trim($m[2]);
+            if ($key === 'user-agent') {
+                if ($inRules) {
+                    $agents = [];
+                    $inRules = false;
+                }
+                $agents[] = strtolower($val);
+                foreach ($agents as $a) {
+                    $groups[$a] ??= [];
+                }
+            } elseif (in_array($key, ['allow', 'disallow'], true) && $agents) {
+                $inRules = true;
+                foreach ($agents as $a) {
+                    $groups[$a][] = [$key, $val];
+                }
+            }
+        }
+        $rules = $groups[strtolower($bot)] ?? $groups['*'] ?? [];
+        $disallowAll = false;
+        foreach ($rules as [$k, $v]) {
+            if ($k === 'disallow' && $v === '/') {
+                $disallowAll = true;
+            }
+            if ($k === 'allow' && $v === '/') {
+                return false;
+            }
+        }
+
+        return $disallowAll;
+    }
+
     public static function cached(string $url): ?array
     {
         return Cache::get('seocheck:'.sha1($url));
@@ -114,7 +157,8 @@ class SeoCheck
                 }
             }
         }
-        $words = $clone ? str_word_count(strip_tags($text($clone))) : 0;
+        $bodyText = $clone ? strip_tags($text($clone)) : '';
+        $words = str_word_count($bodyText);
         $add('Content', 'Amount of text', $words >= 300 ? 'pass' : ($words >= 150 ? 'warn' : 'fail'), number_format($words).' words.',
             $words >= 300 ? '' : 'Pages with very little text rarely rank. Explain your service in at least 300–600 words: what it is, who it is for, how it works, prices and FAQs.');
 
@@ -203,6 +247,86 @@ class SeoCheck
         $add('Social', 'Twitter / X card', $tw ? 'pass' : 'warn', $tw ? "twitter:card = $tw" : 'No twitter:card tag.', $tw ? '' : 'Add <meta name="twitter:card" content="summary_large_image"> for a large preview on X.');
         $icon = $q('//link[contains(translate(@rel,"ICON","icon"),"icon")]')->length > 0;
         $add('Social', 'Favicon', $icon ? 'pass' : 'warn', $icon ? 'Favicon found.' : 'No favicon link.', $icon ? '' : 'Add a favicon. Google shows it next to your result on mobile, and it makes tabs and bookmarks recognisable.');
+
+        // ---------- Checks adapted from claude-seo (MIT, github.com/AgriciDaniel/claude-seo) ----------
+
+        // Readability (Flesch reading ease) on real paragraphs only — menus, cards and titles have no sentences.
+        // Each paragraph/list item counts as at least one sentence. English pages with 100+ words of prose.
+        $prose = '';
+        $sentences = 0;
+        foreach ($q('//body//p|//body//li[not(.//a) and string-length(normalize-space(.)) > 60]') as $n) {
+            $t = $text($n);
+            if (str_word_count($t) < 8) {
+                continue;
+            }
+            $prose .= ' '.$t;
+            $sentences += max(1, preg_match_all('/[.!?]+(\s|$)/u', $t));
+        }
+        $proseWords = str_word_count($prose);
+        if ($proseWords >= 100 && (! $lang || str_starts_with(strtolower($lang), 'en'))) {
+            $syllables = 0;
+            foreach (str_word_count(strtolower($prose), 1) as $w) {
+                $syllables += max(1, preg_match_all('/[aeiouy]+/', preg_replace('/(?:[^laeiouy]es|ed|[^laeiouy]e)$/', '', $w) ?: $w));
+            }
+            $flesch = (int) round(max(0, min(100, 206.835 - 1.015 * ($proseWords / max(1, $sentences)) - 84.6 * ($syllables / $proseWords))));
+            $add('Content', 'Readability', $flesch >= 50 ? 'pass' : ($flesch >= 30 ? 'warn' : 'fail'), "Reading ease $flesch/100".($flesch >= 60 ? ' (easy).' : ($flesch >= 50 ? ' (fairly easy).' : ($flesch >= 30 ? ' (difficult).' : ' (very difficult).'))),
+                $flesch >= 50 ? '' : 'Your text is hard to read. Use shorter sentences (under 20 words), everyday words and short paragraphs. Easy pages keep visitors longer and are quoted more by AI assistants.');
+        }
+
+        // Title and H1 shouldn't be identical
+        if ($title !== '' && $h1Text !== '') {
+            $same = mb_strtolower(trim($title)) === mb_strtolower(trim($h1Text));
+            $add('Content', 'Title vs H1', $same ? 'warn' : 'pass', $same ? 'The title and H1 are identical.' : 'The title and H1 are different.',
+                $same ? 'Make the H1 a visitor-friendly headline and the title a search-friendly version (keyword + brand). Two different phrasings let you cover more searches.' : '');
+        }
+
+        // Templated or placeholder metadata
+        if ($desc !== '') {
+            $d = mb_strtolower($desc);
+            $templated = ($title !== '' && str_starts_with($d, mb_strtolower(mb_substr($title, 0, 40))))
+                || ($h1Text !== '' && $d === mb_strtolower($h1Text))
+                || preg_match('/lorem ipsum|just another wordpress site|^welcome to (my|our) (website|site)|^home ?page$|^description$/i', $desc);
+            $add('Content', 'Unique meta description', $templated ? 'warn' : 'pass', $templated ? 'The description repeats the title or uses placeholder text.' : 'The description is written for this page.',
+                $templated ? 'Write a description that adds something the title does not: a benefit, a proof point and a reason to click. Repeated or placeholder text looks auto-generated to Google.' : '');
+        }
+
+        // Main image lazy-loaded (delays Largest Contentful Paint)
+        $firstImg = $q('//body//img[not(ancestor::header) and not(ancestor::nav)]')->item(0) ?: $imgs->item(0);
+        if ($firstImg) {
+            $lazy = strtolower($firstImg->getAttribute('loading')) === 'lazy' || $firstImg->hasAttribute('data-src') || $firstImg->hasAttribute('data-lazy-src');
+            $add('Technical', 'Main image loading', $lazy ? 'warn' : 'pass', $lazy ? 'The first big image on the page is lazy-loaded.' : 'The first image loads straight away.',
+                $lazy ? 'Do not lazy-load the main (above-the-fold) image. Remove loading="lazy" from it and add fetchpriority="high", so it appears sooner and improves your Largest Contentful Paint.' : '');
+        }
+
+        // Mixed content on an https page
+        if ($https) {
+            $insecure = 0;
+            foreach ($q('//img[@src]|//script[@src]|//iframe[@src]|//link[@rel="stylesheet"][@href]|//source[@src]') as $n) {
+                if (stripos($n->getAttribute($n->hasAttribute('src') ? 'src' : 'href'), 'http://') === 0) {
+                    $insecure++;
+                }
+            }
+            $add('Technical', 'Mixed content', $insecure ? 'fail' : 'pass', $insecure ? "$insecure file(s) loaded over insecure http://." : 'All files load over https.',
+                $insecure ? 'Change the http:// links for images, scripts and styles to https://. Browsers block or warn about insecure files on secure pages.' : '');
+        }
+
+        // AI crawler access in robots.txt
+        $aiBots = ['OAI-SearchBot' => 'ChatGPT search', 'ChatGPT-User' => 'ChatGPT', 'PerplexityBot' => 'Perplexity', 'Claude-SearchBot' => 'Claude search',
+            'GPTBot' => 'OpenAI training', 'ClaudeBot' => 'Anthropic training', 'Google-Extended' => 'Gemini training', 'CCBot' => 'Common Crawl'];
+        $searchBots = ['OAI-SearchBot', 'ChatGPT-User', 'PerplexityBot', 'Claude-SearchBot'];
+        $blocked = $robotsOk ? array_values(array_filter(array_keys($aiBots), fn ($bot) => self::robotsBlocks($robots['body'], $bot))) : [];
+        $blockedSearch = array_values(array_intersect($blocked, $searchBots));
+        $names = fn ($list) => implode(', ', array_map(fn ($b) => "$b ({$aiBots[$b]})", $list));
+        $add('AI search', 'AI crawler access', $blockedSearch ? 'fail' : ($blocked ? 'warn' : 'pass'),
+            $blocked ? 'robots.txt blocks: '.$names($blocked).'.' : 'AI search crawlers are allowed.',
+            $blockedSearch ? 'Your robots.txt stops AI search engines from reading your site, so ChatGPT, Perplexity and Claude cannot recommend or cite you. Remove the Disallow rules for these bots.'
+                : ($blocked ? 'Only AI training crawlers are blocked. That is fine if intentional — AI search bots can still find and cite you.' : ''));
+
+        // llms.txt
+        $llms = SafeFetch::get($origin.'/llms.txt', 8);
+        $llmsOk = $llms['ok'] && $llms['status'] === 200 && ! preg_match('/<html/i', substr($llms['body'] ?? '', 0, 300)) && trim($llms['body'] ?? '') !== '';
+        $add('AI search', 'llms.txt', $llmsOk ? 'pass' : 'warn', $llmsOk ? 'Found.' : 'No llms.txt file.',
+            $llmsOk ? '' : 'Add /llms.txt: a short Markdown summary of who you are, your services and key pages. It helps AI assistants like ChatGPT and Claude describe your business correctly.');
 
         // ---------- Score ----------
         $points = array_sum(array_map(fn ($c) => self::WEIGHT[$c['status']], $checks));

@@ -27,7 +27,7 @@ class SeoCheckerTest extends TestCase
         return SeoCheck::analyse('https://example.com', $this->page($html, $headers), ['ok' => false], 'https://example.com');
     }
 
-    private function check(array $report, string $title): array
+    private function check(array $report, string $title): ?array
     {
         return collect($report['checks'])->firstWhere('title', $title);
     }
@@ -104,5 +104,36 @@ class SeoCheckerTest extends TestCase
         $html = (new SeoTips($this->report('<html><body>Hi</body></html>'), 'Sam Lee'))->render();
         $this->assertStringContainsString('Hi Sam, here are your SEO tips', $html);
         $this->assertStringContainsString('Fix first', $html);
+    }
+
+    /** Checks adapted from claude-seo. */
+    public function test_robots_txt_ai_crawler_rules_are_understood(): void
+    {
+        $robots = "User-agent: GPTBot\nDisallow: /\n\nUser-agent: PerplexityBot\nUser-agent: CCBot\nDisallow: /\n\nUser-agent: *\nAllow: /\nDisallow: /admin";
+        $this->assertTrue(SeoCheck::robotsBlocks($robots, 'GPTBot'));
+        $this->assertTrue(SeoCheck::robotsBlocks($robots, 'PerplexityBot'));
+        $this->assertTrue(SeoCheck::robotsBlocks($robots, 'CCBot'));
+        $this->assertFalse(SeoCheck::robotsBlocks($robots, 'ClaudeBot')); // falls back to "*", which allows
+        $this->assertTrue(SeoCheck::robotsBlocks("User-agent: *\nDisallow: /", 'OAI-SearchBot'));
+    }
+
+    public function test_mixed_content_lazy_main_image_and_identical_title_h1(): void
+    {
+        $r = $this->report('<html><head><title>Best Shoes</title><meta name="description" content="Best Shoes for every runner"></head>
+            <body><h1>Best Shoes</h1><img src="http://cdn.example.com/hero.jpg" alt="Shoe" loading="lazy"></body></html>');
+
+        $this->assertSame('fail', $this->check($r, 'Mixed content')['status']);
+        $this->assertSame('warn', $this->check($r, 'Main image loading')['status']);
+        $this->assertSame('warn', $this->check($r, 'Title vs H1')['status']);
+        $this->assertSame('warn', $this->check($r, 'Unique meta description')['status']); // starts with the title
+    }
+
+    public function test_readability_is_scored_for_english_text(): void
+    {
+        $easy = str_repeat('We build apps. They are fast. You own the code. ', 40);
+        $hard = str_repeat('Comprehensive organizational transformation necessitates multidimensional stakeholder alignment, institutionalized governance frameworks and continuous operational optimization initiatives. ', 15);
+        $this->assertSame('pass', $this->check($this->report("<html lang=\"en\"><body><p>$easy</p></body></html>"), 'Readability')['status']);
+        $this->assertSame('fail', $this->check($this->report("<html lang=\"en\"><body><p>$hard</p></body></html>"), 'Readability')['status']);
+        $this->assertNull($this->check($this->report('<html lang="de"><body><p>'.$easy.'</p></body></html>'), 'Readability')); // not measured for other languages
     }
 }
