@@ -305,15 +305,32 @@
         }, 2800);
     }
 
-    /* Hero: the owl "chats" in the bubble. Plays when the visitor presses the play button. */
-    const heroRoot = document.getElementById('owl-intro');
-    if (heroRoot) {
-        createOwl(heroRoot, {
-            lines: cfg.intro,
-            idleText: heroRoot.querySelector('[data-owl-text]').textContent,
-            doneText: cfg.intro[cfg.intro.length - 1].text,
+    /* Owls that don't talk (founder card, call-to-action boxes, 404, popups) still breathe, blink and glance around */
+    document.querySelectorAll('[data-owl-idle]').forEach(el => window.Owl?.idleOwl(el));
+
+    /* Talking owls: the homepage hero and the About page. The owl "chats" in the bubble when the visitor
+       presses "Hear the intro" or clicks/taps the owl itself (click again to stop). */
+    const talkers = [document.getElementById('owl-intro'), ...document.querySelectorAll('[data-owl-talk]')].filter(Boolean);
+    talkers.forEach(root => {
+        const lines = cfg[root.dataset.owlTalk || 'intro'];
+        if (!lines?.length) return;
+        const owl = createOwl(root, {
+            lines,
+            idleText: root.querySelector('[data-owl-text]').textContent,
+            doneText: lines[lines.length - 1].text,
         });
-    }
+        const body = root.querySelector('.owl-wrap');
+        if (!body) return;
+        body.setAttribute('role', 'button');
+        body.setAttribute('tabindex', '0');
+        body.setAttribute('aria-label', 'Play the owl\'s intro');
+        const toggle = () => {
+            if (!owl.playing) window.track?.('owl_play', { where: (root.id || 'owl') + '_click' });
+            owl.playing ? owl.stop() : owl.start().catch(() => {});
+        };
+        body.addEventListener('click', toggle);
+        body.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    });
 
     /* ---------- Our work: category filter + "Show all" ---------- */
     const work = document.querySelector('[data-work]');
@@ -468,6 +485,35 @@
         };
         setTimeout(autoOpen, 30000);
     }
+
+    /* ---------- "How we charge" popup (partials/pricing-modal) ---------- */
+    // Opened by [data-pricing] links; without JavaScript they still go to the pricing section on the homepage.
+    (() => {
+        const dlg = document.getElementById('pricing-modal');
+        if (!dlg) return;
+        const open = e => {
+            e.preventDefault();
+            links.classList.remove('is-open');
+            if (dlg.open) return;
+            document.querySelector('dialog[open]')?.close();
+            dlg.showModal();
+            document.body.classList.add('modal-open');
+            window.track?.('pricing_open', { from: location.pathname });
+        };
+        document.querySelectorAll('[data-pricing]').forEach(a => a.addEventListener('click', open));
+        const close = () => dlg.open && dlg.close();
+        dlg.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
+        dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+        dlg.addEventListener('close', () => { if (!document.querySelector('dialog[open]')) document.body.classList.remove('modal-open'); });
+        // "Get a free quote": the page's own form if it has one, otherwise the quote popup
+        dlg.querySelector('[data-pricing-quote]').addEventListener('click', e => {
+            e.preventDefault();
+            close();
+            const form = document.getElementById('quote-form') || document.querySelector('#contact form');
+            if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            else openModal('pricing_popup');
+        });
+    })();
 
     /* ---------- "Before you go" exit survey (partials/exit-survey) ---------- */
     // Opens by itself after 1 minute on the page. After that minute it also opens when the visitor is about

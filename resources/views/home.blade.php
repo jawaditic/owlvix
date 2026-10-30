@@ -69,6 +69,7 @@
                     </div>
                     <ul class="hero__trust">
                         <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Free quote within 24h</li>
+                        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Start free, pay per milestone</li>
                         <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>You own 100% of the code</li>
                     </ul>
                 </div>
@@ -96,15 +97,15 @@
                         </div>
 
                         <div class="float float--web glass" aria-hidden="true">
-                            <span class="float__icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+                            <span class="float__icon"><svg viewBox="0 0 24 24"><rect class="d" x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
                             <div><strong>Web apps</strong><small>Laravel · React · Vue</small></div>
                         </div>
                         <div class="float float--ai glass" aria-hidden="true">
-                            <span class="float__icon float__icon--blue"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
+                            <span class="float__icon float__icon--blue"><svg viewBox="0 0 24 24"><path class="d" d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
                             <div><strong>AI agents</strong><small>OpenAI · Claude · Gemini</small></div>
                         </div>
                         <div class="float float--mobile glass" aria-hidden="true">
-                            <span class="float__icon"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
+                            <span class="float__icon"><svg viewBox="0 0 24 24"><rect class="d" x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
                             <div><strong>Mobile apps</strong><small>iOS &amp; Android</small></div>
                         </div>
 
@@ -134,42 +135,43 @@
                 <h2>Software that works for your business</h2>
                 <div class="grid grid--3">
                     <article class="card">
-                        <span class="bar"></span>
+                        <span class="svc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="d" x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
                         <h3>Custom Web Apps</h3>
                         <p>Dashboards, portals, SaaS products and booking systems built with Laravel, React and Vue.</p>
                         <a href="{{ route('service.web-app-development') }}" class="card__more">Learn more about web apps →</a>
                     </article>
                     <article class="card">
-                        <span class="bar bar--blue"></span>
+                        <span class="svc-icon is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="d" x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
                         <h3>Mobile Apps</h3>
                         <p>iOS and Android apps that share one codebase and talk to your existing systems.</p>
                         <a href="{{ route('service.mobile-app-development') }}" class="card__more">Learn more about mobile apps →</a>
                     </article>
                     <article class="card">
-                        <span class="bar"></span>
+                        <span class="svc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="d" d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg></span>
                         <h3>AI Chatbots</h3>
                         <p>Website and customer support bots trained on your own documents, FAQs and products.</p>
                         <a href="{{ route('service.ai-chatbot-development') }}" class="card__more">Learn more about AI chatbots →</a>
                     </article>
                     <article class="card">
-                        <span class="bar bar--blue"></span>
+                        <span class="svc-icon is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="d" d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
                         <h3>AI Agents & Automation</h3>
                         <p>Hand repetitive tasks and workflows to AI that follows your rules and reports back.</p>
                         <a href="{{ route('service.ai-agent-development') }}" class="card__more">Learn more about AI agents →</a>
                     </article>
                     <article class="card">
-                        <span class="bar"></span>
+                        <span class="svc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 7H6a4 4 0 0 0 0 8h3M15 7h3a4 4 0 0 1 0 8h-3M8 11h8"/></svg></span>
                         <h3>API Integrations</h3>
                         <p>Connect OpenAI, Claude, Gemini, payments, CRMs and ERPs to the tools you already use.</p>
                         <a href="{{ route('service.api-integration-services') }}" class="card__more">Learn more about integrations →</a>
                     </article>
                     <article class="card">
-                        <span class="bar bar--blue"></span>
+                        <span class="svc-icon is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="d" x="3" y="4" width="18" height="7" rx="2"/><rect class="d" x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg></span>
                         <h3>Hosting & Support</h3>
                         <p>Setup, deployment, monitoring and fixes after launch — you're never left on your own.</p>
                         <a href="{{ route('service.hosting-and-support') }}" class="card__more">Learn more about support →</a>
                     </article>
                 </div>
+                @include('partials.more-services', ['hire' => false])
                 <p class="promise">Clean code you own <i>•</i> Regular updates <i>•</i> On-time delivery</p>
                 <p class="services__more"><a href="{{ route('landing') }}" class="btn btn--ghost">Explore our development services in detail</a></p>
             </div>
@@ -248,16 +250,35 @@
         </section>
 
         {{-- Who's behind Owlvix (full story on /about) --}}
-        <section class="section" id="about">
+        <section class="section founder-section" id="about">
             <div class="container">
-                <div class="card about-strip">
-                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 120, 'height' => 126, 'loading' => 'lazy'])
-                    <div>
+                <div class="founder-panel">
+                    <div class="founder-panel__glow" aria-hidden="true"></div>
+                    <div class="founder-panel__copy">
                         <p class="eyebrow">Who's behind Owlvix</p>
-                        <h2>A small team led by Jawad Ahmad</h2>
-                        <p>Owlvix is a web, mobile and AI development studio founded by Jawad Ahmad, based in Pakistan and building software for clients worldwide since 2018. We were previously known as <strong>Anjtec</strong> on Fiverr — that's why the reviews below mention Anjtec and Jawad.</p>
+                        <h2>A small team led by <span class="accent">Jawad Ahmad</span></h2>
+                        <p>Owlvix is a web, mobile and AI development studio founded by Jawad Ahmad, based in Pakistan and building software for clients worldwide since 2018. The reviews below come from Jawad's Fiverr profile, <strong>Jawad Ahmad (@anjtec)</strong> — that's why some of them mention Anjtec or Jawad.</p>
+                        <div class="hero__cta">
+                            <a href="{{ route('about') }}" class="btn">About us
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                            </a>
+                            <a href="{{ \App\Support\Testimonials::data()['profile_url'] ?: 'https://www.fiverr.com/anjtec' }}" class="btn btn--ghost" target="_blank" rel="noopener">View Fiverr profile
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17L17 7M9 7h8v8"/></svg>
+                            </a>
+                        </div>
                     </div>
-                    <a href="{{ route('about') }}" class="btn btn--ghost">About us</a>
+                    <div class="founder-card">
+                        <div class="founder-card__owl">
+                            @include('partials.live-owl', ['width' => 150, 'alt' => 'Owlvix owl as a developer with a headset and laptop', 'variant' => 'dev'])
+                        </div>
+                        <strong class="founder-card__name">Jawad Ahmad</strong>
+                        <span class="founder-card__role"><span class="live-dot" aria-hidden="true"></span>Founder &amp; lead developer</span>
+                        <ul class="founder-card__stats">
+                            <li><strong>2018</strong><span>since</span></li>
+                            <li><strong>200+</strong><span>orders</span></li>
+                            <li><strong>70+</strong><span>countries</span></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
@@ -272,6 +293,10 @@
                 <p class="eyebrow">FAQ</p>
                 <h2>Questions people ask first</h2>
                 <div class="faq">
+                    <details>
+                        <summary>Do I have to pay upfront?</summary>
+                        <p>No. Every project starts free: we plan it and design your key screens at no cost. The rest is split into as many milestones as we agree, and you pay for each one only after you have seen and approved it.</p>
+                    </details>
                     <details>
                         <summary>How long does a project take?</summary>
                         <p>Most websites take 1–3 weeks and most web apps 3–8 weeks. You get an exact timeline with your quote.</p>
@@ -303,7 +328,7 @@
                     <p class="eyebrow">Get in touch</p>
                     <h2>Tell us about your project</h2>
                     <p class="lead">Send a short message — no forms to sign, no obligation. We reply within one business day with questions or a quote.</p>
-                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 200, 'height' => 210, 'class' => 'contact__owl', 'loading' => 'lazy'])
+                    @include('partials.live-owl', ['width' => 200, 'alt' => 'Owlvix owl mascot', 'class' => 'contact__owl'])
                 </div>
 
                 <form class="card form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>
@@ -334,11 +359,7 @@
                     </div>
                     <div class="row">
                         <label>What do you need?
-                            <select name="service" id="service">
-                                @foreach (['Web app', 'Mobile app', 'AI chatbot / agent', 'Website', 'Fixed project', 'Monthly developer', 'Something else'] as $opt)
-                                    <option value="{{ $opt }}" @selected(old('service') === $opt)>{{ $opt }}</option>
-                                @endforeach
-                            </select>
+                            @include('partials.service-select', ['id' => 'service'])
                         </label>
                         <label>Budget
                             <select name="budget">
@@ -364,6 +385,7 @@
 
     @include('partials.quote-modal')
     @include('partials.exit-survey')
+    @include('partials.pricing-modal')
 
     <script>
         window.OWLVIX = @json(\App\Support\OwlVoice::sets(['intro', 'quote']));

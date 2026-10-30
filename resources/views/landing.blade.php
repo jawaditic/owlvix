@@ -6,56 +6,57 @@
     // The services. "service" is the value the form's "What do you need?" box is set to (Enquiries::SERVICES).
     $services = [
         [
-            'id' => 'web-apps', 'page' => 'web-app-development', 'name' => 'Custom Web App Development', 'service' => 'Web app', 'bar' => '',
-            'icon' => '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+            'id' => 'web-apps', 'page' => ['web-app-development', 'erp-crm-development'], 'name' => 'Custom Web App Development', 'service' => 'Custom web app', 'bar' => '',
+            'icon' => '<rect class="d" x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
             'intro' => 'Dashboards, client portals, SaaS products, booking systems and internal tools — built around how your business actually works, not squeezed into an off-the-shelf template.',
             'for' => 'Startups launching a product, and businesses replacing spreadsheets or old software.',
             'gets' => ['Design, frontend, backend and database', 'User accounts, roles, payments and admin panel', 'Fast, secure and ready to grow', 'Deployed to your server with full source code'],
-            'tech' => ['Laravel', 'React', 'Next.js', 'Vue', 'Node.js', 'Python'],
+            'tech' => ['PHP', 'Laravel', 'JavaScript', 'TypeScript', 'React', 'Next.js', 'Vue', 'Nuxt', 'Angular', 'Node.js', 'Express', 'NestJS', 'Python', 'Django', 'FastAPI', 'MySQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Tailwind CSS'],
         ],
         [
-            'id' => 'mobile-apps', 'page' => 'mobile-app-development', 'name' => 'Mobile App Development', 'service' => 'Mobile app', 'bar' => 'bar--blue',
-            'icon' => '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+            'id' => 'mobile-apps', 'page' => 'mobile-app-development', 'name' => 'Mobile App Development', 'service' => 'Mobile app (iOS & Android)', 'bar' => 'bar--blue',
+            'icon' => '<rect class="d" x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
             'intro' => 'iOS and Android apps from one shared codebase, so you launch on both stores for close to the price of one — connected to your website, database or existing systems.',
             'for' => 'Businesses that want an app for customers, staff or bookings, and founders with an app idea.',
             'gets' => ['iPhone and Android from one codebase', 'Push notifications, logins and payments', 'Publishing to the App Store and Google Play', 'Updates and fixes after launch'],
-            'tech' => ['React Native', 'Expo', 'Flutter', 'Firebase', 'REST APIs'],
+            'tech' => ['React Native', 'Expo', 'Flutter', 'Dart', 'TypeScript', 'Swift', 'SwiftUI', 'Kotlin', 'Jetpack Compose', 'Firebase', 'Supabase', 'REST APIs', 'GraphQL'],
         ],
         [
-            'id' => 'ai-chatbots', 'page' => 'ai-chatbot-development', 'name' => 'AI Chatbot Development', 'service' => 'AI chatbot / agent', 'bar' => '',
-            'icon' => '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/>',
+            'id' => 'ai-chatbots', 'page' => 'ai-chatbot-development', 'name' => 'AI Chatbot Development', 'service' => 'AI chatbot', 'bar' => '',
+            'icon' => '<path class="d" d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/>',
             'intro' => 'Chatbots for your website, WhatsApp or support desk that answer from your own documents, FAQs and products — and hand over to a person when they should.',
             'for' => 'Teams answering the same customer questions every day, and shops that want to sell around the clock.',
             'gets' => ['Trained on your own content', 'Website widget, WhatsApp or Slack', 'Captures leads and books meetings', 'Chat history and reports'],
-            'tech' => ['OpenAI', 'Claude', 'Gemini', 'RAG', 'Vector search'],
+            'tech' => ['OpenAI GPT', 'Claude', 'Gemini', 'Llama', 'Mistral', 'Python', 'LangChain', 'LlamaIndex', 'RAG', 'Pinecone', 'pgvector', 'Hugging Face', 'WhatsApp API'],
         ],
         [
-            'id' => 'ai-agents', 'page' => 'ai-agent-development', 'name' => 'AI Agents & Automation', 'service' => 'AI chatbot / agent', 'bar' => 'bar--blue',
-            'icon' => '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+            'id' => 'ai-agents', 'page' => 'ai-agent-development', 'name' => 'AI Agents & Automation', 'service' => 'AI agent / automation', 'bar' => 'bar--blue',
+            'icon' => '<path class="d" d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
             'intro' => 'Hand repetitive work to AI: sorting emails, entering data, writing reports, updating your CRM. It follows your rules and reports back, so your team spends time on work that needs them.',
             'for' => 'Businesses losing hours each week to copy-paste and manual admin.',
             'gets' => ['A map of what can be automated first', 'Agents that work with your existing tools', 'Human approval where it matters', 'Clear logs of everything they did'],
-            'tech' => ['OpenAI', 'Claude', 'n8n', 'Zapier', 'Python'],
+            'tech' => ['OpenAI', 'Claude', 'Gemini', 'Python', 'LangChain', 'LangGraph', 'CrewAI', 'MCP', 'n8n', 'Make', 'Zapier', 'Node.js'],
         ],
         [
-            'id' => 'websites', 'name' => 'Websites & Shopify Stores', 'service' => 'Website', 'bar' => '',
-            'icon' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>',
+            'id' => 'websites', 'page' => ['shopify-development', 'wordpress-development', 'landing-page-design'], 'name' => 'Websites & Shopify Stores', 'service' => 'Website / WordPress', 'bar' => '',
+            'icon' => '<circle class="d" cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>',
             'intro' => 'Fast business websites and online stores that load quickly, rank on Google and turn visitors into enquiries and sales — easy for you to update yourself.',
             'for' => 'Small businesses, shops and agencies that need a site that brings in customers.',
             'gets' => ['Mobile-friendly design', 'SEO basics and fast loading', 'Contact forms, payments and analytics', 'Shopify, WordPress or custom'],
-            'tech' => ['Shopify', 'WordPress', 'Laravel', 'Next.js'],
+            'tech' => ['Shopify', 'Liquid', 'Shopify apps', 'WordPress', 'WooCommerce', 'Elementor', 'PHP', 'HTML', 'CSS', 'JavaScript', 'Next.js', 'Webflow', 'Tailwind CSS'],
         ],
         [
-            'id' => 'integrations', 'page' => ['api-integration-services', 'hosting-and-support'], 'name' => 'API Integrations, Hosting & Support', 'service' => 'Something else', 'bar' => 'bar--blue',
+            'id' => 'integrations', 'page' => ['api-integration-services', 'hosting-and-support'], 'name' => 'API Integrations, Hosting & Support', 'service' => 'API integration', 'bar' => 'bar--blue',
             'icon' => '<path d="M9 7H6a4 4 0 0 0 0 8h3M15 7h3a4 4 0 0 1 0 8h-3M8 11h8"/>',
             'intro' => 'Connect payments, CRMs, ERPs and AI models to the tools you already use — then keep it all running with hosting, monitoring and fixes. We also take over apps other developers started.',
             'for' => 'Businesses with an existing app or website that needs fixing, extending or looking after.',
-            'gets' => ['Stripe, PayPal, HubSpot, Salesforce and more', 'Hosting, domains, email and SSL', 'Monitoring, backups and security updates', 'Bug fixes and new features on request'],
-            'tech' => ['Stripe', 'REST & GraphQL', 'AWS', 'DigitalOcean', 'Cloudflare'],
+            'gets' => ['Stripe, PayPal, HubSpot, Salesforce CRM and more', 'Hosting, domains, email and SSL', 'Monitoring, backups and security updates', 'Bug fixes and new features on request'],
+            'tech' => ['REST', 'GraphQL', 'Webhooks', 'OAuth', 'Stripe', 'PayPal', 'HubSpot', 'Salesforce CRM', 'AWS', 'Google Cloud', 'Azure', 'DigitalOcean', 'Vercel', 'Docker', 'Cloudflare', 'GitHub Actions'],
         ],
     ];
 
     $faq = [
+        ['Do I have to pay upfront?', 'No. Every project starts free: we plan it and design your key screens at no cost. The rest is split into as many milestones as we agree, and you pay for each one only after you have seen and approved it.'],
         ['How much does a project cost?', 'It depends on what you need. Small websites start at a few hundred dollars and most web apps are a few thousand. Send us your idea and you get a fixed price, free, within one business day.'],
         ['How fast can you build my app or website?', 'A business website is usually live in 1 to 3 weeks. A web app or mobile app usually takes 3 to 8 weeks, and an AI chatbot 1 to 3 weeks. Your quote includes a timeline with dates for each stage.'],
         ['Will I own the source code and designs?', 'Yes, all of it. Once the project is paid, we hand over the source code, design files and every account (hosting, app stores, domains) in your name. There is no lock-in, so any developer can carry on the work.'],
@@ -162,7 +163,7 @@
                     @if (! empty($t['profile_url']))
                         <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
                             <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
-                            <span><strong>{{ $t['rating'] }}</strong> on Fiverr · {{ $t['count'] }} reviews</span>
+                            <span>@include('partials.rating-summary', ['t' => $t])</span>
                         </a>
                     @endif
                 </div>
@@ -176,7 +177,7 @@
             <div class="container strip__inner">
                 <div><strong>200+</strong><span>projects shipped</span></div>
                 <div><strong>7+</strong><span>years building</span></div>
-                <div><strong>{{ $t['rating'] ?: '5.0' }}★</strong><span>client rating</span></div>
+                <div><strong>{{ $t['five_star'] ?: $t['count'] }}</strong><span>{{ $t['five_star'] ? 'five-star reviews' : 'client reviews' }}</span></div>
                 <div><strong>24h</strong><span>reply to new enquiries</span></div>
             </div>
         </section>
@@ -216,6 +217,7 @@
                         </article>
                     @endforeach
                 </div>
+                @include('partials.more-services')
             </div>
         </section>
 
@@ -226,24 +228,24 @@
                 <h2>Why businesses choose us</h2>
                 <div class="grid grid--4 lp-why">
                     <article class="card">
-                        <span class="bar"></span>
+                        <span class="svc-icon" aria-hidden="true">{!! \App\Support\Icons::svg('team') !!}</span>
                         <h3>One team, start to finish</h3>
                         <p>Design, code, AI and hosting under one roof — no juggling freelancers.</p>
                     </article>
                     <article class="card">
-                        <span class="bar bar--blue"></span>
+                        <span class="svc-icon is-blue" aria-hidden="true">{!! \App\Support\Icons::svg('tag') !!}</span>
                         <h3>Fixed price, no surprises</h3>
                         <p>Clear scope, price and deadline before we start. You only pay for what was agreed.</p>
                     </article>
                     <article class="card">
-                        <span class="bar"></span>
+                        <span class="svc-icon" aria-hidden="true">{!! \App\Support\Icons::svg('lock') !!}</span>
                         <h3>You own everything</h3>
                         <p>Source code, designs and accounts are handed over to you. No lock-in.</p>
                     </article>
                     <article class="card">
-                        <span class="bar bar--blue"></span>
+                        <span class="svc-icon is-blue" aria-hidden="true">{!! \App\Support\Icons::svg('heart') !!}</span>
                         <h3>Support after launch</h3>
-                        <p>Free bug fixes after launch, and a monthly plan if you want ongoing help.</p>
+                        <p>Free bug fixes after launch, and ongoing help whenever you need it.</p>
                     </article>
                 </div>
             </div>
@@ -298,7 +300,7 @@
         <section class="section lp-cta">
             <div class="container">
                 <div class="card lp-cta__box">
-                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 120, 'height' => 126, 'loading' => 'lazy'])
+                    @include('partials.live-owl', ['width' => 120, 'alt' => 'Owlvix owl mascot'])
                     <div>
                         <h2>Have a project in mind?</h2>
                         <p>Tell us about it in a few lines. You get a fixed-price quote within one business day — free.</p>

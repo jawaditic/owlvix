@@ -98,7 +98,7 @@
                     @if (! empty($t['profile_url']))
                         <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
                             <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
-                            <span><strong>{{ $t['rating'] }}</strong> on Fiverr · {{ $t['count'] }} reviews</span>
+                            <span>@include('partials.rating-summary', ['t' => $t])</span>
                         </a>
                     @endif
                 </div>
@@ -116,9 +116,9 @@
                 <p class="eyebrow">What we build</p>
                 <h2>{{ $p['types']['heading'] }}</h2>
                 <div class="grid grid--3">
-                    @foreach ($p['types']['items'] as [$name, $text])
+                    @foreach ($p['types']['items'] as [$name, $text, $icon])
                         <article class="card">
-                            <span class="bar {{ $loop->odd ? '' : 'bar--blue' }}"></span>
+                            <span class="svc-icon {{ $loop->odd ? '' : 'is-blue' }}" aria-hidden="true">{!! \App\Support\Icons::svg($icon) !!}</span>
                             <h3>{{ $name }}</h3>
                             <p>{{ $text }}</p>
                         </article>
@@ -165,16 +165,29 @@
             </div>
         </section>
 
-        {{-- Cost --}}
+        {{-- Cost: what drives the price + the "start free" offer; "See how we charge" opens the pricing popup --}}
         <section class="section section--alt" id="cost">
-            <div class="container container--narrow svc-prose">
-                <p class="eyebrow">Pricing</p>
-                <h2>{{ $p['cost']['heading'] }}</h2>
-                <p>{{ $p['cost']['text'] }}</p>
-                <p class="svc-cost__cta">
-                    <a href="#quote-form" class="btn btn--glow">Get my fixed price</a>
-                    <a href="{{ route('landing') }}#pricing" class="btn btn--ghost">See how we charge</a>
-                </p>
+            <div class="container">
+                <div class="cost-panel">
+                    <div class="cost-panel__text">
+                        <p class="eyebrow">Pricing</p>
+                        <h2>{{ $p['cost']['heading'] }}</h2>
+                        <p>{{ $p['cost']['text'] }}</p>
+                    </div>
+                    <aside class="cost-card">
+                        <span class="badge badge--blue">Start free</span>
+                        <p class="cost-card__price"><strong>$0</strong> to start</p>
+                        <p class="cost-card__sub">Then pay per milestone — only after you approve it.</p>
+                        <ul class="checks">
+                            <li>Free project plan + key screen designs</li>
+                            <li>No upfront payment or deposit</li>
+                            <li>Fixed total price agreed up front</li>
+                            <li>Source code handed over on final payment</li>
+                        </ul>
+                        <a href="#quote-form" class="btn btn--glow btn--block">Get my fixed price</a>
+                        <a href="{{ route('home') }}#pricing" class="btn btn--ghost btn--block" data-pricing>See how we charge</a>
+                    </aside>
+                </div>
             </div>
         </section>
 
@@ -225,7 +238,7 @@
         <section class="section lp-cta">
             <div class="container">
                 <div class="card lp-cta__box">
-                    @include('partials.picture', ['src' => 'images/owl.png', 'alt' => 'Owlvix owl mascot', 'width' => 120, 'height' => 126, 'loading' => 'lazy'])
+                    @include('partials.live-owl', ['width' => 120, 'alt' => 'Owlvix owl mascot'])
                     <div>
                         <h2>Ready to talk about your project?</h2>
                         <p>Send a few lines and get a fixed-price quote within one business day — free, with no obligation.</p>

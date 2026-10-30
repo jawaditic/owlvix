@@ -72,7 +72,7 @@
         </table>
     @endforeach
     <p style="margin:6px 0 0;font-size:14px;color:#64748b;">
-        <strong style="color:#0f172a;">{{ $t['rating'] }} ★</strong> from {{ $t['count'] }} reviews on Fiverr ·
+        @if ($t['five_star'] > 0)<strong style="color:#0f172a;">{{ $t['five_star'] }} of {{ $t['count'] }}</strong> reviews are 5 ★ on Fiverr @else <strong style="color:#0f172a;">{{ $t['count'] }}</strong> reviews on Fiverr @endif ·
         <a href="{{ $t['profile_url'] }}" style="color:#17a85f;font-weight:600;">Read more reviews →</a>
     </p>
     @endif

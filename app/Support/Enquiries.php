@@ -10,7 +10,17 @@ use Illuminate\Support\Facades\Mail;
 /** A new enquiry from the website forms or the mobile app: the rules it must pass, and what happens once it's in. */
 class Enquiries
 {
-    public const SERVICES = ['Web app', 'Mobile app', 'AI chatbot / agent', 'Website', 'Fixed project', 'Monthly developer', 'Something else'];
+    /** The "What do you need?" options, grouped as shown in every quote form (site and app). */
+    public const SERVICE_GROUPS = [
+        'Development' => ['Custom web app', 'Mobile app (iOS & Android)', 'AI chatbot', 'AI agent / automation', 'ERP / CRM system', 'MVP for a startup', 'API integration'],
+        'Websites & stores' => ['Website / WordPress', 'Shopify store', 'Landing page'],
+        'Design & growth' => ['UI/UX design', 'SEO'],
+        'Hire & support' => ['Hire a developer', 'Hosting & support', 'Milestone project'],
+        'Other' => ['Something else'],
+    ];
+
+    /** All options in one flat list (the mobile app and older code use this). */
+    public const SERVICES = ['Custom web app', 'Mobile app (iOS & Android)', 'AI chatbot', 'AI agent / automation', 'ERP / CRM system', 'MVP for a startup', 'API integration', 'Website / WordPress', 'Shopify store', 'Landing page', 'UI/UX design', 'SEO', 'Hire a developer', 'Hosting & support', 'Milestone project', 'Something else'];
 
     public const BUDGETS = Stats\DashboardStats::BUDGETS;
 

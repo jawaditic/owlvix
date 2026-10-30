@@ -15,7 +15,7 @@
             @php($t = \App\Support\Testimonials::data())
             <div class="quote-proof">
                 <a href="{{ $t['profile_url'] }}" class="quote-proof__rating" target="_blank" rel="noopener">
-                    <span aria-hidden="true">★★★★★</span> <strong>{{ $t['rating'] }}</strong> · {{ $t['count'] }} reviews on Fiverr
+                    <span aria-hidden="true">★★★★★</span> @include('partials.rating-summary', ['t' => $t])
                 </a>
                 <ul class="quote-proof__services" aria-label="What we build">
                     @foreach (['Web apps', 'Mobile apps', 'AI chatbots', 'AI agents', 'Websites', 'Shopify'] as $svc)
@@ -52,7 +52,7 @@
             @csrf
             <p class="eyebrow">Free quote</p>
             <h2 id="quote-title" tabindex="-1" autofocus>Get a free quote</h2>
-            <p class="quote-form__sub">Takes 30 seconds. No obligation.</p>
+            <p class="quote-form__sub">Takes 30 seconds. Start free — no upfront payment.</p>
 
             <div class="hp" aria-hidden="true">
                 <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
@@ -75,11 +75,7 @@
                     <input type="tel" id="quote-phone" name="phone" maxlength="30" autocomplete="tel" inputmode="tel" data-intl-phone>
                 </div>
                 <label>What do you need?
-                    <select name="service">
-                        @foreach (['Web app', 'Mobile app', 'AI chatbot / agent', 'Website', 'Monthly developer', 'Something else'] as $opt)
-                            <option value="{{ $opt }}">{{ $opt }}</option>
-                        @endforeach
-                    </select>
+                    @include('partials.service-select')
                 </label>
             </div>
             {{-- site.js turns this textarea into a rich text editor (and keeps it in sync for sending) --}}

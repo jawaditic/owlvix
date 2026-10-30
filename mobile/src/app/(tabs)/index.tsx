@@ -121,10 +121,10 @@ export default function Home() {
         </Section>
       ) : null}
 
-      <Section eyebrow="Pricing" title="Two simple ways to work with us">
+      <Section eyebrow="Pricing" title="Start free. Pay as you approve.">
         {Plans.map(p => (
           <Card key={p.title} style={{ gap: Space.md, borderColor: p.featured ? c.green : c.border, borderWidth: p.featured ? 2 : 1 }}>
-            {p.featured ? <Badge label="Most flexible" /> : null}
+            {p.featured ? <Badge label="Start free" /> : null}
             <T v="h3">{p.title}</T>
             <Text style={{ fontSize: 22, fontWeight: '800', color: c.text }}>{p.price}</Text>
             <T v="small">{p.text}</T>

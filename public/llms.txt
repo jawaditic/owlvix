@@ -4,7 +4,7 @@
 
 ## About
 
-- [About Owlvix](https://owlvix.com/about): founded by Jawad Ahmad (founder and lead developer), with a small team of developers and designers. Based in Pakistan, working with clients worldwide; building software since 2018. Formerly known as Anjtec on Fiverr (200+ projects).
+- [About Owlvix](https://owlvix.com/about): founded by Jawad Ahmad (founder and lead developer), with a small team of developers and designers. Based in Pakistan, working with clients in the USA, UK and 70+ countries; building software since 2018. Jawad's Fiverr profile is Jawad Ahmad (@anjtec), with 200+ completed orders; the reviews on owlvix.com come from it.
 
 ## Services
 
@@ -15,19 +15,34 @@ Full details of every service, who it suits and what is included: https://owlvix
 - [AI chatbots](https://owlvix.com/ai-chatbot-development): website and customer support bots trained on a business's own documents, FAQs and products.
 - [AI agents and automation](https://owlvix.com/ai-agent-development): repetitive tasks and workflows handed to AI that follows the business's rules and reports back.
 - [API integrations](https://owlvix.com/api-integration-services): OpenAI, Claude, Gemini, payments, CRMs and ERPs connected to the tools a business already uses.
-- [Websites and Shopify stores](https://owlvix.com/services#websites): marketing sites, WordPress and Shopify builds.
+- [Shopify store development](https://owlvix.com/shopify-development): new stores, theme customization, apps, migrations and speed fixes.
+- [WordPress website development](https://owlvix.com/wordpress-development): business websites, WooCommerce stores, redesigns, fixes and speed.
+- [ERP and CRM development](https://owlvix.com/erp-crm-development): custom systems for customers, sales, inventory, orders, invoices and reports.
+- [Landing page design](https://owlvix.com/landing-page-design): fast, mobile-first pages for ads, launches and lead generation.
+- [UI/UX design](https://owlvix.com/ui-ux-design): user flows, wireframes, screen design and clickable prototypes for web and mobile apps.
+- [MVP development](https://owlvix.com/mvp-development): focused first versions of startup products, built to grow.
+- [SEO services](https://owlvix.com/seo-services): technical SEO audits and fixes, page speed, structured data and on-page optimization.
+
+## Hire a developer
+
+Every project starts free (project plan and key screen designs), then is paid per milestone, only after the client approves each one.
+
+- [Hire a Laravel developer](https://owlvix.com/hire-laravel-developer)
+- [Hire a React / Next.js developer](https://owlvix.com/hire-react-developer)
+- [Hire a React Native developer](https://owlvix.com/hire-react-native-developer)
+- [Hire an AI developer](https://owlvix.com/hire-ai-developer)
 - [Hosting and support](https://owlvix.com/hosting-and-support): setup, deployment, monitoring and fixes after launch.
 
 ## How it works
 
 - [Process](https://owlvix.com/#process): 1) share your idea and get a plan with a clear quote; 2) design and build with weekly progress on a live preview; 3) tested launch, full source code handover, and ongoing support.
-- [Pricing](https://owlvix.com/#pricing): fixed projects with a custom quote (clear scope, price and deadline up front), or a monthly developer plan from $100/month for ongoing web, mobile, AI and support work, cancel any time.
+- [Pricing](https://owlvix.com/#pricing): milestone projects that start free (project plan and key screen designs at no cost, no upfront payment), then as many milestones as agreed, each paid only after the client approves it, with a fixed total price agreed up front and source code handed over on final payment.
 - [FAQ](https://owlvix.com/#faq): most websites take 1–3 weeks and most web apps 3–8 weeks; clients own all code, designs and accounts once paid; Owlvix takes over and extends existing apps; works with OpenAI, Anthropic Claude and Google Gemini; can set up hosting, domains, email and SSL.
 
 ## Work and reviews
 
 - [Portfolio](https://owlvix.com/#work): websites, web apps, mobile apps, Shopify stores and AI projects.
-- [Client reviews](https://owlvix.com/#reviews): rated on Fiverr, profile at https://www.fiverr.com/anjtec
+- [Client reviews](https://owlvix.com/#reviews): from Jawad Ahmad's Fiverr profile (@anjtec), https://www.fiverr.com/anjtec
 
 ## Contact
 

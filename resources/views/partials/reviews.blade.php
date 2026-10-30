@@ -7,7 +7,7 @@
         <h2>What clients say</h2>
         <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
             <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
-            <span><strong>{{ $t['rating'] }}</strong> on Fiverr · {{ $t['count'] }} reviews · {{ $t['five_star'] }} five-star</span>
+            <span>@include('partials.rating-summary', ['t' => $t])</span>
         </a>
         <div class="reviews is-loading" data-reviews aria-busy="true">
             @foreach ($t['reviews'] as $r)

@@ -1,34 +1,55 @@
-{{-- Pricing section, shared by the homepage and the landing page --}}
+{{-- Pricing: one offer — start free, pay per milestone. Shared by the homepage and /services. --}}
 <section class="section" id="pricing">
     <div class="container">
         <p class="eyebrow">Pricing</p>
-        <h2>Two simple ways to work with us</h2>
-        <div class="grid grid--2 pricing">
+        <h2>Start free. Pay as you approve.</h2>
+        <p class="pricing__lead">No deposit and no upfront payment. We plan your project and design the key screens for free, then you pay milestone by milestone — only for work you have seen and approved.</p>
+        <div class="pricing pricing--single">
             <article class="card plan">
-                <h3>Fixed project</h3>
-                <p class="price"><span>Custom quote</span></p>
-                <p>Best when you know what you want built — a new app, a website or an AI feature.</p>
+                <span class="badge badge--blue">Start free</span>
+                <h3>Milestone project</h3>
+                <p class="price"><strong>$0</strong><span> to start</span></p>
+                <p>Best when you know what you want built — a new app, a website or an AI feature. We start for free, then you pay milestone by milestone.</p>
                 <ul class="checks">
-                    <li>Clear scope, price and deadline up front</li>
-                    <li>Weekly progress updates</li>
-                    <li>Full source code handed over</li>
-                    <li>Free bug fixes after launch</li>
+                    <li>Free start: project plan + key screen designs</li>
+                    <li>No upfront payment or deposit</li>
+                    <li>Pay per milestone, only after you approve it</li>
+                    <li>Fixed total price agreed up front</li>
+                    <li>Full source code handed over on final payment</li>
                 </ul>
-                <a href="#contact" class="btn btn--ghost btn--block" data-service="Fixed project">Get a quote</a>
+                <a href="#contact" class="btn btn--ghost btn--block" data-service="Milestone project">Start for free</a>
             </article>
-            <article class="card plan plan--featured">
-                <span class="badge">Most flexible</span>
-                <h3>Monthly developer</h3>
-                <p class="price">from <strong>$100</strong><span>/month</span></p>
-                <p>Your own developer on call for ongoing work across web, mobile, AI and support.</p>
-                <ul class="checks">
-                    <li>New features, fixes and updates every month</li>
-                    <li>Web • Mobile • AI • Support</li>
-                    <li>Priority replies</li>
-                    <li>Cancel any time</li>
-                </ul>
-                <a href="#contact" class="btn btn--block" data-service="Monthly developer">Start monthly plan</a>
-            </article>
+
+        {{-- How payment works on a milestone project --}}
+        <div class="pay-steps">
+            <h3 class="pay-steps__title">How payment works</h3>
+            <ol class="pay-steps__list">
+                <li>
+                    <span class="svc-icon" aria-hidden="true">{!! \App\Support\Icons::svg('rocket') !!}</span>
+                    <strong>Free start</strong>
+                    <span class="pay-steps__amount">$0</span>
+                    <p>We plan your project and design the key screens. No payment, no obligation.</p>
+                </li>
+                <li>
+                    <span class="svc-icon is-blue" aria-hidden="true">{!! \App\Support\Icons::svg('clipboard') !!}</span>
+                    <strong>Agree the milestones</strong>
+                    <span class="pay-steps__amount">fixed total</span>
+                    <p>The work is split into as many milestones as we agree, each with its own price.</p>
+                </li>
+                <li>
+                    <span class="svc-icon" aria-hidden="true">{!! \App\Support\Icons::svg('check') !!}</span>
+                    <strong>Pay as you approve</strong>
+                    <span class="pay-steps__amount">per milestone</span>
+                    <p>See each milestone working on a preview link, approve it, then pay for it.</p>
+                </li>
+                <li>
+                    <span class="svc-icon is-blue" aria-hidden="true">{!! \App\Support\Icons::svg('key') !!}</span>
+                    <strong>Launch &amp; handover</strong>
+                    <span class="pay-steps__amount">final milestone</span>
+                    <p>With the final payment you get the live product, full source code and all accounts.</p>
+                </li>
+            </ol>
+        </div>
         </div>
     </div>
 </section>

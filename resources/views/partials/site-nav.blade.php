@@ -21,7 +21,7 @@
             <a href="{{ $h('work') }}">Work</a>
             <a href="{{ $h('process') }}">Process</a>
             @if (count(\App\Support\Testimonials::data()['reviews']))<a href="{{ $h('reviews') }}">Reviews</a>@endif
-            <a href="{{ $h('pricing') }}">Pricing</a>
+            <a href="{{ $h('pricing') }}" @unless (in_array('pricing', $local, true)) data-pricing @endunless>Pricing</a>
             <a href="{{ $h('faq') }}">FAQ</a>
             <a href="{{ route('about') }}" @if (request()->routeIs('about')) aria-current="page" @endif>About</a>
             <button type="button" class="theme-btn" data-theme-toggle aria-label="Switch to light mode" title="Switch theme">

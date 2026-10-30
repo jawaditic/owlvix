@@ -20,13 +20,13 @@ export default function Reviews() {
 
       {r ? (
         <Section>
-          {r.rating ? (
+          {r.count ? (
             <Card style={{ alignItems: 'center', gap: 6 }}>
               <Stars rating={5} size={20} />
-              <Text style={{ fontSize: 30, fontWeight: '800', color: c.text }}>{r.rating}</Text>
-              <T v="small">
-                on Fiverr · {r.count} reviews · {r.five_star} five-star
-              </T>
+              <Text style={{ fontSize: 30, fontWeight: '800', color: c.text }}>
+                {r.five_star ? `${r.five_star} of ${r.count}` : r.count}
+              </Text>
+              <T v="small">{r.five_star ? 'reviews are 5 stars on Fiverr' : 'reviews on Fiverr'}</T>
             </Card>
           ) : null}
           {r.items.length ? r.items.map((item, i) => <ReviewCard key={`${item.name}-${i}`} r={item} />) : <Empty title="No reviews yet" />}

@@ -32,24 +32,15 @@ export const Steps = [
 
 export const Plans = [
   {
-    title: 'Fixed project',
-    price: 'Custom quote',
-    text: 'Best when you know what you want built — a new app, a website or an AI feature.',
-    points: ['Clear scope, price and deadline up front', 'Weekly progress updates', 'Full source code handed over', 'Free bug fixes after launch'],
-    service: 'Fixed project',
-    cta: 'Get a quote',
-    featured: false,
-  },
-  {
-    title: 'Monthly developer',
-    price: 'from $100/month',
-    text: 'Your own developer on call for ongoing work across web, mobile, AI and support.',
-    points: ['New features, fixes and updates every month', 'Web • Mobile • AI • Support', 'Priority replies', 'Cancel any time'],
-    service: 'Monthly developer',
-    cta: 'Start monthly plan',
+    title: 'Milestone project',
+    price: '$0 to start',
+    text: 'We plan your project and design the key screens for free, then you pay milestone by milestone — only for work you have approved.',
+    points: ['Free start: project plan + key screen designs', 'No upfront payment or deposit', 'Pay per milestone, only after you approve it', 'Fixed total price agreed up front', 'Full source code handed over on final payment'],
+    service: 'Milestone project',
+    cta: 'Start for free',
     featured: true,
   },
-];
+]
 
 export const Faq = [
   { q: 'How long does a project take?', a: 'Most websites take 1–3 weeks and most web apps 3–8 weeks. You get an exact timeline with your quote.' },
@@ -61,6 +52,6 @@ export const Faq = [
 
 /** Fallback options for the quote form, used until the API answers. */
 export const FormDefaults = {
-  services: ['Web app', 'Mobile app', 'AI chatbot / agent', 'Website', 'Fixed project', 'Monthly developer', 'Something else'],
+  services: ['Custom web app', 'Mobile app (iOS & Android)', 'AI chatbot', 'AI agent / automation', 'ERP / CRM system', 'MVP for a startup', 'API integration', 'Website / WordPress', 'Shopify store', 'Landing page', 'UI/UX design', 'SEO', 'Hire a developer', 'Hosting & support', 'Milestone project', 'Something else'],
   budgets: ['Not sure yet', 'Under $500', '$500 – $2,000', '$2,000 – $5,000', '$5,000+'],
 };

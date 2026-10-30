@@ -30,4 +30,18 @@ class MinifiedAssetsTest extends TestCase
             ->assertSee('js/site.min.js', false)
             ->assertDontSee('css/site.css?v', false);
     }
+
+    /** An unclosed { in a stylesheet silently swallows every rule after it (it happened once). */
+    public function test_stylesheets_have_balanced_braces(): void
+    {
+        foreach (['css/site.css', 'css/theme.css', 'css/admin.css'] as $file) {
+            $css = preg_replace('#/\*.*?\*/#s', '', file_get_contents(public_path($file)));
+            $depth = 0;
+            foreach (str_split($css) as $ch) {
+                $depth += $ch === '{' ? 1 : ($ch === '}' ? -1 : 0);
+                $this->assertGreaterThanOrEqual(0, $depth, "$file has an extra }");
+            }
+            $this->assertSame(0, $depth, "$file has an unclosed {");
+        }
+    }
 }

@@ -291,6 +291,9 @@
 
     audio.addEventListener('ended', () => current && current.onEnded());
 
-    window.Owl = { createOwl };
+    // Idle owl (no voice): blinks, glances around and breathes. Used on pages without the talking intro.
+    const idleOwl = root => createRig(root);
+
+    window.Owl = { createOwl, idleOwl };
 
 })();

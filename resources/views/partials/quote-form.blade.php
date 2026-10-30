@@ -6,7 +6,7 @@
     <input type="hidden" name="source" value="landing">
     <div>
         <h2 class="lp-form__title">{{ $title ?? 'Get your free quote' }}</h2>
-        <p class="lp-form__note">Reply within one business day · No obligation</p>
+        <p class="lp-form__note">Reply within one business day · Start free, no upfront payment</p>
     </div>
     @if (session('sent'))
         <div class="alert alert--ok" role="status">Thanks! Your message is in. We'll get back to you within one business day.</div>
@@ -33,11 +33,7 @@
     </div>
     <div class="row">
         <label>What do you need?
-            <select name="service" id="service">
-                @foreach (\App\Support\Enquiries::SERVICES as $opt)
-                    <option value="{{ $opt }}" @selected(old('service', $service ?? null) === $opt)>{{ $opt }}</option>
-                @endforeach
-            </select>
+            @include('partials.service-select', ['id' => 'service', 'selected' => $service ?? null])
         </label>
         <label>Budget
             <select name="budget">
