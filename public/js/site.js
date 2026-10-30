@@ -171,6 +171,11 @@
         sc.onerror = () => { recaptchaPromise = null; reject(new Error('reCAPTCHA failed to load')); };
         document.head.appendChild(sc);
     });
+    // A reCAPTCHA token for forms sent with fetch (the SEO tips and audit forms). Empty when it can't be had;
+    // the server then decides.
+    window.owlvixCaptcha = action => !cfg.recaptchaKey ? Promise.resolve('') : loadRecaptcha()
+        .then(() => new Promise(done => grecaptcha.ready(() => grecaptcha.execute(cfg.recaptchaKey, { action }).then(done, () => done('')))))
+        .catch(() => '');
     document.querySelectorAll('form[data-validate]').forEach(form => {
         // Real interaction only (isTrusted): the popup focuses its form by itself, and the phone
         // picker and editor send their own "input" events while starting up
