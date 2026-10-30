@@ -26,23 +26,24 @@
             <a href="{{ route('about') }}" @if (request()->routeIs('about')) aria-current="page" @endif>About</a>
             {{-- Free tools: dropdown on desktop (hover, focus or click), plain links in the phone menu --}}
             <div class="nav-drop" data-nav-drop>
-                <button type="button" class="nav-drop__btn" aria-expanded="false" aria-haspopup="true" @if (request()->routeIs('seo-checker', 'speed-test', 'seo-audit')) aria-current="page" @endif>
+                <button type="button" class="nav-drop__btn" aria-expanded="false" aria-haspopup="true" @if (request()->routeIs(...\App\Support\FreeTools::routes())) aria-current="page" @endif>
                     Free tools <span class="nav-drop__new">New</span>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
-                <div class="nav-drop__menu">
-                    <a href="{{ route('seo-checker') }}" class="nav-drop__item" @if (request()->routeIs('seo-checker')) aria-current="page" @endif>
-                        <span class="svc-icon" aria-hidden="true">{!! \App\Support\Icons::svg('search') !!}</span>
-                        <span><strong>SEO checker</strong><small>Score + tips to rank higher on Google</small></span>
-                    </a>
-                    <a href="{{ route('speed-test') }}" class="nav-drop__item" @if (request()->routeIs('speed-test')) aria-current="page" @endif>
-                        <span class="svc-icon is-blue" aria-hidden="true">{!! \App\Support\Icons::svg('pulse') !!}</span>
-                        <span><strong>Website speed test</strong><small>Core Web Vitals + PDF report</small></span>
-                    </a>
+                <div class="nav-drop__menu nav-drop__menu--wide">
+                    <div class="nav-drop__grid">
+                        @foreach (\App\Support\FreeTools::all() as $t)
+                            <a href="{{ route($t['route']) }}" class="nav-drop__item" @if (request()->routeIs($t['route'])) aria-current="page" @endif>
+                                <span class="svc-icon {{ $t['tone'] }}" aria-hidden="true">{!! \App\Support\Icons::svg($t['icon']) !!}</span>
+                                <span><strong>{{ $t['name'] }}</strong><small>{{ $t['desc'] }}</small></span>
+                            </a>
+                        @endforeach
+                    </div>
                     <a href="{{ route('seo-audit') }}" class="nav-drop__item nav-drop__item--feature" @if (request()->routeIs('seo-audit')) aria-current="page" @endif>
                         <span class="svc-icon" aria-hidden="true">{!! \App\Support\Icons::svg('sparkle') !!}</span>
                         <span><strong>Full SEO audit <em class="nav-drop__tag">Free</em></strong><small>Whole-site report by our team, in 2 days</small></span>
                     </a>
+                    <a href="{{ route('free-tools') }}" class="nav-drop__all">See all free tools →</a>
                 </div>
             </div>
             <button type="button" class="theme-btn" data-theme-toggle aria-label="Switch to light mode" title="Switch theme">

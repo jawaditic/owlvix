@@ -32,6 +32,14 @@
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
+@foreach (['free-tools' => 'free-tools', 'cost-calculator' => 'tools/cost-calculator', 'security-checker' => 'tools/security', 'tech-stack' => 'tools/tech-stack', 'meta-preview' => 'tools/meta-preview'] as $route => $view)
+    <url>
+        <loc>{{ route($route) }}</loc>
+        <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/'.$view.'.blade.php'))) }}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+@endforeach
     <url>
         <loc>{{ route('seo-checker') }}</loc>
         <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/seo-checker.blade.php'))) }}</lastmod>

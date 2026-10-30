@@ -70,6 +70,9 @@
     # HSTS: browsers always use https for owlvix.com for the next year (the site is https-only).
     # No includeSubDomains, so subdomains such as webmail aren't affected.
     Header always set Strict-Transport-Security "max-age=31536000"
+    # Don't reveal the PHP version (security checkers flag it; attackers use it to look up known holes)
+    Header always unset X-Powered-By
+    Header unset X-Powered-By
 </IfModule>
 
 # Uploaded portfolio images must never run as code

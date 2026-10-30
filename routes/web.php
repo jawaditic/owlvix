@@ -21,6 +21,14 @@ Route::post('/website-speed-test', [\App\Http\Controllers\SpeedTestController::c
     ->name('speed-test.run');
 // Free SEO checker: the page, the check, and "email me these tips" (saves a lead)
 Route::view('/seo-audit', 'seo-audit')->name('seo-audit');
+Route::view('/free-tools', 'free-tools')->name('free-tools');
+Route::view('/project-cost-calculator', 'tools.cost-calculator')->name('cost-calculator');
+Route::view('/tech-stack-detector', 'tools.tech-stack')->name('tech-stack');
+Route::view('/security-checker', 'tools.security')->name('security-checker');
+Route::view('/meta-tag-preview', 'tools.meta-preview')->name('meta-preview');
+Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
+Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');
+Route::post('/meta-tag-preview', [\App\Http\Controllers\FreeToolsController::class, 'meta'])->middleware('throttle:8,1,tool-meta')->name('meta-preview.run');
 Route::get('/seo-checker', [\App\Http\Controllers\SeoCheckerController::class, 'show'])->name('seo-checker');
 Route::post('/seo-checker', [\App\Http\Controllers\SeoCheckerController::class, 'run'])->middleware('throttle:8,1,seo-checker')->name('seo-checker.run');
 Route::post('/seo-checker/audit', [\App\Http\Controllers\SeoCheckerController::class, 'audit'])->middleware('throttle:3,1,seo-audit')->name('seo-checker.audit');

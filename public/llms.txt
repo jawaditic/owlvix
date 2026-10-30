@@ -46,6 +46,13 @@ Every project starts free (project plan and key screen designs), then is paid pe
 
 ## Free tools
 
+All tools: https://owlvix.com/free-tools
+
+- [App & website cost calculator](https://owlvix.com/project-cost-calculator): instant price range and timeline for a website, store, web app, mobile app, AI chatbot/agent or ERP, from project type, size, design level and features.
+- [Website security & SSL checker](https://owlvix.com/security-checker): passive check of HTTPS, SSL certificate (trust, expiry, TLS), security headers, cookie flags and version leaks, with fixes.
+- [Tech stack detector](https://owlvix.com/tech-stack-detector): shows what a website is built with (CMS, e-commerce platform, frameworks, hosting/CDN, analytics, payments).
+- [Meta tag & social preview](https://owlvix.com/meta-tag-preview): previews a page on Google, WhatsApp, Facebook/LinkedIn and X and generates corrected meta tags.
+
 - [Website speed test](https://owlvix.com/website-speed-test): free speed score, Core Web Vitals and top fixes for any URL, powered by Google PageSpeed Insights; downloadable PDF report.
 
 - [SEO checker](https://owlvix.com/seo-checker): free on-page and technical SEO audit of any URL (titles, meta, headings, content, schema, robots.txt, sitemap, speed, social tags) with a tip for every issue; tips can be emailed.
