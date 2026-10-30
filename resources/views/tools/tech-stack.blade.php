@@ -19,10 +19,7 @@
 @endphp
 
 @section('head')
-<script type="application/ld+json">{!! json_encode(['@context' => 'https://schema.org', '@graph' => [
-    ['@type' => 'WebApplication', 'name' => 'Owlvix Tech Stack Detector', 'url' => route('tech-stack'), 'applicationCategory' => 'DeveloperApplication', 'operatingSystem' => 'Any', 'offers' => ['@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'USD'], 'provider' => ['@id' => url('/').'#business']],
-    ['@type' => 'FAQPage', 'mainEntity' => array_map(fn ($q) => ['@type' => 'Question', 'name' => $q[0], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $q[1]]], $faq)],
-]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
+@include('tools.partials.schema', ['name' => 'Owlvix Tech Stack Detector', 'url' => route('tech-stack'), 'category' => 'DeveloperApplication', 'faq' => $faq])
 @endsection
 
 @section('content')

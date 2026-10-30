@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Support\BrokenLinks;
+use App\Support\DomainCheck;
+use App\Support\EmailCheck;
 use App\Support\FreeTools;
 use App\Support\MetaPreview;
+use App\Support\RedirectCheck;
+use App\Support\RobotsCheck;
 use App\Support\SecurityCheck;
 use App\Support\TechDetect;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,7 +33,7 @@ class FreeToolsTest extends TestCase
             $this->assertStringContainsString('href="'.route($t['route']).'"', $home, $t['route']);
         }
         $this->get('/free-tools')->assertOk()->assertSee('Cost calculator');
-        foreach (['free-tools', 'cost-calculator', 'security-checker', 'tech-stack', 'meta-preview'] as $r) {
+        foreach (array_merge(['free-tools'], array_column(FreeTools::all(), 'route')) as $r) {
             $this->assertStringContainsString('<loc>'.route($r).'</loc>', $sitemap, $r);
         }
     }
@@ -93,9 +98,132 @@ class FreeToolsTest extends TestCase
 
     public function test_tools_refuse_private_addresses(): void
     {
-        foreach (['/tech-stack-detector', '/security-checker', '/meta-tag-preview'] as $tool) {
+        foreach (['/tech-stack-detector', '/security-checker', '/meta-tag-preview', '/broken-link-checker', '/email-dns-checker', '/redirect-checker', '/robots-txt-checker', '/domain-age-checker'] as $tool) {
             $this->postJson($tool, ['url' => 'localhost'])->assertStatus(422);
             $this->postJson($tool, ['url' => 'http://192.168.1.1'])->assertStatus(422);
         }
+    }
+
+    public function test_every_page_outputs_valid_json_ld(): void
+    {
+        $urls = array_merge(['/', '/about', '/services', '/free-tools'], array_map(fn ($t) => route($t['route']), FreeTools::all()));
+        foreach ($urls as $u) {
+            preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $this->get($u)->getContent(), $m);
+            $this->assertNotEmpty($m[1], "$u has JSON-LD");
+            foreach (array_filter($m[1], fn ($j) => ! str_contains($j, '${')) as $json) { // skip the schema generator's JS template
+                $data = json_decode($json, true);
+                $this->assertSame('https://schema.org', $data['@context'] ?? null, "$u JSON-LD has a clean @context");
+            }
+        }
+    }
+
+    public function test_email_domain_is_read_from_any_input(): void
+    {
+        $this->assertSame('gmail.com', EmailCheck::domain('You@Gmail.com'));
+        $this->assertSame('example.org', EmailCheck::domain('https://www.example.org/contact'));
+        $this->assertSame('shop.example.co.uk', EmailCheck::domain('shop.example.co.uk'));
+        $this->assertNull(EmailCheck::domain('localhost'));
+        $this->assertNull(EmailCheck::domain('printer.local'));
+        $this->assertNull(EmailCheck::domain('not a domain'));
+    }
+
+    public function test_email_records_are_scored_with_fixes(): void
+    {
+        $good = EmailCheck::analyse('example.com', ['mx' => [['host' => 'aspmx.l.google.com', 'pri' => 1]], 'spf' => ['v=spf1 include:_spf.google.com ~all'], 'spf_lookups' => 4,
+            'dmarc' => ['v=DMARC1; p=reject; rua=mailto:d@example.com'], 'dkim' => ['google' => 'v=DKIM1; k=rsa; p=abc'], 'ns' => ['a.ns.com', 'b.ns.com'], 'a' => ['1.2.3.4']]);
+        $this->assertSame(100, $good['score']);
+        $this->assertSame('Google Workspace', $good['provider']);
+
+        $bad = EmailCheck::analyse('example.com', ['mx' => [['host' => 'aspmx.l.google.com', 'pri' => 1]], 'spf' => [], 'spf_lookups' => 0, 'dmarc' => [], 'dkim' => [], 'ns' => ['a.ns.com'], 'a' => []]);
+        $status = collect($bad['checks'])->pluck('status', 'title');
+        $this->assertSame('fail', $status['SPF record']);
+        $this->assertSame('fail', $status['DMARC policy']);
+        $this->assertSame('warn', $status['DKIM signature']);
+        $this->assertSame('v=spf1 include:_spf.google.com ~all', $bad['suggest_spf']);
+
+        $tooMany = EmailCheck::analyse('example.com', ['mx' => [], 'spf' => ['v=spf1 +all'], 'spf_lookups' => 12, 'dmarc' => ['v=DMARC1; p=none'], 'dkim' => [], 'ns' => [], 'a' => []]);
+        $status = collect($tooMany['checks'])->pluck('status', 'title');
+        $this->assertSame('fail', $status['SPF record']);
+        $this->assertSame('fail', $status['SPF lookups']);
+        $this->assertSame('warn', $status['DMARC policy']);
+        $this->assertSame('fail', $status['Mail servers (MX)']);
+    }
+
+    public function test_links_are_extracted_resolved_and_sorted_into_broken_redirects_and_blocked(): void
+    {
+        $links = BrokenLinks::extract('<a href="/about">About</a><a href="../x/./y?a=1#top">Y</a><a href="mailto:a@b.c">Mail</a><a href="#top">Top</a><a href="/cdn-cgi/l/email-protection">E</a><img src="//cdn.example.com/a.png" alt="Logo">', 'https://example.com/blog/post');
+        $this->assertSame(['https://example.com/about', 'https://example.com/x/y?a=1', 'https://cdn.example.com/a.png'], array_column($links, 'url'));
+        $this->assertSame('image', $links[2]['type']);
+
+        $l = fn ($t = 'link') => ['type' => $t, 'text' => 'x', 'pages' => ['https://example.com/']];
+        $r = BrokenLinks::analyse('https://example.com', 'https://example.com/', ['https://example.com/'],
+            ['https://example.com/a' => $l(), 'https://example.com/old' => $l(), 'https://other.com/gone' => $l(), 'https://linkedin.com/in/x' => $l(), 'https://example.com/i.png' => $l('image')],
+            ['https://example.com/a' => ['code' => 200], 'https://example.com/old' => ['code' => 301, 'location' => 'https://example.com/new'], 'https://other.com/gone' => ['code' => 404],
+                'https://linkedin.com/in/x' => ['code' => 999], 'https://example.com/i.png' => ['code' => 0, 'error' => 'Could not connect']]);
+        $this->assertSame(['checked' => 5, 'ok' => 1, 'broken' => 2, 'redirects' => 1, 'blocked' => 1], $r['counts']);
+        $this->assertSame('https://example.com/i.png', $r['broken'][0]['url'], 'broken links on your own site come first');
+        $this->assertSame('Page not found', $r['broken'][1]['reason']);
+        $this->assertSame('average', $r['rating']);
+    }
+
+    public function test_robots_rules_match_like_google(): void
+    {
+        $p = RobotsCheck::parse("User-agent: *\nDisallow: /admin\nAllow: /admin/public\nDisallow: /*.pdf$\n\nUser-agent: GPTBot\nUser-agent: CCBot\nDisallow: /\n\nSitemap: https://example.com/sitemap.xml");
+        $this->assertSame(['https://example.com/sitemap.xml'], $p['sitemaps']);
+        $this->assertFalse(RobotsCheck::allowed($p, 'Googlebot', '/admin/users')[0]);
+        $this->assertTrue(RobotsCheck::allowed($p, 'Googlebot', '/admin/public/page')[0], 'longer Allow wins');
+        $this->assertFalse(RobotsCheck::allowed($p, 'Googlebot', '/files/a.pdf')[0]);
+        $this->assertTrue(RobotsCheck::allowed($p, 'Googlebot', '/files/a.pdf?x=1')[0], '$ anchors the end');
+        $this->assertFalse(RobotsCheck::allowed($p, 'GPTBot', '/')[0]);
+        $this->assertFalse(RobotsCheck::allowed($p, 'CCBot', '/blog')[0], 'grouped user-agents share rules');
+        $this->assertTrue(RobotsCheck::allowed($p, 'ClaudeBot', '/blog')[0]);
+
+        $page = $this->page('<meta name="robots" content="noindex, follow">');
+        $r = RobotsCheck::analyse('https://example.com/blog', $page, 200, "User-agent: *\nDisallow: /", RobotsCheck::parse("User-agent: *\nDisallow: /"), 'https://example.com/sitemap.xml', ['ok' => false]);
+        $status = collect($r['checks'])->pluck('status', 'title');
+        $this->assertSame('fail', $status['Whole site']);
+        $this->assertSame('fail', $status['Can appear in Google']);
+        $this->assertSame('fail', $status['XML sitemap']);
+        $this->assertSame('warn', $status['AI answer engines']);
+    }
+
+    public function test_redirect_chains_and_versions_are_checked(): void
+    {
+        $chain = [['url' => 'http://example.com/', 'code' => 302, 'ms' => 50, 'location' => 'https://example.com/'], ['url' => 'https://example.com/', 'code' => 301, 'ms' => 50, 'location' => 'https://www.example.com/'], ['url' => 'https://www.example.com/', 'code' => 200, 'ms' => 100, 'headers' => ['server' => 'nginx']]];
+        $variants = [['url' => 'http://example.com/', 'final' => 'https://www.example.com/', 'code' => 200, 'hops' => 2], ['url' => 'https://example.com/', 'final' => 'https://www.example.com/', 'code' => 200, 'hops' => 1],
+            ['url' => 'http://www.example.com/', 'final' => 'http://www.example.com/', 'code' => 200, 'hops' => 0], ['url' => 'https://www.example.com/', 'final' => 'https://www.example.com/', 'code' => 200, 'hops' => 0]];
+        $r = RedirectCheck::analyse('http://example.com/', $chain, $variants);
+        $status = collect($r['checks'])->pluck('status', 'title');
+        $this->assertSame(2, $r['hops']);
+        $this->assertSame('warn', $status['Redirect chain']);
+        $this->assertSame('warn', $status['Redirect type']);
+        $this->assertSame('fail', $status['One main address']);
+        $this->assertSame('fail', $status['HTTPS redirect']);
+        $this->assertSame(['server' => 'nginx'], $r['headers']);
+
+        $loop = RedirectCheck::analyse('https://a.com/', [['url' => 'https://a.com/', 'code' => 301, 'ms' => 1, 'location' => 'https://b.com/'], ['url' => 'https://a.com/', 'code' => 301, 'ms' => 1, 'loop' => true]], []);
+        $this->assertSame('fail', collect($loop['checks'])->firstWhere('title', 'Redirect loop')['status']);
+    }
+
+    public function test_domain_registration_is_read_from_rdap_and_whois(): void
+    {
+        $this->assertSame('example.co.uk', DomainCheck::domain('https://shop.example.co.uk/x'));
+        $this->assertSame('example.com.pk', DomainCheck::domain('www.example.com.pk'));
+        $this->assertSame('github.com', DomainCheck::domain('blog.github.com'));
+
+        $rdap = DomainCheck::parseRdap(['events' => [['eventAction' => 'registration', 'eventDate' => '2015-03-01T00:00:00Z'], ['eventAction' => 'expiration', 'eventDate' => '2027-03-01T00:00:00Z']],
+            'entities' => [['roles' => ['registrar'], 'vcardArray' => ['vcard', [['fn', [], 'text', 'NameCheap, Inc.']]]]],
+            'status' => ['client transfer prohibited'], 'nameservers' => [['ldhName' => 'NS1.EXAMPLE.COM'], ['ldhName' => 'ns2.example.com']], 'secureDNS' => ['delegationSigned' => false]]);
+        $r = DomainCheck::analyse('example.com', $rdap, strtotime('2026-10-30'));
+        $this->assertSame('NameCheap, Inc.', $r['registrar']);
+        $this->assertSame('11 years, 7 months', $r['age']);
+        $this->assertSame(122, $r['days_left']);
+        $this->assertSame('pass', collect($r['checks'])->firstWhere('title', 'Transfer lock')['status']);
+
+        $whois = DomainCheck::parseWhois("Domain: example.pk\nCreation Date: 2020-01-10\nExpiry Date: 2026-11-10\nName Server: ns1.host.pk\nName Server: ns2.host.pk\n");
+        $soon = DomainCheck::analyse('example.pk', $whois, strtotime('2026-10-30'));
+        $this->assertSame('fail', collect($soon['checks'])->firstWhere('title', 'Expiry date')['status']);
+        $this->assertSame('poor', $soon['rating']);
+        $this->assertFalse(DomainCheck::parseWhois("No match for \"FREE-DOMAIN.COM\".")['registered']);
     }
 }

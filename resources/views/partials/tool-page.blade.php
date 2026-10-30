@@ -1,5 +1,6 @@
 {{-- Shared top of a website tool page: breadcrumb, pill, heading, lead, the URL form with a perched owl,
-     and the loading / error areas. Params: name (breadcrumb), h1 (HTML), lead, action (route), icon, button. --}}
+     and the loading / error areas. Params: name (breadcrumb), h1 (HTML), lead, action (route), icon, button;
+     optional: placeholder, label (for screen readers), wait (loading time text). --}}
 <section class="hero speed-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -13,9 +14,9 @@
             <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'dev', 'alt' => 'Owlvix owl checking websites'])</span>
             @csrf
             <label class="speed-form__url">
-                <span class="sr-only">Website address</span>
+                <span class="sr-only">{{ $label ?? 'Website address' }}</span>
                 <span class="speed-form__icon" aria-hidden="true">{!! \App\Support\Icons::svg($icon) !!}</span>
-                <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="example.com" value="{{ request('url') }}" required maxlength="500">
+                <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="{{ $placeholder ?? 'example.com' }}" value="{{ request('url') }}" required maxlength="500">
             </label>
             <button type="submit" class="btn btn--glow">{{ $button }}
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -33,7 +34,7 @@
                 <strong>Checking…</strong>
                 <p data-tool-step></p>
                 <div class="speed-loading__bar"><span></span></div>
-                <small>This usually takes 5–15 seconds.</small>
+                <small>{{ $wait ?? 'This usually takes 5–15 seconds.' }}</small>
             </div>
         </div>
     </div>
