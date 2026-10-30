@@ -44,6 +44,10 @@ Every project starts free (project plan and key screen designs), then is paid pe
 - [Portfolio](https://owlvix.com/#work): websites, web apps, mobile apps, Shopify stores and AI projects.
 - [Client reviews](https://owlvix.com/#reviews): from Jawad Ahmad's Fiverr profile (@anjtec), https://www.fiverr.com/anjtec
 
+## Free tools
+
+- [Website speed test](https://owlvix.com/website-speed-test): free speed score, Core Web Vitals and top fixes for any URL, powered by Google PageSpeed Insights; downloadable PDF report.
+
 ## Contact
 
 - [Get a free quote](https://owlvix.com/#contact): send a short project description; Owlvix replies within one business day.

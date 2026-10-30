@@ -50,6 +50,12 @@ return [
     ],
 
     // IndexNow (Bing etc.): any 32-character code; it's also published at https://owlvix.com/<key>.txt
+    // Google PageSpeed Insights API, used by the free speed test (/website-speed-test). Free key:
+    // console.cloud.google.com → enable "PageSpeed Insights API" → Credentials → API key.
+    'pagespeed' => [
+        'key' => env('PAGESPEED_API_KEY'),
+    ],
+
     'indexnow' => [
         'key' => env('INDEXNOW_KEY'),
     ],

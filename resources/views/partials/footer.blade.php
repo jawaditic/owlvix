@@ -10,6 +10,7 @@
             @unless (request()->routeIs('home'))<a href="{{ route('home') }}">Home</a>@endunless
             @unless (request()->routeIs('landing'))<a href="{{ route('landing') }}">Services</a>@endunless
             @unless (request()->routeIs('about'))<a href="{{ route('about') }}">About</a>@endunless
+            @unless (request()->routeIs('speed-test'))<a href="{{ route('speed-test') }}">Free speed test</a>@endunless
             <a href="{{ route('privacy') }}">Privacy</a>
             <a href="{{ request()->routeIs('home', 'landing', 'service.*') ? '#contact' : route('landing').'#contact' }}">Start a project →</a>
         </nav>

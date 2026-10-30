@@ -2,6 +2,23 @@
 (() => {
     const cfg = window.OWLVIX || {};
 
+    /* ---------- Links to a section from another page (e.g. owlvix.com/#contact) ---------- */
+    // The browser jumps to the section right away, but fonts, reviews, images and owls load afterwards and
+    // push it down. Keep the section in place while the page settles (about 4 s), unless the visitor scrolls.
+    (() => {
+        const id = decodeURIComponent(location.hash.slice(1));
+        const target = id && document.getElementById(id);
+        if (!target || !('ResizeObserver' in window)) return;
+        let done = false;
+        const stop = () => { done = true; ro.disconnect(); ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(t => removeEventListener(t, stop)); };
+        const pin = () => { if (!done) target.scrollIntoView({ block: 'start', behavior: 'instant' }); };
+        const ro = new ResizeObserver(pin);
+        ro.observe(document.body);
+        ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(t => addEventListener(t, stop, { passive: true }));
+        addEventListener('load', () => { pin(); setTimeout(pin, 600); }, { once: true });
+        setTimeout(stop, 4000);
+    })();
+
     /* ---------- Mobile menu ---------- */
     const toggle = document.querySelector('.nav__toggle');
     const links = document.querySelector('.nav__links');

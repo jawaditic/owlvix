@@ -13,6 +13,15 @@ Route::view('/', 'home')->name('home');
 // Landing page for ads and search: every service on one page, with the quote form at the top
 Route::view('/services', 'landing')->name('landing');
 Route::view('/about', 'about')->name('about');
+
+// Free website speed test (Google PageSpeed Insights): the page, and the endpoint its form calls
+Route::get('/website-speed-test', [\App\Http\Controllers\SpeedTestController::class, 'show'])->name('speed-test');
+Route::post('/website-speed-test', [\App\Http\Controllers\SpeedTestController::class, 'run'])
+    ->middleware('throttle:6,1,speed-test')
+    ->name('speed-test.run');
+Route::get('/website-speed-test/report.pdf', [\App\Http\Controllers\SpeedTestController::class, 'pdf'])
+    ->middleware('throttle:10,1,speed-test-pdf')
+    ->name('speed-test.pdf');
 Route::view('/privacy', 'privacy')->name('privacy');
 
 // One page per service (content in config/service_pages.php)
