@@ -322,6 +322,9 @@ class BuilderController extends Controller
         $id = $request->input('id');
         if ($id !== null) {
             $form = $this->ownForm($request, $id);
+            if (! $form && is_string($id) && BuilderForm::whereKey($id)->exists()) {
+                return $this->fail('This form belongs to another email address. Sign in with the email you used before to keep your answers together.', 403);
+            }
             if (! $form || ! $form->isSurvey()) {
                 return $this->fail('Form not found.', 404);
             }

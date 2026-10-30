@@ -114,7 +114,8 @@
     };
     const restore = snap => {
         const fonts = JSON.stringify([P.site.fonts, P.pages.length]);
-        P = JSON.parse(snap); last = snap; pageIdx = Math.min(pageIdx, P.pages.length - 1); if (sel && !find(sel.id)) sel = null; persist();
+        const bound = Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])); // forms on the server stay connected
+        P = JSON.parse(snap); B.ACCOUNT_KEYS.forEach(k => { if (bound[k]) P.site[k] = bound[k]; else delete P.site[k]; }); last = JSON.stringify(P); pageIdx = Math.min(pageIdx, P.pages.length - 1); if (sel && !find(sel.id)) sel = null; persist();
         if (fonts === JSON.stringify([P.site.fonts, P.pages.length]) && doc()?.querySelector('main')) { drawPages(); refreshChrome(); refreshMain(); drawAdd(); drawEdit(); drawSite(); drawPage(); }
         else renderAll();
         syncHistory();
@@ -968,7 +969,7 @@
     }));
     sitePanel.addEventListener('click', e => {
         const exb = e.target.closest('[data-example]');
-        if (exb) { const keep = { formAction: P.site.formAction, leadAction: P.site.leadAction, leadFormId: P.site.leadFormId, rsvpAction: P.site.rsvpAction, rsvpFormId: P.site.rsvpFormId, publishSlug: P.site.publishSlug, ref: P.site.ref }; P = fresh(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
+        if (exb) { const keep = Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])); P = fresh(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
         const pick = e.target.closest('[data-img-pick]'); if (pick) { picking = pick.dataset.imgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-img-clear]')) { P.site.logo = ''; commit(); refreshChrome(); drawSite(); }
     });
@@ -1101,7 +1102,7 @@
         if (res.status === 419 && !retried) { await freshCsrf(); return api(method, url, body, true); } // the page sat open past the session
         const json = await res.json().catch(() => ({}));
         if (res.status === 401) { token = ''; account = null; try { localStorage.removeItem('owlvix-builder-token'); } catch {} }
-        if (!res.ok || json.ok === false) throw new Error(json.error || json.message || 'Something went wrong. Please try again.');
+        if (!res.ok || json.ok === false) { const err = new Error(json.error || json.message || 'Something went wrong. Please try again.'); err.status = res.status; throw err; }
         return json;
     };
     const dlg = document.querySelector('[data-builder-dialog]'), dlgBody = dlg.querySelector('[data-dialog-body]');
@@ -1171,7 +1172,7 @@
         if (!token) throw new Error('Sign in again to keep your RSVP form up to date.');
         try { await api('POST', '/builder/surveys', { id: P.site.rsvpFormId, schema }); rsvpSynced = key; }
         catch (ex) {
-            if (/not found/i.test(ex.message)) { // deleted in the form builder, or another account's form
+            if (ex.status === 404) { // deleted in the form builder (another account's form answers 403 and stays connected)
                 P.site.rsvpAction = ''; P.site.rsvpFormId = ''; commit(); refreshMain(); drawEdit();
                 throw new Error('The form that collected your RSVPs was deleted. Select the RSVP form and switch it on again.');
             }

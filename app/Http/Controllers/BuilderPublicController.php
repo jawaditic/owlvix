@@ -53,7 +53,7 @@ class BuilderPublicController extends Controller
     {
         $embed = $request->boolean('_embed');
         // Sent from a builder page (e.g. an RSVP form): thank them with a link back to that page
-        $back = $this->safeUrl($request->input('_back'));
+        $back = $this->safeUrl($request->input('_back')) ?? $this->refererBack($request);
         $done = $back
             ? redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303)
             : redirect()->route('builder.survey', ['id' => $form->id, 'sent' => 1] + ($embed ? ['embed' => 1] : []), 303);
@@ -393,6 +393,19 @@ class BuilderPublicController extends Controller
         abort_unless($form, 404);
 
         return $form;
+    }
+
+    /**
+     * For forms on downloaded pages (hosted anywhere, so no _back): the page the browser says it came from. Answers sent
+     * from owlvix's own form pages have no page to go back to.
+     */
+    private function refererBack(Request $request): ?string
+    {
+        $url = $this->safeUrl($request->headers->get('referer'));
+        $host = strtolower((string) parse_url((string) $url, PHP_URL_HOST));
+        $own = [strtolower($request->getHost()), strtolower((string) parse_url(config('app.url'), PHP_URL_HOST))];
+
+        return $url && ! in_array($host, $own, true) ? $url : null;
     }
 
     /** Only http(s) addresses are linked back to. */

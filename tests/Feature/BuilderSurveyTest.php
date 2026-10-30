@@ -131,7 +131,7 @@ class BuilderSurveyTest extends TestCase
 
         $other = $this->signIn('other@example.com');
         $this->api($other)->getJson('/builder/surveys/'.$form['id'].'/responses')->assertStatus(404);
-        $this->api($other)->postJson('/builder/surveys', ['id' => $form['id'], 'schema' => $this->schema(['title' => 'Hacked'])])->assertStatus(404);
+        $this->api($other)->postJson('/builder/surveys', ['id' => $form['id'], 'schema' => $this->schema(['title' => 'Hacked'])])->assertStatus(403);
         $this->api($other)->postJson('/builder/surveys/'.$form['id'].'/delete')->assertStatus(404);
         $this->assertSame('Party RSVP', BuilderForm::find($form['id'])->site_name);
     }
@@ -243,6 +243,46 @@ class BuilderSurveyTest extends TestCase
         }
         $this->post($form['action'], ['rname' => 'Ann', 'rguests' => '3', '_back' => $page])->assertRedirect();
         $this->get(route('builder.form.sent', ['id' => $form['id'], 'back' => $page]))->assertSee('<title>Thank you</title>', false)->assertSee('Back to the page');
+    }
+
+    public function test_number_answers_accept_what_number_boxes_send(): void
+    {
+        $form = $this->publish($this->signIn(), ['title' => 'Budget', 'fields' => [['id' => 'num1', 'type' => 'number', 'label' => 'Amount']]]);
+        foreach (['.5', '1e3', '1234567890123', '-2,5'] as $ok) {
+            $this->post('/f/'.$form['id'], ['num1' => $ok])->assertRedirect();
+        }
+        foreach (['abc', '0x10', '1e400'] as $bad) {
+            $this->post('/f/'.$form['id'], ['num1' => $bad])->assertStatus(422);
+        }
+    }
+
+    public function test_number_limits_keep_fractions_and_impossible_limits_are_dropped(): void
+    {
+        $token = $this->signIn();
+        $f = $this->publish($token, ['title' => 'N', 'fields' => [['id' => 'n1', 'type' => 'number', 'label' => 'A', 'min' => 0.5, 'max' => 2]]])['schema']['fields'][0];
+        $this->assertSame([0.5, 2], [$f['min'], $f['max']]);
+        $f = $this->publish($token, ['title' => 'N', 'fields' => [['id' => 'n1', 'type' => 'number', 'label' => 'A', 'min' => 10, 'max' => 5]]])['schema']['fields'][0];
+        $this->assertArrayNotHasKey('min', $f);
+    }
+
+    public function test_another_accounts_form_is_refused_with_a_clear_message_not_reported_missing(): void
+    {
+        $form = $this->publish($this->signIn());
+        $other = $this->signIn('other@example.com');
+        $this->api($other)->postJson('/builder/surveys', ['id' => $form['id'], 'schema' => $this->schema()])
+            ->assertStatus(403)->assertJsonPath('error', fn ($e) => str_contains($e, 'another email'));
+        $this->api($other)->postJson('/builder/surveys', ['id' => 'zzzzzzzzzzzzzzzz', 'schema' => $this->schema()])->assertStatus(404);
+    }
+
+    public function test_answers_from_downloaded_pages_link_back_to_that_site(): void
+    {
+        $form = $this->publish($this->signIn());
+        $answer = ['name1' => 'Ann', 'mail1' => 'ann@example.com', 'come1' => 'Yes'];
+        $this->withHeader('Referer', 'https://emma-and-james.com/')->post('/f/'.$form['id'], $answer)
+            ->assertRedirect(route('builder.form.sent', ['id' => $form['id'], 'back' => 'https://emma-and-james.com/']));
+        // Answers sent from our own form page have nowhere else to go back to
+        $this->withHeader('Referer', url('/form/'.$form['id']))->post('/f/'.$form['id'], $answer)
+            ->assertRedirect(route('builder.survey', ['id' => $form['id'], 'sent' => 1]));
     }
 
     public function test_disabled_forms_and_other_kinds_are_not_shown(): void

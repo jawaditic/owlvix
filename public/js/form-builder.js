@@ -169,7 +169,9 @@
     const note = msg => { const n = $('[data-note]'); n.textContent = msg; n.hidden = false; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 5000); };
     const markDirty = () => { D.dirty = true; save(); syncPublish(); };
     const syncPublish = () => {
-        if (S().managed) { // an RSVP form made by an event page: its questions are changed on that page
+        const managed = !!(S().managed && D.id); // an RSVP form made by an event page: its questions are changed on that page
+        $('[data-panel="build"]').inert = managed; $('[data-panel="build"]').classList.toggle('is-locked', managed);
+        if (managed) {
             const b = $('[data-publish]'); b.textContent = 'Edited on your page'; b.disabled = true;
             $('[data-status]').textContent = 'This RSVP form belongs to your event page — change its questions there and publish the page. Answers are in the Responses tab.';
             return;
@@ -219,7 +221,7 @@
         if (c) { try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent = 'Copied ✓'; } catch { c.previousElementSibling?.select(); document.execCommand('copy'); } setTimeout(() => (c.textContent = 'Copy'), 2000); track('form_builder_copy'); }
         if (e.target.closest('[data-delete]')) {
             if (!confirm('Delete this form? Its link stops working and all answers are deleted. This cannot be undone.')) return;
-            try { await api('POST', `/builder/surveys/${D.id}/delete`); D.id = null; D.dirty = true; save(); await loadForms().catch(() => {}); syncPublish(); drawShare(); note('Form deleted. Your questions are still here if you want to publish it again.'); }
+            try { await api('POST', `/builder/surveys/${D.id}/delete`); D.id = null; D.dirty = true; delete S().managed; /* now a copy you can publish as your own form */ save(); await loadForms().catch(() => {}); syncPublish(); drawShare(); note('Form deleted. Your questions are still here if you want to publish it again.'); }
             catch (ex) { note(ex.message); }
         }
     });

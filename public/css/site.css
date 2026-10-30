@@ -2322,3 +2322,4 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .fb-table td { white-space: pre-line; }
 @media (max-width: 900px) { .fb-layout { grid-template-columns: 1fr; } .fb-prev-wrap { position: static; } .fb-prev { max-height: none; } }
 @media (max-width: 520px) { .fb-2 { grid-template-columns: 1fr; } .fb-copyrow { flex-direction: column; } .fb-top__actions { width: 100%; } .fb-mine { max-width: none; flex: 1 1 100%; } }
+.fb [data-panel="build"].is-locked { opacity: .55; }

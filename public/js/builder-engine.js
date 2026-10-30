@@ -252,7 +252,7 @@
     const opt = v => String(v || '').trim().slice(0, 100); // the server keeps choices up to 100 characters
     const lines = v => [...new Set(String(v || '').split('\n').map(opt).filter(Boolean))].slice(0, 20);
     const rsvpYesNo = p => [opt(p.yes) || 'Yes, I will be there', opt(p.no) || 'Sorry, I can’t make it'];
-    const rsvpWidget = P => P.pages.flatMap(pg => pg.sections.flatMap(sc => sc.cols.flatMap(c => c.widgets))).find(w => w.type === 'rsvp');
+    const rsvpWidget = P => P.pages.flatMap(pg => [...pg.sections, ...(pg.sectionsB || [])].flatMap(sc => sc.cols.flatMap(c => c.widgets))).find(w => w.type === 'rsvp'); // A/B version B too
     /** The questions of the site's RSVP form (null when the site has no RSVP widget). */
     const rsvpSchema = P => {
         const w = rsvpWidget(P); if (!w) return null;
@@ -283,7 +283,7 @@
             ${p.meal && meals.length ? `<label>Meal choice<select name="${I.meal}"><option value="">Choose…</option>${meals.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}</select></label>` : ''}
             ${p.note ? `<label>A message for us (optional)<textarea name="${I.msg}" rows="3" maxlength="5000"></textarea></label>` : ''}
             <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <input type="hidden" name="_back" value="${esc(x.mode === 'publish' ? new URL(pageHref(x.page.slug, x), x.origin).href : '')}">
+            ${backInput(x)}
             <button class="btn" type="submit">${esc(p.btn || 'Send my RSVP')}</button></form>`;
     };
     def('rsvp', { label: 'RSVP form', icon: '💌', group: 'pro', make: () => ({ btn: 'Send my RSVP', yes: 'Yes, I will be there', no: 'Sorry, I can’t make it', guests: true, meal: false, meals: 'Chicken\nFish\nVegetarian', note: true, emailReq: false, thanks: 'Thank you! Your RSVP has been sent.' }),
@@ -301,7 +301,7 @@
                 <input name="email" type="email" required maxlength="150" autocomplete="email" placeholder="Your best email" aria-label="Email">
                 ${p.phone ? '<input name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Phone (optional)" aria-label="Phone">' : ''}
                 <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-                <input type="hidden" name="_back" value="${esc(x.mode === 'publish' ? new URL(pageHref(x.page.slug, x), x.origin).href : '')}">
+                ${backInput(x)}
                 <input type="hidden" name="_next" value="${esc(nextUrl)}"><input type="hidden" name="_site" value="${esc(x.P.site.publishSlug || '')}">
                 <input type="hidden" name="_step" value="${esc(x.page.slug)}"><input type="hidden" name="_v" value="${x.variant === 'b' ? 'b' : 'a'}">
                 <button class="btn btn-lg" type="submit">${esc(p.btn || 'Get instant access')}</button>${p.note ? `<small class="optin__note">🔒 ${esc(p.note)}</small>` : ''}</form>`;
@@ -309,6 +309,8 @@
     def('paybtn', { label: 'Buy button', icon: '💳', group: 'funnel', make: () => ({ text: 'Yes! Get it now', sub: '30-day money-back guarantee', align: 'center', no: '' }),
         fields: [F.text('sub', 'Small text under the button'), F.select('align', 'Alignment', { left: 'Left', center: 'Centre', right: 'Right', full: 'Full width' }), F.text('no', '“No thanks” link text (upsells)')],
         render: (w, x, H) => `<div class="paybtn al-${pick(w.p.align, ['center', 'left', 'right', 'full'])}"><a class="btn btn-lg ${H.K('text')}" href="${esc(href({ to: 'pay' }, x))}"${H.E('text', 'Button')}>${esc(w.p.text)}</a>${H.t('sub', 'small', 'muted', 'Small print')}${w.p.no ? `<a class="paybtn__no" href="${esc(href({ to: 'next' }, x))}">${esc(w.p.no)}</a>` : ''}</div>` });
+    /** Where a form sends people back to after they submit (published pages; downloaded ones use the browser's Referer). */
+    const backInput = x => `<input type="hidden" name="_back" value="${esc(x.mode === 'publish' ? new URL(pageHref(x.page.slug, x), x.origin).href : '')}">`;
     const formHtml = (x, p) => {
         if (x.P.site.formAction) return `<form class="form" method="post" action="${esc(x.P.site.formAction)}">
             <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
@@ -316,7 +318,7 @@
             ${p.phone !== false ? '<label>Phone (optional)<input name="phone" type="tel" maxlength="30" autocomplete="tel"></label>' : ''}
             <label>Message<textarea name="message" required rows="4" maxlength="5000"></textarea></label>
             <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <input type="hidden" name="_back" value="${esc(x.mode === 'publish' ? new URL(pageHref(x.page.slug, x), x.origin).href : '')}">
+            ${backInput(x)}
             <button class="btn" type="submit">${esc(p.btn || 'Send message')}</button></form>`;
         return x.edit ? '<div class="form pic-empty"><span>📨 Contact form — switch it on in the Content tab (free, takes a minute)</span></div>' : '';
     };
@@ -918,6 +920,9 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
         if (!l || typeof l !== 'object' || !has(LINK_TYPES, l.to) && !has(FUNNEL_LINKS, l.to)) return { to: 'contact' };
         return { to: l.to, val: STR(l.val, 500) };
     };
+    const FORM_URL = /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/, FORM_ID = /^[a-z0-9]{16}$/;
+    /** Site settings tied to the signed-in account (forms, published address): kept on template changes and Undo. */
+    const ACCOUNT_KEYS = ['formAction', 'leadAction', 'leadFormId', 'rsvpAction', 'rsvpFormId', 'publishSlug', 'ref'];
     const STYLE_KEYS = {
         num: ['size', 'lh', 'ls', 'pt', 'pr', 'pb', 'pl', 'mt', 'mb', 'radius', 'bw', 'maxw', 'minH', 'opacity', 'gAngle', 'weight'],
         color: ['color', 'bg', 'g1', 'g2', 'bc', 'overlay'],
@@ -991,11 +996,11 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
             navBtn: STR(s.navBtn, 40), navLink: LINK(s.navLink), sticky: s.sticky !== false, bare: !!s.bare, backTop: !!s.backTop,
             announce: { on: !!s.announce?.on, text: STR(s.announce?.text, 200), linkText: STR(s.announce?.linkText, 40), link: LINK(s.announce?.link) },
             footer: STR(s.footer, 500), social: Object.fromEntries(Object.keys(SOCIAL).map(k => [k, /^https?:\/\/[^\s"'<>]+$/i.test(s.social?.[k] || '') ? s.social[k] : ''])),
-            formAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.formAction || '') ? s.formAction : '',
-            leadAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.leadAction || '') ? s.leadAction : '',
-            leadFormId: /^[a-z0-9]{16}$/.test(s.leadFormId || '') ? s.leadFormId : '',
-            rsvpAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.rsvpAction || '') ? s.rsvpAction : '',
-            rsvpFormId: /^[a-z0-9]{16}$/.test(s.rsvpFormId || '') ? s.rsvpFormId : '', ref: /^[a-z0-9]{6,20}$/.test(s.ref || '') ? s.ref : undefined,
+            formAction: FORM_URL.test(s.formAction || '') ? s.formAction : '',
+            leadAction: FORM_URL.test(s.leadAction || '') ? s.leadAction : '',
+            leadFormId: FORM_ID.test(s.leadFormId || '') ? s.leadFormId : '',
+            rsvpAction: FORM_URL.test(s.rsvpAction || '') ? s.rsvpAction : '',
+            rsvpFormId: FORM_ID.test(s.rsvpFormId || '') ? s.rsvpFormId : '', ref: /^[a-z0-9]{6,20}$/.test(s.ref || '') ? s.ref : undefined,
             publishSlug: slugify(STR(s.publishSlug, 40)) || undefined, css: cssSafe(STR(s.css, 20000)),
         };
         const seen = new Set();
@@ -1026,7 +1031,7 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
         uid, esc, nl, clone, hex, slugify, getPath, setPath, sanitize, styleKey, classKey, cssSafe, safeUrl,
         ICONS, icon, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
         widget, column, section, sectionOf, isFull, migrate, newProject, newPage, reId, defaultsSite, defaultsPopup,
-        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, KITS, KIT_PATH, newKit, rsvpSchema, rsvpWidget, newStep, nextOf, normalize, normalizeSection: SECTION,
+        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, KITS, KIT_PATH, newKit, rsvpSchema, rsvpWidget, ACCOUNT_KEYS, newStep, nextOf, normalize, normalizeSection: SECTION,
         render, renderSection, renderWidget, header, footer, siteCss, pageCss, needsRuntime, href, pageHref, fontsLink,
     };
 })();

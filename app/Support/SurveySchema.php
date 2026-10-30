@@ -64,9 +64,12 @@ class SurveySchema
             ];
             if ($f['type'] === 'number') {
                 foreach (['min', 'max'] as $k) {
-                    if (isset($f[$k]) && is_numeric($f[$k]) && abs((float) $f[$k]) <= 1e9) {
-                        $field[$k] = (int) $f[$k];
+                    if (isset($f[$k]) && is_numeric($f[$k]) && abs((float) $f[$k]) <= 1e12) {
+                        $field[$k] = (float) $f[$k] == (int) $f[$k] ? (int) $f[$k] : (float) $f[$k];
                     }
+                }
+                if (isset($field['min'], $field['max']) && $field['min'] > $field['max']) {
+                    unset($field['min'], $field['max']); // limits that no answer can meet are dropped
                 }
             }
             if (in_array($f['type'], self::CHOICE, true)) {
@@ -141,9 +144,9 @@ class SurveySchema
             $bad = match ($f['type']) {
                 'email' => ! filter_var($v, FILTER_VALIDATE_EMAIL),
                 'phone' => ! preg_match('/^[\d\s()+.\-\/]{5,30}$/', $v),
-                'number' => ! preg_match('/^-?\d{1,12}([.,]\d{1,6})?$/', $v)
-                    || (isset($f['min']) && (float) str_replace(',', '.', $v) < $f['min'])
-                    || (isset($f['max']) && (float) str_replace(',', '.', $v) > $f['max']),
+                'number' => ! is_numeric($n = str_replace(',', '.', $v)) || ! is_finite((float) $n) || abs((float) $n) > 1e15
+                    || (isset($f['min']) && (float) $n < $f['min'])
+                    || (isset($f['max']) && (float) $n > $f['max']),
                 'date' => ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) || ! checkdate((int) substr($v, 5, 2), (int) substr($v, 8, 2), (int) substr($v, 0, 4)),
                 'select', 'radio' => ! in_array($v, $f['options'], true),
                 'rating' => ! in_array($v, ['1', '2', '3', '4', '5'], true),
