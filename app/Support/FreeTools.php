@@ -18,6 +18,7 @@ class FreeTools
             ['route' => 'redirect-check', 'group' => 'check', 'name' => 'Redirect & header checker', 'desc' => 'Follow every redirect step and see the headers', 'icon' => 'refresh', 'tone' => ''],
             ['route' => 'robots-check', 'group' => 'check', 'name' => 'Robots.txt & AI crawler checker', 'desc' => 'Can Google, ChatGPT and Claude read your site?', 'icon' => 'book', 'tone' => 'is-blue'],
             ['route' => 'domain-check', 'group' => 'check', 'name' => 'Domain age & expiry checker', 'desc' => 'Registrar, age and renewal date', 'icon' => 'globe', 'tone' => ''],
+            ['route' => 'landing-builder', 'group' => 'build', 'name' => 'Landing page builder', 'desc' => 'Build & download your own page in minutes', 'icon' => 'pen', 'tone' => 'is-blue'],
             ['route' => 'tech-stack', 'group' => 'build', 'name' => 'Tech stack detector', 'desc' => 'What is a website built with?', 'icon' => 'code', 'tone' => ''],
             ['route' => 'meta-preview', 'group' => 'build', 'name' => 'Meta tag & social preview', 'desc' => 'Google, WhatsApp & social previews', 'icon' => 'eye', 'tone' => 'is-blue'],
             ['route' => 'schema-generator', 'group' => 'build', 'name' => 'Schema markup generator', 'desc' => 'Ready-to-paste JSON-LD for Google', 'icon' => 'clipboard', 'tone' => ''],
@@ -29,7 +30,7 @@ class FreeTools
     public const GROUPS = [
         'plan' => ['Plan your project', 'Know the cost and the return before you spend.'],
         'check' => ['Check your website', 'Find what is slowing you down, hurting rankings or sending email to spam.'],
-        'build' => ['Build it right', 'See how sites are made and get the code Google and social apps need.'],
+        'build' => ['Build it right', 'Make your own page, see how sites are made, and get the code Google and social apps need.'],
     ];
 
     public static function routes(): array

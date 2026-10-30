@@ -38,6 +38,14 @@ return [
             'report' => false,
         ],
 
+        // Pages published with the free landing page builder (see BuilderSite)
+        'builder' => [
+            'driver' => 'local',
+            'root' => storage_path('app/builder-sites'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

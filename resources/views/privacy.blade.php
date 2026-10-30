@@ -27,6 +27,16 @@
         <p>If you answer our short "before you go" survey, we keep your answer, any comment you write, the page you were on and your email address if you choose to give it.</p>
         <p>We use this information only to reply to you, prepare a quote and work on your project. We send you a confirmation email when your request arrives. We don't sell your information or add you to a mailing list.</p>
 
+        <h2>Free landing page builder</h2>
+        <p>The <a href="{{ route('landing-builder') }}">landing page builder</a> runs in your browser, and your drafts stay on your device. If you sign in to publish a page or add a contact form:</p>
+        <ul>
+            <li>we keep your email address, which you use to sign in with a one-time code;</li>
+            <li>we store the pages you publish and show them at owlvix.com/p/…, until you unpublish them;</li>
+            <li>messages sent through your page's contact form are emailed to you. We don't keep the messages, only a count of how many were sent;</li>
+            <li>we may email you about your pages, for example if one is reported or taken down, or to offer help with your website.</li>
+        </ul>
+        <p>Published pages are public and are not listed in search engines. We may remove any page that breaks the law or is used for spam, scams or phishing. Anyone can report a page with the "Report" link on it.</p>
+
         <h2>Information collected automatically</h2>
         <ul>
             <li><strong>Visitor statistics.</strong> Our own simple counter records which page was viewed, the site you came from, your country, device type and browser. It doesn't use cookies or store your IP address. Records are deleted after about 13 months.</li>

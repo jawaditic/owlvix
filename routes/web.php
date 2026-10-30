@@ -8,6 +8,20 @@ use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
 
+// Builder subdomain (sites.owlvix.com): only published sites live here; everything else redirects to the main site
+// (see App\Http\Middleware\BuilderHostOnly).
+if (($builderDomain = config('builder.domain')) && ! config('builder.public_path')) {
+    Route::domain($builderDomain)->group(function () {
+        Route::get('/', fn () => redirect()->away(route('landing-builder')))->name('builder.home');
+        Route::get('/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'reportForm'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report');
+        Route::post('/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'report'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report.send');
+        Route::get('/{slug}/{page?}', [\App\Http\Controllers\BuilderPublicController::class, 'show'])
+            ->where(['slug' => '[a-z0-9-]{3,40}', 'page' => '[a-z0-9-]{1,40}'])
+            ->withoutMiddleware(\App\Http\Middleware\TrimHtmlWhitespace::class)
+            ->name('builder.site');
+    });
+}
+
 Route::view('/', 'home')->name('home');
 
 // Landing page for ads and search: every service on one page, with the quote form at the top
@@ -34,6 +48,7 @@ Route::view('/redirect-checker', 'tools.redirects')->name('redirect-check');
 Route::view('/robots-txt-checker', 'tools.robots')->name('robots-check');
 Route::view('/domain-age-checker', 'tools.domain')->name('domain-check');
 Route::view('/image-compressor', 'tools.image-compressor')->name('image-compressor');
+Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
 Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
 Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');
 Route::post('/meta-tag-preview', [\App\Http\Controllers\FreeToolsController::class, 'meta'])->middleware('throttle:8,1,tool-meta')->name('meta-preview.run');
@@ -95,6 +110,40 @@ Route::post('/survey', [\App\Http\Controllers\SurveyController::class, 'store'])
     ->middleware('throttle:5,1,survey')
     ->name('survey.store');
 
+// Free landing page builder: email sign-in, contact forms and publishing (JSON, called by public/js/landing-builder.js)
+Route::prefix('builder')->name('builder.')->controller(\App\Http\Controllers\BuilderController::class)->group(function () {
+    Route::post('account/code', 'sendCode')->name('code');
+    Route::post('account/verify', 'verify')->name('verify');
+    Route::middleware('builder')->group(function () {
+        Route::get('account', 'account')->name('account');
+        Route::post('forms', 'createForm')->name('forms');
+        Route::post('publish', 'publish')->name('publish');
+        Route::post('unpublish', 'unpublish')->name('unpublish');
+    });
+});
+// Contact forms on builder pages (posted from any host, so no CSRF token: see bootstrap/app.php)
+Route::post('/f/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'submit'])->where('id', '[a-z0-9]{16}')->name('builder.form.submit');
+Route::get('/f/{id}/sent', [\App\Http\Controllers\BuilderPublicController::class, 'sent'])->where('id', '[a-z0-9]{16}')->name('builder.form.sent');
+// Published builder sites (served with a sandboxing CSP; the page HTML is left exactly as published).
+// With BUILDER_DOMAIN set they live on their own subdomain (https://sites.owlvix.com/{name}) — those routes are
+// registered at the top of this file — and old /p/{name} links redirect there.
+if (config('builder.domain') && config('builder.public_path')) {
+    // Static files on the subdomain: the report form stays here on the main site
+    Route::get('/p/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'reportForm'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report');
+    Route::post('/p/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'report'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report.send');
+}
+if (config('builder.domain')) {
+    Route::get('/p/{slug}/{page?}', fn (string $slug, ?string $page = null) => redirect()->away(\App\Models\BuilderSite::base().$slug.($page ? '/'.$page : ''), 301))
+        ->where(['slug' => '[a-z0-9-]{3,40}', 'page' => '[a-z0-9-]{1,40}']);
+} else {
+    Route::get('/p/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'reportForm'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report');
+    Route::post('/p/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'report'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report.send');
+    Route::get('/p/{slug}/{page?}', [\App\Http\Controllers\BuilderPublicController::class, 'show'])
+        ->where(['slug' => '[a-z0-9-]{3,40}', 'page' => '[a-z0-9-]{1,40}'])
+        ->withoutMiddleware(\App\Http\Middleware\TrimHtmlWhitespace::class)
+        ->name('builder.site');
+}
+
 // Admin dashboard
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('login', [AuthController::class, 'show'])->name('login');
@@ -115,6 +164,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Exit survey answers
         Route::get('feedback', [\App\Http\Controllers\Admin\FeedbackController::class, 'index'])->name('feedback.index');
         Route::delete('feedback/{response}', [\App\Http\Controllers\Admin\FeedbackController::class, 'destroy'])->name('feedback.destroy');
+
+        // Free landing page builder: published sites and forms
+        Route::get('builder', [\App\Http\Controllers\Admin\BuilderController::class, 'index'])->name('builder.index');
+        Route::post('builder/sites/{site}/takedown', [\App\Http\Controllers\Admin\BuilderController::class, 'takedown'])->name('builder.takedown');
+        Route::post('builder/sites/{site}/restore', [\App\Http\Controllers\Admin\BuilderController::class, 'restore'])->name('builder.restore');
+        Route::post('builder/sites/{site}/dismiss', [\App\Http\Controllers\Admin\BuilderController::class, 'dismiss'])->name('builder.dismiss');
+        Route::post('builder/forms/{form}/toggle', [\App\Http\Controllers\Admin\BuilderController::class, 'toggleForm'])->name('builder.forms.toggle');
 
         // Portfolio ("Our work")
         Route::post('portfolio/{project}/move/{direction}', [ProjectController::class, 'move'])->whereIn('direction', ['up', 'down'])->name('projects.move');

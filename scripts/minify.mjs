@@ -14,6 +14,9 @@ export const FILES = [
     'js/owl.js',
     'js/site.js',
     'js/admin-dashboard.js',
+    'js/builder-engine.js',
+    'js/landing-builder.js',
+    'js/builder-runtime.js',
 ];
 
 for (const file of FILES) {

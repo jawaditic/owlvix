@@ -61,3 +61,14 @@
     --glass-1: rgba(255, 255, 255, .92); --glass-2: rgba(248, 250, 252, .85);
     --accent-grad: linear-gradient(90deg, #15803d, #0f9d76 45%, #2563eb);
 }
+
+/* Every dropdown in the app (site, tools, page builder, admin): one chevron with room to breathe instead of the
+   browser's own arrow pressed against the edge. !important because many components set the "background" shorthand. */
+select:not([multiple]):not([size]) {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    padding-right: 40px !important; cursor: pointer; text-overflow: ellipsis;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231ec773' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important; background-position: right 14px center !important; background-size: 16px !important;
+}
+select:not([multiple]):not([size])::-ms-expand { display: none; }
+select option { background: var(--field, #fff); color: var(--text, #0f172a); }
