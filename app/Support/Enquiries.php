@@ -24,7 +24,7 @@ class Enquiries
 
     public const BUDGETS = Stats\DashboardStats::BUDGETS;
 
-    public const SOURCES = ['contact', 'popup', 'app', 'landing'];
+    public const SOURCES = ['contact', 'popup', 'app', 'landing', 'seo-checker'];
 
     /** Validation rules. The message must already be cleaned with RichText::clean(). */
     public static function rules(): array

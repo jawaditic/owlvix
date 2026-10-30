@@ -1465,3 +1465,37 @@ svg .d { fill: currentColor; fill-opacity: .26; }
     .speed-save { grid-column: 2; justify-self: start; }
 }
 @media (prefers-reduced-motion: reduce) { .speed-metric { transition: none; } }
+
+/* ---------- Free SEO checker (/seo-checker) — reuses the speed test layout ---------- */
+.seo-form { grid-template-columns: 1fr auto; }
+@media (max-width: 760px) { .seo-form { grid-template-columns: 1fr; } }
+.seo-tally { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 2px; }
+.seo-tally__i { --c: #16a34a; font-size: .85rem; padding: 4px 10px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+.seo-tally__i[data-k="fail"] { --c: #ef4444; } .seo-tally__i[data-k="warn"] { --c: #d97706; }
+.seo-tally__i b { font-weight: 800; }
+.seo-checks { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.seo-check {
+    --c: #12b76a; --c2: #34e08f; display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start;
+    padding: 16px 18px; border-radius: 18px; background: var(--card); border: 1px solid var(--card-border);
+    box-shadow: 0 12px 30px -26px rgba(var(--shadow-rgb), calc(.7 * var(--shadow-k)));
+}
+.seo-check[data-status="warn"] { --c: #f59e0b; --c2: #fbbf24; }
+.seo-check[data-status="fail"] { --c: #ef4444; --c2: #fb7185; border-color: color-mix(in srgb, #ef4444 30%, var(--card-border)); }
+.seo-check .speed-metric__icon { background: linear-gradient(140deg, var(--c2), var(--c)); box-shadow: 0 8px 18px -8px var(--c); }
+.seo-check__head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.seo-check__head strong { font-size: .98rem; }
+.seo-check__found { margin: 4px 0 0; font-size: .86rem; color: var(--muted); overflow-wrap: anywhere; }
+.seo-check__tip { margin: 8px 0 0; font-size: .88rem; color: var(--text-2); line-height: 1.55; padding: 8px 12px; border-radius: 10px; background: rgba(var(--tint-rgb), .04); border-left: 3px solid var(--c); }
+.seo-check__tip b { color: var(--text); }
+.seo-email { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; margin: 40px 0; padding: 32px; }
+.seo-email:hover { transform: none; }
+.seo-email .eyebrow, .seo-email h2 { text-align: left; }
+.seo-email .eyebrow { color: var(--green); margin-bottom: 6px; }
+.seo-email h2 { margin: 0 0 8px; font-size: clamp(1.4rem, 3vw, 1.8rem); }
+.seo-email > div p:not(.eyebrow) { color: var(--muted); margin: 0; }
+.seo-email form { display: grid; gap: 10px; }
+.seo-email input[type=text], .seo-email input[type=email] { height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--card-border); background: var(--field); color: var(--text); font: 500 1rem Inter, sans-serif; }
+.seo-email input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(30, 199, 115, .2); }
+.seo-email__msg { margin: 0; font-size: .9rem; color: var(--danger-ink); }
+.seo-email__msg[data-ok="1"] { color: var(--green-ink); font-weight: 600; }
+@media (max-width: 960px) { .seo-checks, .seo-email { grid-template-columns: 1fr; } .seo-email { padding: 24px; } }

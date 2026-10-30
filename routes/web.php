@@ -19,6 +19,10 @@ Route::get('/website-speed-test', [\App\Http\Controllers\SpeedTestController::cl
 Route::post('/website-speed-test', [\App\Http\Controllers\SpeedTestController::class, 'run'])
     ->middleware('throttle:6,1,speed-test')
     ->name('speed-test.run');
+// Free SEO checker: the page, the check, and "email me these tips" (saves a lead)
+Route::get('/seo-checker', [\App\Http\Controllers\SeoCheckerController::class, 'show'])->name('seo-checker');
+Route::post('/seo-checker', [\App\Http\Controllers\SeoCheckerController::class, 'run'])->middleware('throttle:8,1,seo-checker')->name('seo-checker.run');
+Route::post('/seo-checker/email', [\App\Http\Controllers\SeoCheckerController::class, 'email'])->middleware('throttle:3,1,seo-checker-email')->name('seo-checker.email');
 Route::get('/website-speed-test/report.pdf', [\App\Http\Controllers\SpeedTestController::class, 'pdf'])
     ->middleware('throttle:10,1,speed-test-pdf')
     ->name('speed-test.pdf');

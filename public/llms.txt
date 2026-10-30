@@ -48,6 +48,8 @@ Every project starts free (project plan and key screen designs), then is paid pe
 
 - [Website speed test](https://owlvix.com/website-speed-test): free speed score, Core Web Vitals and top fixes for any URL, powered by Google PageSpeed Insights; downloadable PDF report.
 
+- [SEO checker](https://owlvix.com/seo-checker): free on-page and technical SEO audit of any URL (titles, meta, headings, content, schema, robots.txt, sitemap, speed, social tags) with a tip for every issue; tips can be emailed.
+
 ## Contact
 
 - [Get a free quote](https://owlvix.com/#contact): send a short project description; Owlvix replies within one business day.

@@ -44,6 +44,7 @@ class ContactMessage extends Model
             'popup' => $short ? 'Popup' : 'Quote popup',
             'app' => 'Mobile app',
             'landing' => 'Landing page',
+            'seo-checker' => 'SEO checker',
             default => 'Contact form',
         };
     }

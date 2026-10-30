@@ -17,6 +17,7 @@ const FILTERS = [
   { key: 'source=contact', label: 'Contact form' },
   { key: 'source=app', label: 'Mobile app' },
   { key: 'source=landing', label: 'Landing page' },
+  { key: 'source=seo-checker', label: 'SEO checker' },
 ];
 
 export default function Messages() {
