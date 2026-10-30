@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AuditRequested;
 use App\Mail\NewEnquiry;
 use App\Mail\SeoTips;
 use App\Models\ContactMessage;
@@ -80,6 +81,57 @@ class SeoCheckerController extends Controller
             return response()->json(['ok' => false, 'error' => 'We could not send the email right now. Please try again later.'], 502);
         }
         Push::toAdmins('SEO checker lead: '.$lead->email, $report['final_url'].' · score '.$report['score'], ['type' => 'enquiry', 'id' => $lead->id]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** "Get a full SEO audit": saves an "SEO audit request" lead; the owner runs Claude SEO and emails the report. */
+    public function audit(Request $request)
+    {
+        if (filled($request->input('website'))) {
+            return response()->json(['ok' => true]);
+        }
+        $data = $request->validate([
+            'url' => ['required', 'string', 'max:500'],
+            'email' => ['required', 'email', 'max:150'],
+            'name' => ['required', 'string', 'min:2', 'max:100'],
+            'notes' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'name.required' => 'Please enter your name.', 'email.required' => 'Please enter your email.', 'email.email' => 'Please enter a valid email.',
+        ]);
+        $url = SpeedTest::normalize($data['url']);
+        if (! $url) {
+            return response()->json(['ok' => false, 'error' => 'Please run the free check first, then request the full audit.'], 422);
+        }
+        // One request per site per email per day is enough
+        $once = 'ai-audit:'.sha1(strtolower($data['email']).'|'.$url);
+        if (RateLimiter::tooManyAttempts($once, 1)) {
+            return response()->json(['ok' => true, 'already' => true]);
+        }
+        RateLimiter::hit($once, 86400);
+
+        $report = SeoCheck::cached($url);
+        $lead = ContactMessage::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'service' => 'SEO',
+            'message' => '<p><strong>Full SEO audit requested</strong> for <a href="'.e($url).'">'.e($url).'</a>'
+                .($report ? ' — free checker score '.$report['score'].'/100 ('.$report['counts']['fail'].' critical, '.$report['counts']['warn'].' warnings)' : '').'.</p>'
+                .(filled($data['notes'] ?? null) ? '<p>What matters most to them: '.e($data['notes']).'</p>' : '')
+                .'<p>To do: open Claude Code on your Mac and run <code>/seo audit '.e($url).'</code>, then email them the report (PDF) within 2 business days.</p>',
+            'source' => 'ai-audit',
+            'ip' => $request->ip(),
+        ]);
+
+        try {
+            Mail::to($lead->email, $lead->name)->send(new AuditRequested($lead, $url));
+            if ($owner = config('admin.email')) {
+                Mail::to($owner)->send(new NewEnquiry($lead));
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+        Push::toAdmins('SEO audit requested: '.parse_url($url, PHP_URL_HOST), $lead->name.' · '.$lead->email, ['type' => 'enquiry', 'id' => $lead->id]);
 
         return response()->json(['ok' => true]);
     }

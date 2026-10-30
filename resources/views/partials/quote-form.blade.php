@@ -2,6 +2,7 @@
      $service: preselects "What do you need?"  $title: heading (default "Get your free quote").
      Leads are saved with source "landing". --}}
 <form class="card form lp-form" id="quote-form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}" novalidate data-validate>
+    <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 128, 'variant' => 'desk', 'alt' => 'Owlvix owl ready to take your request'])</span>
     @csrf
     <input type="hidden" name="source" value="landing">
     <div>

@@ -9,6 +9,7 @@
 @section('content')
 <section class="section">
     <div class="container container--narrow prose">
+        <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'alt' => 'Owlvix owl'])</div>
         <p class="eyebrow">Legal</p>
         <h1>Privacy Policy</h1>
         <p class="prose__updated">Last updated: 30 October 2026</p>

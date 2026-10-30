@@ -5,7 +5,7 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
 
-    <form class="form exit-survey__form" data-survey action="{{ route('survey.store') }}" method="POST" novalidate>
+    <form class="form exit-survey__form" data-survey data-live action="{{ route('survey.store') }}" method="POST" novalidate>
         @csrf
         <div class="exit-survey__head">
             @include('partials.live-owl', ['width' => 64, 'alt' => 'Owlvix owl'])

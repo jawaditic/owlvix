@@ -18,6 +18,7 @@ const FILTERS = [
   { key: 'source=app', label: 'Mobile app' },
   { key: 'source=landing', label: 'Landing page' },
   { key: 'source=seo-checker', label: 'SEO checker' },
+  { key: 'source=ai-audit', label: 'SEO audit' },
 ];
 
 export default function Messages() {

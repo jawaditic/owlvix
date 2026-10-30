@@ -31,6 +31,15 @@
         toggle.setAttribute('aria-expanded', false);
     }));
 
+    /* ---------- "Free tools" dropdown in the menu (also opens on hover/focus via CSS) ---------- */
+    document.querySelectorAll('[data-nav-drop]').forEach(drop => {
+        const btn = drop.querySelector('button');
+        const set = open => { drop.classList.toggle('is-open', open); btn.setAttribute('aria-expanded', open); };
+        btn.addEventListener('click', e => { e.stopPropagation(); set(!drop.classList.contains('is-open')); });
+        document.addEventListener('click', e => { if (!drop.contains(e.target)) set(false); });
+        drop.addEventListener('keydown', e => { if (e.key === 'Escape') { set(false); btn.focus(); } });
+    });
+
     /* ---------- Pricing buttons preselect the service in the form ---------- */
     document.querySelectorAll('[data-service]').forEach(btn => btn.addEventListener('click', () => {
         document.getElementById('service').value = btn.dataset.service;
@@ -249,6 +258,67 @@
         showError(field, msg);
         return !msg;
     };
+
+    /* ---------- Live validation for the other forms (tools, tips, audit request, exit survey) ---------- */
+    // Forms marked data-live. Same behaviour as the quote forms: check a field when the visitor leaves it,
+    // re-check while they type once it shows an error, mark it green when fixed, and block sending until valid.
+    const liveRules = {
+        url: v => {
+            if (!v) return 'Please enter your website address.';
+            if (/\s/.test(v)) return 'A web address has no spaces, e.g. example.com.';
+            let host = '';
+            try { host = new URL(/^https?:\/\//i.test(v) ? v : 'https://' + v).hostname.toLowerCase(); } catch { return 'Please enter a valid address, like example.com.'; }
+            if (!host.includes('.') || /^[\d.]+$/.test(host) || host === 'localhost' || /\.(local|test|localhost)$/.test(host)) return 'Please enter a public website, like example.com.';
+            if (!/\.[a-z]{2,}$/i.test(host)) return 'That domain looks incomplete, e.g. example.com.';
+            return '';
+        },
+        name: (v, f) => (!v && !f.required ? '' : rules.name(v)),
+        email: (v, f) => (!v && !f.required ? '' : rules.email(v)),
+        notes: v => (v.length > 1000 ? `Please keep it under 1000 characters (${v.length - 1000} too many).` : ''),
+        comment: (v, f) => (f.required && !v ? 'Please tell us a few words.' : v.length > 1000 ? 'Please keep it under 1000 characters.' : ''),
+    };
+    const liveNote = field => {
+        if (field.liveNote) return field.liveNote;
+        const note = document.createElement('small');
+        note.className = 'live-err';
+        note.id = `live-err-${++errorId}`;
+        note.setAttribute('role', 'alert');
+        // In the big tool search bars the message goes under the whole bar, so the icon doesn't move
+        const anchor = field.closest('.speed-form') || field;
+        anchor.after(note);
+        return (field.liveNote = note);
+    };
+    const liveCheck = field => {
+        const msg = liveRules[field.name](field.value.trim(), field);
+        const note = liveNote(field);
+        note.textContent = msg;
+        note.hidden = !msg;
+        field.toggleAttribute('aria-invalid', !!msg);
+        if (msg) field.setAttribute('aria-describedby', note.id); else field.removeAttribute('aria-describedby');
+        field.classList.toggle('is-valid', !msg && !!field.value.trim());
+        return !msg;
+    };
+    document.querySelectorAll('form[data-live]').forEach(form => {
+        const fields = () => [...form.elements].filter(el => liveRules[el.name] && el.type !== 'hidden' && !el.disabled);
+        fields().forEach(field => {
+            field.addEventListener('blur', () => { if (field.value.trim() || field.dataset.touched) liveCheck(field); });
+            field.addEventListener('input', () => {
+                field.dataset.touched = '1';
+                if (field.hasAttribute('aria-invalid') || field.classList.contains('is-valid')) liveCheck(field);
+            });
+        });
+    });
+    // Runs before each page's own submit code (document, capture phase) and stops it when something is wrong
+    document.addEventListener('submit', e => {
+        const form = e.target;
+        if (!form.matches?.('form[data-live]')) return;
+        const bad = [...form.elements].filter(el => liveRules[el.name] && el.type !== 'hidden' && !el.disabled && !liveCheck(el));
+        if (bad.length) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            bad[0].focus();
+        }
+    }, true);
 
     document.querySelectorAll('form[data-validate]').forEach(form => {
         const fields = [...form.elements].filter(el => rules[el.name]);

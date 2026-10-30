@@ -34,7 +34,8 @@
         <h1>Free <span class="accent">SEO checker</span></h1>
         <p class="lead">Find out what is stopping your page from ranking on Google — and get a clear tip for every issue. Takes about 10 seconds.</p>
 
-        <form class="speed-form seo-form card" id="seo-form" action="{{ route('seo-checker.run') }}" method="POST" novalidate>
+        <form class="speed-form seo-form card" id="seo-form" data-live action="{{ route('seo-checker.run') }}" method="POST" novalidate>
+        <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'dev', 'alt' => 'Owlvix owl testing websites'])</span>
             @csrf
             <label class="speed-form__url">
                 <span class="sr-only">Website address</span>
@@ -83,6 +84,7 @@
                 </div>
                 <div class="speed-actions">
                     <a href="#seo-email" class="btn btn--sm">Email me these tips</a>
+                    <a href="#ai-audit" class="btn btn--ghost btn--sm">Full SEO audit</a>
                     <button type="button" class="btn btn--ghost btn--sm" data-seo-share>Copy share link</button>
                     <a href="{{ route('speed-test') }}" class="btn btn--ghost btn--sm" data-seo-speed>Test speed too</a>
                 </div>
@@ -98,7 +100,7 @@
                 <h2>Email me my SEO tips</h2>
                 <p>Get the full list in your inbox, ordered by what to fix first. No spam — just your report.</p>
             </div>
-            <form data-seo-email action="{{ route('seo-checker.email') }}" method="POST" novalidate>
+            <form data-seo-email data-live action="{{ route('seo-checker.email') }}" method="POST" novalidate>
                 @csrf
                 <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
                 <input type="text" name="name" placeholder="Your name (optional)" maxlength="100" autocomplete="name" aria-label="Your name">
@@ -108,6 +110,8 @@
                 <p class="form__privacy">We'll email your report and may follow up once. <a href="{{ route('privacy') }}">Privacy policy</a></p>
             </form>
         </div>
+
+        @include('partials.audit-card')
 
         <div class="lp-cta__box card speed-cta">
             <div class="lp-cta__owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl ready to fix your SEO'])</div>
@@ -152,6 +156,8 @@
         const g = $('.speed-gauge'); g.dataset.rating = d.rating; g.style.setProperty('--score', d.score);
         S('score').textContent = d.score; S('headline').textContent = heads[d.rating]; S('summary').textContent = d.summary;
         S('url').textContent = d.final_url; ['fail', 'warn', 'pass'].forEach(k => S(k).textContent = d.counts[k] || 0);
+        $('[data-audit-site]').textContent = new URL(d.final_url).hostname;
+        document.querySelector('[data-seo-audit] input[name=url]').value = d.url;
         const groups = {};
         d.checks.forEach(c => (groups[c.cat] ||= []).push(c));
         S('groups').innerHTML = Object.entries(groups).map(([cat, list]) => `

@@ -46,6 +46,7 @@
             <option value="app" @selected(request('source') === 'app')>Mobile app</option>
             <option value="landing" @selected(request('source') === 'landing')>Landing page</option>
             <option value="seo-checker" @selected(request('source') === 'seo-checker')>SEO checker</option>
+            <option value="ai-audit" @selected(request('source') === 'ai-audit')>SEO audit request</option>
         </select>
         <button type="submit" class="btn">Filter</button>
         @if (request()->hasAny(['q', 'status', 'source']))

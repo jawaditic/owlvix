@@ -45,6 +45,7 @@ class ContactMessage extends Model
             'app' => 'Mobile app',
             'landing' => 'Landing page',
             'seo-checker' => 'SEO checker',
+            'ai-audit' => 'SEO audit request',
             default => 'Contact form',
         };
     }

@@ -34,7 +34,8 @@
         <h1>Free website <span class="accent">speed test</span></h1>
         <p class="lead">See how fast your website loads, what is slowing it down and how to fix it — in about 30 seconds. Powered by Google PageSpeed Insights.</p>
 
-        <form class="speed-form card" id="speed-form" action="{{ route('speed-test.run') }}" method="POST" novalidate>
+        <form class="speed-form card" id="speed-form" data-live action="{{ route('speed-test.run') }}" method="POST" novalidate>
+        <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'dev', 'alt' => 'Owlvix owl testing websites'])</span>
             @csrf
             <label class="speed-form__url">
                 <span class="sr-only">Website address</span>

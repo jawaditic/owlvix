@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AuditRequested;
 use App\Mail\NewEnquiry;
 use App\Mail\SeoTips;
 use App\Models\ContactMessage;
@@ -135,5 +136,42 @@ class SeoCheckerTest extends TestCase
         $this->assertSame('pass', $this->check($this->report("<html lang=\"en\"><body><p>$easy</p></body></html>"), 'Readability')['status']);
         $this->assertSame('fail', $this->check($this->report("<html lang=\"en\"><body><p>$hard</p></body></html>"), 'Readability')['status']);
         $this->assertNull($this->check($this->report('<html lang="de"><body><p>'.$easy.'</p></body></html>'), 'Readability')); // not measured for other languages
+    }
+
+    public function test_full_ai_audit_request_saves_a_lead_and_emails_both_sides(): void
+    {
+        Mail::fake();
+        config(['admin.email' => 'owner@owlvix.com']);
+        Cache::put('seocheck:'.sha1('https://example.com'), $this->report('<html><body>Hi</body></html>'), 3600);
+
+        $this->postJson('/seo-checker/audit', ['url' => 'example.com', 'name' => 'Sam Lee', 'email' => 'sam@example.org', 'notes' => 'Ranking for dentist London'])
+            ->assertOk()->assertJson(['ok' => true]);
+
+        $lead = ContactMessage::where('source', 'ai-audit')->first();
+        $this->assertSame(['Sam Lee', 'SEO audit request'], [$lead->name, $lead->sourceLabel()]);
+        $this->assertStringContainsString('/seo audit https://example.com', $lead->message);
+        $this->assertStringContainsString('dentist London', $lead->message);
+        Mail::assertSent(AuditRequested::class, fn ($m) => $m->hasTo('sam@example.org'));
+        Mail::assertSent(NewEnquiry::class, fn ($m) => $m->hasTo('owner@owlvix.com'));
+        $this->assertStringContainsString('Your full audit is on its way', (new AuditRequested($lead, 'https://example.com'))->render());
+
+        // Asking again the same day doesn't create a duplicate lead
+        $this->postJson('/seo-checker/audit', ['url' => 'example.com', 'name' => 'Sam Lee', 'email' => 'sam@example.org'])->assertJson(['already' => true]);
+        $this->assertSame(1, ContactMessage::where('source', 'ai-audit')->count());
+    }
+
+    public function test_audit_request_needs_name_and_email(): void
+    {
+        $this->postJson('/seo-checker/audit', ['url' => 'example.com'])->assertStatus(422)->assertJsonValidationErrors(['name', 'email']);
+    }
+
+    public function test_standalone_audit_page_and_menu_link(): void
+    {
+        Mail::fake();
+        $this->get('/seo-audit')->assertOk()->assertSee('name="url" inputmode="url"', false);
+        $this->get('/')->assertSee('href="'.route('seo-audit').'"', false);
+        // Works without running the checker first
+        $this->postJson('/seo-checker/audit', ['url' => 'new-site.example', 'name' => 'Ana', 'email' => 'ana@example.org'])->assertOk();
+        $this->assertStringNotContainsString('free checker score', ContactMessage::where('source', 'ai-audit')->first()->message);
     }
 }

@@ -107,7 +107,7 @@ class MessageController extends Controller
                     ->orWhere('message', 'like', "%{$term}%"));
             })
             ->when($request->input('status') === 'unread', fn (Builder $q) => $q->unread())
-            ->when(in_array($request->input('source'), ['popup', 'contact', 'app', 'landing', 'seo-checker'], true),
+            ->when(in_array($request->input('source'), ['popup', 'contact', 'app', 'landing', 'seo-checker', 'ai-audit'], true),
                 fn (Builder $q) => $q->where('source', $request->input('source')));
     }
 }
