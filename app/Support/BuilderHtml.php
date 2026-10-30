@@ -28,9 +28,16 @@ class BuilderHtml
         return self::appOrigin().'/js/builder-runtime.js';
     }
 
-    /** The main app's origin — the configured APP_URL when this request came in on the builder subdomain. */
+    /**
+     * The main app's origin, for the CSP, the runtime script tag and form actions. Always the configured APP_URL in
+     * production — never the Host of the request, which would let one odd request rewrite every site's policy.
+     * (Locally the dev server's own address is used, so pages work on any port.)
+     */
     public static function appOrigin(): string
     {
+        if (app()->environment('production') && config('app.url')) {
+            return rtrim(config('app.url'), '/');
+        }
         $domain = config('builder.domain');
         if ($domain && strcasecmp(request()->getHost(), $domain) === 0 && config('app.url')) {
             return rtrim(config('app.url'), '/');
@@ -38,6 +45,13 @@ class BuilderHtml
 
         return rtrim(url('/'), '/');
     }
+
+    private const URL_ATTRIBUTES = ['href', 'src', 'action', 'formaction', 'xlink:href', 'poster', 'data', 'background', 'srcset', 'cite', 'ping'];
+
+    /** Form fields the builder creates. Anything else (e.g. a "password" box) could be used to phish. */
+    private const FIELDS = ['name', 'email', 'phone', 'message', '_hp', '_back', '_next', '_site', '_step', '_v'];
+
+    private const PHISHY = '/pass|pwd|otp|pin\b|card|cvv|cvc|ssn|iban|login|username|secret|token/i';
 
     /**
      * Served on every published page. "sandbox" without allow-same-origin gives the page an opaque origin, so even
@@ -56,7 +70,8 @@ class BuilderHtml
             ."default-src 'none'; script-src ".self::runtimeUrl().'; '
             ."connect-src {$origin}/fs; "
             ."img-src data: https:; style-src 'unsafe-inline' https://fonts.googleapis.com; "
-            .'font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com https://www.google.com; '
+            .'font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com/embed/ https://www.google.com/maps; '
+            ."frame-ancestors 'none'; "
             ."form-action {$formAction}; base-uri 'none'";
     }
 
@@ -76,7 +91,8 @@ class BuilderHtml
         if (preg_match('/<[^>]*\son[a-z]+\s*=/i', $html)) {
             return 'Pages can’t contain JavaScript event handlers (like onclick).';
         }
-        if (preg_match('/<[^>]*(?:java|vb)script\s*:/i', $html)) {
+        // javascript: as a URL (in href/src/action…) — not merely mentioned in text like "Learn JavaScript: …"
+        if (preg_match('/<[^>]*\s(?:href|src|action|formaction|xlink:href|poster|data|background|srcset)\s*=\s*["\']?\s*(?:java|vb)script\s*:/i', $html)) {
             return 'Pages can’t contain javascript: links.';
         }
 
@@ -102,7 +118,7 @@ class BuilderHtml
                 if (str_starts_with($name, 'on')) {
                     return 'Pages can’t contain JavaScript event handlers (like onclick).';
                 }
-                if (preg_match('/(?:java|vb)script:/', $value)) {
+                if (in_array($name, self::URL_ATTRIBUTES, true) && preg_match('/^(?:java|vb)script:/', $value)) {
                     return 'Pages can’t contain javascript: links.';
                 }
                 if (in_array($name, ['formaction', 'srcdoc'], true)) {
@@ -110,11 +126,20 @@ class BuilderHtml
                 }
             }
 
-            if ($tag === 'meta' && in_array(strtolower(trim($el->getAttribute('http-equiv'))), ['refresh', 'set-cookie'], true)) {
+            // The builder never writes http-equiv metas; a hidden refresh would redirect visitors (CSP can't stop it)
+            if ($tag === 'meta' && $el->hasAttribute('http-equiv')) {
                 return 'Pages can’t redirect visitors automatically (meta refresh).';
             }
-            if ($tag === 'input' && strtolower(trim($el->getAttribute('type'))) === 'password') {
-                return 'Pages can’t contain password fields.';
+            if (in_array($tag, ['input', 'textarea', 'select'], true)) {
+                $type = strtolower(trim($el->getAttribute('type')));
+                $field = $el->getAttribute('name');
+                $auto = strtolower($el->getAttribute('autocomplete'));
+                $builderField = in_array($field, self::FIELDS, true)
+                    || ($type === 'radio' && preg_match('/^t[a-z0-9]{3,12}$/', $field))   // tabs widget
+                    || ($type === 'range' && $field === '');                               // before/after slider
+                if ($type === 'password' || str_contains($auto, 'password') || preg_match(self::PHISHY, $field.' '.$el->getAttribute('placeholder').' '.$el->getAttribute('aria-label')) || ! $builderField) {
+                    return 'Pages can’t contain password or payment fields, or form fields the builder didn’t create.';
+                }
             }
             if ($tag === 'iframe') {
                 $src = trim($el->getAttribute('src'));
@@ -128,7 +153,7 @@ class BuilderHtml
             }
             if ($tag === 'form') {
                 $action = trim($el->getAttribute('action'));
-                if (! preg_match('#^https?://[^/\s]+/f/([a-z0-9]{16})$#', $action, $m)) {
+                if (! preg_match('#^'.preg_quote(self::appOrigin(), '#').'/f/([a-z0-9]{16})$#', $action, $m)) {
                     return 'Forms must use an Owlvix contact form.';
                 }
                 if (! in_array($m[1], $formIds, true)) {
@@ -163,6 +188,7 @@ class BuilderHtml
             ."    RewriteRule ^$ ".route('landing-builder')." [R=302,L]\n"
             ."    # Hide our marker files\n"
             ."    RewriteRule (^|/)\\.owlvix-site$ - [R=404,L]\n"
+            ."    RewriteRule ^\\.(tmp|old)- - [R=404,L]\n"
             ."</IfModule>\n";
     }
 

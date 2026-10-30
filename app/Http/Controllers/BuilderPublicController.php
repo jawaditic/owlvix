@@ -275,7 +275,7 @@ class BuilderPublicController extends Controller
 
     public function report(Request $request, string $slug)
     {
-        $site = BuilderSite::where('slug', $slug)->firstOrFail();
+        $site = BuilderSite::where('slug', $slug)->where('status', 'live')->firstOrFail();
         $data = $request->validate([
             'reason' => ['required', 'string', 'min:5', 'max:2000'],
             'email' => ['nullable', 'email', 'max:150'],

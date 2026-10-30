@@ -44,7 +44,7 @@
         document.body.append(d);
         const input = d.querySelector('.sweet__input');
         let done = false;
-        const finish = val => { if (done) return; done = true; d.classList.add('is-closing'); setTimeout(() => { d.close(); d.remove(); }, 160); resolve(val); };
+        const finish = val => { if (done) return; done = true; d.classList.add('is-closing'); setTimeout(() => { d.close(); d.remove(); resolve(val); }, 160); };
         d.querySelector('form').addEventListener('submit', e => {
             e.preventDefault();
             if (input && !input.value.trim()) { input.classList.add('is-shake'); setTimeout(() => input.classList.remove('is-shake'), 400); return input.focus(); }
@@ -61,7 +61,10 @@
     /* =========================================================== state + history */
     let P = null;
     try { P = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
-    try { P = P && P.pages?.length ? B.migrate(P) : null; } catch { P = null; }
+    try { P = P && P.pages?.length ? B.migrate(P) : null; if (P) P.pages.forEach(pg => B.render(P, pg, 'edit')); } catch {
+        try { localStorage.setItem(STORE + '-broken', localStorage.getItem(STORE) || ''); } catch {} // keep it, just in case
+        P = null;
+    }
     if (!P) P = FUNNEL ? B.newFunnel('leadmagnet') : B.newProject('agency');
     let pageIdx = 0, device = 'desktop', variant = 'a'; // variant: which A/B version of the step is being edited
     let sel = null; // { kind: 'section'|'col'|'widget', id, target }
@@ -100,7 +103,9 @@
     const commit = () => {
         const now = JSON.stringify(P);
         if (now === last) return;
-        undo.push(last); if (undo.length > 80) undo.shift();
+        undo.push(last);
+        let total = undo.reduce((n, u) => n + u.length, 0);
+        while (undo.length > 80 || (undo.length > 5 && total > 60e6)) total -= undo.shift().length; // photos make snapshots big
         redo = []; last = now; persist(); syncHistory();
     };
     const restore = snap => {
@@ -110,11 +115,13 @@
         else renderAll();
         syncHistory();
     };
-    const doUndo = () => { if (!undo.length) return; redo.push(JSON.stringify(P)); restore(undo.pop()); };
-    const doRedo = () => { if (!redo.length) return; undo.push(JSON.stringify(P)); restore(redo.pop()); };
+    const flush = () => { clearTimeout(later); commit(); }; // typing still waiting to be saved becomes its own undo step
+    const doUndo = () => { flush(); if (!undo.length) return; redo.push(JSON.stringify(P)); restore(undo.pop()); };
+    const doRedo = () => { flush(); if (!redo.length) return; undo.push(JSON.stringify(P)); restore(redo.pop()); };
     const syncHistory = () => { $('[data-act=undo]').disabled = !undo.length; $('[data-act=redo]').disabled = !redo.length; };
     let later = 0;
     const commitSoon = () => { clearTimeout(later); later = setTimeout(commit, 600); persist(); };
+    addEventListener('pagehide', () => { clearTimeout(later); try { localStorage.setItem(STORE, JSON.stringify(P)); } catch {} });
 
     /* =========================================================== canvas */
     const frame = $('[data-lpb-frame]'), screen = $('.lpb-screen');
@@ -147,12 +154,15 @@
 .ed-rt button{all:unset;cursor:pointer;color:#fff;font:700 13px/1 Inter,sans-serif;min-width:26px;height:26px;display:grid;place-items:center;border-radius:6px}.ed-rt button:hover{background:#374151}`;
 
     let scrollY = 0, scrollTo = null;
+    let loading = false, dirty = false;
     const renderCanvas = () => {
+        loading = true; dirty = false;
         scrollY = doc()?.scrollingElement?.scrollTop || 0;
         frame.srcdoc = B.render(P, page(), 'edit', { extraHead: `<style id="ed-css">${EDITOR_CSS}</style>` });
     };
     frame.addEventListener('load', () => {
         const d = doc(); if (!d?.body) return;
+        loading = false;
         d.scrollingElement.scrollTop = scrollY;
         if (scrollTo) { d.querySelector(`[data-s="${scrollTo}"],[data-w="${scrollTo}"]`)?.scrollIntoView({ block: 'center' }); scrollTo = null; }
         d.addEventListener('mousedown', e => { if (e.target.closest('.ed-rt')) e.preventDefault(); }, true);
@@ -171,9 +181,11 @@
         });
         d.addEventListener('dragend', () => { dragging = null; clearDrop(); });
         markSelection();
+        if (dirty) { dirty = false; refreshChrome(); refreshMain(); } // changes made while it was loading
     });
     const x = () => ({ edit: true, mode: 'edit', page: page(), P, origin: location.origin });
     const refreshEl = id => {
+        if (loading) { dirty = true; return; }
         const d = doc(), f = find(id); if (!d?.body || !f) return renderCanvas();
         const el = d.querySelector(`[data-s="${f.sec.id}"]`);
         if (!el) return renderCanvas();
@@ -182,6 +194,7 @@
     };
     /** Redraw every section in place — the canvas keeps its scroll position (no reload, no jump to the top). */
     const refreshMain = () => {
+        if (loading) { dirty = true; return; }
         const d = doc(), main = d?.querySelector('main');
         if (!main) return renderCanvas();
         main.innerHTML = page().sections.map((sc, i) => B.renderSection(sc, i, x())).join('\n');
@@ -193,12 +206,14 @@
         }
     };
     const refreshChrome = () => {
+        if (loading) { dirty = true; return; }
         const d = doc(); if (!d?.body) return;
         d.querySelectorAll('.ob-bar,.nav').forEach(el => el.remove());
         d.body.insertAdjacentHTML('afterbegin', B.header(x()));
         const foot = d.querySelector('.foot'); if (foot) foot.outerHTML = B.footer(x());
     };
     const refreshCss = () => {
+        if (loading) { dirty = true; return; }
         const d = doc(); if (!d?.body) return;
         d.getElementById('site-css').textContent = B.siteCss(P);
         d.getElementById('page-css').textContent = B.pageCss(page());
@@ -277,7 +292,7 @@
     const ownerOf = key => { const [id, path] = key.split('|'); return id === 'site' ? [P.site, path, 'site'] : [find(id)?.obj.p, path, id]; };
     const startEdit = el => {
         const rich = el.hasAttribute('data-rich');
-        el.contentEditable = rich ? 'true' : 'plaintext-only';
+        try { el.contentEditable = rich ? 'true' : 'plaintext-only'; } catch { el.contentEditable = 'true'; }
         if (!rich && el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
         el.focus();
         if (rich) showRt(el);
@@ -294,11 +309,16 @@
         if (rtBusy) return;
         el.removeAttribute('contenteditable'); hideRt();
         const [obj, path, id] = ownerOf(el.dataset.e);
-        if (el.hasAttribute('data-rich') && obj) setPath(obj, path, B.sanitize(el.innerHTML));
+        if (el.hasAttribute('data-rich') && obj) { const clean = B.sanitize(el.innerHTML); setPath(obj, path, clean); el.innerHTML = clean; }
         commit();
-        if (id === 'site') refreshChrome();
+        if (id === 'site' && path === 'name') { // the footer and the logo letter show the name too
+            const d = doc(), name = P.site.name || 'Your business';
+            const fb = d.querySelector('.foot b'); if (fb) fb.textContent = name;
+            const mark = d.querySelector('.nav .mark'); if (mark) mark.textContent = name.trim()[0]?.toUpperCase() || 'A';
+        }
     };
     const onKey = e => {
+        if (e.target.closest?.('input,textarea,select')) return; // typing in a form field on the page
         const ed = e.target.closest?.('[data-e][contenteditable]');
         if (ed && e.key === 'Enter' && !ed.hasAttribute('data-ml') && !ed.hasAttribute('data-rich')) { e.preventDefault(); ed.blur(); return; }
         if (ed && e.key === 'Escape') { ed.blur(); return; }
@@ -377,6 +397,7 @@
         const scale = Math.min(1, max / Math.max(bmp.width, bmp.height)), cv = document.createElement('canvas');
         cv.width = Math.round(bmp.width * scale); cv.height = Math.round(bmp.height * scale);
         cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+        bmp.close?.();
         let url = cv.toDataURL('image/webp', 0.82);
         if (!url.startsWith('data:image/webp')) url = keepAlpha ? cv.toDataURL('image/png') : cv.toDataURL('image/jpeg', 0.84);
         return url;
@@ -388,7 +409,7 @@
         try {
             if (key.startsWith('style|')) { // background image from the Style tab
                 const [, id, target] = key.split('|'), st = styleObj(id, target);
-                st[DEV()].bgImg = await readImage(file, 1920); st[DEV()].bgType = 'image';
+                const dev = DEV(), img = await readImage(file, 1920); st[dev].bgImg = img; st[dev].bgType = 'image';
                 commit(); refreshCss(); drawEdit(); return;
             }
             if (key.startsWith('popup|')) { page().popup.image = await readImage(file, 1000); commit(); drawPage(); return; }
@@ -423,7 +444,7 @@
         showLine({ top: idx < secs.length ? ref.top : ref.bottom, left: ref.left + 20, width: ref.width - 40 }, sy);
     };
     const onDrag = e => {
-        if (!dragging) return;
+        if (!dragging) { if (e.type !== 'dragleave') e.preventDefault(); return; } // e.g. a file from the desktop
         const d = doc(), sy = d.scrollingElement.scrollTop;
         if (e.type === 'dragleave') { if (!e.relatedTarget) clearDrop(); return; }
         e.preventDefault();
@@ -478,7 +499,12 @@
 
     /* =========================================================== add panel (widgets, layouts, templates) */
     const myTemplates = () => { try { return JSON.parse(localStorage.getItem('owlvix-builder-tpl') || '[]'); } catch { return []; } };
-    const templateSection = key => (key.startsWith('my-') ? B.reId(myTemplates()[+key.slice(3)].sec) : B.TEMPLATES.sections[key][1]());
+    const templateSection = key => {
+        if (!key.startsWith('my-')) return B.TEMPLATES.sections[key][1]();
+        const sec = B.normalizeSection(myTemplates()[+key.slice(3)]?.sec); // saved in the browser: checked like any project data
+        if (!sec) throw new Error('That template could not be read.');
+        return B.reId(sec);
+    };
     const saveTemplate = async s => {
         const name = await sweet({ icon: 'question', title: 'Save as my template', text: 'Reuse this section on any page. Saved in this browser.', input: { value: W[s.cols[0]?.widgets[0]?.type]?.label || 'My section', max: 40 }, confirm: 'Save template' });
         if (!name) return;
@@ -643,7 +669,7 @@
         let out = crumbs(f);
         if (editTab === 'content') {
             if (f.kind === 'section') {
-                out += `<label>Columns<span class="lpb-lays">${Object.entries(B.LAYOUTS).map(([k, v]) => `<button type="button" data-layout="${k}" class="${o.layout === k ? 'is-on' : ''}" title="${v[2]}"><i class="lpb-lay" style="grid-template-columns:${v[0]}">${'<i></i>'.repeat(v[1])}</i></button>`).join('')}</span></label>
+                if (!B.isFull(o)) out += `<label>Columns<span class="lpb-lays">${Object.entries(B.LAYOUTS).map(([k, v]) => `<button type="button" data-layout="${k}" class="${o.layout === k ? 'is-on' : ''}" title="${v[2]}"><i class="lpb-lay" style="grid-template-columns:${v[0]}">${'<i></i>'.repeat(v[1])}</i></button>`).join('')}</span></label>
                     <label>Content width<select data-sec="width"><option value="boxed" ${o.width !== 'full' ? 'selected' : ''}>Boxed (centred)</option><option value="full" ${o.width === 'full' ? 'selected' : ''}>Full width</option></select></label>
                     <label>Background preset<select data-sec="bg">${Object.entries(BG).map(([k, l]) => `<option value="${k}" ${o.bg === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
                     <p class="lpb-hint">Image, gradient and overlay backgrounds are in the Style tab.</p>`;
@@ -714,7 +740,12 @@
         const f = sel && find(sel.id);
         const crumb = e.target.closest('[data-crumb]'); if (crumb) return select(crumb.dataset.crumb, '_');
         const sval = e.target.closest('[data-sty-val]');
-        if (sval && f) { const [k, v] = sval.dataset.styVal.split('|'); const st = styleObj(f.obj.id, f.kind === 'widget' ? sel.target || '_' : '_'); if (v === '') delete st[DEV()][k]; else st[DEV()][k] = v; commit(); refreshCss(); drawEdit(); return; }
+        if (sval && f) {
+            const [k, v] = sval.dataset.styVal.split('|'), st = styleObj(f.obj.id, f.kind === 'widget' ? sel.target || '_' : '_'), dev = st[DEV()];
+            if (k === 'bgType' && v === '') { ['bgType', 'bg', 'g1', 'g2', 'gAngle', 'bgImg', 'overlay', 'fixed'].forEach(n => delete dev[n]); } // "None"
+            else if (v === '') delete dev[k]; else dev[k] = v;
+            commit(); refreshCss(); drawEdit(); return;
+        }
         const bgp = e.target.closest('[data-bg-pick]'); if (bgp) { picking = 'style|' + bgp.dataset.bgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-reset-style]') && f) { Object.values(f.obj.st || {}).forEach(t => (t[DEV()] = {})); commit(); refreshCss(); drawEdit(); return toast(`${device} styles cleared`); }
         const lay = e.target.closest('[data-layout]'); if (lay && f) return changeLayout(f.obj, lay.dataset.layout);
@@ -801,14 +832,21 @@
     const stepUrl = slug => SITE_BASE + (P.site.publishSlug || 'your-funnel') + (slug === 'index' ? '' : '/' + slug);
     /** The first step is the funnel's entry page (address …/name). After a reorder, give it that address and keep
         every "go to next step" choice pointing at the same steps. */
+    /** A page's address changed: every button linking to it, and every "next step", follows. */
+    const renameSlug = (from, to) => {
+        if (!from || from === to) return;
+        const fix = o => { if (!o || typeof o !== 'object') return; if (o.to === 'page' && o.val === from) o.val = to; Object.values(o).forEach(fix); };
+        P.pages.forEach(p => { fix(p.sections); fix(p.sectionsB); fix(p.popup); if (p.next === from) p.next = to; });
+        fix(P.site.navLink); fix(P.site.announce);
+    };
     const ensureHome = () => {
         const first = P.pages[0], home = P.pages.find(p => p.slug === 'index');
         if (!first || first.slug === 'index' || !home) return;
         let renamed = slugify(home.title) || 'step';
         while (P.pages.some(p => p.slug === renamed)) renamed += '-2';
         const firstSlug = first.slug;
+        renameSlug('index', '__home__'); renameSlug(firstSlug, 'index'); renameSlug('__home__', renamed);
         home.slug = renamed; first.slug = 'index';
-        P.pages.forEach(p => { if (p.next === 'index') p.next = renamed; else if (p.next === firstSlug) p.next = 'index'; });
         toast(`“${first.title}” is now the first step (the funnel's main address)`);
     };
     const funnelPanel = pg => {
@@ -863,7 +901,7 @@
         }
         const k = el.dataset.pg; if (!k) return;
         let v = el.type === 'checkbox' ? el.checked : el.value;
-        if (k === 'slug') { v = slugify(v) || pg.slug; if (P.pages.some(p => p !== pg && p.slug === v) || v === 'index') return; }
+        if (k === 'slug') { v = slugify(v) || pg.slug; if (P.pages.some(p => p.id !== pg.id && p.slug === v) || v === 'index') return; renameSlug(pg.slug, v); }
         setPath(pg, k, v); commitSoon();
         if (k === 'title' || k === 'menu') { refreshChrome(); drawPages(); }
         if (k === 'popup.trigger' && e.type === 'change') drawPage();
@@ -1003,11 +1041,13 @@
     $('[data-open-file]').addEventListener('change', async e => {
         const f = e.target.files[0]; e.target.value = ''; if (!f) return;
         try {
-            const data = B.migrate(JSON.parse(await f.text()));
-            if (!Array.isArray(data.pages) || !data.pages.length || !data.site) throw new Error();
-            undo.push(JSON.stringify(P)); P = data; last = JSON.stringify(P); pageIdx = 0; sel = null; persist(); renderAll(); syncHistory();
+            if (f.size > 40e6) throw new Error();
+            const data = B.migrate(JSON.parse(await f.text())); // checks and cleans every value
+            if (!!data.kind !== FUNNEL) throw new Error();
+            data.pages.forEach(pg => B.render(data, pg, 'edit')); // must draw without errors before it replaces anything
+            undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null; persist(); renderAll(); syncHistory();
             toast('Project opened');
-        } catch { toast('That file is not an Owlvix project.'); }
+        } catch { toast(FUNNEL ? 'That file is not an Owlvix funnel project.' : 'That file is not an Owlvix website project.'); }
     });
 
     // Download: one page → HTML, several → ZIP
@@ -1041,11 +1081,13 @@
     });
 
     /* =========================================================== account, form, publish (server) */
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    let csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const freshCsrf = async () => { try { const h = await (await fetch(location.pathname, { headers: { Accept: 'text/html' } })).text(); csrf = (h.match(/name="csrf-token" content="([^"]+)"/) || [])[1] || csrf; } catch {} };
     let token = ''; try { token = localStorage.getItem('owlvix-builder-token') || ''; } catch {}
     let account = null;
-    const api = async (method, url, body) => {
+    const api = async (method, url, body, retried) => {
         const res = await fetch(url, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Builder-Token': token }, body: body ? JSON.stringify(body) : undefined });
+        if (res.status === 419 && !retried) { await freshCsrf(); return api(method, url, body, true); } // the page sat open past the session
         const json = await res.json().catch(() => ({}));
         if (res.status === 401) { token = ''; account = null; try { localStorage.removeItem('owlvix-builder-token'); } catch {} }
         if (!res.ok || json.ok === false) throw new Error(json.error || json.message || 'Something went wrong. Please try again.');
@@ -1054,7 +1096,10 @@
     const dlg = document.querySelector('[data-builder-dialog]'), dlgBody = dlg.querySelector('[data-dialog-body]');
     let afterSignIn = null;
     const openDialog = html => { dlgBody.innerHTML = html; if (!dlg.open) dlg.showModal(); dlgBody.querySelector('input:not([type=hidden])')?.focus(); };
-    dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-dialog-close]')) dlg.close(); });
+    dlg.addEventListener('click', e => {
+        const r = dlg.getBoundingClientRect(), outside = e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+        if ((e.target === dlg && outside) || e.target.closest('[data-dialog-close]')) dlg.close();
+    });
     const signIn = then => {
         afterSignIn = then;
         openDialog(`<h3>Sign in with your email</h3><p>We'll email you a 6-digit code — no password needed. We use your email to send form messages and manage your published pages.</p>
@@ -1089,21 +1134,24 @@
     const leadPanel = () => P.site.leadAction
         ? `<div class="lpb-form-ok">✅ Collecting leads. Each one is emailed to ${esc(account?.email || 'you')} and saved — see them in the <b>Results</b> tab.</div>`
         : `<div class="lpb-form-off"><b>📥 Collect leads</b><p>Sign-ups are emailed to you, saved in your Results tab (download as CSV) and can go to Mailchimp, Brevo or a webhook. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-leads>Switch on lead collection</button></div>`;
+    let activating = false;
     const activateLeads = () => needAccount(async () => {
+        if (activating) return; activating = true;
         try {
             P.site.ref ||= uid() + uid();
             const r = await api('POST', '/builder/forms', { site_name: P.site.name || 'My funnel', kind: 'leads', ref: P.site.ref });
             P.site.leadAction = r.form.action; P.site.leadFormId = r.form.id; commit(); if (dlg.open) dlg.close();
             refreshMain(); drawEdit(); toast('Lead collection is on'); track('funnel_leads_on');
-        } catch (ex) { toast(ex.message); }
+        } catch (ex) { toast(ex.message); } finally { activating = false; }
     });
     const activateForm = () => needAccount(async () => {
+        if (activating) return; activating = true;
         try {
             P.site.ref ||= uid() + uid();
             const r = await api('POST', '/builder/forms', { site_name: P.site.name || 'My website', ref: P.site.ref });
             P.site.formAction = r.form.action; commit(); if (dlg.open) dlg.close();
             refreshMain(); drawEdit(); toast('Contact form activated'); track('builder_form_activated');
-        } catch (ex) { toast(ex.message); }
+        } catch (ex) { toast(ex.message); } finally { activating = false; }
     });
     const publishDialog = () => {
         const mine = account?.sites || [], slug = P.site.publishSlug || slugify(P.site.name) || 'my-site';
@@ -1117,9 +1165,12 @@
     const publish = async slugIn => {
         const slug = slugify(slugIn);
         if (slug.length < 3) throw new Error('Please use at least 3 letters or numbers.');
+        const previous = P.site.publishSlug;
         P.site.publishSlug = slug;
         const pages = P.pages.map(p => ({ slug: p.slug, title: p.title, html: exportHtml(p, 'publish') }));
-        const r = await api('POST', '/builder/publish', { slug, name: P.site.name || 'My website', pages });
+        let r;
+        try { r = await api('POST', '/builder/publish', { slug, name: P.site.name || 'My website', pages }); }
+        catch (ex) { P.site.publishSlug = previous; throw ex; }
         commit(); await loadAccount().catch(() => {});
         openDialog(`<h3>🎉 Your site is live</h3><p><a class="lpb-live" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//, ''))}</a></p>
             <p>Share the link anywhere. Changed something? Publish again to update it.</p><p>Want it on your own domain, found on Google, with analytics and speed tuning? We can set that up.</p>
@@ -1151,7 +1202,8 @@
         box.innerHTML = '<p class="lpb-hint">Loading…</p>';
         try {
             await loadAccount();
-            const slug = P.site.publishSlug, formId = P.site.leadFormId || account.forms?.find(f => f.action === P.site.leadAction)?.id;
+            const slug = P.site.publishSlug, rawId = P.site.leadFormId || account.forms?.find(f => f.action === P.site.leadAction)?.id;
+            const formId = /^[a-z0-9]{16}$/.test(rawId || '') ? rawId : '';
             const [stats, leads, integ] = await Promise.all([
                 slug ? api('GET', '/builder/stats?slug=' + encodeURIComponent(slug)).catch(() => null) : null,
                 formId ? api('GET', '/builder/leads?form=' + formId).catch(() => null) : null,
@@ -1170,7 +1222,7 @@
                     <div class="lpb-fun__bar"><i style="width:${(r.views / top) * 100}%"></i></div>${i > 0 && rows[i - 1].views ? `<small>${pct(r.views, rows[i - 1].views)} of the previous step reached this one</small>` : ''}
                     ${r.p.ab?.on ? `<div class="lpb-ab">${r.byV.map(b => `<span><b>${b.v.toUpperCase()}</b> ${plural(b.views, 'visit')} · ${plural(b.leads, 'sign-up')} · ${pct(b.leads, b.views)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>
                 <p class="lpb-hint">Counts come from your published funnel at ${esc(SITE_HOST + slug)}.</p>` : '<p class="lpb-hint">Publish your funnel to start counting visits and sign-ups.</p>'}</details>
-                <details class="lpb-acc" open><summary>Leads${leads ? ` (${leads.total})` : ''}</summary>
+                <details class="lpb-acc" open><summary>Leads${leads ? ` (${esc(+leads.total || 0)})` : ''}</summary>
                 ${!formId ? '<p class="lpb-hint">Add an Opt-in form widget and switch on lead collection to start collecting leads.</p>'
                     : leads?.leads?.length ? `<div class="lpb-leads"><table><thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Step</th></tr></thead><tbody>${leads.leads.slice(0, 50).map(l => `<tr><td>${esc(new Date(l.created_at).toLocaleDateString())}</td><td>${esc(l.name || '')}</td><td>${esc(l.email)}</td><td>${esc(l.step || '')}${l.variant === 'b' ? ' (B)' : ''}</td></tr>`).join('')}</tbody></table></div>
                         <button type="button" class="btn btn--sm btn--glow" data-leads-csv="${formId}">Download all as CSV</button>` : '<p class="lpb-hint">No leads yet. They appear here as soon as someone signs up.</p>'}</details>

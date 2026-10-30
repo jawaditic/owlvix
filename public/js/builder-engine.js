@@ -22,7 +22,10 @@
     const setPath = (o, path, v) => { const ks = path.split('.'); const last = ks.pop(); ks.reduce((a, k) => (a[k] ??= {}), o)[last] = v; };
     const ytId = url => (String(url).match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/) || [])[1];
     const safeUrl = u => { u = String(u || '').trim(); return /^(https?:\/\/|mailto:|tel:|#)/i.test(u) ? u : ''; };
-    const cssSafe = s => String(s || '').replace(/</g, '');
+    const cssSafe = s => String(s || '').replace(/<\/|<!--/g, '');
+    const has = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+    /** A URL for use inside CSS url(...): only images (data:image or https), with quotes/brackets percent-encoded. */
+    const cssUrl = u => { u = String(u || ''); return /^(data:image\/|https:\/\/)/i.test(u) ? u.replace(/["'()\\\s<>]/g, c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')) : ''; };
     const cls = s => String(s || '').replace(/[^\w\s-]/g, '').trim();
     /** The style key for a content path: items.3.title → items.*.title (styles apply to every item). */
     const styleKey = path => path.replace(/\.\d+(?=\.|$)/g, '.*');
@@ -30,12 +33,14 @@
 
     /** Rich text: only simple formatting survives (bold, italic, underline, links, lists, paragraphs, line breaks). */
     const ALLOWED = { B: 'b', STRONG: 'b', I: 'i', EM: 'i', U: 'u', A: 'a', UL: 'ul', OL: 'ol', LI: 'li', BR: 'br', P: 'p', DIV: 'p' };
+    const DROP = new Set(['STYLE', 'SCRIPT', 'TEMPLATE', 'HEAD', 'TITLE', 'NOSCRIPT', 'META', 'LINK', 'OBJECT', 'IFRAME', 'SVG', 'MATH']);
     const sanitize = html => {
         const tpl = document.createElement('template'); tpl.innerHTML = String(html || '');
         const walk = node => [...node.childNodes].map(n => {
             if (n.nodeType === 3) return esc(n.nodeValue);
-            if (n.nodeType !== 1) return '';
-            const tag = ALLOWED[n.nodeName];
+            if (n.nodeType !== 1 || DROP.has(n.nodeName.toUpperCase())) return '';
+            let tag = ALLOWED[n.nodeName];
+            if (tag === 'p' && n.querySelector('p,div,ul,ol')) tag = null; // a wrapper around blocks: keep only its contents
             const inner = walk(n);
             if (!tag) return inner;
             if (tag === 'br') return '<br>';
@@ -76,8 +81,9 @@
     const nextOf = (pg, P) => (pg.next && P.pages.find(p => p.slug === pg.next)) || P.pages[P.pages.indexOf(P.pages.find(p => p.id === pg.id)) + 1] || null;
     const pageHref = (slug, x) => {
         // Published: absolute address on the sites subdomain (or /p/ locally), e.g. https://sites.owlvix.com/anj-tec/about
-        if (x.mode === 'publish') return (x.siteBase || '/p/') + (x.P.site.publishSlug || 'site') + (slug === 'index' ? '' : '/' + slug);
-        return (slug === 'index' ? 'index' : slug) + '.html';
+        if (x.mode === 'publish') return (x.siteBase || '/p/') + (slugify(x.P.site.publishSlug) || 'site') + (slug === 'index' ? '' : '/' + slugify(slug));
+        if (x.P.pages.length === 1) return '#'; // a one-page download is saved under its own name
+        return (slug === 'index' ? 'index' : slugify(slug)) + '.html';
     };
     const hasContact = pg => pg.sections.some(s => s.cols.some(c => c.widgets.some(w => w.type === 'contact' || w.type === 'form')));
     const href = (l, x) => {
@@ -86,14 +92,14 @@
         switch (l.to) {
             case 'page': { const pg = x.P.pages.find(p => p.slug === v); return pg ? (x.edit ? '#' : pageHref(pg.slug, x)) : '#'; }
             case 'url': return /^https?:\/\//i.test(v) ? v : (v.startsWith('#') ? v : '#');
-            case 'popup': return '#popup';
+            case 'popup': return x.page.popup?.on ? '#popup' : '#';
             case 'next': { const n = nextOf(x.page, x.P); return n && !x.edit ? pageHref(n.slug, x) : '#'; }
             case 'pay': return /^https:\/\//i.test(x.page.pay || '') ? x.page.pay : '#';
-            case 'whatsapp': return 'https://wa.me/' + digits(v).replace(/^\+/, '');
-            case 'phone': return 'tel:' + digits(v);
-            case 'email': return 'mailto:' + v.replace(/[^\w.+@-]/g, '');
+            case 'whatsapp': return digits(v) ? 'https://wa.me/' + digits(v).replace(/^\+/, '') : '#';
+            case 'phone': return digits(v) ? 'tel:' + digits(v) : '#';
+            case 'email': return v.includes('@') ? 'mailto:' + v.replace(/[^\w.+@-]/g, '') : '#';
             default: {
-                if (hasContact(x.page)) return '#contact';
+                if (hasContact(x.page)) return x.variant === 'b' ? '#contact-b' : '#contact';
                 const other = x.P.pages.find(hasContact);
                 return other && !x.edit ? pageHref(other.slug, x) + '#contact' : '#contact';
             }
@@ -102,7 +108,7 @@
 
     /* ================================================================ render helpers for one widget */
     const helpers = (w, x) => {
-        const E = (path, ph = '', o = {}) => (x.edit ? ` data-e="${w.id}|${path}" data-ph="${esc(ph)}"${o.ml ? ' data-ml' : ''}${o.rich ? ' data-rich' : ''}` : '');
+        const E = (path, ph = '', o = {}) => (x.edit ? ` data-e="${esc(w.id)}|${esc(path)}" data-ph="${esc(ph)}"${o.ml ? ' data-ml' : ''}${o.rich ? ' data-rich' : ''}` : '');
         const K = path => classKey(styleKey(path));
         const H = {
             E, K,
@@ -117,16 +123,18 @@
             btn: (textPath, linkPath, extra = 'btn') => {
                 const v = getPath(w.p, textPath);
                 if (!String(v || '').trim()) return '';
-                return `<a class="${extra} ${K(textPath)}" href="${esc(href(getPath(w.p, linkPath), x))}"${E(textPath, 'Button')}>${esc(v)}</a>`;
+                const link = getPath(w.p, linkPath), url = href(link, x);
+                if (!x.edit && url === '#' && link?.to !== 'contact') return ''; // a button that would go nowhere
+                return `<a class="${extra} ${K(textPath)}" href="${esc(url)}"${E(textPath, 'Button')}>${esc(v)}</a>`;
             },
             pic: (path, alt, extra = 'pic', fallback = '') => {
                 const src = getPath(w.p, path);
-                const attr = x.edit ? ` data-img="${w.id}|${path}"` : '';
+                const attr = x.edit ? ` data-img="${esc(w.id)}|${esc(path)}"` : '';
                 if (src) return `<div class="${extra} ${K(path)}"${attr}><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy"></div>`;
                 if (x.edit) return `<div class="${extra} pic-empty"${attr}><span>＋ Add photo</span></div>`;
                 return fallback;
             },
-            icon: path => { const v = getPath(w.p, path); return v || x.edit ? `<span class="${K(path)}"${x.edit ? ` data-icon="${w.id}|${path}"` : ''}>${icon(v || '⭐')}</span>` : ''; },
+            icon: path => { const v = getPath(w.p, path); return v || x.edit ? `<span class="${K(path)}"${x.edit ? ` data-icon="${esc(w.id)}|${esc(path)}"` : ''}>${icon(v || '⭐')}</span>` : ''; },
             href: l => href(l, x),
             items: () => w.p.items || [],
         };
@@ -142,6 +150,8 @@
         date: (k, label) => ({ k, label, type: 'datetime' }), icon: (k, label) => ({ k, label, type: 'icon' }),
         list: (k, label, item, fields, max = 12) => ({ k, label, type: 'list', item, fields, max }),
     };
+    /** The value if it's one of the allowed options, else the first option. */
+    const pick = (v, allowed) => (allowed.includes(v) ? v : allowed[0]);
     const plus7 = () => new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 16);
 
     const W = {};
@@ -149,12 +159,12 @@
 
     /* ---------- basic widgets (go inside columns) */
     def('heading', { label: 'Heading', icon: 'H', group: 'basic', make: () => ({ text: 'Add your heading', tag: 'h2' }), fields: [F.select('tag', 'HTML tag', { h1: 'H1 — page title', h2: 'H2', h3: 'H3', h4: 'H4', p: 'Paragraph' })],
-        render: (w, x, H) => H.t('text', w.p.tag || 'h2', 'hd', 'Heading', { keep: true }) });
+        render: (w, x, H) => H.t('text', ['h1', 'h2', 'h3', 'h4', 'p'].includes(w.p.tag) ? w.p.tag : 'h2', 'hd', 'Heading', { keep: true }) });
     def('text', { label: 'Text', icon: '¶', group: 'basic', make: () => ({ html: '<p>Write your text here. Select words to make them <b>bold</b>, add links or lists.</p>' }), fields: [],
         render: (w, x, H) => H.t('html', 'div', 'rt', 'Text', { rich: true }) });
-    def('button', { label: 'Button', icon: '⏺', group: 'basic', make: () => ({ text: 'Click here', link: { to: 'contact' }, kind: 'primary', size: 'md', align: 'left' }),
-        fields: [F.link('link', 'Link'), F.select('kind', 'Style', { primary: 'Filled', ghost: 'Outline', light: 'White' }), F.select('size', 'Size', { sm: 'Small', md: 'Medium', lg: 'Large' }), F.select('align', 'Alignment', { left: 'Left', center: 'Centre', right: 'Right', full: 'Full width' })],
-        render: (w, x, H) => `<div class="btn-wrap al-${w.p.align || 'left'}">${H.btn('text', 'link', `btn btn-${w.p.size || 'md'} ${w.p.kind === 'ghost' ? 'btn-ghost' : w.p.kind === 'light' ? 'btn-light' : ''}`)}</div>` });
+    def('button', { label: 'Button', icon: '⏺', group: 'basic', make: () => ({ text: 'Click here', link: { to: 'contact' }, kind: 'primary', size: 'md', align: 'auto' }),
+        fields: [F.link('link', 'Link'), F.select('kind', 'Style', { primary: 'Filled', ghost: 'Outline', light: 'White' }), F.select('size', 'Size', { sm: 'Small', md: 'Medium', lg: 'Large' }), F.select('align', 'Alignment', { auto: 'Same as the section', left: 'Left', center: 'Centre', right: 'Right', full: 'Full width' })],
+        render: (w, x, H) => `<div class="btn-wrap al-${pick(w.p.align, ['auto', 'left', 'center', 'right', 'full'])}">${H.btn('text', 'link', `btn btn-${pick(w.p.size, ['md', 'sm', 'lg'])} ${w.p.kind === 'ghost' ? 'btn-ghost' : w.p.kind === 'light' ? 'btn-light' : ''}`)}</div>` });
     def('image', { label: 'Image', icon: '🖼', group: 'basic', make: () => ({ src: '', alt: '', caption: '', url: '' }), fields: [F.img('src', 'Image'), F.text('alt', 'Alt text (for Google & screen readers)'), F.text('url', 'Link (optional)', 'https://…')],
         render: (w, x, H) => { const img = H.pic('src', w.p.alt, 'img-w', ''); const u = safeUrl(w.p.url); return `<figure class="fig">${u && !x.edit ? `<a href="${esc(u)}">${img}</a>` : img}${H.t('caption', 'figcaption', '', 'Caption (optional)')}</figure>`; } });
     def('spacer', { label: 'Spacer', icon: '↕', group: 'basic', make: () => ({ h: 40 }), fields: [F.num('h', 'Height (px)', 0, 400, 4)],
@@ -163,7 +173,7 @@
         render: w => `<hr class="divider" style="border-top:${+w.p.weight || 2}px ${['solid', 'dashed', 'dotted', 'double'].includes(w.p.style) ? w.p.style : 'solid'} currentColor;width:${Math.min(100, +w.p.width || 100)}%">` });
     def('iconbox', { label: 'Icon box', icon: '★', group: 'basic', make: () => ({ icon: 'i:bolt', title: 'Fast results', text: 'Describe this benefit in one or two sentences.', layout: 'top' }),
         fields: [F.icon('icon', 'Icon'), F.select('layout', 'Icon position', { top: 'Above', left: 'Left' })],
-        render: (w, x, H) => `<div class="iconbox lay-${w.p.layout || 'top'}"><div class="iconbox__i">${H.icon('icon')}</div><div>${H.t('title', 'h3', '', 'Title')}${H.t('text', 'div', 'rt', 'Text', { rich: true })}</div></div>` });
+        render: (w, x, H) => `<div class="iconbox lay-${pick(w.p.layout, ['top', 'left'])}"><div class="iconbox__i">${H.icon('icon')}</div><div>${H.t('title', 'h3', '', 'Title')}${H.t('text', 'div', 'rt', 'Text', { rich: true })}</div></div>` });
     def('imagebox', { label: 'Image box', icon: '🗂', group: 'basic', make: () => ({ src: '', title: 'Image box title', text: 'A short description of this item.' }), fields: [F.img('src', 'Image')],
         render: (w, x, H) => `<div class="imagebox">${H.pic('src', w.p.title, 'pic', '<div class="pic pic-fill"></div>')}${H.t('title', 'h3', '', 'Title')}${H.t('text', 'p', 'muted', 'Text', { ml: true })}</div>` });
     def('iconlist', { label: 'Icon list', icon: '☰', group: 'basic', make: () => ({ items: [{ icon: 'i:check', text: 'First point' }, { icon: 'i:check', text: 'Second point' }, { icon: 'i:check', text: 'Third point' }] }),
@@ -174,7 +184,7 @@
 
     /* ---------- pro widgets */
     def('counter', { label: 'Counter', icon: '123', group: 'pro', make: () => ({ num: '500', prefix: '', suffix: '+', label: 'Happy customers' }), fields: [F.text('num', 'Number'), F.text('prefix', 'Before the number'), F.text('suffix', 'After the number')],
-        render: (w, x, H) => `<div class="counter"><b class="${H.K('num')}"><span>${esc(w.p.prefix)}</span><span${x.edit ? '' : ` data-count="${esc(parseFloat(String(w.p.num).replace(/,/g, '')) || 0)}"`}>${esc(w.p.num)}</span><span>${esc(w.p.suffix)}</span></b>${H.t('label', 'p', '', 'Label')}</div>`, runtime: true });
+        render: (w, x, H) => `<div class="counter"><b class="${H.K('num')}"><span>${esc(w.p.prefix)}</span><span${x.edit || !/^\d[\d,]*(\.\d+)?$/.test(String(w.p.num).trim()) ? '' : ` data-count="${esc(String(w.p.num).replace(/,/g, ''))}"`}>${esc(w.p.num)}</span><span>${esc(w.p.suffix)}</span></b>${H.t('label', 'p', '', 'Label')}</div>`, runtime: true });
     def('progress', { label: 'Progress bars', icon: '▰', group: 'pro', make: () => ({ items: [{ label: 'Design', pct: 90 }, { label: 'Development', pct: 80 }, { label: 'Support', pct: 95 }] }),
         fields: [F.list('items', 'Bars', { label: 'Skill', pct: 75 }, [['label', 'text'], ['pct', 'number']])],
         render: (w, x, H) => `<div class="bars">${H.items().map((it, i) => `<div class="bar"><div class="bar__top">${H.t(`items.${i}.label`, 'span', '', 'Label', { keep: true })}<span>${Math.max(0, Math.min(100, +it.pct || 0))}%</span></div><div class="bar__track"><i style="width:${Math.max(0, Math.min(100, +it.pct || 0))}%"></i></div></div>`).join('')}</div>` });
@@ -182,9 +192,9 @@
         render: (w, x, H) => { const s = Math.max(0, Math.min(5, +w.p.stars || 0)); return `<div class="rating"><span class="stars-v" style="--v:${(s / 5) * 100}%" aria-label="${s} out of 5">★★★★★</span>${H.t('label', 'span', 'muted', 'Label')}</div>`; } });
     def('social', { label: 'Social icons', icon: '＠', group: 'pro', make: () => ({ shape: 'round', items: [{ net: 'facebook', url: '' }, { net: 'instagram', url: '' }, { net: 'linkedin', url: '' }] }),
         fields: [F.select('shape', 'Shape', { round: 'Circle', rounded: 'Rounded', square: 'Square' }), F.list('items', 'Networks', { net: 'x', url: '' }, [['net', 'social'], ['url', 'text']])],
-        render: (w, x) => `<div class="socials sh-${w.p.shape || 'round'}">${(w.p.items || []).map(it => { const n = SOCIAL[it.net] || SOCIAL.facebook, u = safeUrl(it.url); return u || x.edit ? `<a href="${esc(u || '#')}" style="--sc:${n[2]}" title="${n[0]}" aria-label="${n[0]}" rel="noopener">${n[1]}</a>` : ''; }).join('')}</div>` });
+        render: (w, x) => `<div class="socials sh-${pick(w.p.shape, ['round', 'rounded', 'square'])}">${(w.p.items || []).map(it => { const n = SOCIAL[it.net] || SOCIAL.facebook, u = safeUrl(it.url); return u || x.edit ? `<a href="${esc(u || '#')}" style="--sc:${n[2]}" title="${n[0]}" aria-label="${n[0]}" rel="noopener">${n[1]}</a>` : ''; }).join('')}</div>` });
     def('notice', { label: 'Notice box', icon: 'ℹ', group: 'pro', make: () => ({ kind: 'info', title: 'Good to know', text: 'Add an important note, offer or announcement here.' }), fields: [F.select('kind', 'Type', { info: 'Info', success: 'Success', warning: 'Warning', danger: 'Important' })],
-        render: (w, x, H) => `<div class="notice nt-${w.p.kind || 'info'}">${H.t('title', 'b', '', 'Title')}${H.t('text', 'div', 'rt', 'Text', { rich: true })}</div>` });
+        render: (w, x, H) => `<div class="notice nt-${pick(w.p.kind, ['info', 'success', 'warning', 'danger'])}">${H.t('title', 'b', '', 'Title')}${H.t('text', 'div', 'rt', 'Text', { rich: true })}</div>` });
     def('hours', { label: 'Opening hours', icon: '🕘', group: 'pro', make: () => ({ items: [{ day: 'Monday – Friday', time: '9:00 – 18:00' }, { day: 'Saturday', time: '10:00 – 14:00' }, { day: 'Sunday', time: 'Closed' }] }),
         fields: [F.list('items', 'Rows', { day: 'Day', time: 'Time' }, [['day', 'text'], ['time', 'text']])],
         render: (w, x, H) => `<dl class="hours">${H.items().map((it, i) => `<div>${H.t(`items.${i}.day`, 'dt', '', 'Day', { keep: true })}${H.t(`items.${i}.time`, 'dd', '', 'Time', { keep: true })}</div>`).join('')}</dl>` });
@@ -197,7 +207,7 @@
         fields: [F.list('items', 'Tabs', { title: 'New tab', html: '<p>Tab content.</p>' }, [['title', 'text']], 8)],
         render: (w, x, H) => {
             if (x.edit) return `<div class="tabs is-edit">${H.items().map((it, i) => `<div class="tab-edit">${H.t(`items.${i}.title`, 'b', 'tab-label', 'Tab title', { keep: true })}${H.t(`items.${i}.html`, 'div', 'rt tab-panel', 'Content', { rich: true, keep: true })}</div>`).join('')}</div>`;
-            const n = `t${w.id}`;
+            const n = `t${String(w.id).replace(/[^a-z0-9]/gi, '')}`;
             return `<div class="tabs">${H.items().map((it, i) => `<input type="radio" name="${n}" id="${n}-${i}" ${i === 0 ? 'checked' : ''}><label for="${n}-${i}" class="tab-label ${H.K('items.0.title')}">${esc(it.title)}</label>`).join('')}<div class="tab-panels">${H.items().map(it => `<div class="tab-panel rt">${sanitize(it.html)}</div>`).join('')}</div></div>`;
         } });
     def('accordion', { label: 'Accordion', icon: '≡', group: 'pro', make: () => ({ items: [{ title: 'What is included?', html: '<p>Explain what customers get.</p>' }, { title: 'How long does it take?', html: '<p>Give a realistic time frame.</p>' }] }),
@@ -208,7 +218,7 @@
         if (x.edit) return `<div class="car-edit" style="--per:${Math.min(per, 3)}">${items.map(inner).join('')}</div>`;
         return `<div class="car" data-carousel${w.p.auto ? ' data-auto="1"' : ''} style="--per:${per}"><div class="ob-track">${items.map((it, i) => `<div class="car__slide">${inner(it, i)}</div>`).join('')}</div>
             <button type="button" class="car__nav prev" data-prev aria-label="Previous">‹</button><button type="button" class="car__nav next" data-next aria-label="Next">›</button>
-            <div class="car__dots">${items.map((_, i) => `<a href="#" data-dot class="${i === 0 ? 'is-on' : ''}" aria-label="Slide ${i + 1}"></a>`).join('')}</div></div>`;
+            <div class="car__dots">${items.map((_, i) => `<button type="button" data-dot class="${i === 0 ? 'is-on' : ''}" aria-label="Slide ${i + 1}"></button>`).join('')}</div></div>`;
     };
     def('carousel', { label: 'Image slider', icon: '🎞', group: 'pro', make: () => ({ per: 1, auto: true, items: [{ src: '', caption: '' }, { src: '', caption: '' }, { src: '', caption: '' }] }),
         fields: [F.num('per', 'Slides visible at once', 1, 4), F.bool('auto', 'Play automatically'), F.list('items', 'Slides', { src: '', caption: '' }, [['src', 'img'], ['caption', 'text']], 20)],
@@ -227,12 +237,13 @@
     def('countdown', { label: 'Countdown', icon: '⏳', group: 'pro', make: () => ({ date: plus7(), done: 'This offer has ended.' }), fields: [F.date('date', 'Counts down to'), F.text('done', 'Text when finished')],
         render: (w, x) => {
             const left = Math.max(0, (Date.parse(w.p.date) - Date.now()) / 1000) || 0, v = { d: Math.floor(left / 86400), h: Math.floor(left / 3600) % 24, m: Math.floor(left / 60) % 60, s: Math.floor(left % 60) };
-            return `<div class="cd"${x.edit ? '' : ` data-countdown="${esc(w.p.date)}"`}>${[['d', 'Days'], ['h', 'Hours'], ['m', 'Minutes'], ['s', 'Seconds']].map(([k, l]) => `<div><b data-u="${k}">${String(v[k]).padStart(2, '0')}</b><span>${l}</span></div>`).join('')}<p class="cd__done">${esc(w.p.done)}</p></div>`;
+            const at = Date.parse(w.p.date); // the author's local time, saved as an exact moment
+            return `<div class="cd"${x.edit || !at ? '' : ` data-countdown="${new Date(at).toISOString()}"`}>${[['d', 'Days'], ['h', 'Hours'], ['m', 'Minutes'], ['s', 'Seconds']].map(([k, l]) => `<div><b data-u="${k}">${String(v[k]).padStart(2, '0')}</b><span>${l}</span></div>`).join('')}<p class="cd__done">${esc(w.p.done)}</p></div>`;
         }, runtime: true });
     def('animhead', { label: 'Animated headline', icon: 'Aa', group: 'pro', make: () => ({ before: 'We build', words: 'websites\nonline stores\nmobile apps', after: 'that grow your business', tag: 'h2' }),
         fields: [F.area('words', 'Rotating words (one per line)'), F.select('tag', 'HTML tag', { h1: 'H1', h2: 'H2', h3: 'H3' })],
         render: (w, x, H) => { const words = String(w.p.words || '').split('\n').map(s => s.trim()).filter(Boolean); const tag = ['h1', 'h2', 'h3'].includes(w.p.tag) ? w.p.tag : 'h2';
-            return `<${tag} class="ahead hd">${H.t('before', 'span', '', 'Text before')} <span class="ahead__w"${x.edit ? '' : ' data-rotate'}>${x.edit ? `<span class="is-on">${esc(words.join(' / '))}</span>` : words.map((wd, i) => `<span class="${i === 0 ? 'is-on' : ''}">${esc(wd)}</span>`).join('')}</span> ${H.t('after', 'span', '', 'Text after')}</${tag}>`; }, runtime: true });
+            return `<${tag} class="ahead hd"${x.edit ? '' : ` aria-label="${esc([w.p.before, words.join(', '), w.p.after].filter(Boolean).join(' '))}"`}>${H.t('before', 'span', '', 'Text before')} <span class="ahead__w"${x.edit ? '' : ' data-rotate aria-hidden="true"'}>${x.edit ? `<span class="is-on">${esc(words.join(' / '))}</span>` : words.map((wd, i) => `<span class="${i === 0 ? 'is-on' : ''}">${esc(wd)}</span>`).join('')}</span> ${H.t('after', 'span', '', 'Text after')}</${tag}>`; }, runtime: true });
     def('form', { label: 'Contact form', icon: '✉', group: 'pro', make: () => ({ btn: 'Send message', phone: true }), fields: [F.text('btn', 'Button text'), F.bool('phone', 'Ask for a phone number')],
         render: (w, x) => formHtml(x, w.p) });
 
@@ -254,7 +265,7 @@
         } });
     def('paybtn', { label: 'Buy button', icon: '💳', group: 'funnel', make: () => ({ text: 'Yes! Get it now', sub: '30-day money-back guarantee', align: 'center', no: '' }),
         fields: [F.text('sub', 'Small text under the button'), F.select('align', 'Alignment', { left: 'Left', center: 'Centre', right: 'Right', full: 'Full width' }), F.text('no', '“No thanks” link text (upsells)')],
-        render: (w, x, H) => `<div class="paybtn al-${w.p.align || 'center'}"><a class="btn btn-lg ${H.K('text')}" href="${esc(href({ to: 'pay' }, x))}"${H.E('text', 'Button')}>${esc(w.p.text)}</a>${H.t('sub', 'small', 'muted', 'Small print')}${w.p.no ? `<a class="paybtn__no" href="${esc(href({ to: 'next' }, x))}">${esc(w.p.no)}</a>` : ''}</div>` });
+        render: (w, x, H) => `<div class="paybtn al-${pick(w.p.align, ['center', 'left', 'right', 'full'])}"><a class="btn btn-lg ${H.K('text')}" href="${esc(href({ to: 'pay' }, x))}"${H.E('text', 'Button')}>${esc(w.p.text)}</a>${H.t('sub', 'small', 'muted', 'Small print')}${w.p.no ? `<a class="paybtn__no" href="${esc(href({ to: 'next' }, x))}">${esc(w.p.no)}</a>` : ''}</div>` });
     const formHtml = (x, p) => {
         if (x.P.site.formAction) return `<form class="form" method="post" action="${esc(x.P.site.formAction)}">
             <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
@@ -274,11 +285,11 @@
         make: () => ({ v: 'center', eyebrow: 'Your tagline here', title: 'A clear headline that says what you do', text: 'One or two sentences about who you help and why they should choose you.', btn: 'Get in touch', link: { to: 'contact' }, btn2: '', link2: { to: 'url', val: '' }, image: '' }),
         fields: [F.text('eyebrow', 'Small line above the headline'), F.link('link', 'Button link'), F.text('btn2', 'Second button text (optional)'), F.link('link2', 'Second button link'), F.img('image', 'Photo')],
         render: (w, x, H) => {
-            const v = w.v || 'center', bg = v === 'cover' && w.p.image ? ` style="background-image:linear-gradient(rgba(10,15,30,.62),rgba(10,15,30,.62)),url('${esc(w.p.image)}')"` : '';
+            const v = pick(w.v, ['center', 'split', 'cover']), img = cssUrl(w.p.image), bg = v === 'cover' && img ? ` style="background-image:linear-gradient(rgba(10,15,30,.62),rgba(10,15,30,.62)),url('${img}')"` : '';
             const initial = (x.P.site.name || 'A').trim()[0]?.toUpperCase() || 'A';
             const copy = `<div class="hero-copy">${H.t('eyebrow', 'p', 'eyebrow', 'Tagline')}${H.t('title', 'h1', '', 'Your headline')}${H.t('text', 'p', 'lead', 'A short description', { ml: true })}<div class="actions">${H.btn('btn', 'link')}${H.btn('btn2', 'link2', 'btn btn-ghost')}</div></div>`;
             const media = v === 'split' ? H.pic('image', x.P.site.name, 'pic hero-pic', `<div class="pic hero-pic pic-fill" aria-hidden="true">${esc(initial)}</div>`) : '';
-            return `<div class="wrap hero-${v}"${bg}${v === 'cover' && x.edit ? ` data-img="${w.id}|image"` : ''}>${copy}${media}</div>`;
+            return `<div class="wrap hero-${v}"${bg}${v === 'cover' && x.edit ? ` data-img="${esc(w.id)}|image"` : ''}>${copy}${media}</div>`;
         } });
     def('features', { label: 'Features', icon: '⭐', group: 'section', full: true, make: () => ({ title: 'Why choose us', intro: '', items: [{ icon: '⚡', title: 'Fast', text: 'Explain this benefit in a sentence.' }, { icon: '💎', title: 'Quality', text: 'Explain this benefit in a sentence.' }, { icon: '🤝', title: 'Friendly', text: 'Explain this benefit in a sentence.' }] }),
         fields: [F.area('intro', 'Intro text (optional)'), F.list('items', 'Features', { icon: '✅', title: 'New feature', text: 'Describe it.' }, [['icon', 'icon'], ['title', 'text']])],
@@ -349,8 +360,10 @@
     const isFull = s => s.cols.length === 1 && s.cols[0].widgets.length > 0 && s.cols[0].widgets.every(w => W[w.type]?.full);
 
     /** Upgrade a v2 project (blocks) to v3 (sections > columns > widgets). */
-    const migrate = P => {
-        if (P.v === 3) return P;
+    const migrate = P => normalize(upgrade(P));
+    const upgrade = P => {
+        if (!P || typeof P !== 'object' || !Array.isArray(P.pages)) throw new Error('Not a project');
+        if (+P.v === 3 || P.pages.some(pg => Array.isArray(pg.sections))) { P.v = 3; return P; }
         const s = P.site || {};
         P.site = { ...defaultsSite(), ...s, colors: { ...defaultsSite().colors, primary: hex(s.color) }, fonts: { ...defaultsSite().fonts, heading: s.font || 'Poppins' } };
         P.pages.forEach(pg => {
@@ -472,30 +485,30 @@
     /* ================================================================ styles → CSS */
     const FONTS = { Poppins: 'Poppins', Inter: 'Inter', 'DM Sans': 'DM Sans', Outfit: 'Outfit', Montserrat: 'Montserrat', 'Plus Jakarta Sans': 'Plus Jakarta Sans', Lato: 'Lato', 'Open Sans': 'Open Sans', Raleway: 'Raleway', 'Playfair Display': 'Playfair Display (elegant)', Merriweather: 'Merriweather (classic)', Lora: 'Lora (classic)', 'Space Grotesk': 'Space Grotesk (tech)', Caveat: 'Caveat (handwritten)' };
     const GLOBAL = ['primary', 'secondary', 'accent', 'text', 'bg'];
-    const col = v => (String(v).startsWith('g:') ? `var(--${v.slice(2)})` : String(v).replace(/[;{}<]/g, ''));
+    const col = v => { v = String(v); if (v.startsWith('g:')) return GLOBAL.includes(v.slice(2)) ? `var(--${v.slice(2)})` : 'inherit'; return /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\)|hsla?\([\d\s.,%deg]+\)|[a-z]{3,20})$/i.test(v.trim()) ? v.trim() : 'inherit'; };
     const SHADOWS = { sm: '0 4px 14px rgba(15,23,42,.08)', md: '0 14px 34px -12px rgba(15,23,42,.22)', lg: '0 30px 60px -24px rgba(15,23,42,.35)', glow: '0 0 0 1px var(--primary),0 18px 40px -16px var(--primary)' };
-    const num = v => (v === '' || v === undefined || v === null || isNaN(+v) ? null : +v);
+    const num = v => (v === undefined || v === null || String(v).trim() === '' || !isFinite(+v) ? null : +v);
     /** One device's style values → CSS declarations. */
     const decl = (s, isSection) => {
         const o = [];
-        if (s.family) o.push(`font-family:${s.family === 'heading' ? 'var(--hf)' : s.family === 'body' ? 'var(--bf)' : `'${cssSafe(s.family).replace(/'/g, '')}'`},sans-serif`);
+        if (s.family && (s.family === 'heading' || s.family === 'body' || has(FONTS, s.family))) o.push(`font-family:${s.family === 'heading' ? 'var(--hf)' : s.family === 'body' ? 'var(--bf)' : `'${s.family}'`},sans-serif`);
         if (num(s.size) !== null) o.push(`font-size:${num(s.size)}px`);
-        if (s.weight) o.push(`font-weight:${+s.weight || 400}`);
+        if (num(s.weight) !== null) o.push(`font-weight:${Math.min(900, Math.max(100, num(s.weight)))}`);
         if (num(s.lh) !== null) o.push(`line-height:${num(s.lh)}`);
         if (num(s.ls) !== null) o.push(`letter-spacing:${num(s.ls)}px`);
-        if (s.transform) o.push(`text-transform:${cls(s.transform)}`);
+        if (['uppercase', 'lowercase', 'capitalize'].includes(s.transform)) o.push(`text-transform:${s.transform}`);
         if (s.italic) o.push('font-style:italic');
-        if (s.align) o.push(`text-align:${cls(s.align)}`);
-        if (s.color) o.push(`color:${col(s.color)}`);
-        const bgImg = s.bgImg ? `url("${String(s.bgImg).replace(/["\\]/g, '')}")` : '';
+        if (['left', 'center', 'right', 'justify'].includes(s.align)) o.push(`text-align:${s.align}`);
+        if (s.color) o.push(`color:${col(s.color)};--text:${col(s.color)};--muted:${col(s.color)}`); // headings and body text follow
+        const bgImg = cssUrl(s.bgImg) ? `url("${cssUrl(s.bgImg)}")` : '';
         if (s.bgType === 'gradient' && s.g1 && s.g2) o.push(`background:linear-gradient(${num(s.gAngle) ?? 135}deg,${col(s.g1)},${col(s.g2)})`);
         else if (s.bgType === 'image' && bgImg) o.push(`background:${s.overlay ? `linear-gradient(${col(s.overlay)},${col(s.overlay)}),` : ''}${bgImg} center/cover no-repeat${s.fixed ? ' fixed' : ''}`);
         else if (s.bg && s.bgType !== 'none') o.push(`background:${col(s.bg)}`);
         ['pt', 'pr', 'pb', 'pl'].forEach((k, i) => { if (num(s[k]) !== null) o.push(`padding-${['top', 'right', 'bottom', 'left'][i]}:${num(s[k])}px`); });
         ['mt', 'mb'].forEach((k, i) => { if (num(s[k]) !== null) o.push(`margin-${['top', 'bottom'][i]}:${num(s[k])}px`); });
-        if (num(s.radius) !== null) o.push(`border-radius:${num(s.radius)}px;overflow:hidden`);
+        if (num(s.radius) !== null) o.push(`border-radius:${num(s.radius)}px`);
         if (num(s.bw) !== null && +s.bw > 0) o.push(`border:${num(s.bw)}px ${['solid', 'dashed', 'dotted'].includes(s.bs) ? s.bs : 'solid'} ${s.bc ? col(s.bc) : 'var(--border)'}`);
-        if (s.shadow && SHADOWS[s.shadow]) o.push(`box-shadow:${SHADOWS[s.shadow]}`);
+        if (has(SHADOWS, s.shadow)) o.push(`box-shadow:${SHADOWS[s.shadow]}`);
         if (num(s.maxw) !== null) o.push(`max-width:${num(s.maxw)}px;margin-inline:auto`);
         if (num(s.minH) !== null) o.push(`min-height:${num(s.minH)}px;display:flex;flex-direction:column;justify-content:${s.valign === 'bottom' ? 'flex-end' : s.valign === 'top' ? 'flex-start' : 'center'}`);
         else if (s.valign && !isSection) o.push(`align-self:${s.valign === 'bottom' ? 'end' : s.valign === 'middle' ? 'center' : 'start'}`);
@@ -508,15 +521,16 @@
         const rules = { d: [], t: [], m: [] }, custom = [];
         const visit = (id, st, adv, isSection) => {
             Object.entries(st || {}).forEach(([target, dev]) => {
+                if (!/^[\w.*]{1,60}$/.test(target)) return;
                 const sel = `.x-${id}` + (target === '_' ? '' : ` .${classKey(target)}`);
                 ['d', 't', 'm'].forEach(k => { const css = dev?.[k] && decl(dev[k], isSection && target === '_'); if (css) rules[k].push(`${sel}{${css}}`); });
                 // Text alignment on a section/column also centres buttons and lists inside it
-                ['d', 't', 'm'].forEach(k => { const a = dev?.[k]?.align; if (a && target === '_') rules[k].push(`.x-${id} .actions,.x-${id} .btn-wrap{justify-content:${a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start'}}`); });
+                ['d', 't', 'm'].forEach(k => { const a = dev?.[k]?.align; if (a && target === '_') rules[k].push(`.x-${id} .actions,.x-${id} .btn-wrap.al-auto{justify-content:${a === 'center' ? 'center' : a === 'right' ? 'flex-end' : 'flex-start'}}`); });
             });
             if (adv?.css) custom.push(cssSafe(adv.css).replace(/\bselector\b/g, `.x-${id}`));
         };
         [...pg.sections, ...(pg.ab?.on ? pg.sectionsB || [] : [])].forEach(s => { visit(s.id, s.st, s.adv, true); s.cols.forEach(c => { visit(c.id, c.st, c.adv); c.widgets.forEach(w => visit(w.id, w.st, w.adv)); }); });
-        return rules.d.join('') + (rules.t.length ? `${BP.t}{${rules.t.join('')}}` : '') + (rules.m.length ? `${BP.m}{${rules.m.join('')}}` : '') + custom.join('\n');
+        return cssSafe(rules.d.join('') + (rules.t.length ? `${BP.t}{${rules.t.join('')}}` : '') + (rules.m.length ? `${BP.m}{${rules.m.join('')}}` : '') + custom.join('\n'));
     };
 
     const siteCss = P => {
@@ -565,8 +579,8 @@ h1,h2,h3,h4,.hd{font-family:var(--hf),var(--bf),sans-serif;line-height:1.15;marg
 .embed{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;margin-top:20px;background:#000}.embed iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.map{aspect-ratio:21/9;background:var(--alt)}
 .prose .rt{color:var(--muted)}.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}.contact-grid .intro{text-align:left;margin:0 0 20px}.addr{color:var(--muted);margin-top:18px}
 .form{display:grid;gap:12px}.form label{display:grid;gap:6px;font-weight:600;font-size:.9rem}.form input,.form textarea{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit}.form input:focus,.form textarea:focus{outline:2px solid var(--primary);outline-offset:1px}.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
-.iconbox{display:flex;flex-direction:column;gap:12px}.iconbox.lay-left{flex-direction:row;align-items:flex-start;text-align:left}.iconbox__i{width:60px;height:60px;flex:none;border-radius:16px;display:grid;place-items:center;background:var(--soft);color:var(--primary);font-size:1.7rem}.iconbox h3{margin:0 0 6px}.iconbox .rt{color:var(--muted)}
-.s .x-al-c .iconbox__i{margin-inline:auto}.imagebox h3{margin:16px 0 6px}.imagebox p{margin:0}
+.iconbox{display:block}.iconbox:not(.lay-left) .iconbox__i{display:inline-grid;margin-bottom:12px}.iconbox.lay-left{display:flex;gap:12px}.iconbox.lay-left{flex-direction:row;align-items:flex-start;text-align:left}.iconbox__i{width:60px;height:60px;flex:none;border-radius:16px;display:grid;place-items:center;background:var(--soft);color:var(--primary);font-size:1.7rem}.iconbox h3{margin:0 0 6px}.iconbox .rt{color:var(--muted)}
+.imagebox h3{margin:16px 0 6px}.imagebox p{margin:0}
 .iconlist{list-style:none;margin:0;padding:0;display:grid;gap:10px}.iconlist li{display:flex;gap:10px;align-items:flex-start}.iconlist .ic{color:var(--primary);font-size:1.15rem;margin-top:.2em}
 .counter b{display:block;font:800 clamp(2.2rem,4vw,3rem)/1.1 var(--hf),sans-serif;color:var(--primary)}.counter p{margin:6px 0 0;color:var(--muted)}.bg-brand .counter b,.bg-dark .counter b{color:#fff}
 .bars{display:grid;gap:16px}.bar__top{display:flex;justify-content:space-between;font-weight:600;margin-bottom:6px}.bar__track{height:10px;border-radius:999px;background:var(--soft);overflow:hidden}.bar__track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),var(--secondary))}
@@ -580,7 +594,7 @@ ${Array.from({ length: 8 }, (_, i) => `.tabs>input:nth-of-type(${i + 1}):checked
 .tabs>input:focus-visible+label{outline:2px solid var(--primary);outline-offset:2px}.tabs.is-edit{display:grid;gap:12px}.tabs.is-edit .tab-panel{display:block}.tab-edit .tab-label{display:inline-block;margin-bottom:8px;background:var(--primary);color:var(--ink)}
 .car{position:relative}.ob-track{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - (var(--per) - 1) * 20px) / var(--per));gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}.ob-track::-webkit-scrollbar{display:none}.car__slide{scroll-snap-align:start}
 .slide-pic{aspect-ratio:16/9}.car__nav{position:absolute;top:calc(50% - 40px);width:44px;height:44px;border-radius:50%;border:0;background:var(--card);color:var(--text);font-size:1.6rem;box-shadow:0 8px 20px rgba(15,23,42,.18);cursor:pointer}.car__nav.prev{left:-14px}.car__nav.next{right:-14px}
-.car__dots{display:flex;justify-content:center;gap:8px;margin-top:14px}.car__dots a{width:10px;height:10px;border-radius:50%;background:var(--border)}.car__dots a.is-on{background:var(--primary);width:24px;border-radius:999px}
+.car__dots{display:flex;justify-content:center;gap:8px;margin-top:14px}.car__dots button{width:10px;height:10px;padding:0;border:0;cursor:pointer;border-radius:50%;background:var(--border)}.car__dots button.is-on{background:var(--primary);width:24px;border-radius:999px}
 .car-edit{display:grid;grid-template-columns:repeat(var(--per),1fr);gap:16px}
 .flip{perspective:1200px;min-height:260px}.flip__in{position:relative;min-height:260px;transition:transform .7s;transform-style:preserve-3d}.flip:hover .flip__in,.flip:focus-within .flip__in{transform:rotateY(180deg)}
 .flip__f,.flip__b{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px;padding:26px;border-radius:var(--r);backface-visibility:hidden}
@@ -618,28 +632,30 @@ ${cssSafe(s.css || '')}`;
     };
     const renderWidget = (w, x) => {
         const d = W[w.type]; if (!d) return '';
-        return `<div ${advAttrs(w, x, `w w-${w.type} x-${w.id}`)}${x.edit ? ` data-w="${w.id}"` : ''}>${d.render(w, x, helpers(w, x))}</div>`;
+        return `<div ${advAttrs(w, x, `w w-${w.type} x-${w.id}`)}${x.edit ? ` data-w="${esc(w.id)}"` : ''}>${d.render(w, x, helpers(w, x))}</div>`;
     };
-    const sectionBg = (s, i) => (s.bg && s.bg !== 'auto' ? s.bg : (i % 2 ? 'alt' : 'plain'));
+    const sectionBg = (s, i) => (['plain', 'alt', 'soft', 'brand', 'dark'].includes(s.bg) ? s.bg : (i % 2 ? 'alt' : 'plain'));
     const renderSection = (s, i, x) => {
         const full = isFull(s), types = s.cols.flatMap(c => c.widgets.map(w => w.type));
-        const anchor = !s.adv?.id && (types.includes('contact') || types.includes('form')) ? ' id="contact"' : '';
+        const contactId = x.variant === 'b' ? 'contact-b' : 'contact', isContact = types.includes('contact') || types.includes('form');
+        const anchor = isContact && !s.adv?.id ? ` id="${contactId}"` : '';
+        const innerAnchor = isContact && s.adv?.id ? `<span id="${contactId}" class="anchor"></span>` : ''; // custom ID on the section: keep #contact working
         const first = full ? ` s-${s.cols[0].widgets[0].type}` : '';
         let inner;
         if (full) inner = s.cols[0].widgets.map(w => renderWidget(w, x)).join('');
         else {
-            const grid = (LAYOUTS[s.layout] || LAYOUTS[1])[0];
+            const grid = (has(LAYOUTS, s.layout) ? LAYOUTS[s.layout] : LAYOUTS[1])[0];
             inner = `<div class="wrap${s.width === 'full' ? ' full' : ''}"><div class="cols c-${s.cols.length}" style="grid-template-columns:${grid}">${s.cols.map(c =>
-                `<div ${advAttrs(c, x, `col x-${c.id}`)}${x.edit ? ` data-c="${c.id}"` : ''}>${c.widgets.map(w => renderWidget(w, x)).join('') || (x.edit ? '<div class="ed-empty">＋ Drag a widget here<br><small>or pick one in the Add tab</small></div>' : '')}</div>`).join('')}</div></div>`;
+                `<div ${advAttrs(c, x, `col x-${c.id}`)}${x.edit ? ` data-c="${esc(c.id)}"` : ''}>${c.widgets.map(w => renderWidget(w, x)).join('') || (x.edit ? '<div class="ed-empty">＋ Drag a widget here<br><small>or pick one in the Add tab</small></div>' : '')}</div>`).join('')}</div></div>`;
         }
-        return `<section ${advAttrs(s, x, `s${full ? ' s-full' : ''}${first} bg-${sectionBg(s, i)} x-${s.id}`)}${anchor}${x.edit ? ` data-s="${s.id}"` : ''}>${inner}</section>`;
+        return `<section ${advAttrs(s, x, `s${full ? ' s-full' : ''}${first} bg-${sectionBg(s, i)} x-${s.id}`)}${anchor}${x.edit ? ` data-s="${esc(s.id)}"` : ''}>${innerAnchor}${inner}</section>`;
     };
     const header = x => {
         const s = x.P.site, name = s.name || 'Your business', menu = x.P.pages.filter(p => p.menu);
         const logo = s.logo ? `<img src="${esc(s.logo)}" alt="${esc(name)}" class="logo-pic">` : `<span class="mark">${esc(name.trim()[0]?.toUpperCase() || 'A')}</span>`;
         const bar = s.announce?.on && s.announce.text ? `<div class="ob-bar"${x.edit ? ' data-hdr' : ''}><span${x.edit ? ' data-e="site|announce.text" data-ph="Announcement"' : ''}>${esc(s.announce.text)}</span>${s.announce.linkText ? ` <a href="${esc(href(s.announce.link, x))}">${esc(s.announce.linkText)}</a>` : ''}</div>` : '';
-        return `${bar}<header class="nav${s.sticky !== false ? ' is-sticky' : ''}"${x.edit ? ' data-hdr' : ''}><div class="wrap"><a class="brand" href="${x.edit ? '#' : pageHref('index', x)}"><span${x.edit ? ' data-img="site|logo"' : ''}>${logo}</span><span${x.edit ? ' data-e="site|name" data-ph="Business name"' : ''}>${esc(name)}</span></a>
-            <nav>${menu.length > 1 ? menu.map(p => `<a href="${x.edit ? '#' : pageHref(p.slug, x)}"${x.edit ? ` data-goto="${p.id}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('') : ''}
+        return `${bar}<header class="nav${s.sticky !== false ? ' is-sticky' : ''}"${x.edit ? ' data-hdr' : ''}><div class="wrap"><a class="brand" href="${x.edit ? '#' : esc(pageHref('index', x))}"><span${x.edit ? ' data-img="site|logo"' : ''}>${logo}</span><span${x.edit ? ' data-e="site|name" data-ph="Business name"' : ''}>${esc(name)}</span></a>
+            <nav>${menu.length > 1 ? menu.map(p => `<a href="${x.edit ? '#' : esc(pageHref(p.slug, x))}"${x.edit ? ` data-goto="${esc(p.id)}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('') : ''}
             ${s.navBtn ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}</nav></div></header>`;
     };
     const footer = x => {
@@ -671,8 +687,9 @@ ${cssSafe(s.css || '')}`;
         const ab = !x.edit && pg.ab?.on && pg.sectionsB?.length;
         // Funnel pages report views per step to owlvix (published only); A/B pages carry both versions
         const fs = P.kind === 'funnel' && mode === 'publish' && opts.statsUrl ? ` data-fs-url="${esc(opts.statsUrl)}" data-fs-site="${esc(s.publishSlug || '')}" data-fs-step="${esc(pg.slug)}"` : '';
+        const xB = { ...x, variant: 'b', page: new Proxy(pg, { get: (t, k) => (k === 'sections' ? t.sectionsB : t[k]) }) }; // B's links look at B's own sections
         const body = ab
-            ? `<div data-variant="a">${pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n')}</div><div data-variant="b">${pg.sectionsB.map((sc, i) => renderSection(sc, i, { ...x, variant: 'b' })).join('\n')}</div>`
+            ? `<div data-variant="a">${pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n')}</div><div data-variant="b">${pg.sectionsB.map((sc, i) => renderSection(sc, i, xB)).join('\n')}</div>`
             : pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n');
         return `<!doctype html>
 <html lang="en"${ab ? ' class="ob-ab"' : ''}${fs}>
@@ -699,11 +716,123 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
 </html>`;
     };
 
+    /* ================================================================ clean-up of untrusted projects
+       Projects come from localStorage, opened .owlvix.json files and saved templates — all editable by anyone. The
+       editor canvas runs on owlvix.com, so every value is checked or replaced here before it can reach the page. */
+    const STR = (v, max = 2000) => (typeof v === 'string' ? v.slice(0, max) : '');
+    const ID = v => (typeof v === 'string' && /^[a-z0-9]{1,24}$/i.test(v) ? v : uid());
+    const IMG = v => (typeof v === 'string' && (/^data:image\/(png|jpe?g|gif|webp|avif);base64,[a-z0-9+/=]+$/i.test(v) || /^https:\/\/[^\s"'<>()\\]+$/i.test(v)) ? v : '');
+    const COLOR = v => (typeof v === 'string' && (/^#[0-9a-f]{3,8}$/i.test(v) || (/^g:/.test(v) && GLOBAL.includes(v.slice(2))) || /^rgba?\([\d\s.,%]+\)$/i.test(v)) ? v : '');
+    const LINK = l => {
+        if (!l || typeof l !== 'object' || !has(LINK_TYPES, l.to) && !has(FUNNEL_LINKS, l.to)) return { to: 'contact' };
+        return { to: l.to, val: STR(l.val, 500) };
+    };
+    const STYLE_KEYS = {
+        num: ['size', 'lh', 'ls', 'pt', 'pr', 'pb', 'pl', 'mt', 'mb', 'radius', 'bw', 'maxw', 'minH', 'opacity', 'gAngle', 'weight'],
+        color: ['color', 'bg', 'g1', 'g2', 'bc', 'overlay'],
+        enums: { family: null, transform: ['uppercase', 'lowercase', 'capitalize'], italic: ['1'], align: ['left', 'center', 'right', 'justify'], bs: ['solid', 'dashed', 'dotted'],
+            shadow: Object.keys(SHADOWS), valign: ['top', 'middle', 'bottom'], bgType: ['none', 'color', 'gradient', 'image'], fixed: ['1'] },
+    };
+    const STYLES = st => {
+        const out = {};
+        if (!st || typeof st !== 'object') return out;
+        Object.entries(st).forEach(([target, dev]) => {
+            if (!/^[\w.*]{1,60}$/.test(target) || !dev || typeof dev !== 'object') return;
+            out[target] = {};
+            ['d', 't', 'm'].forEach(k => {
+                const src = dev[k] && typeof dev[k] === 'object' ? dev[k] : {}, clean = {};
+                STYLE_KEYS.num.forEach(n => { if (src[n] !== undefined && src[n] !== '' && isFinite(+src[n])) clean[n] = +src[n]; });
+                STYLE_KEYS.color.forEach(n => { const c = COLOR(src[n]); if (c) clean[n] = c; });
+                Object.entries(STYLE_KEYS.enums).forEach(([n, allowed]) => {
+                    const v = src[n] === undefined ? undefined : String(src[n]);
+                    if (v === undefined) return;
+                    if (n === 'family' ? ['heading', 'body'].includes(v) || has(FONTS, v) : allowed.includes(v)) clean[n] = v;
+                });
+                const img = IMG(src.bgImg); if (img) clean.bgImg = img;
+                out[target][k] = clean;
+            });
+        });
+        return out;
+    };
+    const ADV = a => {
+        a = a && typeof a === 'object' ? a : {};
+        return { id: cls(STR(a.id, 40)).replace(/\s+/g, '-'), cls: cls(STR(a.cls, 120)), css: cssSafe(STR(a.css, 5000)), anim: has(ANIMS, a.anim) ? a.anim : '',
+            delay: isFinite(+a.delay) ? Math.max(0, Math.min(5000, +a.delay)) : 0, hide: { d: !!a.hide?.d, t: !!a.hide?.t, m: !!a.hide?.m } };
+    };
+    /** Widget content: strings stay strings (escaped when rendered), images must be real images, links/selects/variants checked. */
+    const CONTENT = (p, d) => {
+        const out = {};
+        const clean = (v, depth = 0) => {
+            if (typeof v === 'string') return v.slice(0, 20000);
+            if (typeof v === 'number' || typeof v === 'boolean') return v;
+            if (Array.isArray(v) && depth < 3) return v.slice(0, 50).map(x2 => clean(x2, depth + 1)).filter(x2 => x2 !== undefined);
+            if (v && typeof v === 'object' && depth < 3) { const o = {}; Object.keys(v).slice(0, 40).forEach(k => { if (/^[a-zA-Z_]\w{0,30}$/.test(k)) o[k] = clean(v[k], depth + 1); }); return o; }
+            return undefined;
+        };
+        Object.assign(out, clean(p && typeof p === 'object' ? p : {}) || {});
+        const IMAGE_KEYS = ['image', 'src', 'photo', 'before', 'after', 'logo'];
+        const walk = o => { if (!o || typeof o !== 'object') return; Object.keys(o).forEach(k => { if (IMAGE_KEYS.includes(k)) o[k] = IMG(o[k]); else if (k === 'link' || k === 'link2') o[k] = LINK(o[k]); else walk(o[k]); }); };
+        walk(out);
+        (d.fields || []).forEach(f => { if (f.type === 'select' && !has(f.options, out[f.k])) out[f.k] = Object.keys(f.options)[0]; });
+        return out;
+    };
+    const WIDGET = w => {
+        if (!w || typeof w !== 'object' || !has(W, w.type)) return null;
+        const d = W[w.type];
+        return { id: ID(w.id), type: w.type, v: d.variants ? (has(d.variants, w.v) ? w.v : Object.keys(d.variants)[0]) : '', p: CONTENT(w.p, d), st: STYLES(w.st), adv: ADV(w.adv) };
+    };
+    const SECTION = s => {
+        if (!s || typeof s !== 'object') return null;
+        const cols = (Array.isArray(s.cols) ? s.cols : []).slice(0, 6).filter(c => c && typeof c === 'object')
+            .map(c => ({ id: ID(c.id), st: STYLES(c.st), adv: ADV(c.adv), widgets: (Array.isArray(c.widgets) ? c.widgets : []).map(WIDGET).filter(Boolean) }));
+        if (!cols.length) return null;
+        return { id: ID(s.id), layout: has(LAYOUTS, s.layout) ? s.layout : String(Math.min(4, cols.length)), width: s.width === 'full' ? 'full' : 'boxed',
+            bg: ['auto', 'plain', 'alt', 'soft', 'brand', 'dark'].includes(s.bg) ? s.bg : 'auto', st: STYLES(s.st), adv: ADV(s.adv), cols };
+    };
+    const normalize = P => {
+        const s = P.site && typeof P.site === 'object' ? P.site : {}, d = defaultsSite();
+        const site = {
+            ...d, name: STR(s.name, 60) || d.name, logo: IMG(s.logo),
+            colors: Object.fromEntries(GLOBAL.map(k => [k, /^#[0-9a-f]{6}$/i.test(s.colors?.[k] || '') ? s.colors[k] : d.colors[k]])),
+            fonts: { heading: has(FONTS, s.fonts?.heading) ? s.fonts.heading : d.fonts.heading, body: has(FONTS, s.fonts?.body) ? s.fonts.body : d.fonts.body, base: isFinite(+s.fonts?.base) ? Math.max(13, Math.min(22, +s.fonts.base)) : d.fonts.base },
+            theme: s.theme === 'dark' ? 'dark' : 'light', radius: ['round', 'soft', 'sharp'].includes(s.radius) ? s.radius : 'round', buttons: ['pill', 'rounded', 'square'].includes(s.buttons) ? s.buttons : 'pill',
+            navBtn: STR(s.navBtn, 40), navLink: LINK(s.navLink), sticky: s.sticky !== false, backTop: !!s.backTop,
+            announce: { on: !!s.announce?.on, text: STR(s.announce?.text, 200), linkText: STR(s.announce?.linkText, 40), link: LINK(s.announce?.link) },
+            footer: STR(s.footer, 500), social: Object.fromEntries(Object.keys(SOCIAL).map(k => [k, /^https?:\/\/[^\s"'<>]+$/i.test(s.social?.[k] || '') ? s.social[k] : ''])),
+            formAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.formAction || '') ? s.formAction : '',
+            leadAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.leadAction || '') ? s.leadAction : '',
+            leadFormId: /^[a-z0-9]{16}$/.test(s.leadFormId || '') ? s.leadFormId : '', ref: /^[a-z0-9]{6,20}$/.test(s.ref || '') ? s.ref : undefined,
+            publishSlug: slugify(STR(s.publishSlug, 40)) || undefined, css: cssSafe(STR(s.css, 20000)),
+        };
+        const seen = new Set();
+        const pages = (P.pages || []).slice(0, 10).filter(pg => pg && typeof pg === 'object').map((pg, i) => {
+            let slug = i === 0 ? 'index' : (pg.slug === 'index' ? 'index' : slugify(STR(pg.slug, 40))) || 'page-' + (i + 1);
+            if (i > 0 && slug === 'index') slug = 'page-' + (i + 1);
+            while (seen.has(slug)) slug += '-2';
+            seen.add(slug);
+            const pop = pg.popup && typeof pg.popup === 'object' ? pg.popup : {};
+            return {
+                id: ID(pg.id), slug, title: STR(pg.title, 40) || 'Page ' + (i + 1), menu: pg.menu !== false,
+                seo: { title: STR(pg.seo?.title, 70), description: STR(pg.seo?.description, 170) },
+                popup: { ...defaultsPopup(), on: !!pop.on, trigger: ['delay', 'exit', 'scroll', 'click'].includes(pop.trigger) ? pop.trigger : 'delay', delay: isFinite(+pop.delay) ? Math.max(1, Math.min(120, +pop.delay)) : 6,
+                    title: STR(pop.title, 120), text: STR(pop.text, 500), btn: STR(pop.btn, 40), link: LINK(pop.link), image: IMG(pop.image) },
+                type: has(STEP_TYPES, pg.type) ? pg.type : (P.kind === 'funnel' ? 'custom' : undefined),
+                next: slugify(STR(pg.next, 40)), pay: /^https:\/\/[^\s"'<>]+$/i.test(pg.pay || '') ? pg.pay : '',
+                ab: { on: !!pg.ab?.on }, sectionsB: Array.isArray(pg.sectionsB) ? pg.sectionsB.map(SECTION).filter(Boolean) : null,
+                sections: (Array.isArray(pg.sections) ? pg.sections : []).map(SECTION).filter(Boolean),
+            };
+        });
+        if (!pages.length) throw new Error('Not a project');
+        // Ids must be unique on a page (a copied project could repeat them)
+        pages.forEach(pg => { const ids = new Set(); [...pg.sections, ...(pg.sectionsB || [])].forEach(sc => [sc, ...sc.cols, ...sc.cols.flatMap(c => c.widgets)].forEach(o => { while (ids.has(o.id)) o.id = uid(); ids.add(o.id); })); });
+        return { v: 3, kind: P.kind === 'funnel' ? 'funnel' : undefined, site, pages };
+    };
+
     window.OwlB = {
         uid, esc, nl, clone, hex, slugify, getPath, setPath, sanitize, styleKey, classKey, cssSafe, safeUrl,
         ICONS, icon, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
         widget, column, section, sectionOf, isFull, migrate, newProject, newPage, reId, defaultsSite, defaultsPopup,
-        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, newStep, nextOf,
+        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, newStep, nextOf, normalize, normalizeSection: SECTION,
         render, renderSection, renderWidget, header, footer, siteCss, pageCss, needsRuntime, href, pageHref, fontsLink,
     };
 })();

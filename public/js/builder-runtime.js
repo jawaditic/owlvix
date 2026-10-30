@@ -69,11 +69,17 @@
         const go = dir => track.scrollBy({ left: dir * track.clientWidth, behavior: 'smooth' });
         c.querySelector('[data-prev]')?.addEventListener('click', () => go(-1));
         c.querySelector('[data-next]')?.addEventListener('click', () => go(1));
-        const dots = $$('[data-dot]', c);
-        dots.forEach((dot, n) => dot.addEventListener('click', e => { e.preventDefault(); track.scrollTo({ left: n * track.clientWidth, behavior: 'smooth' }); }));
-        track.addEventListener('scroll', () => { const n = Math.round(track.scrollLeft / Math.max(1, track.clientWidth)); dots.forEach((dot, k) => dot.classList.toggle('is-on', k === n)); }, { passive: true });
+        const dots = $$('[data-dot]', c), slides = $$('.car__slide', c);
+        dots.forEach((dot, n) => dot.addEventListener('click', e => { e.preventDefault(); track.scrollTo({ left: (slides[n]?.offsetLeft || 0) - track.offsetLeft, behavior: 'smooth' }); }));
+        track.addEventListener('scroll', () => {
+            let n = 0, best = Infinity; // the slide nearest the start of the track is the current one
+            slides.forEach((sl, k) => { const d2 = Math.abs(sl.offsetLeft - track.offsetLeft - track.scrollLeft); if (d2 < best) { best = d2; n = k; } });
+            dots.forEach((dot, k) => { dot.classList.toggle('is-on', k === n); dot.setAttribute('aria-current', k === n ? 'true' : 'false'); });
+        }, { passive: true });
         if (c.dataset.auto && !reduce) {
-            let hover = false; c.addEventListener('mouseenter', () => (hover = true)); c.addEventListener('mouseleave', () => (hover = false));
+            let hover = false;
+            ['mouseenter', 'focusin'].forEach(ev => c.addEventListener(ev, () => (hover = true)));
+            ['mouseleave', 'focusout'].forEach(ev => c.addEventListener(ev, () => (hover = false)));
             setInterval(() => { if (hover) return; const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4; atEnd ? track.scrollTo({ left: 0, behavior: 'smooth' }) : go(1); }, 4500);
         }
     });
@@ -87,16 +93,30 @@
     /* Popup: after a delay, on exit intent, or when a link to #popup is clicked */
     const pop = d.querySelector('[data-popup]');
     if (pop) {
-        const key = 'ob-popup-' + location.pathname, open = () => { pop.hidden = false; requestAnimationFrame(() => pop.classList.add('is-open')); };
-        const close = () => { pop.classList.remove('is-open'); setTimeout(() => (pop.hidden = true), 250); store.set(key, '1'); };
+        const key = 'ob-popup-' + location.pathname, timers = [];
+        let shown = false, lastFocus = null;
+        const open = byClick => {
+            if (shown && !byClick) return; // automatic triggers fire once per visit (published pages can't store "seen")
+            shown = true; timers.forEach(clearTimeout);
+            lastFocus = d.activeElement; pop.hidden = false;
+            requestAnimationFrame(() => { pop.classList.add('is-open'); pop.querySelector('[data-popup-close]')?.focus(); });
+        };
+        const close = () => { pop.classList.remove('is-open'); setTimeout(() => (pop.hidden = true), 250); store.set(key, '1'); lastFocus?.focus?.(); };
         $$('[data-popup-close]', pop).forEach(b => b.addEventListener('click', close));
         pop.addEventListener('click', e => { if (e.target === pop) close(); });
         d.addEventListener('keydown', e => { if (e.key === 'Escape' && !pop.hidden) close(); });
-        $$('a[href="#popup"]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); open(); }));
+        $$('a[href="#popup"]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); open(true); }));
+        pop.addEventListener('keydown', e => { // keep keyboard focus inside the popup
+            if (e.key !== 'Tab') return;
+            const f = $$('a,button,input,textarea,select', pop).filter(el => !el.disabled && el.offsetParent !== null);
+            if (!f.length) return;
+            if (e.shiftKey && d.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+            else if (!e.shiftKey && d.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+        });
         const t = pop.dataset.popup;
         if (!store.get(key)) {
-            if (t === 'delay') setTimeout(open, (parseInt(pop.dataset.delay, 10) || 5) * 1000);
-            if (t === 'exit') { const onOut = e => { if (e.clientY <= 0) { open(); d.removeEventListener('mouseout', onOut); } }; d.addEventListener('mouseout', onOut); setTimeout(open, 45000); }
+            if (t === 'delay') timers.push(setTimeout(() => open(), (parseInt(pop.dataset.delay, 10) || 5) * 1000));
+            if (t === 'exit') { const onOut = e => { if (e.clientY <= 0) { open(); d.removeEventListener('mouseout', onOut); } }; d.addEventListener('mouseout', onOut); timers.push(setTimeout(() => open(), 45000)); }
             if (t === 'scroll') { const onScroll = () => { if (scrollY > (d.documentElement.scrollHeight - innerHeight) * 0.5) { open(); removeEventListener('scroll', onScroll); } }; addEventListener('scroll', onScroll, { passive: true }); }
         }
     }

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
  */
 class LeadIntegrations
 {
-    public const TIMEOUT = 5;
+    public const TIMEOUT = 3; // short: these run after the response but still hold a PHP worker
 
     /** Resolves a host to a public IP (or null). Tests may swap this; by default SafeFetch::publicIp. */
     public static ?\Closure $resolver = null;
@@ -179,7 +179,7 @@ class LeadIntegrations
     {
         $url = 'https://'.$cfg['dc'].'.api.mailchimp.com/3.0/lists/'.$cfg['list'].'/members/'.md5(strtolower($lead['email']));
         $send = fn (array $merge) => Http::withBasicAuth('owlvix', $cfg['key'])->acceptJson()
-            ->timeout(self::TIMEOUT)->connectTimeout(3)
+            ->timeout(self::TIMEOUT)->connectTimeout(2)
             ->put($url, ['email_address' => $lead['email'], 'status_if_new' => 'pending'] + ($merge ? ['merge_fields' => $merge] : []));
         $merge = array_filter(['FNAME' => $lead['name'] ?? null, 'PHONE' => self::phone($lead['phone'] ?? null)], fn ($v) => filled($v));
         $res = $send($merge);
@@ -191,7 +191,7 @@ class LeadIntegrations
     private static function brevo(array $cfg, array $lead)
     {
         $send = fn (array $attributes) => Http::withHeaders(['api-key' => $cfg['key']])->acceptJson()
-            ->timeout(self::TIMEOUT)->connectTimeout(3)
+            ->timeout(self::TIMEOUT)->connectTimeout(2)
             ->post('https://api.brevo.com/v3/contacts', [
                 'email' => $lead['email'],
                 'attributes' => (object) $attributes,
@@ -222,7 +222,7 @@ class LeadIntegrations
         ])->withHeaders([
             'X-Owlvix-Event' => 'lead',
             'User-Agent' => 'Owlvix-Webhook/1.0 (+https://owlvix.com/landing-page-builder)',
-        ])->timeout(self::TIMEOUT)->connectTimeout(3)->post($url, [
+        ])->timeout(self::TIMEOUT)->connectTimeout(2)->post($url, [
             'email' => $lead['email'],
             'name' => $lead['name'] ?? null,
             'phone' => $lead['phone'] ?? null,

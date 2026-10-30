@@ -98,31 +98,55 @@ class BuilderSite extends Model
         return $root ? rtrim($root, '/') : null;
     }
 
-    /** Write the live site to the subdomain folder (or remove it there when it isn't live). */
+    /**
+     * Write the live site to the subdomain folder (or remove it there when it isn't live). The new copy is built in
+     * a temporary folder and swapped in, so the site never disappears while it updates. A folder we didn't create
+     * (no marker, or another site's marker) is never touched.
+     */
     public function syncPublicFiles(): void
     {
         $root = self::publicRoot();
-        if (! $root) {
+        if (! $root || ! preg_match('/^[a-z0-9-]{3,40}$/', $this->slug)) {
             return;
         }
-        $this->removePublicFiles();
+        $dir = $root.'/'.$this->slug;
+        if (is_dir($dir) && ! $this->ownsFolder($dir)) {
+            throw new \RuntimeException("Not publishing {$this->slug}: {$dir} exists and wasn't created by the builder.");
+        }
         if (! $this->isLive()) {
+            $this->removePublicFiles();
+
             return;
         }
         \Illuminate\Support\Facades\File::ensureDirectoryExists($root);
         \Illuminate\Support\Facades\File::put($root.'/.htaccess', \App\Support\BuilderHtml::htaccess());
-        $dir = $root.'/'.$this->slug;
-        \Illuminate\Support\Facades\File::ensureDirectoryExists($dir);
-        \Illuminate\Support\Facades\File::put($dir.'/'.self::MARKER, (string) $this->id);
+        $tmp = $root.'/.tmp-'.$this->slug.'-'.bin2hex(random_bytes(4));
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($tmp);
+        \Illuminate\Support\Facades\File::put($tmp.'/'.self::MARKER, (string) $this->id);
         foreach ($this->pages ?? [] as $page) {
             $html = self::disk()->get($this->path($page['slug']));
             if (! is_string($html)) {
                 continue;
             }
-            $target = $page['slug'] === $this->homeSlug() ? $dir : $dir.'/'.$page['slug'];
+            $target = $page['slug'] === $this->homeSlug() ? $tmp : $tmp.'/'.$page['slug'];
             \Illuminate\Support\Facades\File::ensureDirectoryExists($target);
             \Illuminate\Support\Facades\File::put($target.'/index.html', \App\Support\BuilderHtml::withBar($html, $this));
         }
+        $old = null;
+        if (is_dir($dir)) {
+            $old = $root.'/.old-'.$this->slug.'-'.bin2hex(random_bytes(4));
+            rename($dir, $old);
+        }
+        rename($tmp, $dir);
+        if ($old) {
+            \Illuminate\Support\Facades\File::deleteDirectory($old);
+        }
+    }
+
+    /** The folder carries our marker with this site's id. */
+    private function ownsFolder(string $dir): bool
+    {
+        return is_file($dir.'/'.self::MARKER) && trim((string) file_get_contents($dir.'/'.self::MARKER)) === (string) $this->id;
     }
 
     public function removePublicFiles(): void
@@ -130,7 +154,7 @@ class BuilderSite extends Model
         $root = self::publicRoot();
         $dir = $root ? $root.'/'.$this->slug : null;
         // Only folders this app created (they carry the marker) — never cgi-bin, .well-known or anything else
-        if ($dir && preg_match('/^[a-z0-9-]{3,40}$/', $this->slug) && is_file($dir.'/'.self::MARKER)) {
+        if ($dir && preg_match('/^[a-z0-9-]{3,40}$/', $this->slug) && is_dir($dir) && $this->ownsFolder($dir)) {
             \Illuminate\Support\Facades\File::deleteDirectory($dir);
         }
     }

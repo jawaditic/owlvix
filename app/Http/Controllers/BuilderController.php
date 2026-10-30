@@ -48,6 +48,7 @@ class BuilderController extends Controller
 
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         Cache::put($this->codeKey($email), ['hash' => hash('sha256', $code), 'attempts' => 0], now()->addMinutes(self::CODE_MINUTES));
+        Cache::forget($this->codeKey($email).':tries'); // a new code starts a fresh attempt count
 
         try {
             Mail::to($email)->send(new BuilderSignInCode($code));
@@ -74,24 +75,38 @@ class BuilderController extends Controller
         RateLimiter::hit('builder-verify:'.$request->ip(), 600);
 
         $email = strtolower(trim($data['email']));
+        // Per email too, so guesses spread over many IPs still hit a wall
+        if (RateLimiter::tooManyAttempts('builder-verify-email:'.sha1($email), 10)) {
+            return $this->fail('Too many tries. Please wait a few minutes and try again.', 429);
+        }
+        RateLimiter::hit('builder-verify-email:'.sha1($email), 3600);
         $key = $this->codeKey($email);
         $saved = Cache::get($key);
         if (! $saved) {
             return $this->fail('That code has expired. Please ask for a new one.', 422);
         }
+        // Count the attempt atomically before comparing, so parallel guesses can't all read "0 tries so far"
+        $tries = Cache::increment($key.':tries');
+        if ($tries === 1) {
+            Cache::put($key.':tries', 1, now()->addMinutes(self::CODE_MINUTES));
+        }
+        if ($tries > self::CODE_ATTEMPTS) {
+            Cache::forget($key);
+
+            return $this->fail('Too many wrong codes. Please ask for a new one.', 422);
+        }
         $code = preg_replace('/\D/', '', $data['code']);
         if (! hash_equals($saved['hash'], hash('sha256', $code))) {
-            $saved['attempts']++;
-            if ($saved['attempts'] >= self::CODE_ATTEMPTS) {
+            if ($tries >= self::CODE_ATTEMPTS) { // the last allowed try used up the code
                 Cache::forget($key);
 
                 return $this->fail('Too many wrong codes. Please ask for a new one.', 422);
             }
-            Cache::put($key, $saved, now()->addMinutes(self::CODE_MINUTES));
 
             return $this->fail('That code isn’t right. Please check the email and try again.', 422);
         }
         Cache::forget($key);
+        Cache::forget($key.':tries');
 
         $account = BuilderAccount::firstOrCreate(['email' => $email]);
         $account->update(['last_login_at' => now()]);
@@ -229,7 +244,13 @@ class BuilderController extends Controller
                 $disk->delete($file);
             }
         }
-        $site->syncPublicFiles(); // static copy on the sites subdomain, when configured
+        try {
+            $site->syncPublicFiles(); // static copy on the sites subdomain, when configured
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            return $this->fail('That web address can’t be used. Please choose another one.', 422);
+        }
 
         return response()->json(['ok' => true, 'url' => $site->url(), 'slug' => $site->slug]);
     }
