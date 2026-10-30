@@ -32,7 +32,7 @@
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
-@foreach (['free-tools' => 'free-tools', 'cost-calculator' => 'tools/cost-calculator', 'security-checker' => 'tools/security', 'tech-stack' => 'tools/tech-stack', 'meta-preview' => 'tools/meta-preview', 'broken-links' => 'tools/broken-links', 'email-check' => 'tools/email-check', 'ads-roi' => 'tools/ads-roi', 'schema-generator' => 'tools/schema-generator', 'redirect-check' => 'tools/redirects', 'robots-check' => 'tools/robots', 'domain-check' => 'tools/domain', 'image-compressor' => 'tools/image-compressor', 'landing-builder' => 'tools/landing-builder'] as $route => $view)
+@foreach (['free-tools' => 'free-tools', 'cost-calculator' => 'tools/cost-calculator', 'security-checker' => 'tools/security', 'tech-stack' => 'tools/tech-stack', 'meta-preview' => 'tools/meta-preview', 'broken-links' => 'tools/broken-links', 'email-check' => 'tools/email-check', 'ads-roi' => 'tools/ads-roi', 'schema-generator' => 'tools/schema-generator', 'redirect-check' => 'tools/redirects', 'robots-check' => 'tools/robots', 'domain-check' => 'tools/domain', 'image-compressor' => 'tools/image-compressor', 'landing-builder' => 'tools/landing-builder', 'funnel-builder' => 'tools/funnel-builder'] as $route => $view)
     <url>
         <loc>{{ route($route) }}</loc>
         <lastmod>{{ date('Y-m-d', filemtime(resource_path('views/'.$view.'.blade.php'))) }}</lastmod>

@@ -21,8 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Smaller HTML pages: drop the indentation Blade leaves at the start of each line
         $middleware->web(append: [\App\Http\Middleware\TrimHtmlWhitespace::class, \App\Http\Middleware\BuilderHostOnly::class]);
         // The stats beacon is sent with navigator.sendBeacon and only records a page view.
-        // Builder contact forms (f/*) are posted from static pages hosted anywhere.
-        $middleware->validateCsrfTokens(except: ['t', 'f/*']);
+        // Builder contact forms (f/*) are posted from static pages hosted anywhere; fs is the funnel stats beacon.
+        $middleware->validateCsrfTokens(except: ['t', 'f/*', 'fs']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // JSON errors (validation, not found, too many requests) for the mobile app's /api routes, and for any

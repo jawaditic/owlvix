@@ -104,7 +104,7 @@ class BuilderTest extends TestCase
         $this->assertSame($form['id'], $again['id']);
 
         $this->api($token)->getJson('/builder/account')
-            ->assertJsonPath('forms.0', ['id' => $form['id'], 'site_name' => "Joe's Bakery", 'action' => $form['action'], 'submissions' => 0]);
+            ->assertJsonPath('forms.0', ['id' => $form['id'], 'site_name' => "Joe's Bakery", 'action' => $form['action'], 'kind' => 'contact', 'submissions' => 0, 'leads' => 0]);
     }
 
     public function test_publish_and_serve_with_the_sandbox(): void
@@ -128,6 +128,7 @@ class BuilderTest extends TestCase
         $this->assertStringNotContainsString('allow-same-origin', $csp);
         $this->assertStringNotContainsString('unsafe-eval', $csp);
         $this->assertStringContainsString('form-action '.rtrim(url('/'), '/'), $csp);
+        $this->assertStringContainsString('connect-src '.rtrim(url('/'), '/').'/fs;', $csp);
         $this->assertMatchesRegularExpression('#Made with.*</body>#s', $res->getContent());
 
         $this->get('/p/joes-bakery/about')->assertOk()->assertSee('About us');

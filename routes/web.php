@@ -8,16 +8,22 @@ use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
 
+// Builder form posts and published pages run without a session or cookies: they are opened from other people's pages,
+// often in a browser that is also signed in to owlvix.com (the owner testing their form, or the admin). Starting a
+// session there would replace theirs and sign them out.
+$stateless = [\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class, \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class];
+
 // Builder subdomain (sites.owlvix.com): only published sites live here; everything else redirects to the main site
 // (see App\Http\Middleware\BuilderHostOnly).
 if (($builderDomain = config('builder.domain')) && ! config('builder.public_path')) {
-    Route::domain($builderDomain)->group(function () {
+    Route::domain($builderDomain)->group(function () use ($stateless) {
         Route::get('/', fn () => redirect()->away(route('landing-builder')))->name('builder.home');
         Route::get('/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'reportForm'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report');
         Route::post('/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'report'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report.send');
         Route::get('/{slug}/{page?}', [\App\Http\Controllers\BuilderPublicController::class, 'show'])
             ->where(['slug' => '[a-z0-9-]{3,40}', 'page' => '[a-z0-9-]{1,40}'])
-            ->withoutMiddleware(\App\Http\Middleware\TrimHtmlWhitespace::class)
+            ->withoutMiddleware([\App\Http\Middleware\TrimHtmlWhitespace::class, ...$stateless])
             ->name('builder.site');
     });
 }
@@ -49,6 +55,7 @@ Route::view('/robots-txt-checker', 'tools.robots')->name('robots-check');
 Route::view('/domain-age-checker', 'tools.domain')->name('domain-check');
 Route::view('/image-compressor', 'tools.image-compressor')->name('image-compressor');
 Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
+Route::view('/funnel-builder', 'tools.funnel-builder')->name('funnel-builder');
 Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
 Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');
 Route::post('/meta-tag-preview', [\App\Http\Controllers\FreeToolsController::class, 'meta'])->middleware('throttle:8,1,tool-meta')->name('meta-preview.run');
@@ -119,11 +126,18 @@ Route::prefix('builder')->name('builder.')->controller(\App\Http\Controllers\Bui
         Route::post('forms', 'createForm')->name('forms');
         Route::post('publish', 'publish')->name('publish');
         Route::post('unpublish', 'unpublish')->name('unpublish');
+        // Funnels: leads from lead forms, step stats and email-tool integrations
+        Route::get('leads', 'leads')->name('leads');
+        Route::get('stats', 'stats')->name('stats');
+        Route::get('forms/{id}/integrations', 'integrations')->where('id', '[a-z0-9]{16}')->name('integrations');
+        Route::post('forms/{id}/integrations', 'saveIntegrations')->where('id', '[a-z0-9]{16}')->name('integrations.save');
     });
 });
+// Funnel step stats beacon from published pages (sendBeacon from a sandboxed page): no session, cookies or CSRF
+Route::post('/fs', [\App\Http\Controllers\BuilderPublicController::class, 'beacon'])->withoutMiddleware('web')->name('builder.beacon');
 // Contact forms on builder pages (posted from any host, so no CSRF token: see bootstrap/app.php)
-Route::post('/f/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'submit'])->where('id', '[a-z0-9]{16}')->name('builder.form.submit');
-Route::get('/f/{id}/sent', [\App\Http\Controllers\BuilderPublicController::class, 'sent'])->where('id', '[a-z0-9]{16}')->name('builder.form.sent');
+Route::post('/f/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'submit'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.form.submit');
+Route::get('/f/{id}/sent', [\App\Http\Controllers\BuilderPublicController::class, 'sent'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.form.sent');
 // Published builder sites (served with a sandboxing CSP; the page HTML is left exactly as published).
 // With BUILDER_DOMAIN set they live on their own subdomain (https://sites.owlvix.com/{name}) — those routes are
 // registered at the top of this file — and old /p/{name} links redirect there.
@@ -140,7 +154,7 @@ if (config('builder.domain')) {
     Route::post('/p/{slug}/report', [\App\Http\Controllers\BuilderPublicController::class, 'report'])->where('slug', '[a-z0-9-]{3,40}')->name('builder.report.send');
     Route::get('/p/{slug}/{page?}', [\App\Http\Controllers\BuilderPublicController::class, 'show'])
         ->where(['slug' => '[a-z0-9-]{3,40}', 'page' => '[a-z0-9-]{1,40}'])
-        ->withoutMiddleware(\App\Http\Middleware\TrimHtmlWhitespace::class)
+        ->withoutMiddleware([\App\Http\Middleware\TrimHtmlWhitespace::class, ...$stateless])
         ->name('builder.site');
 }
 

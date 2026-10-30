@@ -60,6 +60,7 @@ All tools: https://owlvix.com/free-tools
 - [Robots.txt & AI crawler checker](https://owlvix.com/robots-txt-checker): tests robots.txt rules (Google matching), sitemap, noindex, and whether Googlebot, Bingbot, OAI-SearchBot, ChatGPT-User, Claude-SearchBot, PerplexityBot and AI training bots are allowed.
 - [Domain age & expiry checker](https://owlvix.com/domain-age-checker): registrar, creation and expiry dates, transfer lock, DNSSEC and name servers via RDAP (WHOIS fallback).
 - [Landing page builder](https://owlvix.com/landing-page-builder): build a landing page from 4 designs and 6 industry examples (dental, restaurant, consultant, online course, real estate, home services) and download one self-contained HTML file; runs in the browser.
+- [Funnel builder](https://owlvix.com/funnel-builder): free sales funnel builder — opt-in, sales, upsell and thank-you steps; lead collection with CSV export and Mailchimp/Brevo/webhook delivery; payments via the owner's own Stripe/PayPal link; per-step stats and A/B tests.
 - [Image compressor](https://owlvix.com/image-compressor): compresses, resizes and converts images to WebP/JPEG in the browser; nothing is uploaded.
 
 - [Website speed test](https://owlvix.com/website-speed-test): free speed score, Core Web Vitals and top fixes for any URL, powered by Google PageSpeed Insights; downloadable PDF report.

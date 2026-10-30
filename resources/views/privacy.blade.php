@@ -35,6 +35,13 @@
             <li>messages sent through your page's contact form are emailed to you. We don't keep the messages, only a count of how many were sent;</li>
             <li>we may email you about your pages, for example if one is reported or taken down, or to offer help with your website.</li>
         </ul>
+        <p>If you build a funnel with a sign-up (lead) form:</p>
+        <ul>
+            <li>the name, email address and phone number that visitors enter in the form are stored on owlvix.com for you, the funnel owner, and emailed to you. You can see and download them as a file in the builder. We keep them while the funnel is published, and delete them about 90 days after it is unpublished or removed;</li>
+            <li>if you connect an email tool (Mailchimp, Brevo or your own webhook), each new sign-up is also sent there. Your API keys are stored encrypted;</li>
+            <li>we count how many times each funnel page is viewed and how many sign-ups it gets, per day. These are totals only: no cookies are used and no IP addresses are stored. The counts are deleted after about 13 months.</li>
+        </ul>
+        <p>As a funnel owner you are responsible for telling your visitors how you use their details, and for having their permission to email them.</p>
         <p>Published pages are public and are not listed in search engines. We may remove any page that breaks the law or is used for spam, scams or phishing. Anyone can report a page with the "Report" link on it.</p>
 
         <h2>Information collected automatically</h2>

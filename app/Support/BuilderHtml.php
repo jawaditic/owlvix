@@ -25,7 +25,18 @@ class BuilderHtml
 
     public static function runtimeUrl(): string
     {
-        return rtrim(url('/'), '/').'/js/builder-runtime.js';
+        return self::appOrigin().'/js/builder-runtime.js';
+    }
+
+    /** The main app's origin — the configured APP_URL when this request came in on the builder subdomain. */
+    public static function appOrigin(): string
+    {
+        $domain = config('builder.domain');
+        if ($domain && strcasecmp(request()->getHost(), $domain) === 0 && config('app.url')) {
+            return rtrim(config('app.url'), '/');
+        }
+
+        return rtrim(url('/'), '/');
     }
 
     /**
@@ -34,13 +45,19 @@ class BuilderHtml
      */
     public static function csp(): string
     {
-        $origin = rtrim(url('/'), '/');
+        $origin = self::appOrigin();
+        // Lead forms post to owlvix, which redirects to the funnel's next step on the sites domain; browsers check
+        // that redirect against form-action too, so the sites domain is allowed as well (it only serves static pages).
+        $sites = rtrim(BuilderSite::base(), '/');
+        $sitesOrigin = config('builder.domain') ? preg_replace('#^(https?://[^/]+).*$#', '$1', $sites) : null;
+        $formAction = $origin.($sitesOrigin && $sitesOrigin !== $origin ? ' '.$sitesOrigin : '');
 
         return 'sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation; '
             ."default-src 'none'; script-src ".self::runtimeUrl().'; '
+            ."connect-src {$origin}/fs; "
             ."img-src data: https:; style-src 'unsafe-inline' https://fonts.googleapis.com; "
             .'font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com https://www.google.com; '
-            ."form-action {$origin}; base-uri 'none'";
+            ."form-action {$formAction}; base-uri 'none'";
     }
 
     /**

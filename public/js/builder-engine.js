@@ -71,6 +71,9 @@
 
     /* ================================================================ links */
     const LINK_TYPES = { contact: 'Contact section', page: 'Another page', url: 'Web address', popup: 'Open the popup', whatsapp: 'WhatsApp', phone: 'Phone call', email: 'Email' };
+    const FUNNEL_LINKS = { next: 'Next funnel step', pay: 'Payment link (this step)' };
+    /** The step after this one: its chosen "next", or simply the following step. */
+    const nextOf = (pg, P) => (pg.next && P.pages.find(p => p.slug === pg.next)) || P.pages[P.pages.indexOf(P.pages.find(p => p.id === pg.id)) + 1] || null;
     const pageHref = (slug, x) => {
         // Published: absolute address on the sites subdomain (or /p/ locally), e.g. https://sites.owlvix.com/anj-tec/about
         if (x.mode === 'publish') return (x.siteBase || '/p/') + (x.P.site.publishSlug || 'site') + (slug === 'index' ? '' : '/' + slug);
@@ -84,6 +87,8 @@
             case 'page': { const pg = x.P.pages.find(p => p.slug === v); return pg ? (x.edit ? '#' : pageHref(pg.slug, x)) : '#'; }
             case 'url': return /^https?:\/\//i.test(v) ? v : (v.startsWith('#') ? v : '#');
             case 'popup': return '#popup';
+            case 'next': { const n = nextOf(x.page, x.P); return n && !x.edit ? pageHref(n.slug, x) : '#'; }
+            case 'pay': return /^https:\/\//i.test(x.page.pay || '') ? x.page.pay : '#';
             case 'whatsapp': return 'https://wa.me/' + digits(v).replace(/^\+/, '');
             case 'phone': return 'tel:' + digits(v);
             case 'email': return 'mailto:' + v.replace(/[^\w.+@-]/g, '');
@@ -231,6 +236,25 @@
     def('form', { label: 'Contact form', icon: '✉', group: 'pro', make: () => ({ btn: 'Send message', phone: true }), fields: [F.text('btn', 'Button text'), F.bool('phone', 'Ask for a phone number')],
         render: (w, x) => formHtml(x, w.p) });
 
+    def('optin', { label: 'Opt-in form', icon: '✉', group: 'funnel', make: () => ({ btn: 'Get instant access', name: true, phone: false, note: 'We respect your privacy. Unsubscribe any time.' }),
+        fields: [F.text('btn', 'Button text'), F.bool('name', 'Ask for a name'), F.bool('phone', 'Ask for a phone number'), F.text('note', 'Small print under the button')],
+        render: (w, x) => {
+            const p = w.p;
+            if (!x.P.site.leadAction) return x.edit ? '<div class="form pic-empty"><span>📥 Opt-in form — switch it on in the Content tab to collect leads (free)</span></div>' : '';
+            const next = nextOf(x.page, x.P), nextUrl = next && x.mode === 'publish' ? new URL(pageHref(next.slug, x), x.origin).href : next ? pageHref(next.slug, x) : '';
+            return `<form class="form optin" method="post" action="${esc(x.P.site.leadAction)}">
+                ${p.name !== false ? '<input name="name" maxlength="100" autocomplete="name" placeholder="Your name" aria-label="Your name">' : ''}
+                <input name="email" type="email" required maxlength="150" autocomplete="email" placeholder="Your best email" aria-label="Email">
+                ${p.phone ? '<input name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Phone (optional)" aria-label="Phone">' : ''}
+                <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+                <input type="hidden" name="_back" value="${esc(x.mode === 'publish' ? new URL(pageHref(x.page.slug, x), x.origin).href : '')}">
+                <input type="hidden" name="_next" value="${esc(nextUrl)}"><input type="hidden" name="_site" value="${esc(x.P.site.publishSlug || '')}">
+                <input type="hidden" name="_step" value="${esc(x.page.slug)}"><input type="hidden" name="_v" value="${x.variant === 'b' ? 'b' : 'a'}">
+                <button class="btn btn-lg" type="submit">${esc(p.btn || 'Get instant access')}</button>${p.note ? `<small class="optin__note">🔒 ${esc(p.note)}</small>` : ''}</form>`;
+        } });
+    def('paybtn', { label: 'Buy button', icon: '💳', group: 'funnel', make: () => ({ text: 'Yes! Get it now', sub: '30-day money-back guarantee', align: 'center', no: '' }),
+        fields: [F.text('sub', 'Small text under the button'), F.select('align', 'Alignment', { left: 'Left', center: 'Centre', right: 'Right', full: 'Full width' }), F.text('no', '“No thanks” link text (upsells)')],
+        render: (w, x, H) => `<div class="paybtn al-${w.p.align || 'center'}"><a class="btn btn-lg ${H.K('text')}" href="${esc(href({ to: 'pay' }, x))}"${H.E('text', 'Button')}>${esc(w.p.text)}</a>${H.t('sub', 'small', 'muted', 'Small print')}${w.p.no ? `<a class="paybtn__no" href="${esc(href({ to: 'next' }, x))}">${esc(w.p.no)}</a>` : ''}</div>` });
     const formHtml = (x, p) => {
         if (x.P.site.formAction) return `<form class="form" method="post" action="${esc(x.P.site.formAction)}">
             <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
@@ -401,6 +425,43 @@
             soon: ['Coming soon', () => { const s = cols('1', [wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know.</p>' }), 'countdown', 'form']); s.st._ = { d: { align: 'center', minH: 640 } }; s.bg = 'soft'; return [s]; }],
         },
     };
+    /* Funnel templates: each step is a page with a type, an optional "next" step and an optional payment link. */
+    const optinCard = (title, btn, extra = []) => { const c = column([wp('heading', { text: title, tag: 'h3' }), ...extra, wp('optin', { btn })]); c.st._ = { d: { bgType: 'color', bg: 'g:bg', pt: 30, pr: 30, pb: 30, pl: 30, radius: 22, shadow: 'lg' } }; return c; };
+    const thanks = (title, text, btnText, extra = []) => { const s = section('1', [column([wp('heading', { text: title, tag: 'h1' }), wp('text', { html: `<p>${text}</p>` }), ...extra, ...(btnText ? [wp('button', { text: btnText, align: 'center', link: { to: 'url', val: '' } })] : [])])]); s.st._ = { d: { align: 'center', minH: 520 } }; s.bg = 'soft'; return s; };
+    const step = (title, slug, type, sections, extra = {}) => ({ id: uid(), slug, title, type, menu: false, next: '', pay: '', ab: { on: false }, sectionsB: null, seo: { title: '', description: '' }, popup: defaultsPopup(), sections, ...extra });
+    const STEP_TYPES = { optin: 'Opt-in', sales: 'Sales page', checkout: 'Order / checkout', upsell: 'Upsell', downsell: 'Downsell', webinar: 'Webinar sign-up', thankyou: 'Thank you', custom: 'Custom page' };
+    const FUNNELS = {
+        leadmagnet: ['Lead magnet (free guide)', () => [
+            step('Opt-in', 'index', 'optin', [(() => { const s = section('2-1', [column([wp('heading', { text: 'Get the free guide: 7 ways to double your leads', tag: 'h1' }), wp('text', { html: '<p>A short, practical PDF you can use today. Join 5,000+ business owners who already read it.</p>' }), wp('iconlist', { items: [{ icon: 'i:check', text: 'The 3-step offer formula' }, { icon: 'i:check', text: 'Copy-and-paste email templates' }, { icon: 'i:check', text: 'A 30-day action plan' }] })]), optinCard('Send me the guide', 'Yes, send it to me!')]); s.bg = 'soft'; s.st._ = { d: { minH: 620 } }; return s; })(), sectionOf('testimonials')]),
+            step('Thank you', 'thank-you', 'thankyou', [thanks('🎉 Check your inbox!', 'Your free guide is on its way. While you wait, here is something that will help even more.', 'Book a free call')]),
+        ]],
+        webinar: ['Webinar registration', () => [
+            step('Register', 'index', 'webinar', [(() => { const s = section('2', [column([wp('heading', { text: 'FREE live training: How to get your first 100 customers', tag: 'h1' }), wp('text', { html: '<p>Join us live on Thursday at 7 pm. Seats are limited.</p>' }), wp('countdown', {})]), optinCard('Save my seat', 'Register for free')]); s.bg = 'soft'; s.st._ = { d: { minH: 600 } }; return s; })(), sectionOf('faq')]),
+            step('Confirmed', 'confirmed', 'thankyou', [thanks('✅ You are registered!', 'We sent the link to your email. Add it to your calendar so you don\'t miss it.', 'Add to my calendar', [wp('video1', { url: '' })])]),
+        ]],
+        launch: ['Product launch (sales page)', () => [
+            step('Sales page', 'index', 'sales', [fill(sectionOf('hero'), { v: 'split', eyebrow: 'New', title: 'The product headline that sells the result', text: 'Explain the transformation customers get — and why now.', btn: 'Get it now', link: { to: 'pay' } }), sectionOf('features'), sectionOf('testimonials'), (() => { const s = section('1', [column([wp('heading', { text: 'Get instant access today', tag: 'h2' }), wp('paybtn', {})])]); s.st._ = { d: { align: 'center' } }; s.bg = 'soft'; return s; })(), sectionOf('faq')]),
+            step('Thank you', 'thank-you', 'thankyou', [thanks('🎉 Thank you for your order!', 'Your receipt and access details are on their way to your email.', '')]),
+        ]],
+        tripwire: ['Low-price offer + upsell', () => [
+            step('Offer', 'index', 'sales', [fill(sectionOf('hero'), { eyebrow: 'Today only', title: 'Get the starter kit for just $7', text: 'Everything you need to get started — instant download.', btn: 'Get it for $7', link: { to: 'pay' } }), sectionOf('features'), sectionOf('faq')]),
+            step('Special upgrade', 'upgrade', 'upsell', [(() => { const s = section('1', [column([wp('heading', { text: 'Wait! Add the complete course for $47', tag: 'h1' }), wp('text', { html: '<p>One-time offer: upgrade your order and get everything you need to go further — only on this page.</p>' }), wp('paybtn', { text: 'Yes, add it to my order', no: 'No thanks, I\'ll skip this offer' })])]); s.st._ = { d: { align: 'center', minH: 560 } }; s.bg = 'soft'; return s; })()]),
+            step('Thank you', 'thank-you', 'thankyou', [thanks('🎉 You\'re all set!', 'Check your email for your download links.', '')]),
+        ]],
+        consult: ['Free consultation booking', () => [
+            step('Book a call', 'index', 'optin', [(() => { const s = section('2', [column([wp('heading', { text: 'Book your free 30-minute strategy call', tag: 'h1' }), wp('text', { html: '<p>Tell us about your goals and we will show you the fastest way to reach them. No pressure, no cost.</p>' }), wp('iconlist', {})]), optinCard('Request my call', 'Book my free call', [])]); s.cols[1].widgets[1].p.phone = true; s.bg = 'soft'; s.st._ = { d: { minH: 600 } }; return s; })(), sectionOf('testimonials')]),
+            step('Pick a time', 'thank-you', 'thankyou', [thanks('Almost done — pick a time', 'Choose a time that suits you in our calendar. We will call you then.', 'Open the calendar')]),
+        ]],
+    };
+    const newFunnel = key => {
+        const [, steps] = FUNNELS[key] || FUNNELS.leadmagnet;
+        const site = defaultsSite(); site.name = 'My funnel'; site.navBtn = ''; site.sticky = false;
+        return { v: 3, kind: 'funnel', site, pages: steps() };
+    };
+    const newStep = (title, type, n) => step(title, slugify(title) || 'step-' + n, type, type === 'thankyou' ? [thanks('Thank you!', 'Here is what happens next.', '')]
+        : type === 'upsell' || type === 'downsell' ? [(() => { const s = section('1', [column([wp('heading', { text: 'Add this to your order?', tag: 'h1' }), wp('text', { html: '<p>Describe the extra offer.</p>' }), wp('paybtn', { text: 'Yes, add it', no: 'No thanks' })])]); s.st._ = { d: { align: 'center', minH: 520 } }; return s; })()]
+        : type === 'optin' || type === 'webinar' ? [(() => { const s = section('2', [column([wp('heading', { text: 'Your headline', tag: 'h1' }), wp('text', {})]), optinCard('Get access', 'Sign me up')]); s.bg = 'soft'; return s; })()]
+        : [fill(sectionOf('hero'), { title, btn: 'Get it now', link: { to: type === 'sales' || type === 'checkout' ? 'pay' : 'next' } })]);
     const newPage = (title, n, tpl) => {
         const sections = tpl && TEMPLATES.pages[tpl] ? TEMPLATES.pages[tpl][1]() : [fill(sectionOf('hero'), { eyebrow: '', title, text: 'Introduce this page in a sentence or two.' }), sectionOf('textblock'), sectionOf('cta')];
         return { id: uid(), slug: slugify(title) || 'page-' + n, title, menu: true, seo: { title: '', description: '' }, popup: defaultsPopup(), sections };
@@ -454,7 +515,7 @@
             });
             if (adv?.css) custom.push(cssSafe(adv.css).replace(/\bselector\b/g, `.x-${id}`));
         };
-        pg.sections.forEach(s => { visit(s.id, s.st, s.adv, true); s.cols.forEach(c => { visit(c.id, c.st, c.adv); c.widgets.forEach(w => visit(w.id, w.st, w.adv)); }); });
+        [...pg.sections, ...(pg.ab?.on ? pg.sectionsB || [] : [])].forEach(s => { visit(s.id, s.st, s.adv, true); s.cols.forEach(c => { visit(c.id, c.st, c.adv); c.widgets.forEach(w => visit(w.id, w.st, w.adv)); }); });
         return rules.d.join('') + (rules.t.length ? `${BP.t}{${rules.t.join('')}}` : '') + (rules.m.length ? `${BP.m}{${rules.m.join('')}}` : '') + custom.join('\n');
     };
 
@@ -536,6 +597,10 @@ ${Array.from({ length: 8 }, (_, i) => `.tabs>input:nth-of-type(${i + 1}):checked
 .ob-pop__box .pic{border-radius:0;aspect-ratio:16/8}.ob-pop__in{padding:26px}.ob-pop__in p{color:var(--muted)}.ob-pop__x{position:absolute;top:10px;right:10px;z-index:2;width:36px;height:36px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:1.3rem;cursor:pointer}
 .ob-top{position:fixed;right:18px;bottom:60px;z-index:50;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:var(--ink);text-decoration:none;font-size:1.3rem;box-shadow:0 10px 24px -8px var(--primary);opacity:0;pointer-events:none;transition:.25s}.ob-top.is-on{opacity:1;pointer-events:auto}
 .ob-anim [data-anim]{opacity:0;transition:opacity .8s ease,transform .8s ease}.ob-anim [data-anim=fade-up]{transform:translateY(36px)}.ob-anim [data-anim=fade-down]{transform:translateY(-36px)}.ob-anim [data-anim=zoom-in]{transform:scale(.9)}.ob-anim [data-anim=slide-left]{transform:translateX(-48px)}.ob-anim [data-anim=slide-right]{transform:translateX(48px)}.ob-anim [data-anim].ob-in{opacity:1;transform:none}
+.optin{gap:10px}.optin input{padding:15px 16px;font-size:1rem}.optin .btn{width:100%}.optin__note{color:var(--muted);text-align:center;font-size:.82rem}
+.paybtn{display:flex;flex-direction:column;align-items:center;gap:8px}.paybtn.al-left{align-items:flex-start}.paybtn.al-right{align-items:flex-end}.paybtn.al-full .btn{width:100%}.paybtn .btn{font-size:1.2rem;padding:20px 38px;box-shadow:0 16px 34px -14px var(--primary)}.paybtn__no{color:var(--muted);font-size:.9rem;margin-top:4px}
+[data-variant=b]{display:none}html.ob-v-b [data-variant=a]{display:none}html.ob-v-b [data-variant=b]{display:block}
+html.ob-ab:not(.ob-ready) main{opacity:0;animation:ob-show 0s 1.2s forwards}@keyframes ob-show{to{opacity:1}}
 .foot{padding:40px 0 28px;border-top:1px solid var(--border);background:var(--alt)}.foot .wrap{display:grid;gap:14px}.foot p{margin:0;color:var(--muted)}.foot .socials a{width:36px;height:36px;font-size:.8rem}.credit{font-size:.85rem}.credit a{color:var(--muted)}
 @media (min-width:1025px){.hide-d{display:none!important}}@media (min-width:768px) and (max-width:1024px){.hide-t{display:none!important}}@media (max-width:767px){.hide-m{display:none!important}}
 @media (max-width:1024px){.cols.c-4{grid-template-columns:1fr 1fr!important}.g4{grid-template-columns:1fr 1fr}}
@@ -589,7 +654,7 @@ ${cssSafe(s.css || '')}`;
             ${p.image ? `<div class="pic"><img src="${esc(p.image)}" alt=""></div>` : ''}<div class="ob-pop__in"><h3>${esc(p.title)}</h3>${p.text ? `<p>${nl(p.text)}</p>` : ''}${p.btn ? `<a class="btn" href="${esc(href(p.link, x))}" data-popup-close>${esc(p.btn)}</a>` : ''}</div></div></div>`;
     };
     /** Does this page need the runtime script (animations, sliders, counters, popup…)? */
-    const needsRuntime = (pg, P) => !!(pg.popup?.on || P.site.backTop || P.site.sticky !== false
+    const needsRuntime = (pg, P) => !!(P.kind === 'funnel' || pg.popup?.on || P.site.backTop || P.site.sticky !== false
         || pg.sections.some(s => s.adv?.anim || s.cols.some(c => c.adv?.anim || c.widgets.some(w => w.adv?.anim || W[w.type]?.runtime))));
     const fontsLink = P => {
         const f = [...new Set([P.site.fonts?.heading, P.site.fonts?.body].filter(n => FONTS[n]))];
@@ -603,8 +668,14 @@ ${cssSafe(s.css || '')}`;
         const title = pg.seo.title.trim() || (pg.slug === 'index' ? `${name}${hero?.p.title ? ' — ' + hero.p.title : ''}` : `${pg.title} | ${name}`);
         const desc = pg.seo.description.trim() || hero?.p.text || '';
         const runtime = !x.edit && opts.runtime && needsRuntime(pg, P) ? `<script src="${esc(opts.runtime)}" defer></script>` : '';
+        const ab = !x.edit && pg.ab?.on && pg.sectionsB?.length;
+        // Funnel pages report views per step to owlvix (published only); A/B pages carry both versions
+        const fs = P.kind === 'funnel' && mode === 'publish' && opts.statsUrl ? ` data-fs-url="${esc(opts.statsUrl)}" data-fs-site="${esc(s.publishSlug || '')}" data-fs-step="${esc(pg.slug)}"` : '';
+        const body = ab
+            ? `<div data-variant="a">${pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n')}</div><div data-variant="b">${pg.sectionsB.map((sc, i) => renderSection(sc, i, { ...x, variant: 'b' })).join('\n')}</div>`
+            : pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n');
         return `<!doctype html>
-<html lang="en">
+<html lang="en"${ab ? ' class="ob-ab"' : ''}${fs}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -620,7 +691,7 @@ ${runtime}${opts.extraHead || ''}
 <body>
 ${header(x)}
 <main>
-${pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n')}
+${body}
 </main>
 ${footer(x)}
 ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob-top" aria-label="Back to top">↑</a>' : ''}
@@ -632,6 +703,7 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
         uid, esc, nl, clone, hex, slugify, getPath, setPath, sanitize, styleKey, classKey, cssSafe, safeUrl,
         ICONS, icon, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
         widget, column, section, sectionOf, isFull, migrate, newProject, newPage, reId, defaultsSite, defaultsPopup,
+        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, newStep, nextOf,
         render, renderSection, renderWidget, header, footer, siteCss, pageCss, needsRuntime, href, pageHref, fontsLink,
     };
 })();

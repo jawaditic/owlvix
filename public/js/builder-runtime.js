@@ -1,11 +1,25 @@
 /* Owlvix page builder runtime — the only script allowed on pages made with the builder (published pages load it
    from owlvix.com; their security policy blocks every other script). It brings the interactive widgets to life:
    scroll animations, counters, countdowns, rotating headlines, sliders, before/after images, popups, sticky header
-   and back-to-top. Pages still work without it — everything is visible by default. */
+   back-to-top, and for funnels the A/B version choice and a visit count per step. Pages still work without it —
+   everything is visible by default. */
 (() => {
     const d = document, $$ = (s, el = d) => [...el.querySelectorAll(s)];
     const store = { get: k => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch {} } };
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* Funnels: A/B steps carry both versions — show one at random (no cookies), then report the visit */
+    const html = d.documentElement;
+    const variant = html.classList.contains('ob-ab') ? (Math.random() < 0.5 ? 'a' : 'b') : 'a';
+    if (variant === 'b') {
+        html.classList.add('ob-v-b');
+        $$('[data-variant=a] form').forEach(f => f.remove()); // only the visible version's form, so sign-ups count for B
+    }
+    html.classList.add('ob-ready');
+    const fs = html.dataset.fsUrl;
+    if (fs && html.dataset.fsSite && navigator.sendBeacon) {
+        try { navigator.sendBeacon(fs, JSON.stringify({ s: html.dataset.fsSite, p: html.dataset.fsStep, v: variant })); } catch {}
+    }
 
     /* Scroll animations: elements start hidden only once this script runs, then appear when scrolled into view */
     const anim = $$('[data-anim]');

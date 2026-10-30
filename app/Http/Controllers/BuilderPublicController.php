@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Mail\BuilderFormMessage;
+use App\Mail\BuilderLeadMessage;
+use App\Models\BuilderLead;
+use App\Models\BuilderStat;
+use App\Support\LeadIntegrations;
 use App\Mail\BuilderSiteReported;
 use App\Models\BuilderForm;
 use App\Models\BuilderSite;
@@ -25,9 +29,18 @@ class BuilderPublicController extends Controller
 
     private const MAX_LINKS = 3;
 
+    private const LEADS_PER_IP_HOUR = 10;
+
+    private const LEADS_PER_DAY = 500;
+
+    private const BEACON_PER_MINUTE = 120;
+
     public function submit(Request $request, string $id)
     {
         $form = $this->form($id);
+        if ($form->isLeads()) {
+            return $this->submitLead($request, $form);
+        }
         $back = $this->safeUrl($request->input('_back'));
         $sent = redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303);
 
@@ -86,6 +99,142 @@ class BuilderPublicController extends Controller
         ]);
 
         return $sent;
+    }
+
+    /**
+     * A funnel's opt-in form: the lead is stored for the owner, emailed to them, counted for the step it came from,
+     * and passed to the owner's email tools after the response. The visitor goes on to the funnel's next step.
+     */
+    private function submitLead(Request $request, BuilderForm $form)
+    {
+        $back = $this->safeUrl($request->input('_back'));
+        $nextUrl = $this->nextUrl($request->input('_next'), $request);
+        $done = $nextUrl
+            ? redirect()->away($nextUrl, 303)
+            : redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303);
+
+        // Bots fill the hidden field: pretend it worked
+        if (filled($request->input('_hp'))) {
+            return $done;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => ['nullable', 'string', 'max:100'],
+            'email' => ['required', 'string', 'email', 'max:150'],
+            'phone' => ['nullable', 'string', 'max:30'],
+        ], [
+            'name.max' => 'Please keep your name under 100 characters.',
+            'email.required' => 'Please enter your email.',
+            'email.email' => 'Please enter a valid email address.',
+            'email.max' => 'Please enter a shorter email address.',
+            'phone.max' => 'Please enter a shorter phone number.',
+        ]);
+        if ($validator->fails()) {
+            return $this->problem($form, $back, $validator->errors()->all(), 422);
+        }
+        $data = $validator->validated();
+        foreach (['name', 'email', 'phone'] as $field) {
+            if (preg_match_all('#https?://|www\.#i', (string) ($data[$field] ?? '')) > self::MAX_LINKS) {
+                return $this->problem($form, $back, ['Please include no more than '.self::MAX_LINKS.' links.'], 422);
+            }
+        }
+
+        // Limits are counted by a hash of the IP; the IP itself is never stored
+        $ipKey = 'builder-lead:'.$form->id.':'.sha1($request->ip().'|'.config('app.key'));
+        $dayKey = 'builder-lead-day:'.$form->id;
+        if (RateLimiter::tooManyAttempts($ipKey, self::LEADS_PER_IP_HOUR) || RateLimiter::tooManyAttempts($dayKey, self::LEADS_PER_DAY)) {
+            return $this->problem($form, $back, ['Too many sign-ups have been sent from here. Please try again later.'], 429);
+        }
+        RateLimiter::hit($ipKey, 3600);
+        RateLimiter::hit($dayKey, 86400);
+
+        $step = $request->input('_step');
+        $step = is_string($step) && preg_match('/^[a-z0-9-]{1,40}$/', $step) ? $step : null;
+        $variant = in_array($request->input('_v'), ['a', 'b'], true) ? $request->input('_v') : null;
+        $slug = $request->input('_site');
+        $site = is_string($slug) && preg_match('/^[a-z0-9-]{3,40}$/', $slug)
+            ? BuilderSite::where('slug', $slug)->where('status', 'live')->where('builder_account_id', $form->builder_account_id)->first()
+            : null;
+
+        $lead = $form->leads()->create([
+            'builder_site_id' => $site?->id,
+            'step' => $step,
+            'variant' => $variant,
+            'name' => filled($data['name'] ?? null) ? trim($data['name']) : null,
+            'email' => trim($data['email']),
+            'phone' => filled($data['phone'] ?? null) ? trim($data['phone']) : null,
+        ]);
+        if ($site && $step && $site->hasPage($step)) {
+            BuilderStat::bump($site->id, $step, $variant ?? 'a', 'leads');
+        }
+        DB::table('builder_forms')->where('id', $form->id)->update([
+            'submissions' => DB::raw('submissions + 1'),
+            'last_submission_at' => now(),
+        ]);
+
+        // The owner's email and the email tools run after the visitor has been sent on — no waiting on SMTP
+        $ownerEmail = $form->account->email;
+        \Illuminate\Support\defer(function () use ($ownerEmail, $form, $lead, $site, $back) {
+            try {
+                Mail::to($ownerEmail)->send(new BuilderLeadMessage($form, $lead, $site, $back));
+            } catch (\Throwable $e) {
+                report($e); // the lead is saved either way
+            }
+        });
+
+        try {
+            $hasIntegrations = (bool) $form->integrations;
+        } catch (\Throwable $e) { // e.g. APP_KEY rotated: the saved keys can't be read — never fail the visitor
+            report($e);
+            $hasIntegrations = false;
+        }
+        if ($hasIntegrations) {
+            $payload = [
+                'email' => $lead->email, 'name' => $lead->name, 'phone' => $lead->phone,
+                'funnel' => $site?->slug, 'step' => $step, 'variant' => $variant,
+                'created_at' => $lead->created_at->toIso8601String(),
+            ];
+            \Illuminate\Support\defer(fn () => LeadIntegrations::send($form, $payload));
+        }
+
+        return $done;
+    }
+
+    /**
+     * Stats beacon from published funnel pages (navigator.sendBeacon, body {"s": site, "p": step, "v": "a"|"b"}).
+     * Only counts; nothing about the visitor is stored. Always answers 204.
+     */
+    public function beacon(Request $request)
+    {
+        $res = response()->noContent()->header('Access-Control-Allow-Origin', '*');
+        $raw = $request->getContent();
+        $ua = (string) $request->userAgent();
+        if ($raw === '' || strlen($raw) > 300 || preg_match('/bot|crawl|spider|slurp|preview|headless|lighthouse|pagespeed/i', $ua)) {
+            return $res;
+        }
+        $key = 'builder-fs:'.sha1($request->ip().'|'.config('app.key'));
+        if (RateLimiter::tooManyAttempts($key, self::BEACON_PER_MINUTE)) {
+            return $res;
+        }
+        RateLimiter::hit($key, 60);
+
+        $in = json_decode($raw, true);
+        if (! is_array($in) || ! is_string($in['s'] ?? null) || ! is_string($in['p'] ?? null)
+            || ! preg_match('/^[a-z0-9-]{3,40}$/', $in['s']) || ! preg_match('/^[a-z0-9-]{1,40}$/', $in['p'])) {
+            return $res;
+        }
+        $variant = ($in['v'] ?? 'a') === 'b' ? 'b' : 'a';
+
+        $site = BuilderSite::where('slug', $in['s'])->where('status', 'live')->first(['id', 'pages']);
+        if ($site && $site->hasPage($in['p'])) {
+            try {
+                BuilderStat::bump($site->id, $in['p'], $variant, 'views');
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $res;
     }
 
     public function sent(Request $request, string $id)
@@ -174,6 +323,28 @@ class BuilderPublicController extends Controller
         }
 
         return filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
+    }
+
+    /**
+     * The funnel's next step, if it's somewhere we'll send people: http(s) on the builder sites domain, this app, or the
+     * host the browser says the form was posted from (Referer). Never the client-supplied _back host — both fields come
+     * from the same request, so trusting it would make /f/{id} an open redirect.
+     */
+    private function nextUrl(mixed $url, Request $request): ?string
+    {
+        $url = $this->safeUrl($url);
+        if (! $url) {
+            return null;
+        }
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+        $allowed = array_filter([
+            strtolower((string) config('builder.domain')),
+            strtolower((string) parse_url((string) $request->headers->get('referer'), PHP_URL_HOST)),
+            strtolower((string) parse_url(config('app.url'), PHP_URL_HOST)),
+            strtolower(request()->getHost()),
+        ]);
+
+        return $host !== '' && in_array($host, $allowed, true) ? $url : null;
     }
 
     private function problem(BuilderForm $form, ?string $back, array $errors, int $status)

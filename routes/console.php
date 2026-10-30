@@ -22,3 +22,9 @@ Artisan::command('indexnow:ping {url?*}', function (array $url) {
         $this->info("IndexNow answered {$status} for: ".implode(', ', $urls).' (200 or 202 means accepted).');
     }
 })->purpose('Tell Bing and other IndexNow search engines that pages changed');
+
+// Daily clean-up (needs the scheduler: cron "* * * * * php artisan schedule:run"): funnel step stats older than
+// 400 days, and leads of deleted or unpublished funnels older than 90 days (see the models' prunable()).
+\Illuminate\Support\Facades\Schedule::command('model:prune', [
+    '--model' => [\App\Models\BuilderStat::class, \App\Models\BuilderLead::class],
+])->daily();

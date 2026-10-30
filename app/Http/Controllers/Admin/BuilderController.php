@@ -14,12 +14,13 @@ class BuilderController extends Controller
     {
         return view('admin.builder', [
             'sites' => BuilderSite::with('account')->orderByRaw('reported_at is null')->orderByDesc('reported_at')->orderByDesc('updated_at')->get(),
-            'forms' => BuilderForm::with('account')->orderByDesc('last_submission_at')->orderByDesc('created_at')->get(),
+            'forms' => BuilderForm::with('account')->withCount('leads')->orderByDesc('last_submission_at')->orderByDesc('created_at')->get(),
             'stats' => [
                 'accounts' => BuilderAccount::count(),
                 'live' => BuilderSite::where('status', 'live')->count(),
                 'reported' => BuilderSite::where('status', 'live')->whereNotNull('reported_at')->count(),
-                'messages' => (int) BuilderForm::sum('submissions'),
+                'messages' => (int) BuilderForm::where('kind', 'contact')->sum('submissions'),
+                'leads' => \App\Models\BuilderLead::count(),
             ],
         ]);
     }

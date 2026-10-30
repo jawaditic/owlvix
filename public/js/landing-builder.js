@@ -9,6 +9,9 @@
     if (!root || !B) return;
     const { uid, esc, clone, hex, slugify, getPath, setPath, styleKey, W } = B;
     const RUNTIME = root.dataset.runtime || location.origin + '/js/builder-runtime.js';
+    const FUNNEL = root.dataset.mode === 'funnel'; // /funnel-builder: steps, opt-in forms, payment links, A/B, results
+    const STORE = FUNNEL ? 'owlvix-funnel' : 'owlvix-builder';
+    const STATS_URL = root.dataset.statsUrl || location.origin + '/fs';
     const SITE_BASE = root.dataset.siteBase || location.origin + '/p/'; // where published sites live, e.g. https://sites.owlvix.com/
     const SITE_HOST = SITE_BASE.replace(/^https?:\/\//, '');
 
@@ -57,13 +60,18 @@
 
     /* =========================================================== state + history */
     let P = null;
-    try { P = JSON.parse(localStorage.getItem('owlvix-builder') || 'null'); } catch {}
+    try { P = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
     try { P = P && P.pages?.length ? B.migrate(P) : null; } catch { P = null; }
-    if (!P) P = B.newProject('agency');
-    let pageIdx = 0, device = 'desktop';
+    if (!P) P = FUNNEL ? B.newFunnel('leadmagnet') : B.newProject('agency');
+    let pageIdx = 0, device = 'desktop', variant = 'a'; // variant: which A/B version of the step is being edited
     let sel = null; // { kind: 'section'|'col'|'widget', id, target }
     const DEV = () => ({ desktop: 'd', tablet: 't', mobile: 'm' })[device];
-    const page = () => P.pages[pageIdx] || P.pages[0];
+    /** The page (funnel step) being edited. When editing version B of an A/B step, its sections are the B ones. */
+    const page = () => {
+        const pg = P.pages[pageIdx] || P.pages[0];
+        if (variant !== 'b' || !pg.ab?.on) return pg;
+        return new Proxy(pg, { get: (t, k) => (k === 'sections' ? (t.sectionsB ||= t.sections.map(B.reId)) : t[k]), set: (t, k, v) => { if (k === 'sections') t.sectionsB = v; else t[k] = v; return true; } });
+    };
 
     /** Find any element on the current page by id. */
     const find = id => {
@@ -85,7 +93,7 @@
     const persist = () => {
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
-            try { localStorage.setItem('owlvix-builder', JSON.stringify(P)); $('[data-autosave]').textContent = 'Saved on this device'; }
+            try { localStorage.setItem(STORE, JSON.stringify(P)); $('[data-autosave]').textContent = 'Saved on this device'; }
             catch { $('[data-autosave]').textContent = 'Too big to auto-save — use “Save project”'; }
         }, 400);
     };
@@ -488,7 +496,7 @@
         const secT = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0])).map(([k, v]) => `<button type="button" class="lpb-tpl-row" draggable="true" data-drag="tpl:${k}">${esc(v[0])}<span>＋</span></button>`).join('');
         const pageT = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0] + ' page')).map(([k, v]) => `<button type="button" class="lpb-tpl-row" data-page-tpl="${k}">📄 ${esc(v[0])}<span>＋ New page</span></button>`).join('');
         const mine = myTemplates().map((t, i) => (match(t.name) ? `<div class="lpb-tpl-row lpb-tpl-mine" draggable="true" data-drag="tpl:my-${i}">⭐ ${esc(t.name)}<button type="button" data-tpl-del="${i}" title="Remove">✕</button></div>` : '')).join('');
-        const html = group('Layout — columns', layouts) + group('Basic widgets', widgets('basic')) + group('Pro widgets', widgets('pro')) + group('Ready sections', widgets('section'))
+        const html = (FUNNEL ? group('Funnel widgets', widgets('funnel')) : '') + group('Layout — columns', layouts) + group('Basic widgets', widgets('basic')) + group('Pro widgets', widgets('pro')) + group('Ready sections', widgets('section'))
             + (secT ? `<h4>Section templates</h4><div class="lpb-tpl-list">${secT}</div>` : '') + (pageT ? `<h4>Page templates</h4><div class="lpb-tpl-list">${pageT}</div>` : '')
             + (!q || mine ? `<h4>My templates</h4><div class="lpb-tpl-list">${mine || '<p class="lpb-hint">Select a section and press ★ on its toolbar to save it here.</p>'}</div>` : '');
         $('[data-add-list]').innerHTML = html || '<p class="lpb-hint">Nothing matches your search.</p>';
@@ -523,7 +531,7 @@
     const linkWidget = (key, l) => {
         l = l || { to: 'contact' };
         const pageOpts = P.pages.map(p => `<option value="${esc(p.slug)}" ${l.val === p.slug ? 'selected' : ''}>${esc(p.title)}</option>`).join('');
-        return `<div class="lpb-link"><select data-link-to="${key}">${Object.entries(B.LINK_TYPES).map(([k, v]) => `<option value="${k}" ${l.to === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+        return `<div class="lpb-link"><select data-link-to="${key}">${Object.entries(FUNNEL ? { ...B.FUNNEL_LINKS, ...B.LINK_TYPES } : B.LINK_TYPES).map(([k, v]) => `<option value="${k}" ${l.to === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
             ${l.to === 'page' ? `<select data-link-val="${key}">${pageOpts}</select>` : ['url', 'whatsapp', 'phone', 'email'].includes(l.to) ? `<input data-link-val="${key}" value="${esc(l.val || '')}" placeholder="${{ url: 'https://…', whatsapp: '+1 555 123 4567', phone: '+1 555 123 4567', email: 'you@example.com' }[l.to]}">` : ''}</div>`;
     };
     const fieldHtml = (f, obj, prefix) => {
@@ -649,6 +657,8 @@
                 out += `<p class="lpb-hint">Click text on the page to type over it.</p>`;
                 for (const fl of d.fields) out += fl.type === 'list' ? listHtml(fl, o) : fieldHtml(fl, o.p, `${o.id}|`);
                 if (o.type === 'contact' || o.type === 'form') out += formPanel();
+                if (o.type === 'optin') out += leadPanel();
+                if (o.type === 'paybtn') out += `<p class="lpb-hint">The button goes to this step's payment link — set it in the <b>Page</b> tab (Stripe, PayPal, Gumroad…). “No thanks” goes to the next step.</p>`;
             }
             if (f.kind !== 'col') out += `<div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--ghost" data-panel-ed="dup">Duplicate</button><button type="button" class="btn btn--sm btn--ghost lpb-danger" data-panel-ed="del">Delete</button></div>`;
         } else if (editTab === 'style') {
@@ -728,6 +738,7 @@
         }
         const pe = e.target.closest('[data-panel-ed]'); if (pe && f) return barAction(pe.dataset.panelEd, f.obj.id);
         if (e.target.closest('[data-activate-form]')) activateForm();
+        if (e.target.closest('[data-activate-leads]')) activateLeads();
     });
     const changeLayout = (s, layout) => {
         const n = B.LAYOUTS[layout][1];
@@ -764,15 +775,16 @@
     const drawPage = () => {
         const pg = page(), pop = pg.popup ||= B.defaultsPopup();
         const keep = {}; $$('[data-page-panel] .lpb-acc').forEach(d => (keep[d.querySelector('summary').textContent] = d.open));
-        $('[data-page-panel]').innerHTML = `
-            <details class="lpb-acc" open><summary>Navigator</summary><ol class="lpb-nav" data-navigator></ol></details>
+        const funnelHtml = FUNNEL ? funnelPanel(pg) : '';
+        $('[data-page-panel]').innerHTML = funnelHtml + `
+            <details class="lpb-acc" ${FUNNEL ? '' : 'open'}><summary>Navigator</summary><ol class="lpb-nav" data-navigator></ol></details>
             <details class="lpb-acc"><summary>Page settings</summary>
             <label>Page name (in the menu)<input data-pg="title" value="${esc(pg.title)}" maxlength="40"></label>
             ${pg.slug === 'index' ? '<p class="lpb-hint">This is your home page.</p>' : `<label>Page address<span class="lpb-slug"><i>/</i><input data-pg="slug" value="${esc(pg.slug)}" maxlength="40"></span></label>`}
             <label class="lpb-check"><input type="checkbox" data-pg="menu" ${pg.menu ? 'checked' : ''}> Show in the menu</label>
             <label>Google title<input data-pg="seo.title" value="${esc(pg.seo.title)}" maxlength="70" placeholder="Leave empty to make one automatically"></label>
             <label>Google description<textarea data-pg="seo.description" rows="3" maxlength="170" placeholder="Leave empty to use the hero text">${esc(pg.seo.description)}</textarea></label>
-            ${pg.slug !== 'index' ? '<button type="button" class="btn btn--sm btn--ghost lpb-danger" data-page-del>Delete this page</button>' : ''}</details>
+            ${pg.slug !== 'index' ? `<button type="button" class="btn btn--sm btn--ghost lpb-danger" data-page-del>Delete this ${FUNNEL ? 'step' : 'page'}</button>` : ''}</details>
             <details class="lpb-acc"><summary>Popup</summary>
             <label class="lpb-check"><input type="checkbox" data-pg="popup.on" ${pop.on ? 'checked' : ''}> Show a popup on this page</label>
             <label>Open the popup<select data-pg="popup.trigger">${Object.entries({ delay: 'After a few seconds', exit: 'When the visitor is about to leave', scroll: 'Half-way down the page', click: 'Only when a button links to it' }).map(([k, l]) => `<option value="${k}" ${pop.trigger === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
@@ -786,6 +798,62 @@
         $$('[data-page-panel] .lpb-acc').forEach(d => { const k = d.querySelector('summary').textContent; if (k in keep) d.open = keep[k]; });
         drawNavigator();
     };
+    const stepUrl = slug => SITE_BASE + (P.site.publishSlug || 'your-funnel') + (slug === 'index' ? '' : '/' + slug);
+    /** The first step is the funnel's entry page (address …/name). After a reorder, give it that address and keep
+        every "go to next step" choice pointing at the same steps. */
+    const ensureHome = () => {
+        const first = P.pages[0], home = P.pages.find(p => p.slug === 'index');
+        if (!first || first.slug === 'index' || !home) return;
+        let renamed = slugify(home.title) || 'step';
+        while (P.pages.some(p => p.slug === renamed)) renamed += '-2';
+        const firstSlug = first.slug;
+        home.slug = renamed; first.slug = 'index';
+        P.pages.forEach(p => { if (p.next === 'index') p.next = renamed; else if (p.next === firstSlug) p.next = 'index'; });
+        toast(`“${first.title}” is now the first step (the funnel's main address)`);
+    };
+    const funnelPanel = pg => {
+        const steps = P.pages, nx = B.nextOf(pg, P);
+        return `<details class="lpb-acc" open><summary>Funnel steps</summary><ol class="lpb-flow">${steps.map((p, i) => `<li class="${i === pageIdx ? 'is-on' : ''}">
+                <button type="button" data-step-go="${i}"><b>${i + 1}</b><span>${esc(p.title)}<small>${esc(B.STEP_TYPES[p.type] || 'Page')}${p.ab?.on ? ' · A/B' : ''}</small></span></button>
+                <span class="lpb-flow__mv"><button type="button" data-step-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move up">↑</button><button type="button" data-step-mv="${i}|1" ${i === steps.length - 1 ? 'disabled' : ''} title="Move down">↓</button></span></li>`).join('<li class="lpb-flow__arrow" aria-hidden="true">↓</li>')}</ol>
+            <button type="button" class="btn btn--sm btn--ghost" data-act-step>＋ Add step</button></details>
+            <details class="lpb-acc" open><summary>This step</summary>
+            <label>Step type<select data-pg="type">${Object.entries(B.STEP_TYPES).map(([k, l]) => `<option value="${k}" ${pg.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+            <label>After this step, go to<select data-pg="next"><option value="">${nx && !pg.next ? 'The following step (' + esc(nx.title) + ')' : 'The following step'}</option>${steps.filter(p => p.id !== pg.id).map(p => `<option value="${esc(p.slug)}" ${pg.next === p.slug ? 'selected' : ''}>${esc(p.title)}</option>`).join('')}</select></label>
+            <p class="lpb-hint">Opt-in forms send people here after they sign up; buttons linked to “Next funnel step” too.</p>
+            <label>Payment link (Stripe, PayPal, Gumroad…)<input data-pg="pay" value="${esc(pg.pay || '')}" placeholder="https://buy.stripe.com/…"></label>
+            ${pg.pay ? `<p class="lpb-hint">In your payment provider, set the “after payment” page to:<br><code class="lpb-copy" data-copy="${esc(nx ? stepUrl(nx.slug) : '')}">${esc(nx ? stepUrl(nx.slug) : 'add a next step first')}</code></p>` : '<p class="lpb-hint">Buy buttons on this step go to this link. No money passes through Owlvix.</p>'}
+            </details>
+            <details class="lpb-acc" open><summary>A/B test</summary>
+            <label class="lpb-check"><input type="checkbox" data-ab-on ${pg.ab?.on ? 'checked' : ''}> Test two versions of this step</label>
+            ${pg.ab?.on ? `<div class="lpb-seg lpb-seg--wide">${['a', 'b'].map(v => `<button type="button" data-variant="${v}" class="${variant === v ? 'is-on' : ''}">Edit version ${v.toUpperCase()}</button>`).join('')}</div>
+            <p class="lpb-hint">Visitors get version A or B at random. Compare sign-ups in the Results tab, then keep the winner.</p>
+            <div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--ghost" data-ab-copy>Copy A into B</button><button type="button" class="btn btn--sm btn--ghost" data-ab-keep="a">Keep A</button><button type="button" class="btn btn--sm btn--ghost" data-ab-keep="b">Keep B</button></div>` : '<p class="lpb-hint">Try a different headline, offer or layout and see which gets more sign-ups.</p>'}</details>`;
+    };
+    pagePanel.addEventListener('click', async e => {
+        if (!FUNNEL) return;
+        const pg = P.pages[pageIdx];
+        const go = e.target.closest('[data-step-go]'); if (go) { $('[data-pages]').value = go.dataset.stepGo; return switchPage(+go.dataset.stepGo); }
+        const mv = e.target.closest('[data-step-mv]');
+        if (mv) { const [i, d] = mv.dataset.stepMv.split('|').map(Number), st = P.pages; [st[i], st[i + d]] = [st[i + d], st[i]]; if (pageIdx === i) pageIdx = i + d; else if (pageIdx === i + d) pageIdx = i; ensureHome(); commit(); drawPages(); refreshChrome(); refreshMain(); return drawPage(); }
+        if (e.target.closest('[data-act-step]')) return addStep();
+        const v = e.target.closest('[data-variant]'); if (v) { variant = v.dataset.variant; sel = null; renderCanvas(); drawEdit(); drawPage(); syncVariantBadge(); return toast(`Editing version ${variant.toUpperCase()}`); }
+        if (e.target.closest('[data-ab-copy]') && await sweet({ icon: 'warning', title: 'Copy version A into B?', text: 'Version B is replaced by a copy of A. You can undo.', confirm: 'Copy A into B' })) { pg.sectionsB = pg.sections.map(B.reId); commit(); if (variant === 'b') renderCanvas(); return toast('B is now a copy of A'); }
+        const keep = e.target.closest('[data-ab-keep]');
+        if (keep && await sweet({ icon: 'question', title: `Keep version ${keep.dataset.abKeep.toUpperCase()}?`, text: 'The A/B test ends and the other version is removed. You can undo.', confirm: `Keep ${keep.dataset.abKeep.toUpperCase()}` })) {
+            if (keep.dataset.abKeep === 'b' && pg.sectionsB) pg.sections = pg.sectionsB;
+            pg.sectionsB = null; pg.ab = { on: false }; variant = 'a'; commit(); renderCanvas(); drawPage(); syncVariantBadge(); return toast('A/B test ended');
+        }
+        const cp = e.target.closest('[data-copy]'); if (cp && cp.dataset.copy) { navigator.clipboard?.writeText(cp.dataset.copy).then(() => toast('Copied')).catch(() => {}); }
+    });
+    pagePanel.addEventListener('change', e => {
+        if (!e.target.matches('[data-ab-on]')) return;
+        const pg = P.pages[pageIdx];
+        pg.ab = { on: e.target.checked };
+        if (e.target.checked && !pg.sectionsB?.length) pg.sectionsB = pg.sections.map(B.reId);
+        if (!e.target.checked) variant = 'a';
+        commit(); renderCanvas(); drawPage(); syncVariantBadge();
+    });
     ['input', 'change'].forEach(ev => pagePanel.addEventListener(ev, e => {
         const el = e.target, pg = page();
         if (el.dataset.linkTo || el.dataset.linkVal) {
@@ -799,6 +867,8 @@
         setPath(pg, k, v); commitSoon();
         if (k === 'title' || k === 'menu') { refreshChrome(); drawPages(); }
         if (k === 'popup.trigger' && e.type === 'change') drawPage();
+        if (FUNNEL && ['type', 'next', 'title'].includes(k) && e.type === 'change') { drawPages(); drawPage(); refreshMain(); }
+        if (FUNNEL && k === 'pay') { refreshMain(); if (e.type === 'change') drawPage(); }
     }));
 
     /* =========================================================== site panel (global settings) */
@@ -833,7 +903,7 @@
             <details class="lpb-acc"><summary>Custom CSS</summary>
             <textarea data-site="css" rows="8" class="lpb-code" placeholder=".hero-copy h1 { letter-spacing: -2px; }">${esc(s.css || '')}</textarea><p class="lpb-hint">Added to every page. Scripts are not allowed.</p></details>
             <details class="lpb-acc"><summary>Start over</summary><p class="lpb-hint">Replace everything with an example (you can undo).</p>
-            <div class="lpb-chips">${Object.entries(B.EXAMPLES).map(([k, v]) => `<button type="button" class="lpb-chip" data-example="${k}">${esc(v[0])}</button>`).join('')}</div></details>`;
+            <div class="lpb-chips">${Object.entries(FUNNEL ? B.FUNNELS : B.EXAMPLES).map(([k, v]) => `<button type="button" class="lpb-chip" data-example="${k}">${esc(v[0])}</button>`).join('')}</div></details>`;
         $$('[data-site-panel] .lpb-acc').forEach(d => { const k = d.querySelector('summary').textContent; if (k in keep) d.open = keep[k]; });
         syncGlobals();
     };
@@ -853,7 +923,7 @@
     }));
     sitePanel.addEventListener('click', e => {
         const exb = e.target.closest('[data-example]');
-        if (exb) { const keep = { formAction: P.site.formAction, publishSlug: P.site.publishSlug }; P = B.newProject(exb.dataset.example); Object.assign(P.site, keep); pageIdx = 0; sel = null; commit(); renderAll(); toast('Example loaded — press Undo to go back'); return; }
+        if (exb) { const keep = { formAction: P.site.formAction, leadAction: P.site.leadAction, leadFormId: P.site.leadFormId, publishSlug: P.site.publishSlug, ref: P.site.ref }; P = FUNNEL ? B.newFunnel(exb.dataset.example) : B.newProject(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
         const pick = e.target.closest('[data-img-pick]'); if (pick) { picking = pick.dataset.imgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-img-clear]')) { P.site.logo = ''; commit(); refreshChrome(); drawSite(); }
     });
@@ -865,12 +935,27 @@
         if (name === 'page') drawPage();
         if (name === 'site') drawSite();
         if (name === 'edit') drawEdit();
+        if (name === 'results') drawResults();
     };
     $$('[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
-    const drawPages = () => { $('[data-pages]').innerHTML = P.pages.map((p, i) => `<option value="${i}" ${i === pageIdx ? 'selected' : ''}>${esc(p.title)}${p.slug === 'index' ? ' (home)' : ''}</option>`).join(''); };
-    const switchPage = i => { if (i < 0 || !P.pages[i]) return; pageIdx = i; sel = null; drawPages(); renderCanvas(); drawEdit(); drawPage(); };
+    const drawPages = () => { $('[data-pages]').innerHTML = P.pages.map((p, i) => `<option value="${i}" ${i === pageIdx ? 'selected' : ''}>${FUNNEL ? `Step ${i + 1} · ${esc(p.title)}` : esc(p.title) + (p.slug === 'index' ? ' (home)' : '')}</option>`).join(''); syncVariantBadge(); };
+    const switchPage = i => { if (i < 0 || !P.pages[i]) return; pageIdx = i; variant = 'a'; sel = null; drawPages(); renderCanvas(); drawEdit(); drawPage(); };
+    const syncVariantBadge = () => { const b = $('[data-variant-badge]'); if (!b) return; const on = P.pages[pageIdx]?.ab?.on; b.hidden = !on; b.textContent = `A/B · editing ${variant.toUpperCase()}`; b.dataset.v = variant; };
     $('[data-pages]').addEventListener('change', e => switchPage(+e.target.value));
+    const addStep = async () => {
+        if (P.pages.length >= 10) return sweet({ icon: 'info', title: 'You have 10 steps', text: 'That is the most one funnel can have.', cancel: false, confirm: 'Got it' });
+        const html = `<div class="step-types">${Object.entries(B.STEP_TYPES).map(([k, l]) => `<button type="button" data-pick="${k}">${esc(l)}</button>`).join('')}</div>`;
+        const type = await sweet({ icon: 'question', title: 'Add a funnel step', text: 'What kind of step is it?', html, confirm: false });
+        if (!type || !B.STEP_TYPES[type]) return;
+        const title = await sweet({ icon: 'question', title: 'Name this step', input: { value: B.STEP_TYPES[type], max: 40 }, confirm: 'Add step' });
+        if (!title) return;
+        const pg = B.newStep(title.slice(0, 40), type, P.pages.length);
+        while (P.pages.some(p => p.slug === pg.slug)) pg.slug += '-2';
+        P.pages.push(pg); commit(); switchPage(P.pages.length - 1); showTab('page');
+        track('funnel_add_step', { type });
+    };
     const addPage = async (preset, tpl) => {
+        if (FUNNEL) return addStep();
         if (P.pages.length >= 10) return sweet({ icon: 'info', title: 'You have 10 pages', text: 'That is the most one site can have. Delete a page to add another.', cancel: false, confirm: 'Got it' });
         const title = await sweet({ icon: 'question', title: 'Add a new page', text: 'What should the page be called? It appears in your menu.', input: { value: preset || 'About', placeholder: 'About, Services, Contact…', max: 40 }, confirm: 'Add page' });
         if (!title) return;
@@ -944,7 +1029,7 @@
         end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, size, true); end.setUint32(16, offset, true);
         return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
     };
-    const exportHtml = (pg, mode) => B.render(P, pg, mode, { runtime: RUNTIME, siteBase: SITE_BASE });
+    const exportHtml = (pg, mode) => B.render(P, pg, mode, { runtime: RUNTIME, siteBase: SITE_BASE, statsUrl: STATS_URL });
     $('[data-act=download]').addEventListener('click', () => {
         if (P.pages.length === 1) save(new Blob([exportHtml(P.pages[0], 'download')], { type: 'text/html' }), baseName() + '.html');
         else save(zip(P.pages.map(p => ({ name: (p.slug === 'index' ? 'index' : p.slug) + '.html', text: exportHtml(p, 'download') }))), baseName() + '.zip');
@@ -1001,9 +1086,21 @@
     const formPanel = () => P.site.formAction
         ? `<div class="lpb-form-ok">✅ Contact form is active. Messages are emailed to ${esc(account?.email || 'your sign-in email')}.</div>`
         : `<div class="lpb-form-off"><b>📨 Working contact form</b><p>Visitors' messages are emailed to you — it works wherever you put the page. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-form>Activate contact form</button></div>`;
+    const leadPanel = () => P.site.leadAction
+        ? `<div class="lpb-form-ok">✅ Collecting leads. Each one is emailed to ${esc(account?.email || 'you')} and saved — see them in the <b>Results</b> tab.</div>`
+        : `<div class="lpb-form-off"><b>📥 Collect leads</b><p>Sign-ups are emailed to you, saved in your Results tab (download as CSV) and can go to Mailchimp, Brevo or a webhook. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-leads>Switch on lead collection</button></div>`;
+    const activateLeads = () => needAccount(async () => {
+        try {
+            P.site.ref ||= uid() + uid();
+            const r = await api('POST', '/builder/forms', { site_name: P.site.name || 'My funnel', kind: 'leads', ref: P.site.ref });
+            P.site.leadAction = r.form.action; P.site.leadFormId = r.form.id; commit(); if (dlg.open) dlg.close();
+            refreshMain(); drawEdit(); toast('Lead collection is on'); track('funnel_leads_on');
+        } catch (ex) { toast(ex.message); }
+    });
     const activateForm = () => needAccount(async () => {
         try {
-            const r = await api('POST', '/builder/forms', { site_name: P.site.name || 'My website' });
+            P.site.ref ||= uid() + uid();
+            const r = await api('POST', '/builder/forms', { site_name: P.site.name || 'My website', ref: P.site.ref });
             P.site.formAction = r.form.action; commit(); if (dlg.open) dlg.close();
             refreshMain(); drawEdit(); toast('Contact form activated'); track('builder_form_activated');
         } catch (ex) { toast(ex.message); }
@@ -1041,14 +1138,83 @@
         const modal = document.getElementById('quote-modal');
         const service = modal?.querySelector('select[name=service]'); if (service) service.value = 'Landing page';
         const ta = modal?.querySelector('textarea[name=message]');
-        const text = `I built a ${P.pages.length > 1 ? P.pages.length + '-page website' : 'landing page'} for ${P.site.name || 'my business'} with your free builder${P.site.publishSlug ? ` (${SITE_BASE}${P.site.publishSlug})` : ''}. I'd like it live on my own domain.`;
+        const text = FUNNEL ? `I built a ${P.pages.length}-step funnel for ${P.site.name || 'my business'} with your free funnel builder${P.site.publishSlug ? ` (${SITE_BASE}${P.site.publishSlug})` : ''}. I'd like help to set it up and get more conversions.` : `I built a ${P.pages.length > 1 ? P.pages.length + '-page website' : 'landing page'} for ${P.site.name || 'my business'} with your free builder${P.site.publishSlug ? ` (${SITE_BASE}${P.site.publishSlug})` : ''}. I'd like it live on my own domain.`;
         if (ta?.quill) ta.quill.setText(text); else if (ta) ta.value = text;
         track('builder_quote');
     }));
+
+    /* =========================================================== results (funnels): stats, leads, email tools */
+    const resultsBox = () => $('[data-results-panel]');
+    const drawResults = async () => {
+        const box = resultsBox(); if (!box) return;
+        if (!token) { box.innerHTML = '<div class="lpb-empty-edit"><b>See your funnel results</b><p>Sign in to see visits and sign-ups per step, your leads, and connect Mailchimp, Brevo or a webhook.</p><button type="button" class="btn btn--sm btn--glow" data-results-signin>Sign in with email</button></div>'; return; }
+        box.innerHTML = '<p class="lpb-hint">Loading…</p>';
+        try {
+            await loadAccount();
+            const slug = P.site.publishSlug, formId = P.site.leadFormId || account.forms?.find(f => f.action === P.site.leadAction)?.id;
+            const [stats, leads, integ] = await Promise.all([
+                slug ? api('GET', '/builder/stats?slug=' + encodeURIComponent(slug)).catch(() => null) : null,
+                formId ? api('GET', '/builder/leads?form=' + formId).catch(() => null) : null,
+                formId ? api('GET', `/builder/forms/${formId}/integrations`).catch(() => null) : null,
+            ]);
+            const rows = P.pages.map(p => {
+                const s = (stats?.steps || []).filter(x2 => x2.step === p.slug), sum = k => s.reduce((n, x2) => n + (+x2[k] || 0), 0);
+                return { p, views: sum('views'), leads: sum('leads'), byV: ['a', 'b'].map(v => ({ v, views: s.filter(x2 => x2.variant === v).reduce((n, x2) => n + (+x2.views || 0), 0), leads: s.filter(x2 => x2.variant === v).reduce((n, x2) => n + (+x2.leads || 0), 0) })) };
+            });
+            const top = Math.max(1, ...rows.map(r => r.views));
+            const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 + '%' : '–');
+            const plural = (n, w) => `${n.toLocaleString()} ${w}${n === 1 ? '' : 's'}`;
+            box.innerHTML = `
+                <details class="lpb-acc" open><summary>Funnel — last 30 days</summary>
+                ${slug ? `<div class="lpb-fun">${rows.map((r, i) => `<div class="lpb-fun__row"><div class="lpb-fun__top"><b>${i + 1}. ${esc(r.p.title)}</b><span>${plural(r.views, 'visit')}${r.leads ? ` · ${plural(r.leads, 'sign-up')} (${pct(r.leads, r.views)})` : ''}</span></div>
+                    <div class="lpb-fun__bar"><i style="width:${(r.views / top) * 100}%"></i></div>${i > 0 && rows[i - 1].views ? `<small>${pct(r.views, rows[i - 1].views)} of the previous step reached this one</small>` : ''}
+                    ${r.p.ab?.on ? `<div class="lpb-ab">${r.byV.map(b => `<span><b>${b.v.toUpperCase()}</b> ${plural(b.views, 'visit')} · ${plural(b.leads, 'sign-up')} · ${pct(b.leads, b.views)}</span>`).join('')}</div>` : ''}</div>`).join('')}</div>
+                <p class="lpb-hint">Counts come from your published funnel at ${esc(SITE_HOST + slug)}.</p>` : '<p class="lpb-hint">Publish your funnel to start counting visits and sign-ups.</p>'}</details>
+                <details class="lpb-acc" open><summary>Leads${leads ? ` (${leads.total})` : ''}</summary>
+                ${!formId ? '<p class="lpb-hint">Add an Opt-in form widget and switch on lead collection to start collecting leads.</p>'
+                    : leads?.leads?.length ? `<div class="lpb-leads"><table><thead><tr><th>Date</th><th>Name</th><th>Email</th><th>Step</th></tr></thead><tbody>${leads.leads.slice(0, 50).map(l => `<tr><td>${esc(new Date(l.created_at).toLocaleDateString())}</td><td>${esc(l.name || '')}</td><td>${esc(l.email)}</td><td>${esc(l.step || '')}${l.variant === 'b' ? ' (B)' : ''}</td></tr>`).join('')}</tbody></table></div>
+                        <button type="button" class="btn btn--sm btn--glow" data-leads-csv="${formId}">Download all as CSV</button>` : '<p class="lpb-hint">No leads yet. They appear here as soon as someone signs up.</p>'}</details>
+                ${formId ? `<details class="lpb-acc"><summary>Send leads to your email tool</summary><form class="lpb-integ" data-integ="${formId}">
+                    <h4>Mailchimp</h4><label>API key<input name="mc_key" placeholder="${esc(integ?.integrations?.mailchimp?.key_hint || 'xxxxxxxx…-us21')}" autocomplete="off"></label><label>Audience ID<input name="mc_list" value="${esc(integ?.integrations?.mailchimp?.list || '')}"></label>
+                    <h4>Brevo</h4><label>API key<input name="br_key" placeholder="${esc(integ?.integrations?.brevo?.key_hint || 'xkeysib-…')}" autocomplete="off"></label><label>List ID<input name="br_list" value="${esc(integ?.integrations?.brevo?.list || '')}"></label>
+                    <h4>Webhook (Zapier, Make, your CRM)</h4><label>URL<input name="wh_url" value="${esc(integ?.integrations?.webhook?.url || '')}" placeholder="https://hooks.zapier.com/…"></label>
+                    <p class="lpb-hint">Leave a list or URL empty to switch that one off. Keys are stored encrypted and never shown again.</p><p class="lpb-err" hidden></p>
+                    <button type="submit" class="btn btn--sm btn--glow">Save connections</button></form></details>` : ''}`;
+        } catch (ex) { box.innerHTML = `<p class="lpb-err">${esc(ex.message)}</p>`; }
+    };
+    if (FUNNEL) {
+        const rp = $('[data-tab-panel=results]');
+        rp.addEventListener('click', async e => {
+            if (e.target.closest('[data-results-signin]')) return needAccount(() => { dlg.close(); drawResults(); });
+            const csv = e.target.closest('[data-leads-csv]');
+            if (csv) {
+                try {
+                    const res = await fetch(`/builder/leads?form=${csv.dataset.leadsCsv}&format=csv`, { headers: { 'X-Builder-Token': token, Accept: 'text/csv' } });
+                    if (!res.ok) throw new Error('Could not download the leads.');
+                    save(await res.blob(), `leads-${baseName()}-${new Date().toISOString().slice(0, 10)}.csv`); track('funnel_leads_csv');
+                } catch (ex) { toast(ex.message); }
+            }
+        });
+        rp.addEventListener('submit', async e => {
+            const f = e.target.closest('[data-integ]'); if (!f) return;
+            e.preventDefault();
+            const err = f.querySelector('.lpb-err'); err.hidden = true;
+            const v = n => f[n].value.trim();
+            try {
+                await api('POST', `/builder/forms/${f.dataset.integ}/integrations`, {
+                    mailchimp: v('mc_list') ? { key: v('mc_key'), list: v('mc_list') } : null,
+                    brevo: v('br_list') ? { key: v('br_key'), list: v('br_list') } : null,
+                    webhook: v('wh_url') ? { url: v('wh_url') } : null,
+                });
+                toast('Connections saved'); track('funnel_integrations'); drawResults();
+            } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+        });
+    }
 
     /* =========================================================== start */
     const renderAll = () => { drawPages(); renderCanvas(); drawAdd(); drawEdit(); drawSite(); drawPage(); };
     renderAll(); syncHistory(); setDevice(window.innerWidth < 760 ? 'mobile' : 'desktop'); showTab('add');
     persist();
+    syncVariantBadge();
     window.__owlBuilder = { get P() { return P; }, select, find }; // for checking things from the browser console
 })();

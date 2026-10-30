@@ -6,7 +6,9 @@ use App\Mail\BuilderSignInCode;
 use App\Models\BuilderAccount;
 use App\Models\BuilderForm;
 use App\Models\BuilderSite;
+use App\Models\BuilderStat;
 use App\Support\BuilderHtml;
+use App\Support\LeadIntegrations;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 /**
  * JSON API for the free landing page builder (/landing-page-builder): email sign-in, contact forms and
@@ -104,27 +107,38 @@ class BuilderController extends Controller
             'ok' => true,
             'email' => $account->email,
             'sites' => $account->sites()->orderByDesc('updated_at')->get()->map->toApi()->values(),
-            'forms' => $account->forms()->oldest()->get()->map->toApi(true)->values(),
+            'forms' => $account->forms()->withCount('leads')->oldest()->get()->map->toApi(true)->values(),
         ]);
     }
 
     public function createForm(Request $request): JsonResponse
     {
-        $data = $this->check($request, ['site_name' => ['required', 'string', 'max:100']], [
+        $data = $this->check($request, [
+            'site_name' => ['required', 'string', 'max:100'],
+            'kind' => ['nullable', 'string', 'in:'.implode(',', BuilderForm::KINDS)],
+            'ref' => ['nullable', 'string', 'regex:/^[a-z0-9]{6,20}$/'],
+        ], [
             'site_name.required' => 'Please give your site a name first.', 'site_name.max' => 'Please use a site name under 100 characters.',
+            'kind.in' => 'Unknown form type.',
         ]);
         if ($data instanceof JsonResponse) {
             return $data;
         }
         $account = $this->user($request);
         $name = trim($data['site_name']);
+        $kind = $data['kind'] ?? 'contact';
 
-        $form = $account->forms()->where('site_name', $name)->first();
+        // One form per builder project (ref) and kind; older clients without a ref are matched by site name
+        $ref = $data['ref'] ?? null;
+        $form = $account->forms()->where('kind', $kind)
+            ->when($ref, fn ($q) => $q->where('ref', $ref), fn ($q) => $q->where('site_name', $name)->whereNull('ref'))->first();
         if (! $form) {
             if ($account->forms()->count() >= BuilderForm::MAX_PER_ACCOUNT) {
-                return $this->fail('You can have up to '.BuilderForm::MAX_PER_ACCOUNT.' contact forms.', 422);
+                return $this->fail('You can have up to '.BuilderForm::MAX_PER_ACCOUNT.' forms.', 422);
             }
-            $form = $account->forms()->create(['id' => BuilderForm::newId(), 'site_name' => $name]);
+            $form = $account->forms()->create(['id' => BuilderForm::newId(), 'site_name' => $name, 'kind' => $kind, 'ref' => $ref]);
+        } elseif ($form->site_name !== $name) {
+            $form->update(['site_name' => $name]); // the project was renamed
         }
 
         return response()->json(['ok' => true, 'form' => $form->toApi()]);
@@ -236,6 +250,99 @@ class BuilderController extends Controller
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /** A lead form's leads, newest first: JSON for the builder, or a CSV download with ?format=csv. */
+    public function leads(Request $request)
+    {
+        $form = $this->ownForm($request, $request->query('form'));
+        if (! $form) {
+            return $this->fail('Form not found.', 404);
+        }
+        if ($request->query('format') === 'csv') {
+            $name = 'leads-'.(Str::slug($form->site_name) ?: 'form').'-'.now()->toDateString().'.csv';
+
+            return response()->streamDownload(function () use ($form) {
+                $out = fopen('php://output', 'w');
+                fwrite($out, "\xEF\xBB\xBF"); // so Excel reads the file as UTF-8
+                fputcsv($out, ['Date', 'Name', 'Email', 'Phone', 'Step', 'Variant'], ',', '"', '');
+                foreach ($form->leads()->latest('created_at')->latest('id')->lazy(500) as $lead) { // every lead, not just the newest 1,000
+                    fputcsv($out, array_map([self::class, 'csvCell'], [
+                        $lead->created_at?->format('Y-m-d H:i:s'), $lead->name, $lead->email, $lead->phone, $lead->step, $lead->variant,
+                    ]), ',', '"', '');
+                }
+                fclose($out);
+            }, $name, ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store']);
+        }
+
+        $leads = $form->leads()->latest('created_at')->latest('id')->limit(1000)->get();
+
+        return response()->json(['ok' => true, 'total' => $form->leads()->count(), 'leads' => $leads->map->toApi()->values()]);
+    }
+
+    /** Spreadsheet apps run cells that start with = + - @ as formulas: make them plain text. */
+    public static function csvCell(mixed $value): string
+    {
+        $value = (string) $value;
+
+        return $value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$value : $value;
+    }
+
+    /** Views and leads of each step and A/B version of one of your sites over the last 30 days. */
+    public function stats(Request $request): JsonResponse
+    {
+        $slug = $request->query('slug');
+        $site = is_string($slug) ? $this->user($request)->sites()->where('slug', $slug)->first() : null;
+        if (! $site) {
+            return $this->fail('Site not found.', 404);
+        }
+        $order = array_flip(array_column($site->pages ?? [], 'slug'));
+        $steps = BuilderStat::where('builder_site_id', $site->id)
+            ->where('day', '>=', now()->subDays(29)->toDateString())
+            ->selectRaw('step, variant, sum(views) as views, sum(leads) as leads')
+            ->groupBy('step', 'variant')->get()
+            ->map(fn ($r) => ['step' => $r->step, 'variant' => $r->variant, 'views' => (int) $r->views, 'leads' => (int) $r->leads])
+            ->sortBy(fn ($r) => sprintf('%05d%s%s', $order[$r['step']] ?? 99999, $r['step'], $r['variant']))
+            ->values();
+
+        return response()->json(['ok' => true, 'days' => 30, 'steps' => $steps]);
+    }
+
+    public function integrations(Request $request, string $id): JsonResponse
+    {
+        $form = $this->ownForm($request, $id);
+        if (! $form) {
+            return $this->fail('Form not found.', 404);
+        }
+
+        return response()->json(['ok' => true, 'integrations' => LeadIntegrations::forApi($form->integrations)]);
+    }
+
+    public function saveIntegrations(Request $request, string $id): JsonResponse
+    {
+        $form = $this->ownForm($request, $id);
+        if (! $form) {
+            return $this->fail('Form not found.', 404);
+        }
+        $key = 'builder-integrations:'.$form->id;
+        if (RateLimiter::tooManyAttempts($key, 20)) {
+            return $this->fail('Too many changes. Please wait a few minutes and try again.', 429);
+        }
+        RateLimiter::hit($key, 600);
+
+        $settings = LeadIntegrations::merge($form->integrations, $request->only(['mailchimp', 'brevo', 'webhook']));
+        if (is_string($settings)) {
+            return $this->fail($settings, 422);
+        }
+        $form->integrations = $settings ?: null;
+        $form->save();
+
+        return response()->json(['ok' => true, 'integrations' => LeadIntegrations::forApi($form->integrations)]);
+    }
+
+    private function ownForm(Request $request, mixed $id): ?BuilderForm
+    {
+        return is_string($id) && preg_match('/^[a-z0-9]{16}$/', $id) ? $this->user($request)->forms()->whereKey($id)->first() : null;
     }
 
     private function user(Request $request): BuilderAccount

@@ -14,6 +14,7 @@
         <div class="panel stat"><span>Live sites</span><strong>{{ $stats['live'] }}</strong></div>
         <div @class(['panel stat', 'stat--accent' => $stats['reported']])><span>Reported, live</span><strong>{{ $stats['reported'] }}</strong></div>
         <div class="panel stat"><span>Form messages sent</span><strong>{{ $stats['messages'] }}</strong></div>
+        <div class="panel stat"><span>Funnel leads</span><strong>{{ $stats['leads'] }}</strong></div>
     </section>
 
     <h2>Published sites</h2>
@@ -71,14 +72,20 @@
         @endforelse
     </section>
 
-    <h2 style="margin-top: 28px;">Contact forms</h2>
+    <h2 style="margin-top: 28px;">Forms</h2>
     <section class="panel list">
         @forelse ($forms as $form)
             <div class="row feedback-row">
                 <span class="dot"></span>
                 <span class="what">
                     <span class="tags">
-                        <em>{{ $form->submissions }} {{ \Illuminate\Support\Str::plural('message', $form->submissions) }}</em>
+                        @if ($form->isLeads())
+                            <em class="src--contact">Lead form</em>
+                            <em>{{ number_format($form->leads_count) }} {{ \Illuminate\Support\Str::plural('lead', $form->leads_count) }} stored</em>
+                        @else
+                            <em>Contact form</em>
+                            <em>{{ $form->submissions }} {{ \Illuminate\Support\Str::plural('message', $form->submissions) }}</em>
+                        @endif
                         @if ($form->disabled_at)<em class="src--popup">Disabled</em>@endif
                         <em>/f/{{ $form->id }}</em>
                     </span>
@@ -94,7 +101,7 @@
         @empty
             <div class="empty">
                 <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="48" height="48">
-                <p>No contact forms yet.</p>
+                <p>No forms yet.</p>
             </div>
         @endforelse
     </section>
