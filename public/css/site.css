@@ -1239,3 +1239,90 @@ svg .d { fill: currentColor; fill-opacity: .26; }
 /* Developer owl: the wing resting on the laptop pivots at its shoulder; the mic boom at the ear cup */
 .owl-svg--dev .o-arm { transform-origin: 142px 262px; }
 .owl-svg--dev .o-tassel { transform-origin: 98px 182px; }
+
+/* ---------- Front desk owl: ask a question, the owl answers ---------- */
+.desk-qa { margin-top: 32px; max-width: 460px; }
+.desk-qa__stage { display: grid; grid-template-columns: auto 1fr; align-items: end; gap: 6px; }
+.desk-qa__owl { grid-column: 1; grid-row: 1; }
+.desk-qa__bubble {
+    grid-column: 2; grid-row: 1; align-self: start; position: relative; margin: 8px 0 0; min-height: 4.6em;
+    padding: 14px 16px; border-radius: 18px 18px 18px 6px; font-size: .95rem; line-height: 1.5; color: var(--text);
+    background: var(--card); border: 1px solid rgba(30, 199, 115, .45);
+    box-shadow: 0 16px 34px -22px rgba(var(--shadow-rgb), calc(.6 * var(--shadow-k)));
+}
+.desk-qa__bubble::before {
+    content: ""; position: absolute; left: -9px; bottom: 14px; width: 16px; height: 16px; transform: rotate(45deg);
+    background: var(--card); border-left: 1px solid rgba(30, 199, 115, .45); border-bottom: 1px solid rgba(30, 199, 115, .45);
+}
+.desk-qa__label { margin: 18px 0 10px; font-weight: 600; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; color: var(--green); }
+.desk-qa__questions { display: flex; flex-wrap: wrap; gap: 8px; }
+.desk-qa__q {
+    padding: 8px 14px; border-radius: 999px; border: 1px solid var(--card-border); background: var(--card);
+    color: var(--text-2); font: 500 .88rem Inter, sans-serif; cursor: pointer; transition: border-color .15s, color .15s, background .15s;
+}
+.desk-qa__q:hover { border-color: var(--green); color: var(--green); }
+.desk-qa__q.is-active { background: var(--green); border-color: var(--green); color: var(--on-green); }
+.desk-qa__q:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+@media (max-width: 960px) {
+    .desk-qa { margin: 24px auto 0; }
+    .desk-qa__owl { --owl-w: 150px !important; width: 150px; }
+}
+@media (max-width: 420px) {
+    .desk-qa__stage { grid-template-columns: 1fr; justify-items: center; }
+    .desk-qa__bubble { grid-column: 1; grid-row: 1; border-radius: 18px; }
+    .desk-qa__bubble::before { display: none; }
+    .desk-qa__owl { grid-row: 2; }
+}
+
+/* Developer owl's laptop: code lines type in, cursor blinks, </> glows */
+.o-code path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: owl-type 4.5s var(--d, 0s) steps(8, end) infinite; }
+@keyframes owl-type { 0% { stroke-dashoffset: 1; } 12%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.o-cursor { animation: owl-cursor 1s steps(1) infinite; }
+@keyframes owl-cursor { 50% { opacity: 0; } }
+.o-code-tag { animation: owl-glow 2.4s ease-in-out infinite; }
+@keyframes owl-glow { 50% { fill: #7ef0b8; filter: drop-shadow(0 0 4px rgba(52, 224, 143, .9)); } }
+@media (prefers-reduced-motion: reduce) {
+    .o-code path { animation: none; stroke-dashoffset: 0; }
+    .o-cursor, .o-code-tag { animation: none; }
+}
+
+/* Front-desk owl: waves hello, rings the bell, headset lights pulse, sign bounces */
+.owl-svg .o-wave { transform-box: view-box; transform-origin: 268px 262px; animation: owl-wave 7s ease-in-out infinite; }
+@keyframes owl-wave {
+    0%, 62%, 100% { transform: rotate(0); }
+    68% { transform: rotate(-78deg); } 72% { transform: rotate(-58deg); } 76% { transform: rotate(-80deg); }
+    80% { transform: rotate(-58deg); } 84% { transform: rotate(-76deg); } 92% { transform: rotate(0); }
+}
+.owl-svg .o-bell { transform-box: fill-box; transform-origin: 50% 100%; animation: owl-bell 7s ease-in-out infinite; }
+@keyframes owl-bell {
+    0%, 30%, 44%, 100% { transform: rotate(0); }
+    32% { transform: rotate(-14deg); } 35% { transform: rotate(12deg); } 38% { transform: rotate(-8deg); } 41% { transform: rotate(5deg); }
+}
+.owl-svg .o-ding { opacity: 0; animation: owl-ding 7s ease-out infinite; }
+@keyframes owl-ding { 0%, 30% { opacity: 0; transform: scale(.6); } 33% { opacity: 1; transform: scale(1); } 44%, 100% { opacity: 0; transform: scale(1.25); } }
+.owl-svg .o-ding { transform-box: fill-box; transform-origin: 50% 100%; }
+.owl-svg .o-led { animation: owl-led 2.2s ease-in-out infinite; }
+@keyframes owl-led { 50% { fill: #a7f3d0; filter: drop-shadow(0 0 5px rgba(52, 224, 143, .95)); } }
+.owl-svg .o-sign { transform-box: fill-box; transform-origin: 50% 100%; animation: owl-sign 3.5s ease-in-out infinite; }
+@keyframes owl-sign { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) {
+    .owl-svg .o-wave, .owl-svg .o-bell, .owl-svg .o-ding, .owl-svg .o-led, .owl-svg .o-sign { animation: none; }
+}
+
+/* "Ready to talk / Have a project in mind?" box: gradient border, glow, coding owl on a soft halo */
+.lp-cta__box { position: relative; overflow: hidden; isolation: isolate; border-color: transparent; padding: 36px 44px; border-radius: 26px;
+    background: linear-gradient(135deg, rgba(var(--card-rgb), .97), rgba(var(--card-rgb), .82)); }
+.lp-cta__box::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+    background: linear-gradient(120deg, rgba(30, 199, 115, .65), transparent 40%, transparent 60%, rgba(79, 140, 255, .6));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+.lp-cta__box::after {
+    content: ""; position: absolute; z-index: -1; left: -80px; top: -120px; width: 360px; height: 360px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(30, 199, 115, .18), rgba(79, 140, 255, .1) 50%, transparent 70%); filter: blur(10px);
+}
+.lp-cta__owl { position: relative; display: grid; place-items: center; width: 150px; }
+.lp-cta__owl::before { content: ""; position: absolute; width: 130px; height: 130px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(30, 199, 115, .25), rgba(79, 140, 255, .1) 60%, transparent 72%); }
+.lp-cta__owl .live-owl { position: relative; }
+@media (max-width: 960px) { .lp-cta__box { padding: 28px 22px; } }

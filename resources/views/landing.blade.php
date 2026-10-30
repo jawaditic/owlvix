@@ -300,7 +300,7 @@
         <section class="section lp-cta">
             <div class="container">
                 <div class="card lp-cta__box">
-                    @include('partials.live-owl', ['width' => 120, 'alt' => 'Owlvix owl mascot'])
+                    <div class="lp-cta__owl">@include('partials.live-owl', ['width' => 130, 'alt' => 'Owlvix owl coding on a laptop', 'variant' => 'dev'])</div>
                     <div>
                         <h2>Have a project in mind?</h2>
                         <p>Tell us about it in a few lines. You get a fixed-price quote within one business day — free.</p>

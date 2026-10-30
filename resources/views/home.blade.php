@@ -328,7 +328,21 @@
                     <p class="eyebrow">Get in touch</p>
                     <h2>Tell us about your project</h2>
                     <p class="lead">Send a short message — no forms to sign, no obligation. We reply within one business day with questions or a quote.</p>
-                    @include('partials.live-owl', ['width' => 200, 'alt' => 'Owlvix owl mascot', 'class' => 'contact__owl'])
+                    {{-- Front desk: ask the owl a quick question; it answers in the bubble (site.js "Front desk owl") --}}
+                    <div class="desk-qa" data-desk-qa>
+                        <div class="desk-qa__stage">
+                            <p class="desk-qa__bubble" aria-live="polite" data-desk-answer>Hoo-hoo! Welcome to the front desk. Ask me a quick question — or fill in the form.</p>
+                            @include('partials.live-owl', ['width' => 210, 'alt' => 'Owlvix owl at the front desk, ready to answer your questions', 'variant' => 'desk', 'class' => 'desk-qa__owl'])
+                        </div>
+                        <p class="desk-qa__label">Ask the owl</p>
+                        <div class="desk-qa__questions">
+                            <button type="button" class="desk-qa__q" data-answer="No! We plan your project and design the key screens for free. Then you pay milestone by milestone — only after you approve each one.">Do I pay upfront?</button>
+                            <button type="button" class="desk-qa__q" data-answer="Within one business day — usually with a few questions and a fixed-price quote.">How fast do you reply?</button>
+                            <button type="button" class="desk-qa__q" data-answer="Most websites take 1 to 3 weeks and most web apps 3 to 8 weeks. Your quote has the exact dates.">How long does it take?</button>
+                            <button type="button" class="desk-qa__q" data-answer="Yes — all the source code, designs and accounts are yours once the final milestone is paid.">Do I own the code?</button>
+                            <button type="button" class="desk-qa__q" data-answer="OpenAI, Anthropic Claude and Google Gemini. We pick the one that fits your task and budget.">Which AI do you use?</button>
+                        </div>
+                    </div>
                 </div>
 
                 <form class="card form" data-clarity-mask="true" method="POST" action="{{ route('contact.store') }}#contact" novalidate data-validate>

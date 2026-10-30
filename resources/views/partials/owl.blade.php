@@ -1,9 +1,12 @@
 {{-- Vector owl. Every moving part is its own group; owl.js animates them (see createRig).
      $u keeps gradient/clip ids unique when two owls are on one page.
-     $variant: 'teacher' (default: cap + pointer stick) or 'dev' (headset + laptop with code). --}}
+     $variant: 'teacher' (default: cap + pointer stick), 'dev' (headset + laptop with code)
+     or 'desk' (front-desk receptionist: headset, counter, bell, "Hello!" sign). --}}
 @php($u = 'owl'.\Illuminate\Support\Str::random(6))
 @php($dev = ($variant ?? 'teacher') === 'dev')
-<svg class="owl-svg{{ $dev ? ' owl-svg--dev' : '' }}" viewBox="0 0 400 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $alt ?? 'Owlvix owl' }}">
+@php($desk = ($variant ?? 'teacher') === 'desk')
+@php($headset = $dev || $desk)
+<svg class="owl-svg{{ $headset ? ' owl-svg--dev' : '' }}" viewBox="0 0 400 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ $alt ?? 'Owlvix owl' }}">
   <defs>
     <linearGradient id="{{ $u }}-fur" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#9a8a80"/><stop offset="1" stop-color="#6c5c54"/>
@@ -45,34 +48,20 @@
       <path d="M170 358q9 9 18 0q9 9 18 0q9 9 18 0q8 8 16 0"/>
     </g>
 
-    @if ($dev)
-    <!-- laptop held in front of the body, screen facing out -->
-    <g class="o-laptop">
-      <rect x="118" y="252" width="174" height="112" rx="10" fill="#cbd5e1" stroke="#3a2a22" stroke-width="3.5"/>
-      <rect x="128" y="262" width="154" height="92" rx="5" fill="#0f172a"/>
-      <circle cx="205" cy="257" r="2" fill="#64748b"/>
-      <text x="205" y="306" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="34" font-weight="700" fill="#34e08f">&lt;/&gt;</text>
-      <g stroke-linecap="round" stroke-width="4">
-        <path d="M142 326h40" stroke="#4f8cff"/><path d="M188 326h22" stroke="#a78bfa"/>
-        <path d="M150 340h28" stroke="#34e08f"/><path d="M184 340h46" stroke="#64748b"/>
-        <path d="M236 326h30" stroke="#f4c430"/>
-      </g>
-      <path d="M104 364h202l-12 16H116z" fill="#94a3b8" stroke="#3a2a22" stroke-width="3.5" stroke-linejoin="round"/>
-    </g>
-    @endif
-
     <!-- free wing, in front of the body's side -->
     <g class="o-wing">
       <path d="M262 252c42 4 72 40 70 84-1 22-12 36-26 30-6 8-18 8-24-2-10 4-20-2-20-12-14-8-18-24-14-40 4-20 8-40 14-60z" fill="url(#{{ $u }}-furSide)" stroke="#3a2a22" stroke-width="3.5" stroke-linejoin="round"/>
       <path d="M306 346c-2-14-6-26-14-36M284 352c0-12-2-22-8-32" fill="none" stroke="#3a2a22" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
     </g>
 
-    @if ($dev)
-    <!-- left wing resting on the laptop (named o-arm so the rig moves it) -->
+    @if ($headset)
+    <!-- left wing resting on the laptop / counter (named o-arm so the rig moves it) -->
     <g class="o-arm">
       <g transform="translate(410 0) scale(-1 1)">
+        <g class="{{ $desk ? 'o-wave' : '' }}">
         <path d="M262 252c42 4 72 40 70 84-1 22-12 36-26 30-6 8-18 8-24-2-10 4-20-2-20-12-14-8-18-24-14-40 4-20 8-40 14-60z" fill="url(#{{ $u }}-furSide)" stroke="#3a2a22" stroke-width="3.5" stroke-linejoin="round"/>
         <path d="M306 346c-2-14-6-26-14-36M284 352c0-12-2-22-8-32" fill="none" stroke="#3a2a22" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+        </g>
       </g>
     </g>
     @else
@@ -83,6 +72,28 @@
       <circle cx="29" cy="69" r="4.5" fill="#3a2a22"/>
       <path d="M156 256c-22-6-44-8-62-2-8 2-10 10-6 16-6 8-2 18 8 20 4 8 14 10 22 6 14 8 28 12 42 14z" fill="url(#{{ $u }}-furSide)" stroke="#3a2a22" stroke-width="3.5" stroke-linejoin="round"/>
       <path d="M90 270c6 2 14 2 22-2M96 288c6 1 12 0 18-4" fill="none" stroke="#3a2a22" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+    </g>
+    @endif
+
+    @if ($dev)
+    <!-- laptop in front of the body and wings, screen facing out -->
+    <g class="o-laptop">
+      <rect x="118" y="252" width="174" height="112" rx="10" fill="#cbd5e1" stroke="#3a2a22" stroke-width="3.5"/>
+      <rect x="128" y="262" width="154" height="92" rx="5" fill="#0f172a"/>
+      <circle cx="205" cy="257" r="2" fill="#64748b"/>
+      <text class="o-code-tag" x="205" y="306" text-anchor="middle" font-family="ui-monospace, Menlo, monospace" font-size="34" font-weight="700" fill="#34e08f">&lt;/&gt;</text>
+      <!-- code lines "type" in one after another, then start again (site.css .o-code) -->
+      <g class="o-code" stroke-linecap="round" stroke-width="4" fill="none">
+        <path pathLength="1" style="--d:0s" d="M140 322h36" stroke="#4f8cff"/>
+        <path pathLength="1" style="--d:.35s" d="M182 322h24" stroke="#a78bfa"/>
+        <path pathLength="1" style="--d:.6s" d="M212 322h34" stroke="#f4c430"/>
+        <path pathLength="1" style="--d:1s" d="M150 334h28" stroke="#34e08f"/>
+        <path pathLength="1" style="--d:1.3s" d="M184 334h44" stroke="#64748b"/>
+        <path pathLength="1" style="--d:1.75s" d="M150 346h50" stroke="#4f8cff"/>
+        <path pathLength="1" style="--d:2.2s" d="M206 346h26" stroke="#34e08f"/>
+      </g>
+      <rect class="o-cursor" x="238" y="341" width="3.5" height="10" rx="1" fill="#e2e8f0"/>
+      <path d="M104 364h202l-12 16H116z" fill="#94a3b8" stroke="#3a2a22" stroke-width="3.5" stroke-linejoin="round"/>
     </g>
     @endif
 
@@ -133,15 +144,15 @@
       <path class="o-jaw" d="M193 200q12 26 24 0z" fill="#e8861a" stroke="#3a2a22" stroke-width="3" stroke-linejoin="round"/>
       <path d="M184 180q21-10 42 0q-6 22-21 30q-15-8-21-30z" fill="url(#{{ $u }}-beak)" stroke="#3a2a22" stroke-width="3" stroke-linejoin="round"/>
 
-      @if ($dev)
+      @if ($headset)
       <!-- headset; the microphone boom is named o-tassel so it sways a little -->
       <g class="o-headset">
         <path d="M96 150a109 109 0 0 1 218 0" fill="none" stroke="#1e293b" stroke-width="11" stroke-linecap="round"/>
         <path d="M96 150a109 109 0 0 1 218 0" fill="none" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
         <rect x="80" y="128" width="30" height="56" rx="12" fill="#1e293b" stroke="#0f172a" stroke-width="3"/>
         <rect x="300" y="128" width="30" height="56" rx="12" fill="#1e293b" stroke="#0f172a" stroke-width="3"/>
-        <rect x="86" y="138" width="8" height="36" rx="4" fill="#34e08f"/>
-        <rect x="316" y="138" width="8" height="36" rx="4" fill="#34e08f"/>
+        <rect class="o-led" x="86" y="138" width="8" height="36" rx="4" fill="#34e08f"/>
+        <rect class="o-led" x="316" y="138" width="8" height="36" rx="4" fill="#34e08f"/>
         <g class="o-tassel">
           <path d="M98 182q4 40 62 40" fill="none" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
           <rect x="156" y="213" width="18" height="14" rx="7" fill="#334155" stroke="#0f172a" stroke-width="2.5"/>
@@ -160,5 +171,28 @@
       </g>
       @endif
     </g>
+    @if ($desk)
+    <!-- front desk: counter in front of the owl, with a service bell and a "Hello!" nameplate -->
+    <g class="o-desk">
+      <path d="M40 318h330v14H40z" fill="#e2e8f0" stroke="#3a2a22" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M52 332h306v88H52z" fill="#12b76a" stroke="#3a2a22" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M52 332h306v10H52z" fill="#0b8f74"/>
+      <path d="M70 360h270" stroke="#34e08f" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+      <g class="o-sign">
+      <rect x="150" y="372" width="110" height="34" rx="8" fill="#fff" stroke="#3a2a22" stroke-width="3"/>
+      <text x="205" y="396" text-anchor="middle" font-family="Poppins, system-ui, sans-serif" font-size="20" font-weight="700" fill="#0f5132">Hello!</text>
+      </g>
+      <g transform="translate(300 286)">
+        <path d="M-22 32h44v-6h-44z" fill="#94a3b8" stroke="#3a2a22" stroke-width="3"/>
+        <g class="o-bell">
+          <path d="M-18 26a18 18 0 0 1 36 0z" fill="#f4c430" stroke="#3a2a22" stroke-width="3"/>
+          <circle cx="0" cy="5" r="4" fill="#f4c430" stroke="#3a2a22" stroke-width="2.5"/>
+        </g>
+        <g class="o-ding" fill="none" stroke="#f4c430" stroke-width="3.5" stroke-linecap="round">
+          <path d="M-26 0l-8-6M26 0l8-6M0-10v-9"/>
+        </g>
+      </g>
+    </g>
+    @endif
   </g>
 </svg>

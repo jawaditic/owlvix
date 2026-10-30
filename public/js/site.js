@@ -306,7 +306,46 @@
     }
 
     /* Owls that don't talk (founder card, call-to-action boxes, 404, popups) still breathe, blink and glance around */
-    document.querySelectorAll('[data-owl-idle]').forEach(el => window.Owl?.idleOwl(el));
+    document.querySelectorAll('[data-owl-idle]').forEach(el => { el.owlRig = window.Owl?.idleOwl(el); });
+
+    /* Front desk owl (homepage contact section): click a question and the owl "says" the answer —
+       the text types out in its bubble while the beak moves (no sound). */
+    document.querySelectorAll('[data-desk-qa]').forEach(desk => {
+        const bubble = desk.querySelector('[data-desk-answer]');
+        const rig = desk.querySelector('[data-owl-idle]')?.owlRig;
+        const buttons = desk.querySelectorAll('[data-answer]');
+        let raf = 0;
+        const say = text => {
+            cancelAnimationFrame(raf);
+            rig?.line(text);
+            const start = performance.now(), dur = Math.max(1200, text.length * 38);
+            const step = now => {
+                const t = Math.min(1, (now - start) / dur);
+                const shown = Math.ceil(text.length * t);
+                bubble.textContent = text.slice(0, shown);
+                // beak opens and closes like speech while typing
+                rig?.speak(shown, t < 1 ? 0.35 + 0.55 * Math.abs(Math.sin(now / 70)) : 0);
+                if (t < 1) raf = requestAnimationFrame(step);
+                else { bubble.textContent = text; setTimeout(() => rig?.quiet(), 250); }
+            };
+            raf = requestAnimationFrame(step);
+        };
+        buttons.forEach(btn => btn.addEventListener('click', () => {
+            buttons.forEach(b => b.classList.toggle('is-active', b === btn));
+            say(btn.dataset.answer);
+            window.track?.('owl_question', { question: btn.textContent.trim() });
+        }));
+        // Say the greeting the first time the desk comes into view
+        if ('IntersectionObserver' in window) {
+            const greeting = bubble.textContent.trim();
+            const seen = new IntersectionObserver(entries => {
+                if (!entries.some(e => e.isIntersecting)) return;
+                seen.disconnect();
+                if (!desk.querySelector('.is-active')) say(greeting);
+            }, { threshold: .5 });
+            seen.observe(desk);
+        }
+    });
 
     /* Talking owls: the homepage hero and the About page. The owl "chats" in the bubble when the visitor
        presses "Hear the intro" or clicks/taps the owl itself (click again to stop). */
