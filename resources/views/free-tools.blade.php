@@ -28,7 +28,7 @@
 <section class="tools-hub">
     <div class="container">
         @foreach (\App\Support\FreeTools::GROUPS as $group => [$heading, $intro])
-            <div class="tools-group">
+            <div class="tools-group" @if ($group === 'builder') id="builders" @endif>
                 <h2>{{ $heading }}</h2>
                 <p>{{ $intro }}</p>
             </div>

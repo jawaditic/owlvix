@@ -2323,3 +2323,32 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 @media (max-width: 900px) { .fb-layout { grid-template-columns: 1fr; } .fb-prev-wrap { position: static; } .fb-prev { max-height: none; } }
 @media (max-width: 520px) { .fb-2 { grid-template-columns: 1fr; } .fb-copyrow { flex-direction: column; } .fb-top__actions { width: 100%; } .fb-mine { max-width: none; flex: 1 1 100%; } }
 .fb [data-panel="build"].is-locked { opacity: .55; }
+
+/* Builders menu: 8 items in two columns */
+.nav-drop .nav-drop__menu--builders { width: 600px; right: -100px; }
+.nav-drop__menu--builders .nav-drop__grid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 1100px) { .nav-drop .nav-drop__menu--builders { width: 540px; right: -60px; } }
+@media (max-width: 760px) { .nav-drop .nav-drop__menu--builders { width: auto; } .nav-drop__menu--builders .nav-drop__grid { grid-template-columns: 1fr; } }
+/* Section heading shown only in the phone menu, where the dropdown buttons are hidden */
+.nav-drop__label { display: none; }
+@media (max-width: 760px) { .nav-drop__label { display: block; padding: 14px 4px 4px; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); } }
+/* Header: labels never wrap. Less-used links live in the More (☰) menu. */
+@media (min-width: 761px) {
+    .nav__links > a, .nav-drop__btn, .nav__links .btn { white-space: nowrap; }
+    .nav__inner .brand { flex: none; }
+}
+.nav-more__btn { width: 40px; height: 40px; justify-content: center; border-radius: 50%; border: 1px solid var(--card-border); color: var(--text); }
+.nav-more__btn:hover, .nav-drop.is-open .nav-more__btn { border-color: var(--green); color: var(--green); }
+.nav-more__btn svg { width: 19px; height: 19px; }
+.nav-drop.is-open .nav-more__btn svg, .nav-drop:hover .nav-more__btn svg { transform: none; } /* the bars don't flip like the chevrons */
+.nav-drop .nav-drop__menu--more { width: 270px; left: auto; right: -8px; transform: translateY(6px); }
+.nav-drop--more:hover .nav-drop__menu--more, .nav-drop--more:focus-within .nav-drop__menu--more, .nav-drop--more.is-open .nav-drop__menu--more { transform: none; }
+@media (max-width: 1100px) and (min-width: 761px) { .nav-drop__new { display: none; } }
+.nav__links .nav-more__narrow { display: none; }
+@media (max-width: 900px) and (min-width: 761px) { .nav__links > a[href$="#work"] { display: none; } .nav__links .nav-more__narrow { display: flex; } .nav__links .btn--sm { padding: 9px 14px; } }
+@media (max-width: 760px) { .nav-drop--more .nav-drop__item .svc-icon { display: none; } }
+/* Free builders menu: a one-line "it's free" note above the list */
+.nav-drop__note { margin: 4px 12px 8px; padding: 8px 12px; border-radius: 10px; font-size: .8rem; font-weight: 600; color: var(--green); background: rgba(30, 199, 115, .1); }
+@media (max-width: 760px) { .nav-drop__note { margin: 4px 0 8px; } }
+/* "New" tags sit a little above the menu text, like a superscript */
+@media (min-width: 761px) { .nav-drop__btn { position: relative; } .nav-drop__btn .nav-drop__new { position: absolute; top: -17px; right: 8px; margin: 0; padding: 1px 5px; font-size: .55rem; pointer-events: none; } }

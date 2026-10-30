@@ -19,20 +19,36 @@
         <nav class="nav__links" id="nav-links">
             <a href="{{ $h('services') }}" @if (request()->routeIs('landing', 'service.*')) aria-current="page" @endif>Services</a>
             <a href="{{ $h('work') }}">Work</a>
-            <a href="{{ $h('process') }}">Process</a>
-            @if (count(\App\Support\Testimonials::data()['reviews']))<a href="{{ $h('reviews') }}">Reviews</a>@endif
             <a href="{{ $h('pricing') }}" @unless (in_array('pricing', $local, true)) data-pricing @endunless>Pricing</a>
-            <a href="{{ $h('faq') }}">FAQ</a>
-            <a href="{{ route('about') }}" @if (request()->routeIs('about')) aria-current="page" @endif>About</a>
-            {{-- Free tools: dropdown on desktop (hover, focus or click), plain links in the phone menu --}}
+            {{-- Free builders and Free tools: dropdowns on desktop (hover, focus or click), plain links in the phone menu --}}
+            <div class="nav-drop" data-nav-drop>
+                <button type="button" class="nav-drop__btn" aria-expanded="false" aria-haspopup="true" @if (request()->routeIs(...\App\Support\FreeTools::builderRoutes())) aria-current="page" @endif>
+                    Free builders <span class="nav-drop__new">New</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="nav-drop__menu nav-drop__menu--wide nav-drop__menu--builders">
+                    <span class="nav-drop__label">Free builders</span>
+                    <p class="nav-drop__note">100% free — no sign-up to start, no watermark. Publish or download.</p>
+                    <div class="nav-drop__grid">
+                        @foreach (\App\Support\FreeTools::builders() as $t)
+                            <a href="{{ route($t['route']) }}" class="nav-drop__item" @if (request()->routeIs($t['route'])) aria-current="page" @endif>
+                                <span class="svc-icon {{ $t['tone'] }}" aria-hidden="true">{!! \App\Support\Icons::svg($t['icon']) !!}</span>
+                                <span><strong>{{ $t['name'] }}</strong><small>{{ $t['desc'] }}</small></span>
+                            </a>
+                        @endforeach
+                    </div>
+                    <a href="{{ route('free-tools') }}#builders" class="nav-drop__all">See all free builders →</a>
+                </div>
+            </div>
             <div class="nav-drop" data-nav-drop>
                 <button type="button" class="nav-drop__btn" aria-expanded="false" aria-haspopup="true" @if (request()->routeIs(...\App\Support\FreeTools::routes())) aria-current="page" @endif>
                     Free tools <span class="nav-drop__new">New</span>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
                 </button>
                 <div class="nav-drop__menu nav-drop__menu--wide">
+                    <span class="nav-drop__label">Free tools</span>
                     <div class="nav-drop__grid">
-                        @foreach (\App\Support\FreeTools::all() as $t)
+                        @foreach (\App\Support\FreeTools::tools() as $t)
                             <a href="{{ route($t['route']) }}" class="nav-drop__item" @if (request()->routeIs($t['route'])) aria-current="page" @endif>
                                 <span class="svc-icon {{ $t['tone'] }}" aria-hidden="true">{!! \App\Support\Icons::svg($t['icon']) !!}</span>
                                 <span><strong>{{ $t['name'] }}</strong><small>{{ $t['desc'] }}</small></span>
@@ -44,6 +60,30 @@
                         <span><strong>Full SEO audit <em class="nav-drop__tag">Free</em></strong><small>Whole-site report by our team, in 2 days</small></span>
                     </a>
                     <a href="{{ route('free-tools') }}" class="nav-drop__all">See all free tools →</a>
+                </div>
+            </div>
+            {{-- More (☰): the less-used links. A dropdown on desktop; in the phone menu they show as plain links. --}}
+            @php
+                $more = array_filter([
+                    ['href' => $h('work'), 'icon' => 'eye', 'name' => 'Work', 'desc' => 'Projects we have built', 'on' => false, 'narrow' => true], // only when Work leaves the bar
+                    ['href' => $h('process'), 'icon' => 'refresh', 'name' => 'Process', 'desc' => 'How we work, step by step', 'on' => false],
+                    count(\App\Support\Testimonials::data()['reviews']) ? ['href' => $h('reviews'), 'icon' => 'star', 'name' => 'Reviews', 'desc' => 'What our clients say', 'on' => false] : null,
+                    ['href' => $h('faq'), 'icon' => 'chat', 'name' => 'FAQ', 'desc' => 'Answers to common questions', 'on' => false],
+                    ['href' => route('about'), 'icon' => 'users', 'name' => 'About', 'desc' => 'Who we are', 'on' => request()->routeIs('about')],
+                ]);
+            @endphp
+            <div class="nav-drop nav-drop--more" data-nav-drop>
+                <button type="button" class="nav-drop__btn nav-more__btn" aria-expanded="false" aria-haspopup="true" aria-label="More pages" title="More"
+                    @if (request()->routeIs('about')) aria-current="page" @endif>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+                </button>
+                <div class="nav-drop__menu nav-drop__menu--more">
+                    @foreach ($more as $m)
+                        <a href="{{ $m['href'] }}" class="nav-drop__item {{ ! empty($m['narrow']) ? 'nav-more__narrow' : '' }}" @if ($m['on']) aria-current="page" @endif>
+                            <span class="svc-icon {{ $loop->even ? 'is-blue' : '' }}" aria-hidden="true">{!! \App\Support\Icons::svg($m['icon']) !!}</span>
+                            <span><strong>{{ $m['name'] }}</strong><small>{{ $m['desc'] }}</small></span>
+                        </a>
+                    @endforeach
                 </div>
             </div>
             <button type="button" class="theme-btn" data-theme-toggle aria-label="Switch to light mode" title="Switch theme">

@@ -82,9 +82,14 @@ class PublicPagesTest extends TestCase
             $html = $this->get($page)->getContent();
             preg_match('#<nav class="nav__links".*?</nav>#s', $html, $m);
             $this->assertNotEmpty($m, $page);
-            foreach (['Services', 'Work', 'Process', 'Pricing', 'FAQ', 'About', 'Get a free quote'] as $label) {
+            foreach (['Services', 'Work', 'Pricing', 'Get a free quote'] as $label) {
                 $this->assertStringContainsString('>'.$label.'</a>', $m[0], "$page menu is missing $label");
             }
+            // Less-used pages are in the More (☰) menu
+            foreach (['Process', 'FAQ', 'About'] as $label) {
+                $this->assertStringContainsString('<strong>'.$label.'</strong>', $m[0], "$page More menu is missing $label");
+            }
+            $this->assertStringContainsString('aria-label="More pages"', $m[0]);
         }
     }
 
