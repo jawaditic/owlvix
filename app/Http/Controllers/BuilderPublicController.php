@@ -52,7 +52,11 @@ class BuilderPublicController extends Controller
     private function submitSurvey(Request $request, BuilderForm $form)
     {
         $embed = $request->boolean('_embed');
-        $done = redirect()->route('builder.survey', ['id' => $form->id, 'sent' => 1] + ($embed ? ['embed' => 1] : []), 303);
+        // Sent from a builder page (e.g. an RSVP form): thank them with a link back to that page
+        $back = $this->safeUrl($request->input('_back'));
+        $done = $back
+            ? redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303)
+            : redirect()->route('builder.survey', ['id' => $form->id, 'sent' => 1] + ($embed ? ['embed' => 1] : []), 303);
         if (filled($request->input('_hp'))) { // bots fill the hidden field: pretend it worked
             return $done;
         }
@@ -66,11 +70,11 @@ class BuilderPublicController extends Controller
             $errors[] = 'Please answer at least one question.';
         }
         if ($errors) {
-            return $this->surveyPage($form, $embed, false, $errors, $request->all(), 422);
+            return $this->surveyPage($form, $embed, false, $errors, $request->all(), 422, $back);
         }
 
         if ($this->overLimit('builder-survey', $form, $request, self::SURVEY_PER_IP_HOUR, self::SURVEY_PER_DAY)) {
-            return $this->surveyPage($form, $embed, false, ['Too many answers have been sent from here. Please try again later.'], $request->all(), 429);
+            return $this->surveyPage($form, $embed, false, ['Too many answers have been sent from here. Please try again later.'], $request->all(), 429, $back);
         }
 
         $response = $form->responses()->create(['answers' => $answers]);
@@ -88,9 +92,10 @@ class BuilderPublicController extends Controller
         return $done;
     }
 
-    private function surveyPage(BuilderForm $form, bool $embed, bool $sent, array $errors = [], array $old = [], int $status = 200)
+    /** $back: the builder page the answer came from, kept so fixing an error still ends with a link back there. */
+    private function surveyPage(BuilderForm $form, bool $embed, bool $sent, array $errors = [], array $old = [], int $status = 200, ?string $back = null)
     {
-        return response()->view('builder.survey', ['form' => $form, 's' => $form->schema, 'embed' => $embed, 'sent' => $sent, 'errors_list' => $errors, 'old' => $old], $status)
+        return response()->view('builder.survey', ['form' => $form, 's' => $form->schema, 'embed' => $embed, 'sent' => $sent, 'errors_list' => $errors, 'old' => $old, 'back' => $back], $status)
             ->header('X-Robots-Tag', 'noindex, nofollow')
             // Embeddable anywhere; no scripts at all
             ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; frame-ancestors *; base-uri 'none'")

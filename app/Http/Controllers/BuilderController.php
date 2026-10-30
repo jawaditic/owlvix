@@ -325,6 +325,9 @@ class BuilderController extends Controller
             if (! $form || ! $form->isSurvey()) {
                 return $this->fail('Form not found.', 404);
             }
+            if (! empty($form->schema['managed']) && ! $schema['managed']) {
+                return $this->fail('This RSVP form belongs to your event page — change its questions there.', 422);
+            }
             $form->update(['schema' => \App\Support\SurveySchema::keepRemoved($form->schema ?? [], $schema), 'site_name' => $schema['title']]);
         } else {
             if (RateLimiter::tooManyAttempts('builder-survey-new:'.$account->id, 20)) {
@@ -385,7 +388,7 @@ class BuilderController extends Controller
     private function surveyApi(BuilderForm $form): array
     {
         return [
-            'id' => $form->id, 'title' => $form->site_name, 'schema' => $form->schema, 'url' => $form->publicUrl(),
+            'id' => $form->id, 'title' => $form->site_name, 'schema' => $form->schema, 'url' => $form->publicUrl(), 'action' => $form->action(),
             'responses' => (int) ($form->responses_count ?? 0), 'disabled' => (bool) $form->disabled_at,
             'updated_at' => $form->updated_at?->toIso8601String(),
         ];

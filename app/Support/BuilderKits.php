@@ -13,6 +13,7 @@ class BuilderKits
         'portfolio' => 'portfolio-builder',
         'links' => 'link-in-bio-builder',
         'soon' => 'coming-soon-builder',
+        'event' => 'event-website-builder',
     ];
 
     public static function get(string $kit): array
@@ -61,6 +62,21 @@ class BuilderKits
                     ['How do I add my links?', 'Click a button, then in the Content tab choose where it goes — a web address, WhatsApp, phone or email. Buttons without a link are left off the published page.'],
                     ['Can I change the colours and fonts?', 'Yes. Use the Site tab for colours and fonts, or the Style tab on any button or text. Every part of the page can be styled.'],
                     ['How do I put it on Instagram or TikTok?', 'Press Publish, copy your page address and paste it into the website field of your profile.'],
+                ],
+            ],
+            'event' => [
+                'crumb' => 'Wedding & event website builder',
+                'title' => 'Free Wedding & Event Website Builder — RSVP, Countdown & Invitation',
+                'description' => 'Make a free wedding website or event page: invitation, countdown, schedule, venue map and an RSVP form. Guest replies are emailed to you and saved in a list.',
+                'h1' => 'Your <span class="accent">wedding or event website</span>, with RSVPs',
+                'lead' => 'Build a beautiful invitation page for a wedding, birthday, conference or baby shower — with a countdown, the plan for the day, directions and an RSVP form that collects your guest list for you.',
+                'cta' => ['Planning something bigger?', 'We build event sites with ticket sales, seating plans, galleries and custom domains. Start free: we design the first version at no cost.'],
+                'faq' => [
+                    ['Is the wedding website builder free?', 'Yes. Build your page, publish it free on sites.owlvix.com or download it for your own domain. No payment and no watermark on your content.'],
+                    ['How do RSVPs work?', 'Select the RSVP form and press “Switch on RSVPs” (free, sign in with your email). Every reply is emailed to you and saved in a list in the form builder, where you can download your guest list as a CSV file.'],
+                    ['Can guests choose a meal or bring a plus one?', 'Yes. In the RSVP form’s Content tab you can ask how many guests are coming, offer meal choices and ask for a message.'],
+                    ['How do I share it with guests?', 'Press Publish and send the link by WhatsApp, email or text — or print it on your invitations.'],
+                    ['Can I change the date or add photos later?', 'Yes. Click any text or photo to change it, then publish again — the link stays the same.'],
                 ],
             ],
             'soon' => [

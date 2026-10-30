@@ -42,6 +42,7 @@ class SurveySchema
             'button' => self::str($in['button'] ?? '', 40) ?: 'Send',
             'thanks' => self::str($in['thanks'] ?? '', 300) ?: 'Thanks! Your answers have been sent.',
             'color' => is_string($in['color'] ?? null) && preg_match('/^#[0-9a-f]{6}$/i', $in['color']) ? strtolower($in['color']) : '#16a34a',
+            'managed' => ! empty($in['managed']), // made by a builder page (e.g. an RSVP form): edited there, not in the form builder
             'fields' => [],
         ];
         $seen = [];
@@ -61,6 +62,13 @@ class SurveySchema
                 'required' => $f['type'] !== 'heading' && ! empty($f['required']),
                 'placeholder' => self::str($f['placeholder'] ?? '', 100),
             ];
+            if ($f['type'] === 'number') {
+                foreach (['min', 'max'] as $k) {
+                    if (isset($f[$k]) && is_numeric($f[$k]) && abs((float) $f[$k]) <= 1e9) {
+                        $field[$k] = (int) $f[$k];
+                    }
+                }
+            }
             if (in_array($f['type'], self::CHOICE, true)) {
                 $opts = [];
                 foreach (array_slice(is_array($f['options'] ?? null) ? $f['options'] : [], 0, self::MAX_OPTIONS) as $o) {
@@ -133,7 +141,9 @@ class SurveySchema
             $bad = match ($f['type']) {
                 'email' => ! filter_var($v, FILTER_VALIDATE_EMAIL),
                 'phone' => ! preg_match('/^[\d\s()+.\-\/]{5,30}$/', $v),
-                'number' => ! is_numeric(str_replace(',', '.', $v)),
+                'number' => ! preg_match('/^-?\d{1,12}([.,]\d{1,6})?$/', $v)
+                    || (isset($f['min']) && (float) str_replace(',', '.', $v) < $f['min'])
+                    || (isset($f['max']) && (float) str_replace(',', '.', $v) > $f['max']),
                 'date' => ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) || ! checkdate((int) substr($v, 5, 2), (int) substr($v, 8, 2), (int) substr($v, 0, 4)),
                 'select', 'radio' => ! in_array($v, $f['options'], true),
                 'rating' => ! in_array($v, ['1', '2', '3', '4', '5'], true),

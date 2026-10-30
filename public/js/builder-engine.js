@@ -247,6 +247,49 @@
     def('form', { label: 'Contact form', icon: '✉', group: 'pro', make: () => ({ btn: 'Send message', phone: true }), fields: [F.text('btn', 'Button text'), F.bool('phone', 'Ask for a phone number')],
         render: (w, x) => formHtml(x, w.p) });
 
+    /* RSVP: posts to a form-builder form whose questions match these fields (rsvpSchema keeps them in step) */
+    const RSVP_IDS = { name: 'rname', email: 'remail', come: 'rcome', guests: 'rguests', meal: 'rmeal', msg: 'rmsg' };
+    const opt = v => String(v || '').trim().slice(0, 100); // the server keeps choices up to 100 characters
+    const lines = v => [...new Set(String(v || '').split('\n').map(opt).filter(Boolean))].slice(0, 20);
+    const rsvpYesNo = p => [opt(p.yes) || 'Yes, I will be there', opt(p.no) || 'Sorry, I can’t make it'];
+    const rsvpWidget = P => P.pages.flatMap(pg => pg.sections.flatMap(sc => sc.cols.flatMap(c => c.widgets))).find(w => w.type === 'rsvp');
+    /** The questions of the site's RSVP form (null when the site has no RSVP widget). */
+    const rsvpSchema = P => {
+        const w = rsvpWidget(P); if (!w) return null;
+        const p = w.p, I = RSVP_IDS, meals = lines(p.meals);
+        return {
+            managed: true, // made by a builder page: the form builder leaves its questions alone
+            title: ('RSVP — ' + (P.site.name || 'My event')).slice(0, 120), intro: '', button: (p.btn || 'Send my RSVP').slice(0, 40),
+            thanks: (p.thanks || 'Thank you! Your RSVP has been sent.').slice(0, 300), color: hex(P.site.colors?.primary),
+            fields: [
+                { id: I.name, type: 'text', label: 'Your name', required: true },
+                { id: I.email, type: 'email', label: 'Email', required: !!p.emailReq },
+                { id: I.come, type: 'radio', label: 'Will you come?', required: true, options: rsvpYesNo(p) },
+                ...(p.guests ? [{ id: I.guests, type: 'number', label: 'How many guests (including you)?', min: 1, max: 20 }] : []),
+                ...(p.meal && meals.length ? [{ id: I.meal, type: 'select', label: 'Meal choice', options: meals }] : []),
+                ...(p.note ? [{ id: I.msg, type: 'textarea', label: 'A message for us (optional)' }] : []),
+            ],
+        };
+    };
+    const rsvpHtml = (x, own) => {
+        // All RSVP widgets on a site send to one form, so they all ask the first widget's questions
+        const p = { ...(rsvpWidget(x.P)?.p || own), btn: own.btn }, I = RSVP_IDS, meals = lines(p.meals);
+        if (!x.P.site.rsvpAction) return x.edit ? '<div class="form pic-empty"><span>💌 RSVP form — switch it on in the Content tab (free, takes a minute)</span></div>' : '';
+        return `<form class="form rsvp" method="post" action="${esc(x.P.site.rsvpAction)}">
+            <label>Your name<input name="${I.name}" required maxlength="100" autocomplete="name"></label>
+            <label>Email${p.emailReq ? '' : ' (optional)'}<input name="${I.email}" type="email" maxlength="150" autocomplete="email"${p.emailReq ? ' required' : ''}></label>
+            <fieldset class="rsvp-come"><legend>Will you come?</legend>${rsvpYesNo(p).map(o => `<label class="rsvp-opt"><input type="radio" name="${I.come}" value="${esc(o)}" required> ${esc(o)}</label>`).join('')}</fieldset>
+            ${p.guests ? `<label>How many guests (including you)?<input name="${I.guests}" type="number" min="1" max="20" value="1"></label>` : ''}
+            ${p.meal && meals.length ? `<label>Meal choice<select name="${I.meal}"><option value="">Choose…</option>${meals.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('')}</select></label>` : ''}
+            ${p.note ? `<label>A message for us (optional)<textarea name="${I.msg}" rows="3" maxlength="5000"></textarea></label>` : ''}
+            <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <input type="hidden" name="_back" value="${esc(x.mode === 'publish' ? new URL(pageHref(x.page.slug, x), x.origin).href : '')}">
+            <button class="btn" type="submit">${esc(p.btn || 'Send my RSVP')}</button></form>`;
+    };
+    def('rsvp', { label: 'RSVP form', icon: '💌', group: 'pro', make: () => ({ btn: 'Send my RSVP', yes: 'Yes, I will be there', no: 'Sorry, I can’t make it', guests: true, meal: false, meals: 'Chicken\nFish\nVegetarian', note: true, emailReq: false, thanks: 'Thank you! Your RSVP has been sent.' }),
+        fields: [F.text('btn', 'Button text'), F.text('yes', '“Yes” answer'), F.text('no', '“No” answer'), F.bool('guests', 'Ask how many guests'), F.bool('meal', 'Ask for a meal choice'), F.area('meals', 'Meal choices (one per line)'), F.bool('note', 'Ask for a message'), F.bool('emailReq', 'Email is required'), F.text('thanks', 'Thank-you message')],
+        render: (w, x) => rsvpHtml(x, w.p) });
+
     def('optin', { label: 'Opt-in form', icon: '✉', group: 'funnel', make: () => ({ btn: 'Get instant access', name: true, phone: false, note: 'We respect your privacy. Unsubscribe any time.' }),
         fields: [F.text('btn', 'Button text'), F.bool('name', 'Ask for a name'), F.bool('phone', 'Ask for a phone number'), F.text('note', 'Small print under the button')],
         render: (w, x) => {
@@ -508,6 +551,26 @@
         const s = styled(section('1', [col]), { minH: 760, align: 'center' }, 'brand');
         return { v: 3, kind: 'links', site: kitSite(name, color, { bare: true, sticky: false, navBtn: '' }), pages: [homePage([s])] };
     };
+    /** An event page: hero with the date, countdown, story, schedule, venue, RSVP and FAQ. */
+    /** A date some days from now: [value for the countdown, "Saturday 14 June 2025"]. Templates never show a past date. */
+    const evDate = (days, hour) => {
+        const d = new Date(Date.now() + days * 864e5); d.setHours(hour, 0, 0, 0);
+        const pad = n => String(n).padStart(2, '0');
+        return [`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(hour)}:00`, d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })];
+    };
+    const eventPage = (name, color, o) => {
+        const [date, day] = evDate(o.days, o.hour); o = { ...o, date, when: `${day} · ${o.time}\n${o.place}` };
+        const site = kitSite(name, color, { navBtn: 'RSVP', navLink: { to: 'url', val: '#rsvp' }, sticky: true, ...(o.site || {}) });
+        const hero = fill(sectionOf('hero'), { v: o.cover ? 'cover' : 'center', eyebrow: o.eyebrow, title: o.title, text: o.when, btn: 'RSVP', link: { to: 'url', val: '#rsvp' }, btn2: o.btn2 || '', link2: { to: 'url', val: o.btn2 ? '#details' : '' } });
+        const count = styled(section('1', [column([wp('heading', { text: o.countTitle || 'Counting down', tag: 'h2' }), wp('countdown', { date: o.date, done: o.done || 'Today is the day!' })])]), { align: 'center' }, 'soft');
+        const story = fill(sectionOf('imagetext'), { eyebrow: o.storyEyebrow, title: o.storyTitle, text: `<p>${o.story}</p>` }); story.adv = { id: 'details' };
+        const plan = fill(sectionOf('steps'), { title: o.planTitle || 'The day', items: o.plan.map(([title, text]) => ({ title, text })) });
+        const venue = section('2', [column([wp('heading', { text: 'Where', tag: 'h2' }), wp('text', { html: `<p><b>${o.venue}</b><br>${o.address}</p>` }), wp('button', { text: 'Get directions', link: { to: 'url', val: '' }, kind: 'ghost' })]), column([wp('heading', { text: 'When', tag: 'h2' }), wp('text', { html: `<p>${esc(o.when).replace('\n', '<br>')}</p>` }), ...(o.extra || [])])]);
+        const rsvp = styled(section('1', [column([wp('heading', { text: o.rsvpTitle || 'Will you join us?', tag: 'h2' }), wp('text', { html: `<p>${o.rsvpText || 'Please let us know by replying below.'}</p>` }), wp('rsvp', o.rsvp || {})])]), { align: 'center' }, 'alt');
+        rsvp.cols[0].st._ = { d: { maxw: 620 } }; rsvp.adv = { id: 'rsvp' };
+        const faq = fill(sectionOf('faq'), { title: 'Good to know', items: o.faq.map(([q, a]) => ({ q, a })) });
+        return { v: 3, kind: 'event', site, pages: [homePage([hero, count, story, plan, venue, ...(o.more || []), rsvp, faq])] };
+    };
     const soonSite = (name, color, o = {}) => kitSite(name, color, { bare: true, sticky: false, navBtn: '', ...o });
     const KITS = {
         website: { label: 'website', examples: {
@@ -544,6 +607,30 @@
             shop: ['Small shop', () => bio('Bloom & Co. Flowers', '#16a34a', '🌸 Fresh flowers delivered same day · Order by 2 pm', [['💐 Order flowers online'], ['💬 Order on WhatsApp', 'whatsapp'], ['📍 Visit our shop'], ['⭐ Leave us a review']], ['instagram', 'facebook', 'pinterest'])],
             coach: ['Coach / consultant', () => bio('Dr. Sam Patel', '#0ea5e9', '🧠 Helping founders beat burnout · Coach & speaker', [['📅 Book a free intro call'], ['📘 Free guide: 5 signs of burnout'], ['🎙 Listen to my podcast'], ['✉️ Email me', 'email']], ['linkedin', 'youtube', 'x'])],
         } },
+        event: { label: 'event website', examples: {
+            wedding: ['Wedding', () => eventPage('Emma & James', '#b45309', { site: { fonts: { heading: 'Playfair Display', body: 'Lato', base: 17 } }, eyebrow: 'We’re getting married', title: 'Emma & James', days: 180, hour: 14, time: '2 pm', place: 'Rose Garden Hall, Bath', countTitle: 'Until we say “I do”',
+                storyEyebrow: 'Our story', storyTitle: 'How we met', story: 'We met on a rainy Tuesday in a tiny bookshop, both reaching for the last copy of the same novel. Ten years, two cats and one proposal later — we can’t wait to celebrate with you.',
+                planTitle: 'The day', plan: [['2:00 pm · Ceremony', 'In the rose garden — please arrive by 1:45.'], ['3:30 pm · Drinks & photos', 'Canapés and music on the lawn.'], ['6:00 pm · Dinner & dancing', 'Dinner in the hall, then the dance floor is open until midnight.']],
+                venue: 'Rose Garden Hall', address: '12 Garden Lane, Bath BA1 2AB', extra: [wp('text', { html: '<p><b>Dress code:</b> garden formal</p>' })],
+                rsvpTitle: 'Will you celebrate with us?', rsvpText: 'Please reply at least six weeks before the day.', rsvp: { meal: true, meals: 'Chicken\nSalmon\nVegetarian\nVegan' },
+                faq: [['Can I bring a plus one?', 'Your invitation says how many seats we have saved for you. Please contact us if you are not sure.'], ['Are children welcome?', 'We love your little ones, but we have chosen to make our day adults-only.'], ['Is there parking?', 'Yes, free parking is available at the venue.'], ['Do you have a gift list?', 'Your presence is the best gift! If you would like to give something, a contribution to our honeymoon would mean the world.']] })],
+            birthday: ['Birthday party', () => eventPage('Sam’s 30th', '#db2777', { eyebrow: 'You’re invited', title: 'Sam is turning 30! 🎉', days: 30, hour: 20, time: '8 pm till late', place: 'The Rooftop Bar, Manchester', countTitle: 'The party starts in',
+                storyEyebrow: 'The plan', storyTitle: 'Drinks, music and way too much cake', story: 'Come celebrate three decades of Sam with good friends, a great DJ and a view over the city. Dress to impress — there will be a photo booth!',
+                planTitle: 'The night', plan: [['8 pm · Welcome drinks', 'First drink is on us.'], ['9 pm · Food & cake', 'Pizza, snacks and the big cake moment.'], ['10 pm · Dance', 'DJ until 2 am.']],
+                venue: 'The Rooftop Bar', address: '45 King Street, Manchester M2 4LQ', rsvp: { guests: true, note: true }, rsvpText: 'Let us know a week before so we can plan food and drinks.',
+                faq: [['Can I bring someone?', 'Yes! Just add them to your guest number.'], ['Is there a dress code?', 'Party best — sparkles welcome.'], ['Gifts?', 'No gifts please — just bring your dancing shoes.']] })],
+            conference: ['Conference / workshop', () => eventPage('Grow Summit', '#2563eb', { eyebrow: 'One-day conference for small business owners', title: 'Grow Summit', days: 90, hour: 9, time: '9 am – 5 pm', place: 'City Conference Centre, Leeds', countTitle: 'Doors open in', btn2: 'See the agenda',
+                storyEyebrow: 'Why come', storyTitle: 'Learn what works — from people who did it', story: 'Eight practical talks on marketing, sales and hiring, plus time to meet 300 other owners. No theory, just what you can use on Monday.',
+                planTitle: 'Agenda', plan: [['9:00 · Welcome & coffee', 'Badges, breakfast and networking.'], ['10:00 · Morning talks', 'Marketing that pays for itself; pricing with confidence.'], ['13:30 · Workshops', 'Pick one: hiring, social media or cash flow.'], ['16:30 · Panel & drinks', 'Ask the experts, then drinks.']],
+                venue: 'City Conference Centre', address: '1 Park Row, Leeds LS1 5HD', more: [fill(sectionOf('team'), { title: 'Speakers', items: [{ photo: '', name: 'Speaker name', role: 'Founder, Company' }, { photo: '', name: 'Speaker name', role: 'Marketing lead, Company' }, { photo: '', name: 'Speaker name', role: 'CEO, Company' }] })],
+                rsvpTitle: 'Save your seat', rsvpText: 'Free for members. Seats are limited.', rsvp: { btn: 'Register', yes: 'Yes, save me a seat', no: 'I can’t come, but keep me posted', guests: false, note: false, emailReq: true },
+                faq: [['Is lunch included?', 'Yes — lunch, coffee and snacks are included.'], ['Will talks be recorded?', 'Yes, everyone who registers gets the recordings.'], ['Can I get a refund?', 'Tickets are free, so no refunds are needed — just let us know if you can’t come.']] })],
+            babyshower: ['Baby shower', () => eventPage('Baby Lily’s shower', '#0d9488', { eyebrow: 'Oh baby!', title: 'A baby shower for Priya', days: 45, hour: 13, time: '1 pm – 4 pm', place: 'Priya’s mum’s house, Leicester', countTitle: 'Countdown',
+                storyEyebrow: 'Join us', storyTitle: 'Little Lily is on her way', story: 'Join us for an afternoon of tea, cake and silly games as we celebrate Priya and the little one arriving this autumn.',
+                planTitle: 'The afternoon', plan: [['1 pm · Tea & cake', 'Sweet and savoury treats.'], ['2 pm · Games', 'Guess the bump and baby bingo.'], ['3 pm · Gifts & wishes', 'Write a note for baby Lily.']],
+                venue: 'Priya’s mum’s house', address: '8 Oak Road, Leicester LE2 3FG', rsvp: { guests: true, note: true },
+                faq: [['Is there a gift list?', 'Yes — ask us for the link. Nappies are always welcome too!'], ['Can I bring my children?', 'Of course — little ones are very welcome.']] })],
+        } },
         soon: { label: 'coming soon page', examples: {
             launch: ['Launching soon (countdown)', () => {
                 const col = column([wp('heading', { text: 'Northwind', tag: 'p' }), wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know — plus get 20% off on launch day.</p>' }), widget('countdown'), wp('form', { btn: 'Notify me', phone: false }), widget('social')]);
@@ -570,7 +657,7 @@
     };
     const KINDS = ['funnel', ...Object.keys(KITS)];
     // Must match the routes in routes/web.php (FreeToolsTest checks this)
-    const KIT_PATH = { funnel: 'funnel-builder', website: 'website-builder', portfolio: 'portfolio-builder', links: 'link-in-bio-builder', soon: 'coming-soon-page-builder' };
+    const KIT_PATH = { funnel: 'funnel-builder', event: 'event-website-builder', website: 'website-builder', portfolio: 'portfolio-builder', links: 'link-in-bio-builder', soon: 'coming-soon-page-builder' };
     /** A new project for a kit (website, portfolio, links, soon), from one of its examples. */
     const newKit = (kit, key) => {
         const ex = KITS[kit]?.examples || KITS.website.examples;
@@ -677,7 +764,7 @@ h1,h2,h3,h4,.hd{font-family:var(--hf),var(--bf),sans-serif;line-height:1.15;marg
 .faq{display:grid;gap:12px;margin-top:24px}details{padding:18px 22px;border-radius:14px;background:var(--card);border:1px solid var(--border)}summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}summary::after{content:'+';color:var(--primary);font-size:1.3rem;line-height:1}details[open] summary::after{content:'−'}details>p,details>.rt{margin:10px 0 0;color:var(--muted)}
 .embed{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;margin-top:20px;background:#000}.embed iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.map{aspect-ratio:21/9;background:var(--alt)}
 .prose .rt{color:var(--muted)}.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}.contact-grid .intro{text-align:left;margin:0 0 20px}.addr{color:var(--muted);margin-top:18px}
-.form{display:grid;gap:12px}.form label{display:grid;gap:6px;font-weight:600;font-size:.9rem}.form input,.form textarea{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit}.form input:focus,.form textarea:focus{outline:2px solid var(--primary);outline-offset:1px}.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.form{display:grid;gap:12px}.form label{display:grid;gap:6px;font-weight:600;font-size:.9rem}.form input,.form textarea,.form select{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit}.form input:focus,.form textarea:focus,.form select:focus{outline:2px solid var(--primary);outline-offset:1px}.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .iconbox{display:block}.iconbox:not(.lay-left) .iconbox__i{display:inline-grid;margin-bottom:12px}.iconbox.lay-left{display:flex;gap:12px}.iconbox.lay-left{flex-direction:row;align-items:flex-start;text-align:left}.iconbox__i{width:60px;height:60px;flex:none;border-radius:16px;display:grid;place-items:center;background:var(--soft);color:var(--primary);font-size:1.7rem}.iconbox h3{margin:0 0 6px}.iconbox .rt{color:var(--muted)}
 .imagebox h3{margin:16px 0 6px}.imagebox p{margin:0}
 .iconlist{list-style:none;margin:0;padding:0;display:grid;gap:10px}.iconlist li{display:flex;gap:10px;align-items:flex-start}.iconlist .ic{color:var(--primary);font-size:1.15rem;margin-top:.2em}
@@ -714,7 +801,8 @@ ${Array.from({ length: 8 }, (_, i) => `.tabs>input:nth-of-type(${i + 1}):checked
 .paybtn{display:flex;flex-direction:column;align-items:center;gap:8px}.paybtn.al-left{align-items:flex-start}.paybtn.al-right{align-items:flex-end}.paybtn.al-full .btn{width:100%}.paybtn .btn{font-size:1.2rem;padding:20px 38px;box-shadow:0 16px 34px -14px var(--primary)}.paybtn__no{color:var(--muted);font-size:.9rem;margin-top:4px}
 [data-variant=b]{display:none}html.ob-v-b [data-variant=a]{display:none}html.ob-v-b [data-variant=b]{display:block}
 html.ob-ab:not(.ob-ready) main{opacity:0;animation:ob-show 0s 1.2s forwards}@keyframes ob-show{to{opacity:1}}
-.foot{padding:40px 0 28px;border-top:1px solid var(--border);background:var(--alt)}.foot--mini{padding:20px 0 64px;text-align:center}.foot--mini .socials{justify-content:center}.foot .wrap{display:grid;gap:14px}.foot p{margin:0;color:var(--muted)}.foot .socials a{width:36px;height:36px;font-size:.8rem}.credit{font-size:.85rem}.credit a{color:var(--muted)}
+.foot{padding:40px 0 28px;border-top:1px solid var(--border);background:var(--alt)}.rsvp{text-align:left}.rsvp fieldset{border:0;padding:0;margin:0;display:grid;gap:6px}.rsvp legend{font-weight:600;margin-bottom:6px;padding:0}.rsvp .rsvp-opt{display:flex;align-items:center;gap:10px;font-weight:500}.rsvp .rsvp-opt input{width:auto;margin:0;accent-color:var(--primary)}
+.foot--mini{padding:20px 0 64px;text-align:center}.foot--mini .socials{justify-content:center}.foot .wrap{display:grid;gap:14px}.foot p{margin:0;color:var(--muted)}.foot .socials a{width:36px;height:36px;font-size:.8rem}.credit{font-size:.85rem}.credit a{color:var(--muted)}
 @media (min-width:1025px){.hide-d{display:none!important}}@media (min-width:768px) and (max-width:1024px){.hide-t{display:none!important}}@media (max-width:767px){.hide-m{display:none!important}}
 @media (max-width:1024px){.cols.c-4{grid-template-columns:1fr 1fr!important}.g4{grid-template-columns:1fr 1fr}}
 @media (max-width:860px){.hero-split,.split,.contact-grid,.g3{grid-template-columns:1fr}.split.flip-side>:first-child{order:0}.hero-split{text-align:center}.hero-split .actions{justify-content:center}.nav nav>a:not(.btn){display:none}}
@@ -905,7 +993,9 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
             footer: STR(s.footer, 500), social: Object.fromEntries(Object.keys(SOCIAL).map(k => [k, /^https?:\/\/[^\s"'<>]+$/i.test(s.social?.[k] || '') ? s.social[k] : ''])),
             formAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.formAction || '') ? s.formAction : '',
             leadAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.leadAction || '') ? s.leadAction : '',
-            leadFormId: /^[a-z0-9]{16}$/.test(s.leadFormId || '') ? s.leadFormId : '', ref: /^[a-z0-9]{6,20}$/.test(s.ref || '') ? s.ref : undefined,
+            leadFormId: /^[a-z0-9]{16}$/.test(s.leadFormId || '') ? s.leadFormId : '',
+            rsvpAction: /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/.test(s.rsvpAction || '') ? s.rsvpAction : '',
+            rsvpFormId: /^[a-z0-9]{16}$/.test(s.rsvpFormId || '') ? s.rsvpFormId : '', ref: /^[a-z0-9]{6,20}$/.test(s.ref || '') ? s.ref : undefined,
             publishSlug: slugify(STR(s.publishSlug, 40)) || undefined, css: cssSafe(STR(s.css, 20000)),
         };
         const seen = new Set();
@@ -936,7 +1026,7 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
         uid, esc, nl, clone, hex, slugify, getPath, setPath, sanitize, styleKey, classKey, cssSafe, safeUrl,
         ICONS, icon, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
         widget, column, section, sectionOf, isFull, migrate, newProject, newPage, reId, defaultsSite, defaultsPopup,
-        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, KITS, KIT_PATH, newKit, newStep, nextOf, normalize, normalizeSection: SECTION,
+        FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, KITS, KIT_PATH, newKit, rsvpSchema, rsvpWidget, newStep, nextOf, normalize, normalizeSection: SECTION,
         render, renderSection, renderWidget, header, footer, siteCss, pageCss, needsRuntime, href, pageHref, fontsLink,
     };
 })();

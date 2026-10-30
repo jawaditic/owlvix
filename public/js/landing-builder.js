@@ -688,6 +688,7 @@
                 for (const fl of d.fields) out += fl.type === 'list' ? listHtml(fl, o) : fieldHtml(fl, o.p, `${o.id}|`);
                 if (o.type === 'contact' || o.type === 'form') out += formPanel();
                 if (o.type === 'optin') out += leadPanel();
+                if (o.type === 'rsvp') out += (B.rsvpWidget(P)?.id !== o.id ? '<p class="lpb-hint">This site has more than one RSVP form. They all send to one guest list, so they all ask the questions of the first one — change them there.</p>' : '') + rsvpPanel();
                 if (o.type === 'paybtn') out += `<p class="lpb-hint">The button goes to this step's payment link — set it in the <b>Page</b> tab (Stripe, PayPal, Gumroad…). “No thanks” goes to the next step.</p>`;
             }
             if (f.kind !== 'col') out += `<div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--ghost" data-panel-ed="dup">Duplicate</button><button type="button" class="btn btn--sm btn--ghost lpb-danger" data-panel-ed="del">Delete</button></div>`;
@@ -773,6 +774,7 @@
         }
         const pe = e.target.closest('[data-panel-ed]'); if (pe && f) return barAction(pe.dataset.panelEd, f.obj.id);
         if (e.target.closest('[data-activate-form]')) activateForm();
+        if (e.target.closest('[data-activate-rsvp]')) activateRsvp();
         if (e.target.closest('[data-activate-leads]')) activateLeads();
     });
     const changeLayout = (s, layout) => {
@@ -966,7 +968,7 @@
     }));
     sitePanel.addEventListener('click', e => {
         const exb = e.target.closest('[data-example]');
-        if (exb) { const keep = { formAction: P.site.formAction, leadAction: P.site.leadAction, leadFormId: P.site.leadFormId, publishSlug: P.site.publishSlug, ref: P.site.ref }; P = fresh(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
+        if (exb) { const keep = { formAction: P.site.formAction, leadAction: P.site.leadAction, leadFormId: P.site.leadFormId, rsvpAction: P.site.rsvpAction, rsvpFormId: P.site.rsvpFormId, publishSlug: P.site.publishSlug, ref: P.site.ref }; P = fresh(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
         const pick = e.target.closest('[data-img-pick]'); if (pick) { picking = pick.dataset.imgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-img-clear]')) { P.site.logo = ''; commit(); refreshChrome(); drawSite(); }
     });
@@ -1077,7 +1079,9 @@
         return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: 'application/zip' });
     };
     const exportHtml = (pg, mode) => B.render(P, pg, mode, { runtime: RUNTIME, siteBase: SITE_BASE, statsUrl: STATS_URL });
-    $('[data-act=download]').addEventListener('click', () => {
+    $('[data-act=download]').addEventListener('click', async () => {
+        if (!(await rsvpReady())) return;
+        try { await syncRsvp(); } catch (ex) { toast(ex.message); } // the download goes ahead either way
         if (P.pages.length === 1) save(new Blob([exportHtml(P.pages[0], 'download')], { type: 'text/html' }), baseName() + '.html');
         else save(zip(P.pages.map(p => ({ name: (p.slug === 'index' ? 'index' : p.slug) + '.html', text: exportHtml(p, 'download') }))), baseName() + '.zip');
         const after = document.querySelector('[data-lpb-after]');
@@ -1141,7 +1145,46 @@
     const leadPanel = () => P.site.leadAction
         ? `<div class="lpb-form-ok">✅ Collecting leads. Each one is emailed to ${esc(account?.email || 'you')} and saved — see them in the <b>Results</b> tab.</div>`
         : `<div class="lpb-form-off"><b>📥 Collect leads</b><p>Sign-ups are emailed to you, saved in your Results tab (download as CSV) and can go to Mailchimp, Brevo or a webhook. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-leads>Switch on lead collection</button></div>`;
+    const rsvpPanel = () => P.site.rsvpAction
+        ? `<div class="lpb-form-ok">✅ RSVPs are on. Each reply is emailed to ${esc(account?.email || 'you')}. See every reply and download them in the <a href="/form-builder" target="_blank" rel="noopener">form builder</a> (Responses tab).</div>`
+        : `<div class="lpb-form-off"><b>💌 Collect RSVPs</b><p>Guests' replies are emailed to you and saved in a list you can download — wherever you put the page. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-rsvp>Switch on RSVPs</button></div>`;
     let activating = false;
+    /** Create the RSVP form (a form-builder form) whose questions match the RSVP widget. */
+    const activateRsvp = () => needAccount(async () => {
+        if (activating) return; activating = true;
+        try {
+            const schema = B.rsvpSchema(P), r = await api('POST', '/builder/surveys', { schema });
+            P.site.rsvpFormId = r.form.id; P.site.rsvpAction = r.form.action; rsvpSynced = r.form.id + JSON.stringify(schema); commit(); if (dlg.open) dlg.close();
+            refreshMain(); drawEdit(); toast('RSVPs are on'); track('builder_rsvp_on');
+        } catch (ex) { toast(ex.message); } finally { activating = false; }
+    });
+    /**
+     * Before publishing or downloading: save the RSVP widget's current questions to its form, so the answers the
+     * page sends (e.g. a new meal choice) are accepted. Returns false if the page can't be sent out yet.
+     */
+    let rsvpSynced = ''; // the RSVP questions last saved to the server, so unchanged ones aren't sent again
+    const syncRsvp = async () => {
+        const schema = B.rsvpSchema(P);
+        if (!schema || !P.site.rsvpFormId) return;
+        const key = P.site.rsvpFormId + JSON.stringify(schema);
+        if (key === rsvpSynced) return;
+        if (!token) throw new Error('Sign in again to keep your RSVP form up to date.');
+        try { await api('POST', '/builder/surveys', { id: P.site.rsvpFormId, schema }); rsvpSynced = key; }
+        catch (ex) {
+            if (/not found/i.test(ex.message)) { // deleted in the form builder, or another account's form
+                P.site.rsvpAction = ''; P.site.rsvpFormId = ''; commit(); refreshMain(); drawEdit();
+                throw new Error('The form that collected your RSVPs was deleted. Select the RSVP form and switch it on again.');
+            }
+            throw ex;
+        }
+    };
+    /** An RSVP widget that was never switched on would go out empty: offer to switch it on first. True = go ahead. */
+    const rsvpReady = async () => {
+        if (!B.rsvpWidget(P) || P.site.rsvpAction) return true;
+        const on = await sweet({ icon: 'warning', title: 'Your RSVP form is off', text: 'Guests won’t be able to reply until you switch it on (free — sign in with your email).', confirm: 'Switch on RSVPs', cancel: 'Continue without' });
+        if (on) { activateRsvp(); return false; }
+        return true;
+    };
     const activateLeads = () => needAccount(async () => {
         if (activating) return; activating = true;
         try {
@@ -1172,6 +1215,7 @@
     const publish = async slugIn => {
         const slug = slugify(slugIn);
         if (slug.length < 3) throw new Error('Please use at least 3 letters or numbers.');
+        await syncRsvp(); // errors show in the publish dialog
         const previous = P.site.publishSlug;
         P.site.publishSlug = slug;
         const pages = P.pages.map(p => ({ slug: p.slug, title: p.title, html: exportHtml(p, 'publish') }));
@@ -1184,7 +1228,7 @@
             <div class="lpb-dialog-actions"><a class="btn btn--glow" href="${esc(r.url)}" target="_blank" rel="noopener">Open my site</a><button type="button" class="btn btn--ghost" data-lpb-quote-open>Put it on my domain</button></div>`);
         track('builder_publish', { pages: pages.length });
     };
-    $('[data-act=publish]').addEventListener('click', () => needAccount(publishDialog));
+    $('[data-act=publish]').addEventListener('click', async () => { if (await rsvpReady()) needAccount(publishDialog); });
     dlgBody.addEventListener('click', async e => {
         const un = e.target.closest('[data-unpublish]');
         if (un && await sweet({ icon: 'warning', title: 'Take this site offline?', text: `${SITE_HOST}${un.dataset.unpublish} will stop working. You can publish it again later.`, confirm: 'Yes, unpublish', danger: true })) {

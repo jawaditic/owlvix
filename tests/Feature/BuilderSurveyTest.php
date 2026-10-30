@@ -201,6 +201,50 @@ class BuilderSurveyTest extends TestCase
         $this->publish($token); // surveys have their own limit
     }
 
+    public function test_rsvp_from_a_builder_page_thanks_the_guest_and_links_back(): void
+    {
+        $token = $this->signIn();
+        // The questions the page builder's RSVP widget sends (builder-engine.js rsvpSchema)
+        $form = $this->api($token)->postJson('/builder/surveys', ['schema' => ['title' => 'RSVP — Emma & James', 'thanks' => 'Can’t wait to see you!', 'fields' => [
+            ['id' => 'rname', 'type' => 'text', 'label' => 'Your name', 'required' => true],
+            ['id' => 'remail', 'type' => 'email', 'label' => 'Email'],
+            ['id' => 'rcome', 'type' => 'radio', 'label' => 'Will you come?', 'required' => true, 'options' => ['Yes, I will be there', 'Sorry, I can’t make it']],
+            ['id' => 'rguests', 'type' => 'number', 'label' => 'How many guests (including you)?'],
+        ]]])->assertOk()->json('form');
+        $this->assertStringEndsWith('/f/'.$form['id'], $form['action']);
+
+        $page = 'https://sites.owlvix.com/emma-and-james';
+        $this->post($form['action'], ['rname' => 'Ann', 'rcome' => 'Yes, I will be there', 'rguests' => '2', '_back' => $page])
+            ->assertRedirect(route('builder.form.sent', ['id' => $form['id'], 'back' => $page]));
+        $this->assertSame(['rname' => 'Ann', 'rcome' => 'Yes, I will be there', 'rguests' => '2'], BuilderResponse::sole()->answers);
+        $this->get(route('builder.form.sent', ['id' => $form['id'], 'back' => $page]))->assertOk()
+            ->assertSee('Can’t wait to see you!')->assertSee('href="'.$page.'"', false);
+    }
+
+    public function test_rsvp_forms_are_managed_by_their_page_and_errors_keep_the_link_back(): void
+    {
+        $token = $this->signIn();
+        $form = $this->api($token)->postJson('/builder/surveys', ['schema' => ['managed' => true, 'title' => 'RSVP — Party', 'fields' => [
+            ['id' => 'rname', 'type' => 'text', 'label' => 'Your name', 'required' => true],
+            ['id' => 'rguests', 'type' => 'number', 'label' => 'Guests', 'min' => 1, 'max' => 20],
+        ]]])->assertOk()->json('form');
+        $this->assertTrue($form['schema']['managed']);
+
+        // The form builder (no "managed" flag) can't overwrite it; the page (managed) can
+        $this->api($token)->postJson('/builder/surveys', ['id' => $form['id'], 'schema' => ['title' => 'Mine now', 'fields' => [['id' => 'q1', 'type' => 'text', 'label' => 'Name']]]])->assertStatus(422);
+        $this->api($token)->postJson('/builder/surveys', ['id' => $form['id'], 'schema' => ['managed' => true, 'title' => 'RSVP — Party!', 'fields' => $form['schema']['fields']]])->assertOk();
+
+        // Guest numbers must be sensible
+        $page = 'https://sites.owlvix.com/party';
+        foreach (['-5', '0', '21', '1e9', '0x10'] as $bad) {
+            $this->post($form['action'], ['rname' => 'Ann', 'rguests' => $bad, '_back' => $page])->assertStatus(422)
+                ->assertSee('Please check your answer to “Guests”')
+                ->assertSee('name="_back" value="'.$page.'"', false); // fixing the error still ends back on the page
+        }
+        $this->post($form['action'], ['rname' => 'Ann', 'rguests' => '3', '_back' => $page])->assertRedirect();
+        $this->get(route('builder.form.sent', ['id' => $form['id'], 'back' => $page]))->assertSee('<title>Thank you</title>', false)->assertSee('Back to the page');
+    }
+
     public function test_disabled_forms_and_other_kinds_are_not_shown(): void
     {
         $token = $this->signIn();

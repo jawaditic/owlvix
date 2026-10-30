@@ -168,7 +168,13 @@
     /* ------------------------------------------------ publish */
     const note = msg => { const n = $('[data-note]'); n.textContent = msg; n.hidden = false; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 5000); };
     const markDirty = () => { D.dirty = true; save(); syncPublish(); };
-    const syncPublish = () => { const b = $('[data-publish]'); b.textContent = D.id ? (D.dirty ? 'Save changes' : 'Saved ✓') : 'Publish form'; b.disabled = !!D.id && !D.dirty; $('[data-status]').textContent = D.id ? (D.dirty ? 'Unsaved changes — your live form still shows the last saved version.' : 'Live — changes are saved to your form.') : 'Not published yet — your work is kept in this browser.'; };
+    const syncPublish = () => {
+        if (S().managed) { // an RSVP form made by an event page: its questions are changed on that page
+            const b = $('[data-publish]'); b.textContent = 'Edited on your page'; b.disabled = true;
+            $('[data-status]').textContent = 'This RSVP form belongs to your event page — change its questions there and publish the page. Answers are in the Responses tab.';
+            return;
+        }
+        const b = $('[data-publish]'); b.textContent = D.id ? (D.dirty ? 'Save changes' : 'Saved ✓') : 'Publish form'; b.disabled = !!D.id && !D.dirty; $('[data-status]').textContent = D.id ? (D.dirty ? 'Unsaved changes — your live form still shows the last saved version.' : 'Live — changes are saved to your form.') : 'Not published yet — your work is kept in this browser.'; };
     const publish = async () => {
         if (!token) return signIn(publish);
         const b = $('[data-publish]'); b.disabled = true; b.textContent = 'Saving…';

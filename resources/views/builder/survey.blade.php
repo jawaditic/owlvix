@@ -66,6 +66,7 @@
         <form method="post" action="{{ $form->action() }}">
             <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
             @if ($embed)<input type="hidden" name="_embed" value="1">@endif
+            @if (! empty($back))<input type="hidden" name="_back" value="{{ $back }}">@endif
             @foreach ($s['fields'] as $f)
                 @php($fid = 'q-'.$f['id'])
                 @php($req = $f['required'] ? 'required' : '')
@@ -99,6 +100,7 @@
                         @else
                             @php($type = ['phone' => 'tel', 'text' => 'text', 'email' => 'email', 'number' => 'number', 'date' => 'date'][$f['type']])
                             <input id="{{ $fid }}" type="{{ $type }}" name="{{ $f['id'] }}" maxlength="500" placeholder="{{ $f['placeholder'] }}" value="{{ $val($f['id']) }}" {{ $req }}
+                                @isset($f['min']) min="{{ $f['min'] }}" @endisset @isset($f['max']) max="{{ $f['max'] }}" @endisset
                                 @if ($f['type'] === 'email') autocomplete="email" @elseif ($f['type'] === 'phone') autocomplete="tel" @elseif ($f['type'] === 'number') step="any" @endif>
                         @endif
                     </div>
