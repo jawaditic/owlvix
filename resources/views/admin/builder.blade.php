@@ -52,7 +52,7 @@
                                 <button type="submit" class="btn btn--ghost btn--sm">Dismiss report</button>
                             </form>
                         @endif
-                        <form method="POST" action="{{ route('admin.builder.takedown', $site) }}" onsubmit="return confirm('Take down {{ $site->displayUrl() }}?')">
+                        <form method="POST" action="{{ route('admin.builder.takedown', $site) }}" data-confirm="Take down {{ $site->displayUrl() }}?" data-confirm-text="The page goes offline for everyone." data-confirm-ok="Take down" data-confirm-danger>
                             @csrf
                             <button type="submit" class="btn btn--danger btn--sm">Take down</button>
                         </form>

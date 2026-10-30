@@ -33,6 +33,7 @@
         <nav class="crumbs" aria-label="Breadcrumb">
             <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">Schema generator</span>
         </nav>
+        <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl writing code'])</div>
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up</span>
         <h1>Schema markup <span class="accent">generator</span></h1>
         <p class="lead">Fill in a short form and copy ready-to-paste JSON-LD — so Google and AI assistants understand your business, products and pages.</p>

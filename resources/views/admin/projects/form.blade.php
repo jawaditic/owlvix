@@ -64,7 +64,7 @@
 
     @if ($project->exists)
         <form method="POST" action="{{ route('admin.projects.destroy', $project) }}" class="t-delete"
-            onsubmit="return confirm('Delete this project? This can\'t be undone.')">
+            data-confirm="Delete this project?" data-confirm-text="This can't be undone." data-confirm-ok="Delete" data-confirm-danger>
             @csrf @method('DELETE')
             <button type="submit" class="btn btn--danger">Delete project</button>
         </form>

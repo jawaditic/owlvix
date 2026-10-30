@@ -106,10 +106,15 @@
         else if (t.dataset.toggle) { if (e.target.closest('.fb-q__tools')) return; openId = openId === t.dataset.toggle ? null : t.dataset.toggle; drawFields(); }
         else if (t.dataset.goto) { openId = t.dataset.goto; drawFields(); $('[data-fields] .is-open')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
         else if (t.dataset.tpl) {
-            if (!confirm('Replace your questions with this template?')) return;
-            const id = D.id, color = S().color; D = fresh(t.dataset.tpl); D.id = id; D.schema.color = color; openId = null; drawSettings(); drawFields(); markDirty(); track('form_builder_template', { tpl: t.dataset.tpl });
+            ask('Replace your questions with this template?', 'Your current questions will be replaced. Your colour choice stays.', 'Use template').then(yes => {
+                if (!yes) return;
+                const id = D.id, color = S().color; D = fresh(t.dataset.tpl); D.id = id; D.schema.color = color; openId = null; drawSettings(); drawFields(); markDirty(); track('form_builder_template', { tpl: t.dataset.tpl });
+            });
         } else if (t.dataset.tab) showTab(t.dataset.tab);
     });
+
+    /* Styled yes/no question (js/sweet.js, loaded on every page) */
+    const ask = (title, text, ok, danger = false) => window.sweet({ icon: danger ? 'warning' : 'question', title, text, confirm: ok, danger });
 
     /* ------------------------------------------------ tabs */
     const showTab = name => {
@@ -193,13 +198,13 @@
         finally { syncPublish(); }
     };
     $('[data-publish]').addEventListener('click', publish);
-    $('[data-new]').addEventListener('click', () => {
-        if (D.dirty && !confirm('Start a new form? Unsaved changes to this one will be lost.')) return;
+    $('[data-new]').addEventListener('click', async () => {
+        if (D.dirty && !await ask('Start a new form?', 'Unsaved changes to this one will be lost.', 'Start new form')) return;
         D = fresh('blank'); D.dirty = false; openId = null; save(); drawSettings(); drawFields(); drawMine(); syncPublish(); showTab('build');
     });
-    $('[data-mine]').addEventListener('change', e => {
+    $('[data-mine]').addEventListener('change', async e => {
         const x = forms?.find(y => y.id === e.target.value); if (!x) return;
-        if (D.dirty && !confirm('Open this form? Unsaved changes to the current one will be lost.')) { e.target.value = D.id || ''; return; }
+        if (D.dirty && !await ask('Open this form?', 'Unsaved changes to the current one will be lost.', 'Open form')) { e.target.value = D.id || ''; return; }
         D = { id: x.id, schema: structuredClone(x.schema) }; D.dirty = false; openId = null; save(); drawSettings(); drawFields(); syncPublish(); showTab('build');
     });
 
@@ -220,7 +225,7 @@
         const c = e.target.closest('[data-copy]');
         if (c) { try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent = 'Copied ✓'; } catch { c.previousElementSibling?.select(); document.execCommand('copy'); } setTimeout(() => (c.textContent = 'Copy'), 2000); track('form_builder_copy'); }
         if (e.target.closest('[data-delete]')) {
-            if (!confirm('Delete this form? Its link stops working and all answers are deleted. This cannot be undone.')) return;
+            if (!await ask('Delete this form?', 'Its link stops working and all answers are deleted. This cannot be undone.', 'Delete form', true)) return;
             try { await api('POST', `/builder/surveys/${D.id}/delete`); D.id = null; D.dirty = true; delete S().managed; /* now a copy you can publish as your own form */ save(); await loadForms().catch(() => {}); syncPublish(); drawShare(); note('Form deleted. Your questions are still here if you want to publish it again.'); }
             catch (ex) { note(ex.message); }
         }

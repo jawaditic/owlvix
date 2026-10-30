@@ -72,3 +72,31 @@ select:not([multiple]):not([size]) {
 }
 select:not([multiple]):not([size])::-ms-expand { display: none; }
 select option { background: var(--field, #fff); color: var(--text, #0f172a); }
+
+/* ---------- Sweet-alert style dialogs (js/sweet.js), used on the site, the builders and the admin ---------- */
+.sweet { width: min(420px, 100% - 32px); padding: 0; border: 0; border-radius: 22px; background: var(--card); color: var(--text); box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .55); animation: sweet-in .28s cubic-bezier(.2, 1.4, .4, 1); overflow: visible; }
+.sweet::backdrop { background: rgba(10, 15, 30, .55); backdrop-filter: blur(3px); animation: sweet-fade .2s ease; }
+.sweet.is-closing { animation: sweet-out .16s ease forwards; }
+.sweet__box { display: grid; justify-items: center; gap: 10px; padding: 32px 28px 24px; text-align: center; }
+.sweet__icon { --c: #4f7cff; width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 4px; color: var(--c); border: 3px solid color-mix(in srgb, var(--c) 35%, transparent); background: color-mix(in srgb, var(--c) 10%, transparent); animation: sweet-pop .45s .05s cubic-bezier(.2, 1.6, .4, 1) both; }
+.sweet--warning .sweet__icon { --c: #f59e0b; }
+.sweet--success .sweet__icon { --c: #16a34a; }
+.sweet__icon svg { width: 38px; height: 38px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.sweet__title { margin: 0; font: 700 1.3rem/1.3 Poppins, sans-serif; }
+.sweet__text { margin: 0; color: var(--text-2); font-size: .95rem; }
+.sweet__input { width: 100%; margin-top: 6px; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--card-border); background: var(--field); color: var(--text); font: 500 1rem Inter, sans-serif; text-align: center; }
+.sweet__input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(30, 199, 115, .2); }
+.sweet__input.is-shake { border-color: var(--danger-ink); animation: sweet-shake .35s; }
+.sweet__actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; width: 100%; }
+.sweet__btn { flex: 1; max-width: 180px; padding: 12px 18px; border-radius: 999px; border: 0; background: var(--green); color: #fff; font: 700 .95rem Inter, sans-serif; cursor: pointer; transition: transform .15s, filter .15s; }
+.sweet__btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.sweet__btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--green) 40%, transparent); outline-offset: 2px; }
+.sweet__btn--danger { background: #dc2626; }
+.sweet__btn--danger:focus-visible { outline-color: rgba(220, 38, 38, .4); }
+.sweet__btn--cancel { background: rgba(var(--tint-rgb), .08); color: var(--text); }
+@keyframes sweet-in { from { opacity: 0; transform: scale(.85) translateY(10px); } }
+@keyframes sweet-out { to { opacity: 0; transform: scale(.92); } }
+@keyframes sweet-fade { from { opacity: 0; } }
+@keyframes sweet-pop { from { transform: scale(.3); opacity: 0; } }
+@keyframes sweet-shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } 75% { transform: translateX(-3px); } }
+@media (prefers-reduced-motion: reduce) { .sweet, .sweet::backdrop, .sweet__icon, .sweet.is-closing { animation: none; } }

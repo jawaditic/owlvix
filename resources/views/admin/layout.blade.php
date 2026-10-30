@@ -122,6 +122,7 @@
             })();
         </script>
     @endif
+    <script src="{{ \App\Support\Asset::url('js/sweet.js') }}"></script>
     <script src="{{ \App\Support\Asset::url('js/theme.js') }}"></script>
 </body>
 </html>

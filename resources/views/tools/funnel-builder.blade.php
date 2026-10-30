@@ -28,13 +28,14 @@
         <nav class="crumbs" aria-label="Breadcrumb">
             <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">Funnel builder</span>
         </nav>
+        <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl building a funnel'])</div>
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>Build a <span class="accent">sales funnel</span> that converts</h1>
         <p class="lead">Opt-in, sales, upsell and thank-you pages linked step by step — collect leads, take payments with your own Stripe or PayPal link, and A/B test what works. Free.</p>
     </div>
 </section>
 
-<section class="lpb-app" data-lpb data-mode="funnel" data-stats-url="{{ url('/fs') }}" data-runtime="{{ \App\Support\BuilderHtml::runtimeUrl() }}" data-site-base="{{ \App\Models\BuilderSite::base() }}">
+<section class="lpb-app" data-lpb data-mode="funnel" data-stats-url="{{ url('/fs') }}" data-runtime="{{ \App\Support\BuilderHtml::runtimeUrl() }}" data-site-base="{{ \App\Models\BuilderSite::base() }}" data-qr="{{ \App\Support\Asset::url('js/qr.js') }}">
     <div class="lpb-top">
         <div class="lpb-top__group">
             <label class="sr-only" for="lpb-pages">Funnel step</label>

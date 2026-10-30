@@ -26,6 +26,8 @@ class FreeTools
             ['route' => 'link-in-bio-builder', 'group' => 'builder', 'name' => 'Link in bio builder', 'desc' => 'One link for Instagram & TikTok — free Linktree alternative', 'icon' => 'link', 'tone' => ''],
             ['route' => 'coming-soon-builder', 'group' => 'builder', 'name' => 'Coming soon page builder', 'desc' => 'Countdown, waitlist form and socials', 'icon' => 'rocket', 'tone' => 'is-blue'],
             ['route' => 'event-website-builder', 'group' => 'builder', 'name' => 'Wedding & event website builder', 'desc' => 'Invitation, countdown & RSVP list', 'icon' => 'calendar', 'tone' => ''],
+            ['route' => 'menu-builder', 'group' => 'builder', 'name' => 'Restaurant menu & QR builder', 'desc' => 'Digital menu + QR table cards', 'icon' => 'cart', 'tone' => 'is-blue'],
+            ['route' => 'email-builder', 'group' => 'builder', 'name' => 'Email & newsletter builder', 'desc' => 'Mailchimp-ready HTML emails', 'icon' => 'mail', 'tone' => ''],
             ['route' => 'form-builder', 'group' => 'builder', 'name' => 'Form & survey builder', 'desc' => 'Surveys, RSVPs, order forms — answers by email', 'icon' => 'clipboard', 'tone' => 'is-blue'],
             ['route' => 'email-signature', 'group' => 'build', 'name' => 'Email signature generator', 'desc' => 'Gmail & Outlook signatures — 6 designs, copy & paste', 'icon' => 'mail', 'tone' => ''],
             ['route' => 'tech-stack', 'group' => 'build', 'name' => 'Tech stack detector', 'desc' => 'What is a website built with?', 'icon' => 'code', 'tone' => ''],

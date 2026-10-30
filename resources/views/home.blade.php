@@ -409,6 +409,7 @@
     </script>
     {{-- "defer": scripts download in parallel and run in order after the page is parsed, without blocking it.
          Google reCAPTCHA is loaded by site.js only when someone starts filling in a form. --}}
+    <script src="{{ \App\Support\Asset::url('js/sweet.js') }}" defer></script>
     <script src="{{ \App\Support\Asset::url('js/owl.js') }}" defer></script>
     <script src="{{ \App\Support\Asset::url('js/site.js') }}" defer></script>
     <script src="{{ \App\Support\Asset::url('js/theme.js') }}" defer></script>

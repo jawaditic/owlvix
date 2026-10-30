@@ -29,6 +29,7 @@
         <nav class="crumbs" aria-label="Breadcrumb">
             <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">Page builder</span>
         </nav>
+        <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl building a page'])</div>
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>Build your <span class="accent">website</span> — just click and type</h1>
         <p class="lead">Drag in 45+ widgets, style every element for desktop, tablet and mobile, add animations, popups and a working contact form — then download it or publish it free.</p>

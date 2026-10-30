@@ -55,7 +55,7 @@
                     @endif
                 </span>
                 <time datetime="{{ $r->created_at->toIso8601String() }}" title="{{ $r->created_at->format('d M Y, H:i') }}">{{ $r->created_at->diffForHumans(short: true) }}</time>
-                <form method="POST" action="{{ route('admin.feedback.destroy', $r) }}" onsubmit="return confirm('Delete this answer?')">
+                <form method="POST" action="{{ route('admin.feedback.destroy', $r) }}" data-confirm="Delete this answer?" data-confirm-ok="Delete" data-confirm-danger>
                     @csrf @method('DELETE')
                     <button type="submit" class="btn btn--danger btn--sm" aria-label="Delete answer">Delete</button>
                 </form>

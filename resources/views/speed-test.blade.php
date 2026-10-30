@@ -232,7 +232,7 @@
         setTimeout(() => { btn.textContent = text; }, 4000);
     });
     $('[data-speed-share]').addEventListener('click', async e => {
-        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied ✓'; } catch { prompt('Copy this link:', location.href); }
+        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied ✓'; } catch { window.sweet({ icon: 'info', title: 'Copy this link', text: 'Select the link and copy it.', input: { value: location.href, readonly: true, max: 2000 }, confirm: 'Done', cancel: false }); }
     });
     $('[data-speed-again]').addEventListener('click', () => { form.url.value = ''; window.scrollTo({ top: 0, behavior: 'smooth' }); form.url.focus(); });
     // "Get my site fixed": fill in the quote popup with the result

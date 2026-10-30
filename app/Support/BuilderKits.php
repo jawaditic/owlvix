@@ -14,6 +14,7 @@ class BuilderKits
         'links' => 'link-in-bio-builder',
         'soon' => 'coming-soon-builder',
         'event' => 'event-website-builder',
+        'menu' => 'menu-builder',
     ];
 
     public static function get(string $kit): array
@@ -77,6 +78,21 @@ class BuilderKits
                     ['Can guests choose a meal or bring a plus one?', 'Yes. In the RSVP form’s Content tab you can ask how many guests are coming, offer meal choices and ask for a message.'],
                     ['How do I share it with guests?', 'Press Publish and send the link by WhatsApp, email or text — or print it on your invitations.'],
                     ['Can I change the date or add photos later?', 'Yes. Click any text or photo to change it, then publish again — the link stays the same.'],
+                ],
+            ],
+            'menu' => [
+                'crumb' => 'Restaurant menu & QR code builder',
+                'title' => 'Free Restaurant Menu Maker with QR Code — Digital Menu Builder',
+                'description' => 'Make a free digital menu for your restaurant, café or takeaway: prices, specials, opening hours and map — plus a QR code and printable table cards. Order buttons for WhatsApp.',
+                'h1' => 'Your <span class="accent">menu online</span>, with a QR code for every table',
+                'lead' => 'Pick a restaurant, café, pizza or food truck menu, change the dishes and prices, publish — then print QR table cards so guests can scan and see your menu on their phone.',
+                'cta' => ['Want online ordering too?', 'We build restaurant websites and ordering apps with payments, delivery zones and a kitchen screen. Start free: we design the first version at no cost.'],
+                'faq' => [
+                    ['Is the menu maker really free?', 'Yes. Build your menu, publish it free on sites.owlvix.com and print as many QR codes as you like. No payment and no watermark on your menu.'],
+                    ['How do I get the QR code?', 'Press Publish. The QR code appears straight away — download it as PNG or SVG, or print ready-made table cards (four to an A4 page). It also stays in the Site tab under “QR code”.'],
+                    ['Do I need to reprint the QR code when prices change?', 'No. The QR code points to your menu’s web address, which stays the same. Change your prices, publish again, and every printed code shows the new menu.'],
+                    ['Can customers order?', 'Yes — the buttons can open WhatsApp, a phone call or your own ordering link. Add your WhatsApp number in the button’s Content tab.'],
+                    ['Can I add photos of dishes?', 'Yes. Add an Image, Gallery or Image box widget anywhere on the page and click it to upload a photo.'],
                 ],
             ],
             'soon' => [

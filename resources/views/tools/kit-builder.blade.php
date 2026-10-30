@@ -24,6 +24,7 @@
         <nav class="crumbs" aria-label="Breadcrumb">
             <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">{{ $k['crumb'] }}</span>
         </nav>
+        <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl building a website'])</div>
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>{!! $k['h1'] !!}</h1>
         <p class="lead">{{ $k['lead'] }}</p>

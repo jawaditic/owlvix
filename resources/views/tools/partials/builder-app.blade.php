@@ -1,6 +1,6 @@
 {{-- The page builder editor shell (public/js/landing-builder.js fills it in). Used by the landing page builder and the
      extra builders; pass $mode (website, portfolio, links, soon) to start the editor in a kit. --}}
-<section class="lpb-app" data-lpb @if (! empty($mode)) data-mode="{{ $mode }}" @endif data-runtime="{{ \App\Support\BuilderHtml::runtimeUrl() }}" data-site-base="{{ \App\Models\BuilderSite::base() }}">
+<section class="lpb-app" data-lpb @if (! empty($mode)) data-mode="{{ $mode }}" @endif data-runtime="{{ \App\Support\BuilderHtml::runtimeUrl() }}" data-site-base="{{ \App\Models\BuilderSite::base() }}" data-qr="{{ \App\Support\Asset::url('js/qr.js') }}">
     <div class="lpb-top">
         <div class="lpb-top__group">
             <label class="sr-only" for="lpb-pages">Page</label>

@@ -213,7 +213,7 @@
     });
 
     $('[data-seo-share]').addEventListener('click', async e => {
-        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied ✓'; } catch { prompt('Copy this link:', location.href); }
+        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied ✓'; } catch { window.sweet({ icon: 'info', title: 'Copy this link', text: 'Select the link and copy it.', input: { value: location.href, readonly: true, max: 2000 }, confirm: 'Done', cancel: false }); }
     });
     $('[data-seo-quote]').addEventListener('click', () => {
         if (!last) return;

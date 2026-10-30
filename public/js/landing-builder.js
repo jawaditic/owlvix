@@ -33,34 +33,8 @@
         cols: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>'),
     };
 
-    /* Styled dialogs in place of confirm()/prompt(). sweet({icon,title,text,confirm,cancel,danger,input,html}) → Promise */
-    const SWEET_ICONS = { warning: '<path d="M12 8v5M12 16.5h.01"/>', question: '<path d="M9.5 9.2a2.6 2.6 0 0 1 5 .8c0 1.8-2.5 2.2-2.5 3.8M12 16.8h.01"/>', success: '<path d="M7 12.5l3.2 3.2L17 9"/>', info: '<path d="M12 11v5M12 8h.01"/>' };
-    const sweet = opts => new Promise(resolve => {
-        const d = document.createElement('dialog');
-        d.className = `sweet sweet--${opts.icon || 'question'}`;
-        d.innerHTML = `<form method="dialog" class="sweet__box">
-            <span class="sweet__icon" aria-hidden="true"><svg viewBox="0 0 24 24">${SWEET_ICONS[opts.icon || 'question']}</svg></span>
-            <h3 class="sweet__title">${esc(opts.title)}</h3>${opts.text ? `<p class="sweet__text">${esc(opts.text)}</p>` : ''}
-            ${opts.html || ''}
-            ${opts.input ? `<input class="sweet__input" maxlength="${opts.input.max || 60}" value="${esc(opts.input.value || '')}" placeholder="${esc(opts.input.placeholder || '')}">` : ''}
-            <div class="sweet__actions">${opts.cancel === false ? '' : `<button type="button" class="sweet__btn sweet__btn--cancel" data-no>${esc(opts.cancel || 'Cancel')}</button>`}
-            ${opts.confirm === false ? '' : `<button type="submit" class="sweet__btn ${opts.danger ? 'sweet__btn--danger' : ''}" data-yes>${esc(opts.confirm || 'OK')}</button>`}</div></form>`;
-        document.body.append(d);
-        const input = d.querySelector('.sweet__input');
-        let done = false;
-        const finish = val => { if (done) return; done = true; d.classList.add('is-closing'); setTimeout(() => { d.close(); d.remove(); resolve(val); }, 160); };
-        d.querySelector('form').addEventListener('submit', e => {
-            e.preventDefault();
-            if (input && !input.value.trim()) { input.classList.add('is-shake'); setTimeout(() => input.classList.remove('is-shake'), 400); return input.focus(); }
-            finish(input ? input.value.trim() : true);
-        });
-        d.querySelector('[data-no]')?.addEventListener('click', () => finish(input ? null : false));
-        d.addEventListener('cancel', e => { e.preventDefault(); finish(input ? null : false); });
-        d.addEventListener('click', e => { if (e.target === d) finish(input ? null : false); const pick = e.target.closest('[data-pick]'); if (pick) finish(pick.dataset.pick); });
-        d.showModal();
-        (input || d.querySelector('[data-yes]'))?.focus();
-        input?.select();
-    });
+    /* Styled dialogs in place of confirm()/prompt(): the shared js/sweet.js. sweet({icon,title,text,confirm,cancel,danger,input,html}) → Promise */
+    const sweet = opts => window.sweet(opts);
 
     /* =========================================================== state + history */
     let P = null;
@@ -946,12 +920,13 @@
             <label>Footer text<textarea data-site="footer" rows="2">${esc(s.footer || '')}</textarea></label>
             ${Object.entries(B.SOCIAL).map(([k, v]) => `<label>${v[0]}<input data-site="social.${k}" value="${esc(s.social?.[k] || '')}" placeholder="https://…"></label>`).join('')}
             <label class="lpb-check"><input type="checkbox" data-site="backTop" ${s.backTop ? 'checked' : ''}> Back-to-top button</label></details>
+            <details class="lpb-acc"${KIT === 'menu' ? ' open' : ''}><summary>QR code</summary><div data-qr-box></div></details>
             <details class="lpb-acc"><summary>Custom CSS</summary>
             <textarea data-site="css" rows="8" class="lpb-code" placeholder=".hero-copy h1 { letter-spacing: -2px; }">${esc(s.css || '')}</textarea><p class="lpb-hint">Added to every page. Scripts are not allowed.</p></details>
             <details class="lpb-acc"><summary>Start over</summary><p class="lpb-hint">Replace everything with an example (you can undo).</p>
             <div class="lpb-chips">${Object.entries(EXAMPLES).map(([k, v]) => `<button type="button" class="lpb-chip" data-example="${k}">${esc(v[0])}</button>`).join('')}</div></details>`;
         $$('[data-site-panel] .lpb-acc').forEach(d => { const k = d.querySelector('summary').textContent; if (k in keep) d.open = keep[k]; });
-        syncGlobals();
+        syncGlobals(); drawQr($('[data-qr-box]'));
     };
     const sitePanel = $('[data-tab-panel=site]');
     ['input', 'change'].forEach(ev => sitePanel.addEventListener(ev, e => {
@@ -972,6 +947,7 @@
         if (exb) { const keep = Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])); P = fresh(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
         const pick = e.target.closest('[data-img-pick]'); if (pick) { picking = pick.dataset.imgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-img-clear]')) { P.site.logo = ''; commit(); refreshChrome(); drawSite(); }
+        if (e.target.closest('[data-qr-publish]')) $('[data-act=publish]').click();
     });
 
     /* =========================================================== tabs, pages, toolbar */
@@ -1045,6 +1021,52 @@
     // Save / open project
     const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); };
     const baseName = () => slugify(P.site.name) || 'my-website';
+
+    /* =========================================================== QR code (Site tab, and after publishing) */
+    const loadQr = () => window.OwlQR ? Promise.resolve() : (loadQr.p ||= new Promise((ok, fail) => {
+        const sc = document.createElement('script'); sc.src = root.dataset.qr || '/js/qr.js'; sc.onload = ok;
+        sc.onerror = () => { loadQr.p = null; sc.remove(); fail(new Error('The QR code maker could not load. Please try again.')); };
+        document.head.append(sc);
+    }));
+    /** The site's address, only when this account has it live (not just a name from an opened file, or an unpublished site). */
+    const liveUrl = () => { const slug = P.site.publishSlug; return slug && account?.sites?.some(s => s.slug === slug && s.status === 'live') ? SITE_BASE + slug : ''; };
+    let qrMemo = { url: '', svg: '' }, qrTurn = 0, accountLoading = null, accountFailedAt = 0;
+    const qrSvg = url => (qrMemo.url === url ? qrMemo.svg : (qrMemo = { url, svg: OwlQR.svg(url) }).svg);
+    const redrawSiteQr = () => drawQr($('[data-site-panel] [data-qr-box]'));
+    /** The QR box: preview, downloads and printable table cards — once the site has a web address. */
+    const drawQr = async box => {
+        if (!box) return;
+        const turn = String(++qrTurn); box.dataset.qrTurn = turn; const stale = () => box.dataset.qrTurn !== turn; // a later call owns the box
+        if (!account && token && P.site.publishSlug && Date.now() - accountFailedAt > 60e3) { // is it live for this account?
+            await (accountLoading ||= loadAccount().catch(() => { accountFailedAt = Date.now(); }).finally(() => { accountLoading = null; }));
+        }
+        if (stale()) return;
+        const url = liveUrl();
+        if (!url) { box.innerHTML = `<p class="lpb-hint">Publish your site to get a QR code people can scan${KIT === 'menu' ? ' at the table to see your menu' : ''}.</p><button type="button" class="btn btn--sm btn--glow" data-qr-publish>Publish to get a QR code</button>`; return; }
+        try { await loadQr(); } catch (ex) { if (!stale()) box.innerHTML = `<p class="lpb-hint">${esc(ex.message)}</p>`; return; }
+        if (stale() || url !== liveUrl()) return;
+        box.innerHTML = `<div class="lpb-qr"><div class="lpb-qr__img">${qrSvg(url)}</div><div><p class="lpb-hint">Scans to <b>${esc(url.replace(/^https?:\/\//, ''))}</b>${KIT === 'menu' ? ' — print it for tables, windows and flyers.' : '.'}</p></div>
+            <div class="lpb-qr__btns"><button type="button" class="btn btn--sm btn--glow" data-qr-dl="png">Download PNG</button><button type="button" class="btn btn--sm btn--ghost" data-qr-dl="svg">SVG (for print shops)</button><button type="button" class="btn btn--sm btn--ghost" data-qr-dl="cards">${KIT === 'menu' ? 'Print table cards' : 'Print QR cards'}</button></div></div>`;
+    };
+    /** Printable A4 sheet with 4 cards: name, a short line, the code and the address. */
+    const printCards = url => {
+        const name = esc(P.site.name || 'Scan me'), line = KIT === 'menu' ? 'Scan to see our menu' : KIT === 'event' ? 'Scan for details & RSVP' : 'Scan to visit our website';
+        const c = hex(P.site.colors?.primary), card = `<div class="card"><b>${name}</b><span>${line}</span>${OwlQR.svg(url, { color: '#111827' })}<small>${esc(url.replace(/^https?:\/\//, ''))}</small></div>`;
+        const w = open('', '_blank'); if (!w) return toast('Allow pop-ups to print the cards');
+        w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${name} — QR cards</title><style>@page{size:A4;margin:12mm}body{margin:0;font-family:Arial,Helvetica,sans-serif}
+            .sheet{display:grid;grid-template-columns:1fr 1fr;gap:8mm}.card{border:2px dashed #cbd5e1;border-radius:6mm;padding:8mm;text-align:center;display:grid;gap:3mm;justify-items:center;break-inside:avoid}
+            .card b{font-size:20pt;color:${c}}.card span{font-size:12pt;font-weight:bold;color:#111827}.card svg{width:52mm;height:52mm}.card small{font-size:9pt;color:#475569}
+            .tip{font-size:10pt;color:#475569;margin:0 0 6mm}@media print{.tip{display:none}}</style></head><body><p class="tip">Tip: print, cut along the dashed lines and put one on each table. Test-scan one first.</p><div class="sheet">${card.repeat(4)}</div><script>onload=()=>setTimeout(()=>print(),300)<\/script></body></html>`);
+        w.document.close();
+    };
+    root.addEventListener('click', e => {
+        const b = e.target.closest('[data-qr-dl]'); if (!b) return;
+        const url = liveUrl(); if (!url || !window.OwlQR) return; // the buttons only appear once the QR maker has loaded
+        if (b.dataset.qrDl === 'png') OwlQR.canvas(url, 16).toBlob(blob => save(blob, baseName() + '-qr.png'));
+        else if (b.dataset.qrDl === 'svg') save(new Blob([OwlQR.svg(url, { size: 1024 })], { type: 'image/svg+xml' }), baseName() + '-qr.svg');
+        else printCards(url);
+        track('builder_qr', { kind: b.dataset.qrDl });
+    });
     $('[data-act=save]').addEventListener('click', () => { save(new Blob([JSON.stringify(P)], { type: 'application/json' }), baseName() + '.owlvix.json'); toast('Project saved — open it any time to keep editing'); track('builder_save'); });
     $('[data-act=open]').addEventListener('click', () => $('[data-open-file]').click());
     $('[data-open-file]').addEventListener('change', async e => {
@@ -1134,7 +1156,7 @@
             } else if (f.matches('[data-verify]')) {
                 const r = await api('POST', '/builder/account/verify', { email: f.email.value, code: f.code.value.trim() });
                 token = r.token; try { localStorage.setItem('owlvix-builder-token', token); } catch {}
-                await loadAccount(); track('builder_sign_in');
+                await loadAccount(); redrawSiteQr(); track('builder_sign_in');
                 afterSignIn?.();
             } else if (f.matches('[data-publish]')) await publish(f.slug.value);
         } catch (ex) { err.textContent = ex.message; err.hidden = false; }
@@ -1226,14 +1248,17 @@
         commit(); await loadAccount().catch(() => {});
         openDialog(`<h3>🎉 Your site is live</h3><p><a class="lpb-live" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//, ''))}</a></p>
             <p>Share the link anywhere. Changed something? Publish again to update it.</p><p>Want it on your own domain, found on Google, with analytics and speed tuning? We can set that up.</p>
-            <div class="lpb-dialog-actions"><a class="btn btn--glow" href="${esc(r.url)}" target="_blank" rel="noopener">Open my site</a><button type="button" class="btn btn--ghost" data-lpb-quote-open>Put it on my domain</button></div>`);
+            <div class="lpb-dialog-actions"><a class="btn btn--glow" href="${esc(r.url)}" target="_blank" rel="noopener">Open my site</a><button type="button" class="btn btn--ghost" data-lpb-quote-open>Put it on my domain</button></div>
+            <div data-qr-box></div>`);
+        drawQr(dlgBody.querySelector('[data-qr-box]')); redrawSiteQr();
         track('builder_publish', { pages: pages.length });
     };
     $('[data-act=publish]').addEventListener('click', async () => { if (await rsvpReady()) needAccount(publishDialog); });
     dlgBody.addEventListener('click', async e => {
+        if (e.target.closest('[data-qr-publish]')) { dlg.close(); return $('[data-act=publish]').click(); }
         const un = e.target.closest('[data-unpublish]');
         if (un && await sweet({ icon: 'warning', title: 'Take this site offline?', text: `${SITE_HOST}${un.dataset.unpublish} will stop working. You can publish it again later.`, confirm: 'Yes, unpublish', danger: true })) {
-            try { await api('POST', '/builder/unpublish', { slug: un.dataset.unpublish }); await loadAccount(); publishDialog(); toast('Site unpublished'); } catch (ex) { toast(ex.message); }
+            try { await api('POST', '/builder/unpublish', { slug: un.dataset.unpublish }); await loadAccount(); publishDialog(); redrawSiteQr(); toast('Site unpublished'); } catch (ex) { toast(ex.message); }
         }
         if (e.target.closest('[data-lpb-quote-open]')) { dlg.close(); setFull(false); document.querySelector('.speed-cta [data-lpb-quote]')?.click(); }
     });

@@ -13,11 +13,14 @@ export const FILES = [
     'js/theme.js',
     'js/owl.js',
     'js/site.js',
+    'js/sweet.js',
     'js/admin-dashboard.js',
     'js/builder-engine.js',
     'js/landing-builder.js',
     'js/builder-runtime.js',
     'js/form-builder.js',
+    'js/qr.js',
+    'js/email-builder.js',
 ];
 
 for (const file of FILES) {

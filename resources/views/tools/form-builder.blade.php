@@ -29,6 +29,7 @@
         <nav class="crumbs" aria-label="Breadcrumb">
             <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">Form builder</span>
         </nav>
+        <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'desk', 'alt' => 'Owlvix owl making a form'])</div>
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>Make a <span class="accent">form or survey</span> in minutes</h1>
         <p class="lead">Contact forms, feedback surveys, RSVPs, job applications and order forms. Share the link or put it on your website — every answer is emailed to you.</p>

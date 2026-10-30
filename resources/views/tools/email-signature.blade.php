@@ -27,6 +27,7 @@
         <nav class="crumbs" aria-label="Breadcrumb">
             <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">Email signature generator</span>
         </nav>
+        <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'desk', 'alt' => 'Owlvix owl writing an email'])</div>
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · Nothing is uploaded</span>
         <h1>A <span class="accent">professional email signature</span> in one minute</h1>
         <p class="lead">Pick a design, type your details, then copy and paste it into Gmail, Outlook or Apple Mail. Free, no sign-up.</p>
@@ -238,7 +239,7 @@
         save(); draw();
     });
     $('[data-designs]').addEventListener('change', e => { S.design = e.target.value; save(); draw(); window.track?.('esig_design', { design: S.design }); });
-    $('[data-reset]').addEventListener('click', () => { if (!confirm('Clear your details and start over?')) return; S = structuredClone(DEFAULTS); save(); fill(); $$('[data-s]').forEach(el => (el.value = S.social[el.dataset.s] || '')); $$('[name=esig_design]').forEach(r => (r.checked = r.value === S.design)); draw(); });
+    $('[data-reset]').addEventListener('click', async () => { if (!await window.sweet({ icon: 'warning', title: 'Clear your details and start over?', text: 'Your name, photo, links and design choice will be reset.', confirm: 'Start over', danger: true })) return; S = structuredClone(DEFAULTS); save(); fill(); $$('[data-s]').forEach(el => (el.value = S.social[el.dataset.s] || '')); $$('[name=esig_design]').forEach(r => (r.checked = r.value === S.design)); draw(); });
 
     const said = msg => { const p = $('[data-copied]'); p.textContent = msg; p.hidden = false; clearTimeout(said.t); said.t = setTimeout(() => (p.hidden = true), 4000); };
     const html = () => build();

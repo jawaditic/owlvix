@@ -55,7 +55,7 @@
                 @csrf @method('PATCH')
                 <button type="submit" class="btn btn--ghost">Mark as {{ $message->isUnread() ? 'read' : 'unread' }}</button>
             </form>
-            <form method="POST" action="{{ route('admin.messages.destroy', $message) }}" onsubmit="return confirm('Delete this message? This can\'t be undone.')">
+            <form method="POST" action="{{ route('admin.messages.destroy', $message) }}" data-confirm="Delete this message?" data-confirm-text="This can't be undone." data-confirm-ok="Delete" data-confirm-danger>
                 @csrf @method('DELETE')
                 <button type="submit" class="btn btn--danger">Delete</button>
             </form>

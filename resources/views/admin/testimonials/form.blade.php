@@ -61,7 +61,7 @@
 
     @if ($testimonial->exists)
         <form method="POST" action="{{ route('admin.testimonials.destroy', $testimonial) }}" class="t-delete"
-            onsubmit="return confirm('Delete this review? This can\'t be undone.')">
+            data-confirm="Delete this review?" data-confirm-text="This can't be undone." data-confirm-ok="Delete" data-confirm-danger>
             @csrf @method('DELETE')
             <button type="submit" class="btn btn--danger">Delete review</button>
         </form>

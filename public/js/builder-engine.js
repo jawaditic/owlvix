@@ -106,6 +106,9 @@
         }
     };
 
+    /** A button whose link isn't set yet: left off finished pages (kept in the editor so it can be filled in). */
+    const goesNowhere = (l, x) => !x.edit && href(l, x) === '#' && l?.to !== 'contact';
+
     /* ================================================================ render helpers for one widget */
     const helpers = (w, x) => {
         const E = (path, ph = '', o = {}) => (x.edit ? ` data-e="${esc(w.id)}|${esc(path)}" data-ph="${esc(ph)}"${o.ml ? ' data-ml' : ''}${o.rich ? ' data-rich' : ''}` : '');
@@ -124,7 +127,7 @@
                 const v = getPath(w.p, textPath);
                 if (!String(v || '').trim()) return '';
                 const link = getPath(w.p, linkPath), url = href(link, x);
-                if (!x.edit && url === '#' && link?.to !== 'contact') return ''; // a button that would go nowhere
+                if (goesNowhere(link, x)) return '';
                 return `<a class="${extra} ${K(textPath)}" href="${esc(url)}"${E(textPath, 'Button')}>${esc(v)}</a>`;
             },
             pic: (path, alt, extra = 'pic', fallback = '') => {
@@ -573,6 +576,29 @@
         const faq = fill(sectionOf('faq'), { title: 'Good to know', items: o.faq.map(([q, a]) => ({ q, a })) });
         return { v: 3, kind: 'event', site, pages: [homePage([hero, count, story, plan, venue, ...(o.more || []), rsvp, faq])] };
     };
+    /** A menu page: hero, quick order buttons, menu sections (two price lists each), specials, hours & map. */
+    const menuPage = (name, color, o) => {
+        const site = kitSite(name, color, { navBtn: 'See the menu', navLink: { to: 'url', val: '#menu' }, ...(o.site || {}) });
+        const hero = fill(sectionOf('hero'), { v: 'cover', eyebrow: o.eyebrow, title: o.title, text: o.text, btn: 'See the menu', link: { to: 'url', val: '#menu' }, btn2: o.order ? 'Order on WhatsApp' : 'Call to book', link2: o.order ? { to: 'whatsapp', val: '' } : { to: 'phone', val: '' } });
+        const quick = styled(section('3', [
+            column([wp('iconbox', { icon: 'i:clock', title: o.hoursShort, text: 'Open today', layout: 'left' })]),
+            column([wp('iconbox', { icon: 'i:pin', title: o.area, text: 'Address & hours below', layout: 'left' })]),
+            column([wp('iconbox', { icon: o.order ? 'i:truck' : 'i:phone', title: o.order ? 'Delivery & pick-up' : 'Book a table', text: o.order ? 'Order on WhatsApp or call us' : 'Call us or send a message', layout: 'left' })]),
+        ]), { pt: 28, pb: 28 }, 'soft');
+        const cat = ([title, left, right], k) => {
+            const list = items => wp('pricelist', { items: items.map(([name, price, desc = '']) => ({ name, price, desc })) });
+            const s = section('2', [column([wp('heading', { text: left[0], tag: 'h3' }), list(left[1])]), column([wp('heading', { text: right[0], tag: 'h3' }), list(right[1])])]);
+            const head = styled(section('1', [column([wp('heading', { text: title, tag: 'h2' })])]), { align: 'center', pb: 0 }, k % 2 ? 'alt' : 'plain');
+            if (!k) head.adv = { id: 'menu' };
+            s.bg = k % 2 ? 'alt' : 'plain'; s.st._ = { d: { pt: 24 } };
+            return [head, s];
+        };
+        const special = styled(section('1', [column([wp('notice', { kind: 'success', title: o.special[0], text: `<p>${o.special[1]}</p>` })])]), { pt: 32, pb: 32 });
+        const visit = TEMPLATES.sections.visit[1]();
+        visit.cols[0].widgets[1].p.items = o.hours.map(([day, time]) => ({ day, time }));
+        visit.cols[1].widgets[1].p.html = `<p>${o.address}</p>`;
+        return { v: 3, kind: 'menu', site, pages: [homePage([hero, quick, ...o.menu.flatMap(cat), special, ...(o.more || []), visit])] };
+    };
     const soonSite = (name, color, o = {}) => kitSite(name, color, { bare: true, sticky: false, navBtn: '', ...o });
     const KITS = {
         website: { label: 'website', examples: {
@@ -633,6 +659,32 @@
                 venue: 'Priya’s mum’s house', address: '8 Oak Road, Leicester LE2 3FG', rsvp: { guests: true, note: true },
                 faq: [['Is there a gift list?', 'Yes — ask us for the link. Nappies are always welcome too!'], ['Can I bring my children?', 'Of course — little ones are very welcome.']] })],
         } },
+        menu: { label: 'restaurant menu', examples: {
+            restaurant: ['Restaurant', () => menuPage('Olive & Ember', '#c2410c', { site: { fonts: { heading: 'Playfair Display', body: 'Lato', base: 17 } }, eyebrow: 'Wood-fired kitchen · Open daily', title: 'Our menu', text: 'Seasonal plates, hand-stretched pizza and natural wines. Ask us about vegan and gluten-free options.',
+                hoursShort: '12 – 10 pm', area: 'City centre',
+                menu: [['Starters & mains', ['To start', [['Burrata', '$12', 'Heritage tomatoes, basil oil'], ['Wood-fired bread', '$6', 'Whipped butter, sea salt'], ['Calamari', '$11', 'Lemon aioli']]], ['Mains', [['Margherita pizza', '$14', 'San Marzano, mozzarella, basil'], ['Grilled sea bass', '$24', 'Salsa verde, new potatoes'], ['Mushroom risotto', '$18', 'Parmesan, truffle oil (v)']]]],
+                    ['Desserts & drinks', ['Desserts', [['Tiramisu', '$8'], ['Affogato', '$6', 'Vanilla gelato, espresso'], ['Chocolate torte', '$8', 'Gluten-free']]], ['Drinks', [['House wine (glass)', '$7'], ['Craft beer', '$6'], ['Fresh lemonade', '$4']]]]],
+                special: ['Tonight’s special', 'Slow-roasted lamb shoulder for two — $38. Ask your server.'],
+                hours: [['Monday – Thursday', '12:00 – 22:00'], ['Friday – Saturday', '12:00 – 23:00'], ['Sunday', '12:00 – 21:00']], address: '12 Market Street<br>Your City' })],
+            cafe: ['Café / coffee shop', () => menuPage('Little Bean Café', '#7c5c3b', { eyebrow: 'Specialty coffee · Fresh bakes', title: 'Coffee, cake & good mornings', text: 'Locally roasted beans, oat milk at no extra cost and pastries baked every morning.',
+                hoursShort: '7 am – 5 pm', area: 'High Street',
+                menu: [['Coffee & tea', ['Coffee', [['Espresso', '$2.50'], ['Flat white', '$3.40'], ['Cappuccino', '$3.40'], ['Iced latte', '$3.80']]], ['Not coffee', [['Matcha latte', '$3.90'], ['Hot chocolate', '$3.50'], ['Chai latte', '$3.60'], ['Pot of tea', '$2.80']]]],
+                    ['Food', ['Breakfast', [['Avocado toast', '$8', 'Sourdough, chilli, lime'], ['Granola bowl', '$6', 'Yoghurt, berries, honey'], ['Bacon roll', '$5']]], ['Bakes', [['Croissant', '$3'], ['Banana bread', '$3.50'], ['Cinnamon bun', '$3.50']]]]],
+                special: ['Loyalty card', 'Your 10th coffee is on us — ask for a card at the counter.'],
+                hours: [['Monday – Friday', '7:00 – 17:00'], ['Saturday', '8:00 – 17:00'], ['Sunday', '9:00 – 15:00']], address: '45 High Street<br>Your City' })],
+            pizzeria: ['Pizza & takeaway', () => menuPage('Napoli Express', '#dc2626', { order: true, eyebrow: 'Pizza · Pasta · Delivery', title: 'Hot pizza at your door in 30 minutes', text: 'Order on WhatsApp or call us. Free delivery on orders over $25.',
+                hoursShort: '11 am – 11 pm', area: 'We deliver city-wide',
+                menu: [['Pizza', ['Classics', [['Margherita', '$10'], ['Pepperoni', '$12'], ['Hawaiian', '$12'], ['Four cheese', '$13']]], ['Specials', [['BBQ chicken', '$14'], ['Veggie supreme', '$13'], ['Spicy beef', '$14'], ['Truffle mushroom', '$15']]]],
+                    ['Sides & drinks', ['Sides', [['Garlic bread', '$4'], ['Chicken wings (6)', '$7'], ['Fries', '$3']]], ['Drinks', [['Soft drink (can)', '$1.50'], ['Water', '$1'], ['Milkshake', '$4']]]]],
+                special: ['Deal of the day', 'Any 2 large pizzas + garlic bread + 2 drinks for $29.'],
+                hours: [['Every day', '11:00 – 23:00']], address: '8 Station Road<br>Your City' })],
+            foodtruck: ['Food truck / street food', () => menuPage('Taco Loco', '#16a34a', { order: true, eyebrow: 'Street tacos · Burritos', title: 'Tacos made fresh, right in front of you', text: 'Find us at the market on weekends and at the business park on weekdays.',
+                hoursShort: '11:30 am – 3 pm', area: 'See where we are today',
+                menu: [['Food', ['Tacos (3 per plate)', [['Carnitas', '$9', 'Slow-cooked pork, salsa verde'], ['Chicken tinga', '$9'], ['Crispy fish', '$10'], ['Mushroom & bean (v)', '$8']]], ['Burritos & bowls', [['Classic burrito', '$11'], ['Burrito bowl', '$11', 'Rice, beans, salsa, guac'], ['Loaded nachos', '$8']]]],
+                    ['Extras', ['Sides', [['Guacamole & chips', '$5'], ['Elote (street corn)', '$4']]], ['Drinks', [['Horchata', '$4'], ['Agua fresca', '$4'], ['Mexican cola', '$3']]]]],
+                special: ['Taco Tuesday', 'Any 3 tacos for $7 every Tuesday.'],
+                hours: [['Monday – Friday', '11:30 – 15:00 · Business park'], ['Saturday – Sunday', '10:00 – 16:00 · Central market']], address: 'Different spot each day —<br>follow us for today’s location' })],
+        } },
         soon: { label: 'coming soon page', examples: {
             launch: ['Launching soon (countdown)', () => {
                 const col = column([wp('heading', { text: 'Northwind', tag: 'p' }), wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know — plus get 20% off on launch day.</p>' }), widget('countdown'), wp('form', { btn: 'Notify me', phone: false }), widget('social')]);
@@ -659,7 +711,7 @@
     };
     const KINDS = ['funnel', ...Object.keys(KITS)];
     // Must match the routes in routes/web.php (FreeToolsTest checks this)
-    const KIT_PATH = { funnel: 'funnel-builder', event: 'event-website-builder', website: 'website-builder', portfolio: 'portfolio-builder', links: 'link-in-bio-builder', soon: 'coming-soon-page-builder' };
+    const KIT_PATH = { funnel: 'funnel-builder', menu: 'restaurant-menu-builder', event: 'event-website-builder', website: 'website-builder', portfolio: 'portfolio-builder', links: 'link-in-bio-builder', soon: 'coming-soon-page-builder' };
     /** A new project for a kit (website, portfolio, links, soon), from one of its examples. */
     const newKit = (kit, key) => {
         const ex = KITS[kit]?.examples || KITS.website.examples;
@@ -846,7 +898,7 @@ ${cssSafe(s.css || '')}`;
         if (s.bare) return bar; // simple page (link-in-bio, coming soon): no header or menu
         return `${bar}<header class="nav${s.sticky !== false ? ' is-sticky' : ''}"${x.edit ? ' data-hdr' : ''}><div class="wrap"><a class="brand" href="${x.edit ? '#' : esc(pageHref('index', x))}"><span${x.edit ? ' data-img="site|logo"' : ''}>${logo}</span><span${x.edit ? ' data-e="site|name" data-ph="Business name"' : ''}>${esc(name)}</span></a>
             <nav>${menu.length > 1 ? menu.map(p => `<a href="${x.edit ? '#' : esc(pageHref(p.slug, x))}"${x.edit ? ` data-goto="${esc(p.id)}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('') : ''}
-            ${s.navBtn ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}</nav></div></header>`;
+            ${s.navBtn && !goesNowhere(s.navLink, x) ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}</nav></div></header>`;
     };
     const footer = x => {
         const s = x.P.site, name = s.name || 'Your business';
