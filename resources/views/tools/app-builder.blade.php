@@ -69,7 +69,11 @@
                                         <button type="button" data-icon-mode="image">My logo</button>
                                     </div>
                                     <label data-icon-letter-wrap>Letters<input data-i="letter" maxlength="2" placeholder="B"></label>
-                                    <label data-icon-file-wrap hidden>Logo or picture <small>— square, at least 512 × 512 px</small><input type="file" accept="image/png,image/jpeg,image/webp" data-icon-file></label>
+                                    <label class="ab-drop" data-icon-file-wrap hidden>
+                                        <input type="file" accept="image/png,image/jpeg,image/webp" data-icon-file class="sr-only">
+                                        <span class="ab-drop__ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
+                                        <span class="ab-drop__txt"><b data-icon-file-title>Upload your logo</b><small>Click or drop a PNG, JPG or WebP · square, at least 512 × 512 px</small></span>
+                                    </label>
                                     <label data-icon-zoom-wrap hidden>Size<input type="range" min="40" max="100" data-i="zoom"></label>
                                     <label class="fb-check" data-icon-fill-wrap hidden><input type="checkbox" data-i="fill"> Fill the whole square</label>
                                 </div>

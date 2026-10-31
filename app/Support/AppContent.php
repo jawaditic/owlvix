@@ -363,7 +363,7 @@ class AppContent
 
     public static function root(): string
     {
-        return rtrim((string) config('builder.apps.public_dir'), '/');
+        return rtrim((string) (config('builder.apps.public_dir') ?: public_path('app-data')), '/');
     }
 
     public static function dir(BuilderApp $app): string

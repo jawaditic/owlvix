@@ -13,23 +13,25 @@
     const ask = (title, text, ok, danger = false) => window.sweet({ icon: danger ? 'warning' : 'question', title, text, confirm: ok, danger });
     const ICONS = JSON.parse(document.getElementById('ab-icons')?.textContent || '{}');
     const ICON_NAMES = { home: 'Home', grid: 'Menu', store: 'Shop', cart: 'Cart', tag: 'Offers', food: 'Food', calendar: 'Book', image: 'Gallery', play: 'Videos', book: 'Blog', search: 'Search', heart: 'Saved', star: 'Reviews', bell: 'News', chat: 'Chat', phone: 'Call', mail: 'Email', location: 'Find us', user: 'Account', info: 'About', globe: 'Website' };
-    const svgIcon = (name, color, size = 22) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[name] || ICONS.home}"/></svg>`;
+    // Drawings for the block menu only (the tab icons come from app-shell/icons.json)
+    const BLOCK_ICONS = { heading: 'M6 4v16M18 4v16M6 12h12', text: 'M4 6h16M4 10h16M4 14h16M4 18h10', button: 'M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 15.5zM8 12h8', divider: 'M3 12h18M7 7h10M7 17h10', list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01', gallery: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' };
+    const svgIcon = (name, color, size = 22) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[name] || BLOCK_ICONS[name] || ICONS.home}"/></svg>`;
     const STORE = 'owlvix-app-builder';
     const MAX_TABS = 5, MAX_BLOCKS = 40, MAX_PENDING = 9e6; // MAX_PENDING: new pictures (as text) before a save is needed
 
     /* ------------------------------------------------ blocks: what the builder offers and their starting values */
     const BLOCKS = {
         hero: { name: 'Banner', icon: 'image', make: () => ({ title: 'Welcome', text: 'Tell people what you do in a line or two.', image: null, button: { label: '', action: { kind: '', value: '' } } }) },
-        heading: { name: 'Heading', icon: 'book', make: () => ({ text: 'Heading', align: 'left' }) },
-        text: { name: 'Text', icon: 'info', make: () => ({ text: '', align: 'left' }) },
+        heading: { name: 'Heading', icon: 'heading', make: () => ({ text: 'Heading', align: 'left' }) },
+        text: { name: 'Text', icon: 'text', make: () => ({ text: '', align: 'left' }) },
         image: { name: 'Picture', icon: 'image', make: () => ({ image: null, caption: '', round: true, action: { kind: '', value: '' } }) },
-        button: { name: 'Button', icon: 'star', make: () => ({ label: 'Call us', style: 'solid', action: { kind: 'tel', value: '' } }) },
-        list: { name: 'List / menu / prices', icon: 'grid', make: () => ({ title: '', items: [{ title: 'Item', text: '', price: '', image: null, action: { kind: '', value: '' } }] }) },
-        gallery: { name: 'Gallery', icon: 'image', make: () => ({ images: [], columns: 2 }) },
+        button: { name: 'Button', icon: 'button', make: () => ({ label: 'Call us', style: 'solid', action: { kind: 'tel', value: '' } }) },
+        list: { name: 'List / menu / prices', icon: 'list', make: () => ({ title: '', items: [{ title: 'Item', text: '', price: '', image: null, action: { kind: '', value: '' } }] }) },
+        gallery: { name: 'Gallery', icon: 'gallery', make: () => ({ images: [], columns: 2 }) },
         contact: { name: 'Contact', icon: 'phone', make: () => ({ title: 'Get in touch', phone: '', whatsapp: '', email: '', address: '', website: '' }) },
         hours: { name: 'Opening hours', icon: 'calendar', make: () => ({ title: 'Opening hours', rows: [{ day: 'Mon – Fri', time: '9:00 – 17:00' }, { day: 'Sat – Sun', time: 'Closed' }] }) },
         video: { name: 'YouTube video', icon: 'play', make: () => ({ url: '', title: '' }) },
-        divider: { name: 'Divider', icon: 'grid', make: () => ({}) },
+        divider: { name: 'Divider', icon: 'divider', make: () => ({}) },
     };
     const ACTIONS = { '': 'Nothing', tab: 'Open a tab', url: 'Open a website', tel: 'Call', whatsapp: 'WhatsApp', email: 'Email', map: 'Show on a map' };
     const ACTION_HINT = { url: 'https://…', tel: '+1 555 123 4567', whatsapp: 'Full number, e.g. +44 7700 900123', email: 'you@example.com', map: 'Address or place name' };
@@ -326,6 +328,8 @@
         $$('[data-icon-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.iconMode === D.icon.mode)));
         $('[data-icon-letter-wrap]').hidden = D.icon.mode !== 'letter';
         ['file', 'zoom', 'fill'].forEach(k => ($(`[data-icon-${k}-wrap]`).hidden = D.icon.mode !== 'image'));
+        $('[data-icon-file-title]').textContent = D.icon.image ? 'Change logo' : 'Upload your logo';
+        $('[data-icon-file-wrap]').classList.toggle('has-file', !!D.icon.image);
         if (D.icon.mode === 'image') $('[data-icon-zoom-wrap]').hidden = !!D.icon.fill;
         $('[data-a="package"]').readOnly = !!current()?.version_code;
         drawSitePick();
@@ -374,6 +378,16 @@
     /* ------------------------------------------------ pictures on screens */
     const photoInput = $('[data-photo-file]');
     let picking = null; // { block, path }
+    const useLogo = async file => {
+        if (!file) return;
+        try { D.icon.image = await readLogo(file); D.icon.mode = 'image'; await loadLogo(); drawSettings(); drawPhone(); markDirty(true); track('app_builder_logo'); }
+        catch (ex) { note(ex.message); }
+    };
+    /* Drop a logo on the upload box */
+    const drop = $('[data-icon-file-wrap]');
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('is-over')));
+    drop.addEventListener('drop', e => { e.preventDefault(); useLogo(e.dataTransfer?.files?.[0]); });
     root.addEventListener('change', async e => {
         if (e.target === photoInput) {
             const files = [...(photoInput.files || [])]; photoInput.value = '';
@@ -390,9 +404,7 @@
             return;
         }
         if (e.target.matches('[data-icon-file]')) {
-            const file = e.target.files?.[0]; if (!file) return;
-            try { D.icon.image = await readLogo(file); D.icon.mode = 'image'; await loadLogo(); drawSettings(); drawPhone(); markDirty(true); track('app_builder_logo'); }
-            catch (ex) { note(ex.message); }
+            await useLogo(e.target.files?.[0]);
             e.target.value = '';
         }
         if (e.target.matches('[data-site]') && e.target.value) {
@@ -742,7 +754,7 @@
     });
 
     /* ------------------------------------------------ start */
-    $('[data-add-types]').innerHTML = Object.entries(BLOCKS).map(([k, v]) => `<button type="button" data-add-type="${k}">${svgIcon(v.icon, 'currentColor', 18)}<span>${v.name}</span></button>`).join('');
+    $('[data-add-types]').innerHTML = Object.entries(BLOCKS).map(([k, v]) => `<button type="button" data-add-type="${k}">${svgIcon(v.icon, 'currentColor', 20)}<span>${v.name}</span></button>`).join('');
     loadLogo().then(() => { drawAll(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
     if (token) loadAccount().catch(() => {});
 })();

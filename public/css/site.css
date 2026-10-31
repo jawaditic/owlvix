@@ -2313,6 +2313,15 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-iconctl { display: grid; gap: 10px; flex: 1; min-width: 0; }
 .ab-iconctl .ab-seg { justify-self: start; }
 .ab .ab-iconctl input[type="range"] { padding: 0; accent-color: var(--green); }
+.ab-drop { position: relative; display: flex !important; align-items: center; gap: 12px; padding: 14px 16px; border: 1.5px dashed var(--card-border); border-radius: 14px; background: var(--field); cursor: pointer; transition: border-color .15s, background .15s; }
+.ab-drop:hover, .ab-drop.is-over, .ab-drop:focus-within { border-color: var(--green); background: rgba(30, 199, 115, .08); }
+.ab-drop:focus-within { box-shadow: 0 0 0 3px rgba(30, 199, 115, .2); }
+.ab-drop[hidden] { display: none !important; }
+.ab-drop__ic { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: rgba(30, 199, 115, .14); color: var(--green); }
+.ab-drop__txt { display: grid; gap: 2px; min-width: 0; }
+.ab-drop__txt b { color: var(--text); font-size: .92rem; }
+.ab-drop__txt small { font-weight: 500; color: var(--muted); font-size: .8rem; line-height: 1.35; }
+.ab-drop.has-file { border-style: solid; }
 .ab-tabs { display: grid; gap: 8px; }
 .ab-tab { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-areas: "ic label tools" "kind kind kind"; gap: 6px 8px; padding: 10px; border: 1px solid var(--card-border); border-radius: 14px; position: relative; }
 .ab-tab__kind { grid-area: kind; display: grid; gap: 6px; }
@@ -2338,14 +2347,15 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-blk__body { display: grid; gap: 10px; padding: 4px 12px 14px; }
 .ab-blk__body > label, .ab-items label, .ab-blk__body .fb-2 > label { display: grid; gap: 4px; }
 .ab-blk__body textarea { resize: vertical; }
-.ab-add { justify-self: start; }
+.ab-add { justify-self: stretch; margin-top: 10px; }
 .ab-add > summary { list-style: none; cursor: pointer; display: inline-flex; }
 .ab-add > summary::-webkit-details-marker { display: none; }
-.ab-add__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 10px; }
-.ab-add__grid button { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--field); color: var(--text); font: 600 .85rem Inter, sans-serif; text-align: left; cursor: pointer; }
-.ab-add__grid button:hover:not(:disabled) { border-color: var(--green); }
+.ab-add__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; margin-top: 10px; padding: 10px; border: 1px solid var(--card-border); border-radius: 14px; background: var(--field); }
+.ab-add__grid button { display: grid; justify-items: center; align-content: center; gap: 6px; min-height: 72px; padding: 10px 8px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); color: var(--text); font: 600 .82rem/1.25 Inter, sans-serif; text-align: center; cursor: pointer; transition: border-color .15s, transform .15s; }
+.ab-add__grid button:hover:not(:disabled), .ab-add__grid button:focus-visible { border-color: var(--green); transform: translateY(-1px); }
 .ab-add__grid button:disabled { opacity: .4; cursor: default; }
 .ab-add__grid svg { flex: none; color: var(--green); }
+@media (prefers-reduced-motion: reduce) { .ab-add__grid button { transition: none; } .ab-add__grid button:hover:not(:disabled) { transform: none; } }
 .ab-imgf { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .9rem; }
 .ab-imgf > span:first-child { flex-basis: 100%; }
 .ab-imgf img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid var(--card-border); }
@@ -2448,7 +2458,7 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab code { font-size: .82rem; }
 @media (max-width: 900px) { .ab-layout { grid-template-columns: minmax(0, 1fr); } }
 .ab .fb-edit, .ab [data-panel] { min-width: 0; }
-@media (max-width: 480px) { .ab-phone { width: 250px; height: 510px; } .ab-file { flex-direction: column; align-items: flex-start; } .ab-iconprev { width: 72px; height: 72px; border-radius: 16px; } .ab-act > div { grid-template-columns: 1fr; } .ab-act > div > :only-child { max-width: none; } .ab-blk > summary small { display: none; } }
+@media (max-width: 480px) { .ab-phone { width: 250px; height: 510px; } .ab-file { flex-direction: column; align-items: flex-start; } .ab-iconprev { width: 72px; height: 72px; border-radius: 16px; } .ab-act > div { grid-template-columns: 1fr; } .ab-act > div > :only-child { max-width: none; } .ab-blk > summary small { display: none; } .ab-add__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; gap: 6px; } .ab-add__grid button { min-height: 64px; } }
 @media (max-width: 520px) { .fb-2 { grid-template-columns: 1fr; } .fb-copyrow { flex-direction: column; } .fb-top__actions { width: 100%; } .fb-mine { max-width: none; flex: 1 1 100%; } }
 .fb [data-panel="build"].is-locked { opacity: .55; }
 

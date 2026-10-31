@@ -23,7 +23,9 @@ return [
         'monthly_limit' => (int) env('APP_BUILDER_MONTHLY_LIMIT', 100),
         // Each app's live content (content.json + pictures) and finished APK/AAB files are written here as static
         // files, so the web server sends them without starting PHP: phones fetch content.json on every app open.
-        'public_dir' => env('APP_BUILDER_PUBLIC_DIR') ?: public_path('app-data'),
+        // (empty: public_path('app-data'), worked out when used, because the live site sets its public folder in
+        // public_html/index.php and a cached config made on the command line would hold the wrong one)
+        'public_dir' => env('APP_BUILDER_PUBLIC_DIR') ?: null,
         'public_url' => env('APP_BUILDER_PUBLIC_URL'), // defaults to APP_URL/app-data
     ],
 ];
