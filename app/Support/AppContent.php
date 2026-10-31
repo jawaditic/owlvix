@@ -30,7 +30,7 @@ class AppContent
     public const MAX_NEW_BYTES = 12_000_000;
 
     public const TYPES = ['hero', 'heading', 'text', 'image', 'button', 'list', 'gallery', 'contact', 'hours', 'video', 'divider',
-        'slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'spacer'];
+        'slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'spacer', 'products'];
 
     /** Social networks the "social" block links to (each value is the page's https address). */
     public const SOCIAL = ['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin', 'pinterest', 'snapchat'];
@@ -146,6 +146,7 @@ class AppContent
             'faq' => $this->faq($b),
             'social' => $this->social($b),
             'notice' => ($t = $this->text($b['text'] ?? '', 300, true)) !== '' ? ['type' => 'notice', 'text' => $t, 'tone' => in_array($b['tone'] ?? '', ['info', 'success', 'warning'], true) ? $b['tone'] : 'info'] : null,
+            'products' => $this->products($b),
             'spacer' => ['type' => 'spacer', 'size' => in_array($b['size'] ?? '', ['small', 'medium', 'large'], true) ? $b['size'] : 'medium'],
         };
     }
@@ -206,6 +207,29 @@ class AppContent
         }
 
         return array_values(array_filter(array_map(fn ($i) => $this->image($i), $images)));
+    }
+
+    /** Products people can add to an order (sent to the owner on WhatsApp or by email: AppBuilder settings "shop"). */
+    private function products(array $b): ?array
+    {
+        $items = is_array($b['items'] ?? null) ? array_values($b['items']) : [];
+        if (count($items) > 60) {
+            throw new AppContentError($this->where.'a products block can have up to 60 products.');
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            if (! is_array($item) || ($name = $this->text($item['name'] ?? '', 80)) === '') {
+                continue;
+            }
+            $raw = str_replace(',', '.', trim((string) (is_scalar($item['price'] ?? null) ? $item['price'] : '')));
+            if ($raw !== '' && (! is_numeric($raw) || (float) $raw < 0 || (float) $raw > 10_000_000)) {
+                throw new AppContentError($this->where.'“'.$name.'” needs a price as a number, e.g. 12.50 (or leave it empty).');
+            }
+            $clean[] = array_filter(['name' => $name, 'text' => $this->text($item['text'] ?? '', 400, true), 'category' => $this->text($item['category'] ?? '', 40),
+                'price' => $raw === '' ? null : round((float) $raw, 2), 'image' => $this->image($item['image'] ?? null)], fn ($v) => $v !== null && $v !== '');
+        }
+
+        return $clean ? array_filter(['type' => 'products', 'title' => $this->text($b['title'] ?? '', 80), 'items' => $clean]) : null;
     }
 
     /** Small cards in a grid: an icon, a title and a line of text (features, services, reasons to choose you). */
@@ -500,6 +524,7 @@ class AppContent
             'externalLinks' => $s['external_links'],
             'menu' => ($s['menu'] ?? '') === 'hide' ? 'hide' : 'show',
             'report' => $app->reportUrl(),
+            'shop' => $s['shop'] ?? null,
             'hosts' => $app->url ? [$app->host()] : [],
             'offline' => $s['offline'],
             'tabs' => $app->content['tabs'] ?? [],

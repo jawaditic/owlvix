@@ -16,6 +16,7 @@ import INTRO from './intro';
 import { Block, Empty, Icon, isDark } from './blocks';
 import { color, fetchContent, startContent, str } from './content';
 import { countOpen, countPage, sendStats } from './stats';
+import { OrderButton, OrderSheet, ProductSheet } from './order';
 
 const shell = Constants.expoConfig?.extra?.shell ?? {};
 const CHECK_EVERY = 60 * 1000; // ask the server for changes at most once a minute when the app comes back
@@ -204,6 +205,8 @@ function Shell() {
                 }
             },
             openUrl: openOutside,
+            shop: doc?.shop && typeof doc.shop === 'object' ? doc.shop : null,
+            openProduct: p => setProduct(p),
             openTab: i => { if (i >= 0 && i < tabs.length) { setOpened(o => (o.includes(i) ? o : [...o, i])); setActive(i); } },
             refresh,
         };
@@ -260,6 +263,9 @@ function Shell() {
     const [menu, setMenu] = useState(false);
     const [intro, setIntro] = useState(!!INTRO?.source);
     const [banner, setBanner] = useState(null); // a notification that arrived while the app was open
+    const [cart, setCart] = useState([]);       // the order basket: [{ name, price, qty }]
+    const [product, setProduct] = useState(null);
+    const [orderOpen, setOrderOpen] = useState(false);
 
     // New content may have fewer tabs
     useEffect(() => {
@@ -305,6 +311,7 @@ function Shell() {
                             : <Screen tab={tab} ctx={ctx} register={register} index={i} />}
                     </View>
                 ))}
+                <OrderButton cart={cart} ctx={ctx} bottom={16} onPress={() => setOrderOpen(true)} />
             </View>
             <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)} statusBarTranslucent>
                 <View style={styles.drawerWrap}>
@@ -346,6 +353,12 @@ function Shell() {
             ) : (
                 <View style={{ height: insets.bottom, backgroundColor: C.bar }} />
             )}
+            <ProductSheet product={product} ctx={ctx} insets={insets} onClose={() => setProduct(null)}
+                onAdd={(p, qty) => {
+                    setCart(c => { const i = c.findIndex(l => l.name === p.name && l.price === p.price); return i < 0 ? [...c, { name: p.name, price: p.price, qty }] : c.map((l, j) => (j === i ? { ...l, qty: Math.min(99, l.qty + qty) } : l)); });
+                    setProduct(null);
+                }} />
+            <OrderSheet visible={orderOpen} cart={cart} setCart={setCart} ctx={ctx} insets={insets} appName={str(shell.name)} onClose={() => setOrderOpen(false)} />
             {banner && (
                 <Pressable onPress={() => { if (/^\d+$/.test(banner.tab || '')) ctx.openTab(+banner.tab); setBanner(null); }} accessibilityRole="button"
                     style={[styles.banner, { top: insets.top + 8 }]}>

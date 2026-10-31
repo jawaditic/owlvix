@@ -41,6 +41,7 @@
         social: { name: 'Social links', icon: 'social', make: () => ({ title: 'Follow us', links: {} }) },
         notice: { name: 'Notice', icon: 'notice', make: () => ({ text: 'We’re open on bank holidays!', tone: 'info' }) },
         spacer: { name: 'Space', icon: 'spacer', make: () => ({ size: 'medium' }) },
+        products: { name: 'Products & orders', icon: 'cart', make: () => ({ title: '', items: [newItem('products'), { ...newItem('products'), name: 'Second product', price: '12' }] }) },
     };
     /** A new row for blocks with items. */
     const newItem = type => ({
@@ -48,8 +49,9 @@
         cards: { icon: 'star', title: 'Great service', text: 'Say why people choose you.', action: { kind: '', value: '' } },
         reviews: { name: 'Happy customer', text: 'Lovely place, friendly people — highly recommended!', stars: 5 },
         faq: { q: 'Do I need to book?', a: 'Walk-ins are welcome, but booking means no waiting.' },
+        products: { name: 'First product', price: '9.50', category: '', text: '', image: null },
     })[type];
-    const MAX_ITEMS = { list: 50, cards: 12, reviews: 20, faq: 30 };
+    const MAX_ITEMS = { list: 50, cards: 12, reviews: 20, faq: 30, products: 60 };
     const MAX_PICS = { gallery: 24, slider: 12 };
     const SOCIAL = { instagram: ['Instagram', '#e1306c'], facebook: ['Facebook', '#1877f2'], tiktok: ['TikTok', '#111111'], youtube: ['YouTube', '#ff0000'], x: ['X', '#111111'], linkedin: ['LinkedIn', '#0a66c2'], pinterest: ['Pinterest', '#e60023'], snapchat: ['Snapchat', '#fffc00'] };
     const TONES = { info: ['#eff6ff', '#1d4ed8', 'Blue'], success: ['#ecfdf5', '#047857', 'Green'], warning: ['#fffbeb', '#b45309', 'Amber'] };
@@ -68,7 +70,7 @@
 
     const fresh = () => ({
         id: null, dirty: true, iconDirty: true, base: '',
-        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, tabs: starter(),
+        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, tabs: starter(),
             colors: { primary: '#16a34a', bar: '#ffffff', icon: '#16a34a', splash: '#ffffff' },
             offline: { title: '', text: '', button: '' } },
         icon: { mode: 'letter', letter: '', image: null, zoom: 70, fill: false },
@@ -84,6 +86,7 @@
         if (!D.app.tabs.length) D.app.tabs = starter();
         D.base ||= '';
         D.app.privacy = { owner: '', email: '', extra: '', ...(D.app.privacy || {}) };
+        D.app.shop = { currency: '$', whatsapp: '', email: '', note: '', ...(D.app.shop || {}) };
         D.splash = { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false, ...(D.splash || {}) };
     };
     const inIdb = !!D?.idb; // the design was too big for localStorage (pictures): it's in IndexedDB, loaded below
@@ -320,6 +323,13 @@
             }
             case 'notice': { const [bg, fg] = TONES[b.tone] || TONES.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33">${esc(b.text)}</div>` : ''; }
             case 'spacer': return `<div style="height:${{ small: 6, large: 30 }[b.size] ?? 15}px"></div>`;
+            case 'products': {
+                const items = (b.items || []).filter(i => i.name?.trim()), cur = A().shop?.currency || '$';
+                const price = p => (String(p ?? '').trim() === '' || isNaN(+String(p).replace(',', '.')) ? 'Ask us' : cur + (+String(p).replace(',', '.') % 1 ? (+String(p).replace(',', '.')).toFixed(2) : +String(p).replace(',', '.')));
+                const cats = [...new Set(items.map(i => i.category?.trim() || ''))];
+                return items.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct">${esc(b.title)}</h5>` : ''}${cats.map(cat => `${cat ? `<b class="ab-n-cat">${esc(cat)}</b>` : ''}<div class="ab-n-prods">${items.filter(i => (i.category?.trim() || '') === cat).map(i =>
+                    `<div>${i.image ? `<img src="${esc(imgSrc(i.image))}" alt="">` : `<span style="background:${c.primary}14">${svgIcon('store', c.primary, 18)}</span>`}<b>${esc(i.name)}</b><em style="color:${c.primary}">${esc(price(i.price))}</em></div>`).join('')}</div>`).join('')}</div>` : '';
+            }
             default: return '';
         }
     };
@@ -457,12 +467,18 @@
                 + Object.entries(SOCIAL).map(([k, [name]]) => field(name, `links.${k}`, b.links?.[k], { max: 300, type: 'url', ph: 'https://' })).join('') + '</div>';
             case 'notice': return field('Text', 'text', b.text, { max: 300, area: true, rows: 2 })
                 + `<label>Colour<select data-f="tone">${Object.entries(TONES).map(([k, t]) => `<option value="${k}" ${b.tone === k ? 'selected' : ''}>${t[2]}</option>`).join('')}</select></label>`;
+            case 'products': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
+                + `<p class="fb-hint">People tap a product, choose how many and send you the order on WhatsApp or by email (set up under “More settings → Orders”).</p>`
+                + items(b, 'Product', (it, i) => `<div class="fb-2">${field('Name', `items.${i}.name`, it.name, { max: 80 })}${field(`Price <small>— ${esc(A().shop?.currency || '$')}, empty = “Ask us”</small>`, `items.${i}.price`, it.price, { max: 12, mode: 'decimal', ph: '9.50' })}</div>`
+                    + field('Category <small>— optional, e.g. Drinks</small>', `items.${i}.category`, it.category, { max: 40 })
+                    + field('Description <small>— optional</small>', `items.${i}.text`, it.text, { max: 400, area: true, rows: 2 })
+                    + imageField('Picture <small>— optional</small>', `items.${i}.image`, it.image));
             case 'spacer': return `<label>Height<select data-f="size">${['small', 'medium', 'large'].map(k => `<option value="${k}" ${b.size === k ? 'selected' : ''}>${k[0].toUpperCase() + k.slice(1)}</option>`).join('')}</select></label>`;
             default: return '';
         }
     };
     const blockSummary = b => {
-        const s = b.title || b.text || b.label || b.caption || (b.items?.[0]?.title) || (b.images?.length ? b.images.length + ' pictures' : '') || b.phone || b.email || '';
+        const s = b.title || b.text || b.label || b.caption || (b.items?.[0]?.title) || (b.items?.[0]?.name) || (b.images?.length ? b.images.length + ' pictures' : '') || b.phone || b.email || '';
         return String(s).slice(0, 40);
     };
     const drawBlocks = () => {
@@ -518,6 +534,7 @@
         $$('[data-c]').forEach(el => (el.value = a.colors[el.dataset.c]));
         $$('[data-o]').forEach(el => (el.value = a.offline[el.dataset.o] ?? ''));
         $$('[data-pv]').forEach(el => (el.value = a.privacy[el.dataset.pv] ?? ''));
+        $$('[data-shop]').forEach(el => (el.value = a.shop[el.dataset.shop] ?? ''));
         $('[data-i="letter"]').value = D.icon.letter;
         $('[data-i="zoom"]').value = D.icon.zoom;
         $('[data-i="fill"]').checked = !!D.icon.fill;
@@ -557,6 +574,7 @@
         } else if (el.dataset.c) { a.colors[el.dataset.c] = el.value; if (el.dataset.c === 'icon' || el.dataset.c === 'splash') D.iconDirty = true; if (el.dataset.c === 'splash' && view !== 'splash') showSplash(); }
         else if (el.dataset.o) a.offline[el.dataset.o] = el.value;
         else if (el.dataset.pv) a.privacy[el.dataset.pv] = el.value;
+        else if (el.dataset.shop) { a.shop[el.dataset.shop] = el.value; if (el.dataset.shop === 'currency') drawBlocks(); }
         else if (el.dataset.t) { // (tab fields carry data-i too — their index — so they're matched first)
             const t = a.tabs[+el.dataset.i]; activeTab = +el.dataset.i;
             if (el.dataset.t === 'bar') {
@@ -843,7 +861,7 @@
     const payload = () => {
         const a = A();
         return {
-            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show', privacy: a.privacy,
+            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show', privacy: a.privacy, shop: a.shop,
             status_bar: isDark(a.colors.bar) ? 'light' : 'dark', colors: a.colors, offline: a.offline,
             tabs: a.tabs.map((t, i) => (t.type === 'web' ? { label: t.label.trim(), icon: t.icon, type: 'web', bar: inBar(t, i), menu: inMenu(t, i), url: tabUrl(t) } : { label: t.label.trim(), icon: t.icon, type: 'screen', bar: inBar(t, i), menu: inMenu(t, i), blocks: t.blocks.map(blockOut) })),
         };
@@ -853,6 +871,7 @@
         if (!a.name.trim()) return 'Please give your app a name.';
         if (D.icon.mode === 'image' && !logo) return 'Please add your logo, or switch the icon to letters.';
         if (a.tabs.some(t => !t.label.trim())) return 'Please give each tab a name.';
+        if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'products' && (b.items || []).some(i => i.name?.trim()))) && !a.shop.whatsapp.trim() && !a.shop.email.trim()) return 'Your app has products: add a WhatsApp number or email for orders under “More settings → Orders”.';
         if (a.tabs.some(t => t.type === 'web') && !siteUrl()) return 'You have a tab that shows your website: add your website address (starting with https://) under “More settings”.';
         return null;
     };
@@ -909,7 +928,7 @@
             ? { label: t.label, icon: t.icon, type: 'web', bar: t.bar, menu: t.menu, blocks: [], path: t.url === x.url ? '' : base && t.url.startsWith(base + '/') ? t.url.slice(base.length + 1) : t.url }
             : { label: t.label, icon: t.icon, type: 'screen', bar: t.bar, menu: t.menu, path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
         D = { id: x.id, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
-            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
+            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
             icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
         if (!x.has_notification_icon) D.iconDirty = true; // apps saved before notifications: send the icon on the next save
         activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(drawAll); drawMine();
@@ -933,6 +952,7 @@
         if (b.type === 'video' && b.id) out.url = 'https://www.youtube.com/watch?v=' + b.id;
         if (b.type === 'cards') out.items = (b.items || []).map(i => ({ icon: 'star', title: '', text: '', ...i, action: i.action || { kind: '', value: '' } }));
         if (b.type === 'social') out.links = { ...(b.links || {}) };
+        if (b.type === 'products') out.items = (b.items || []).map(i => ({ name: '', price: '', category: '', text: '', image: null, ...i, price: i.price ?? '' }));
         return out;
     };
 
@@ -1309,6 +1329,7 @@
         if (has && !await ask(`Use the ${t.name} template?`, 'Your tabs, screens and colours are replaced. Your app name, icon and settings stay.', 'Use template')) return;
         const a = A();
         a.colors = { ...t.colors };
+        if (t.shop && !a.shop.whatsapp.trim() && !a.shop.email.trim()) a.shop = { ...a.shop, ...t.shop };
         a.tabs = JSON.parse(JSON.stringify(t.tabs));
         if (!a.name.trim()) { a.name = t.sample; if (!current()?.version_code && (!a.package || a.package === D.autoPackage)) a.package = D.autoPackage = suggestPackage(); }
         activeTab = 0; view = 'app'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app')));

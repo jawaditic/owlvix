@@ -440,7 +440,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame(['owner' => 'Joe’s Bakery Ltd', 'email' => 'privacy@joes.example', 'extra' => "We also take orders by phone.\nThanks!"], $r['settings']['privacy']);
         $this->assertSame(route('builder.apps.privacy', $r['id']), $r['privacy_url']);
         // What the app does decides what the policy says
-        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false], $r['data_use']);
+        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false, 'orders' => false], $r['data_use']);
 
         $page = $this->get($r['privacy_url'])->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
         $page->assertSee('Privacy policy for Joe’s Bakery', false)->assertSee('provided by Joe’s Bakery Ltd', false)
@@ -563,6 +563,35 @@ class AppBuilderTest extends TestCase
         $this->api($this->signIn('other@example.com'))->getJson("/builder/apps/{$id}/stats")->assertNotFound();
         // The privacy page says so
         $this->get(route('builder.apps.privacy', $id))->assertSee('sends these counts once a day');
+    }
+
+    public function test_products_and_orders(): void
+    {
+        $token = $this->signIn();
+        $app = $this->app();
+        $app['tabs'][1]['blocks'] = [['type' => 'products', 'title' => 'Order', 'items' => [
+            ['name' => 'Latte', 'price' => '4,5', 'category' => 'Coffee', 'text' => 'Oat or dairy', 'image' => ['src' => $this->jpeg(300, 300)]],
+            ['name' => 'Cake of the day', 'price' => '', 'category' => 'Bakery'],
+            ['name' => '', 'price' => '3'], // no name: dropped
+        ]]];
+        // Products need somewhere for orders to go
+        $this->save($token, $app)->assertStatus(422)->assertJsonFragment(['error' => 'Your app has products: add a WhatsApp number or email for orders under “More settings”.']);
+        $this->save($token, $app + ['shop' => ['whatsapp' => '12', 'email' => '']])->assertStatus(422);
+        $this->save($token, $app + ['shop' => ['email' => 'nope']])->assertStatus(422);
+
+        $r = $this->save($token, $app + ['shop' => ['currency' => '£', 'whatsapp' => '+44 7700 900123', 'note' => 'Pay on collection']])->assertOk()->json('app');
+        $items = $r['tabs'][1]['blocks'][0]['items'];
+        $this->assertCount(2, $items);
+        $this->assertSame(['name' => 'Latte', 'text' => 'Oat or dairy', 'category' => 'Coffee', 'price' => 4.5], array_diff_key($items[0], ['image' => 1]));
+        $this->assertArrayNotHasKey('price', $items[1]); // "Ask us"
+        $this->assertSame(['currency' => '£', 'whatsapp' => '447700900123', 'email' => '', 'note' => 'Pay on collection'], $r['settings']['shop']);
+        $this->assertSame($r['settings']['shop'], $this->contentFile($r['id'])['shop']);
+        $this->assertTrue($r['data_use']['orders']);
+        $this->get($r['privacy_url'])->assertSee('When you send an order');
+
+        // Prices must be numbers
+        $app['tabs'][1]['blocks'][0]['items'][0]['price'] = 'four';
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $app + ['shop' => ['whatsapp' => '+44 7700 900123']]])->assertStatus(422);
     }
 
     public function test_up_to_fifteen_pages_with_a_menu(): void

@@ -15,6 +15,7 @@
     const cards = (title, rows, columns = 2) => ({ type: 'cards', title, columns, items: rows.map(([icon, t, x = '', action = none]) => ({ icon, title: t, text: x, action })) });
     const reviews = (title, rows) => ({ type: 'reviews', title, items: rows.map(([text, name, stars = 5]) => ({ text, name, stars })) });
     const faq = (title, rows) => ({ type: 'faq', title, items: rows.map(([q, a]) => ({ q, a })) });
+    const products = (title, rows) => ({ type: 'products', title, items: rows.map(([name, price, category = '', text = '']) => ({ name, price, category, text, image: null })) });
     const notice = (text, tone = 'info') => ({ type: 'notice', text, tone });
     const contact = (o = {}) => ({ type: 'contact', title: 'Get in touch', phone: '+1 555 0100', whatsapp: '', email: 'hello@example.com', address: '12 High Street, Your Town', website: '', ...o });
     const hours = (rows, title = 'Opening hours') => ({ type: 'hours', title, rows: rows.map(([day, time]) => ({ day, time })) });
@@ -44,18 +45,19 @@
             ],
         },
         {
-            id: 'cafe', name: 'Coffee shop', note: 'Drinks, treats & loyalty', sample: 'Bean There',
+            id: 'cafe', name: 'Coffee shop', note: 'Order ahead, treats & loyalty', sample: 'Bean There', shop: { currency: '$', whatsapp: '+1 555 0100', email: '', note: 'Pay when you collect.' },
             colors: { primary: '#7c4a2d', bar: '#fdf8f3', icon: '#3b2416', splash: '#fdf8f3' },
             tabs: [
                 screen('Home', 'home', [
-                    hero('Good coffee, slow mornings', 'Small-batch roasts and fresh bakes, every day from 7am.', 'Our drinks', tab(1)),
+                    hero('Good coffee, slow mornings', 'Small-batch roasts and fresh bakes, every day from 7am.', 'Order ahead', tab(1)),
                     cards('', [['heart', 'Loyalty card', '10th coffee free.'], ['location', 'Two spots', 'Old Town & Riverside.']]),
                     para('We roast our beans in-house every week and bake everything on site. Bring your own cup for 20% off.'),
                     reviews('', [['Perfect flat white and the cinnamon buns are unreal.', 'Maya']]),
                 ]),
-                screen('Drinks', 'food', [
-                    list('Coffee', [['Espresso', '', '$3'], ['Flat white', 'Double shot', '$4.2'], ['Oat latte', '', '$4.6'], ['Cold brew', '18-hour steep', '$4.8']]),
-                    list('Bakery', [['Cinnamon bun', '', '$3.8'], ['Almond croissant', '', '$4.2'], ['Banana bread', 'Gluten free', '$3.9']]),
+                screen('Order', 'cart', [
+                    notice('Order ahead — tap a drink, then send your order. Ready in about 10 minutes.', 'success'),
+                    products('', [['Espresso', '3', 'Coffee'], ['Flat white', '4.20', 'Coffee', 'Double shot, silky milk'], ['Oat latte', '4.60', 'Coffee'], ['Cold brew', '4.80', 'Coffee', '18-hour steep'],
+                        ['Cinnamon bun', '3.80', 'Bakery'], ['Almond croissant', '4.20', 'Bakery'], ['Banana bread', '3.90', 'Bakery', 'Gluten free']]),
                 ]),
                 screen('Find us', 'location', [contact({ title: 'Say hello' }), hours([['Mon – Fri', '7:00 – 17:00'], ['Sat – Sun', '8:00 – 16:00']]), social({ instagram: 'https://instagram.com/yourcafe', tiktok: 'https://tiktok.com/@yourcafe' })]),
             ],
@@ -99,7 +101,7 @@
             ],
         },
         {
-            id: 'shop', name: 'Shop & boutique', note: 'Collections, offers & delivery', sample: 'Maison Noir',
+            id: 'shop', name: 'Shop & boutique', note: 'Products, orders & delivery', sample: 'Maison Noir', shop: { currency: '$', whatsapp: '+1 555 0100', email: '', note: 'We’ll confirm your order and delivery by WhatsApp.' },
             colors: { primary: '#111827', bar: '#ffffff', icon: '#111827', splash: '#ffffff' },
             tabs: [
                 screen('Home', 'home', [
@@ -108,9 +110,8 @@
                     { type: 'slider', images: [] },
                     cards('', [['cart', 'Free returns', '30 days'], ['tag', 'Members save', '10% off always']]),
                 ]),
-                screen('New in', 'store', [
-                    list('This week', [['Linen shirt', 'Natural · S–XL', '$59'], ['Wide-leg trousers', 'Black · 6–16', '$79'], ['Leather tote', 'Tan', '$120']]),
-                    btn('Order on WhatsApp', wa('+1 555 0100')),
+                screen('Shop', 'store', [
+                    products('New in', [['Linen shirt', '59', 'Clothing', 'Natural · S–XL'], ['Wide-leg trousers', '79', 'Clothing', 'Black · 6–16'], ['Leather tote', '120', 'Bags', 'Tan, full-grain leather'], ['Canvas weekender', '95', 'Bags']]),
                 ]),
                 screen('Help', 'info', [
                     faq('Questions', [['How long is delivery?', '2–4 working days. Next-day available.'], ['Can I return an item?', 'Yes, within 30 days, unworn with tags.'], ['Do you ship abroad?', 'We ship to 30 countries.']]),

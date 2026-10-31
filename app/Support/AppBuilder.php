@@ -113,6 +113,25 @@ class AppBuilder
             $offline[$key] = $v !== '' ? $v : $default;
         }
 
+        // Orders from the products block: the currency and where orders go (WhatsApp and/or email)
+        $shop = ['currency' => $str($in['shop']['currency'] ?? '', 6) ?: '$', 'whatsapp' => '', 'email' => strtolower($str($in['shop']['email'] ?? '', 150)), 'note' => $str($in['shop']['note'] ?? '', 200)];
+        if (mb_strlen($shop['currency']) > 6 || mb_strlen($shop['note']) > 200) {
+            return 'The order settings are too long.';
+        }
+        if (($wa = $str($in['shop']['whatsapp'] ?? '', 25)) !== '') {
+            $shop['whatsapp'] = AppContent::whatsapp($wa) ?? 'bad';
+            if ($shop['whatsapp'] === 'bad') {
+                return 'The WhatsApp number for orders should be the full number with country code, e.g. +44 7700 900123.';
+            }
+        }
+        if ($shop['email'] !== '' && ! filter_var($shop['email'], FILTER_VALIDATE_EMAIL)) {
+            return 'The email address for orders doesn’t look right.';
+        }
+        $sells = collect($content['tabs'])->flatMap(fn ($t) => $t['blocks'] ?? [])->contains('type', 'products');
+        if ($sells && $shop['whatsapp'] === '' && $shop['email'] === '') {
+            return 'Your app has products: add a WhatsApp number or email for orders under “More settings”.';
+        }
+
         // For the app's privacy policy page (/app-privacy/{id}), which Google Play asks for
         $privacy = ['owner' => $str($in['privacy']['owner'] ?? '', 100), 'email' => strtolower($str($in['privacy']['email'] ?? '', 150)),
             'extra' => is_string($in['privacy']['extra'] ?? null) ? AppContent::str($in['privacy']['extra'], true) : ''];
@@ -138,6 +157,7 @@ class AppBuilder
                 'menu' => ($in['menu'] ?? '') === 'hide' ? 'hide' : 'show',
                 'offline' => $offline,
                 'privacy' => $privacy,
+                'shop' => $shop,
             ],
         ];
     }
@@ -156,6 +176,7 @@ class AppBuilder
             'contact' => $blocks->contains('type', 'contact') || $actions->intersect(['tel', 'email', 'whatsapp', 'map'])->isNotEmpty(),
             'links' => $actions->contains('url'),
             'push' => Firebase::enabled(),
+            'orders' => $blocks->contains('type', 'products'),
         ];
     }
 
@@ -205,7 +226,7 @@ class AppBuilder
      * pages, slider/cards/reviews/FAQ/social/notice/space blocks, splash picture, intro). Apps built with an older
      * one are flagged in the builder.
      */
-    public const SHELL_VERSION = 4; // 3: push notifications, 4: usage statistics
+    public const SHELL_VERSION = 5; // 3: push notifications, 4: usage statistics, 5: products and orders
 
     /**
      * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when

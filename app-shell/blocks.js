@@ -313,6 +313,43 @@ function Social({ b, ctx }) {
     );
 }
 
+/** A price in the owner's currency: 4.5 → "$4.50", 12 → "$12". */
+export const money = (n, shop) => (typeof n === 'number' ? `${str(shop?.currency) || '$'}${Number.isInteger(n) ? n : n.toFixed(2)}` : '');
+
+/** Products in a two-column grid, grouped by category; tapping one opens it (App.js shows the details and the order). */
+function Products({ b, ctx }) {
+    const { width } = useWindowDimensions();
+    const items = (Array.isArray(b.items) ? b.items : []).filter(it => str(it?.name));
+    const w = (width - 32 - 10) / 2;
+    const groups = [];
+    items.forEach(it => { const c = str(it.category); const g = groups.find(x => x.c === c) || (groups.push({ c, items: [] }), groups[groups.length - 1]); g.items.push(it); });
+    return (
+        <View style={styles.pad}>
+            {!!str(b.title) && <Text style={styles.cardTitle} accessibilityRole="header">{b.title}</Text>}
+            {groups.map(g => (
+                <View key={g.c || '-'} style={{ marginBottom: 6 }}>
+                    {!!g.c && <Text style={styles.category} accessibilityRole="header">{g.c}</Text>}
+                    <View style={[styles.grid, { gap: 10 }]}>
+                        {g.items.map((it, i) => {
+                            const img = image(it.image, ctx.base);
+                            return (
+                                <Pressable key={i} onPress={() => ctx.openProduct(it)} style={({ pressed }) => [styles.product, { width: w }, pressed && styles.pressed]}
+                                    accessibilityRole="button" accessibilityLabel={`${it.name}${typeof it.price === 'number' ? ', ' + money(it.price, ctx.shop) : ''}`}>
+                                    {img ? <Image source={{ uri: img.uri }} style={styles.productImg} /> : <View style={[styles.productImg, styles.productNoImg, { backgroundColor: ctx.primary + '14' }]}><Icon name="store" color={ctx.primary} size={28} /></View>}
+                                    <View style={styles.productBody}>
+                                        <Text style={styles.productName} numberOfLines={2}>{it.name}</Text>
+                                        <Text style={[styles.productPrice, { color: ctx.primary }]}>{typeof it.price === 'number' ? money(it.price, ctx.shop) : 'Ask us'}</Text>
+                                    </View>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                </View>
+            ))}
+        </View>
+    );
+}
+
 const TONES = { info: ['#eff6ff', '#1d4ed8'], success: ['#ecfdf5', '#047857'], warning: ['#fffbeb', '#b45309'] };
 
 export function Block({ b, ctx }) {
@@ -335,6 +372,7 @@ export function Block({ b, ctx }) {
         case 'faq': return <Faq b={b} ctx={ctx} />;
         case 'social': return <Social b={b} ctx={ctx} />;
         case 'notice': { const [bg, fg] = TONES[b.tone] || TONES.info; return <View style={[styles.pad, styles.notice, { backgroundColor: bg, borderColor: fg + '33' }]}><Text style={[styles.noticeText, { color: fg }]}>{str(b.text)}</Text></View>; }
+        case 'products': return <Products b={b} ctx={ctx} />;
         case 'spacer': return <View style={{ height: { small: 8, large: 44 }[b.size] ?? 22 }} />;
         default: return null;
     }
@@ -379,6 +417,13 @@ const styles = StyleSheet.create({
     closeText: { color: '#fff', fontSize: 20, fontWeight: '700' },
     video: { width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', borderRadius: 14 },
     play: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', paddingLeft: 4 },
+    category: { fontSize: 17, fontWeight: '800', color: INK, marginTop: 8, marginBottom: 8 },
+    product: { backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(15,23,42,0.12)' },
+    productImg: { width: '100%', aspectRatio: 1, backgroundColor: LINE },
+    productNoImg: { alignItems: 'center', justifyContent: 'center' },
+    productBody: { padding: 10, gap: 4 },
+    productName: { fontSize: 14, fontWeight: '700', color: INK, lineHeight: 19 },
+    productPrice: { fontSize: 15, fontWeight: '800' },
     dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 },
     dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#cbd5e1' },
     feature: { backgroundColor: '#fff', borderRadius: 16, padding: 14, gap: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(15,23,42,0.12)' },

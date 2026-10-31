@@ -53,7 +53,7 @@
         <p>{{ $owner }} can send news and offers as notifications. To receive them, the app uses Google’s Firebase Cloud Messaging, which gives this installation of the app a random ID so Google can deliver messages to it. That ID isn’t linked to your name or account, and we don’t store it. You can turn notifications off at any time in your phone’s settings for this app.</p>
     @endif
 
-    @if ($use['website'] || $use['youtube'] || $use['social'] || $use['contact'] || $use['links'])
+    @if ($use['website'] || $use['youtube'] || $use['social'] || $use['contact'] || $use['links'] || ($use['orders'] ?? false))
         <h2>Other apps and websites</h2>
         <ul>
             @if ($use['website'])
@@ -61,6 +61,9 @@
             @endif
             @if ($use['youtube'])
                 <li>Videos are shown with their picture from YouTube, and tapping one opens it in YouTube. Loading the picture and watching the video are covered by Google’s privacy policy.</li>
+            @endif
+            @if ($use['orders'] ?? false)
+                <li>When you send an order, the app opens WhatsApp or your email app with the order written out; you see it and send it yourself. The app doesn’t keep or send your order anywhere else.</li>
             @endif
             @if ($use['contact'])
                 <li>Buttons to call, email, message on WhatsApp or find us on a map open the matching app on your phone. Anything you send that way goes directly to us through that app.</li>
