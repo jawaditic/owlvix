@@ -38,12 +38,13 @@
     <p class="meta">The {{ $app->name }} Android app ({{ $app->package }}) is provided by {{ $owner }}. Last updated {{ $updated->format('j F Y') }}.</p>
 
     <h2>In short</h2>
-    <p>The app doesn’t ask you to sign up, doesn’t show ads, doesn’t track you and doesn’t collect personal information such as your name, contacts, photos or location.</p>
+    <p>The app doesn’t ask you to sign up, doesn’t show ads, doesn’t track you and doesn’t collect personal information such as your name, contacts, photos or location. It only counts, anonymously, how it’s used.</p>
 
     <h2>What the app does</h2>
     <ul>
         <li>It shows information from {{ $owner }} (pages, pictures, prices, opening hours and so on). To keep this up to date it downloads it over the internet from owlvix.com, the service the app was made with, and keeps a copy on your phone so it also works offline.</li>
         <li>Like any website, the server that sends this information keeps standard technical logs (such as your IP address and the time of the request) for a short time, for security and to keep the service running. They aren’t used to identify you or for advertising.</li>
+        <li>To show {{ $owner }} how the app is used, it counts on your phone how often it’s opened and which pages are viewed, and sends these counts once a day. Only daily totals are kept; nothing in them identifies you or your phone.</li>
         <li>The app only needs internet access{{ $use['push'] ? ' (and, if you allow it, permission to show notifications)' : '' }}. It doesn’t ask for permission to use your camera, microphone, location, contacts or files.</li>
     </ul>
 

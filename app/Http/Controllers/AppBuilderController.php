@@ -265,6 +265,37 @@ class AppBuilderController extends Controller
         return response()->json(['ok' => true, 'push' => $sent->toApi(), 'pushes' => $app->pushes()->latest('id')->take(20)->get()->map->toApi()]);
     }
 
+    /** The app's usage over the last 30 days (anonymous daily totals sent by phones, Api\AppStatsController). */
+    public function stats(Request $request, string $id): JsonResponse
+    {
+        $app = $this->own($request, $id);
+        if (! $app) {
+            return $this->fail('App not found.', 404);
+        }
+        // The 30 finished days (phones send each day's numbers the day after, so today is never complete)
+        $from = now()->subDays(30)->startOfDay();
+        $to = now()->subDay()->startOfDay();
+        $rows = \Illuminate\Support\Facades\DB::table('builder_app_stats')->where('builder_app_id', $app->id)->where('day', '>=', $from->toDateString())->get()->keyBy(fn ($r) => substr((string) $r->day, 0, 10));
+        $days = [];
+        $pages = [];
+        for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+            $r = $rows[$d->toDateString()] ?? null;
+            $days[] = ['day' => $d->toDateString(), 'active' => (int) ($r->active ?? 0), 'opens' => (int) ($r->opens ?? 0), 'installs' => (int) ($r->installs ?? 0)];
+            foreach (json_decode((string) ($r->pages ?? ''), true) ?: [] as $i => $n) {
+                $pages[$i] = ($pages[$i] ?? 0) + $n;
+            }
+        }
+        arsort($pages);
+        $labels = array_column($app->content['tabs'] ?? [], 'label');
+        $week = array_slice($days, -7);
+
+        return response()->json(['ok' => true, 'days' => $days,
+            'installs' => (int) \Illuminate\Support\Facades\DB::table('builder_app_stats')->where('builder_app_id', $app->id)->sum('installs'),
+            'daily_users' => round(array_sum(array_column($week, 'active')) / 7, 1),
+            'opens' => array_sum(array_column($days, 'opens')),
+            'pages' => collect($pages)->map(fn ($n, $i) => ['page' => $labels[$i] ?? 'Page '.($i + 1), 'views' => $n])->values()->take(10)]);
+    }
+
     public function pushes(Request $request, string $id): JsonResponse
     {
         $app = $this->own($request, $id);

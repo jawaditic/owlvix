@@ -533,6 +533,38 @@ class AppBuilderTest extends TestCase
         File::delete($file);
     }
 
+    public function test_anonymous_daily_statistics(): void
+    {
+        $token = $this->signIn();
+        $id = $this->save($token)->json('app.id');
+        $yesterday = now()->subDay()->toDateString();
+        $twoDays = now()->subDays(2)->toDateString();
+
+        // A new phone sends its first two days; another phone sends yesterday
+        $this->postJson("/api/app-stats/{$id}", ['new' => true, 'days' => [
+            ['day' => $twoDays, 'opens' => 3, 'pages' => ['0' => 3, '1' => 1]],
+            ['day' => $yesterday, 'opens' => 2, 'pages' => ['0' => 2, '2' => 4, '99' => 50]], // no page 99: ignored
+        ]])->assertOk();
+        $this->postJson("/api/app-stats/{$id}", ['new' => false, 'days' => [['day' => $yesterday, 'opens' => 5000, 'pages' => ['1' => 2]]]])->assertOk(); // capped
+        // Odd days are ignored; unknown apps refused
+        $this->postJson("/api/app-stats/{$id}", ['days' => [['day' => now()->addDays(3)->toDateString(), 'opens' => 1], ['day' => '2020-01-01', 'opens' => 1]]])->assertOk();
+        $this->postJson('/api/app-stats/aaaaaaaaaaaaaaaa', ['days' => [['day' => $yesterday, 'opens' => 1]]])->assertNotFound();
+
+        $r = $this->api($token)->getJson("/builder/apps/{$id}/stats")->assertOk()->json();
+        $this->assertCount(30, $r['days']);
+        $byDay = collect($r['days'])->keyBy('day');
+        $this->assertSame(['day' => $yesterday, 'active' => 2, 'opens' => 202, 'installs' => 0], $byDay[$yesterday]);
+        $this->assertSame(['day' => $twoDays, 'active' => 1, 'opens' => 3, 'installs' => 1], $byDay[$twoDays]);
+        $this->assertSame(1, $r['installs']);
+        $this->assertSame(round(3 / 7, 1), $r['daily_users']);
+        $this->assertSame(205, $r['opens']);
+        $this->assertSame([['page' => 'Home', 'views' => 5], ['page' => 'Odd', 'views' => 4], ['page' => 'Menu', 'views' => 3]], $r['pages']);
+        // Only the owner sees them
+        $this->api($this->signIn('other@example.com'))->getJson("/builder/apps/{$id}/stats")->assertNotFound();
+        // The privacy page says so
+        $this->get(route('builder.apps.privacy', $id))->assertSee('sends these counts once a day');
+    }
+
     public function test_up_to_fifteen_pages_with_a_menu(): void
     {
         $token = $this->signIn();

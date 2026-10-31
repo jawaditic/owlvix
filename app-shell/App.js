@@ -15,6 +15,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import INTRO from './intro';
 import { Block, Empty, Icon, isDark } from './blocks';
 import { color, fetchContent, startContent, str } from './content';
+import { countOpen, countPage, sendStats } from './stats';
 
 const shell = Constants.expoConfig?.extra?.shell ?? {};
 const CHECK_EVERY = 60 * 1000; // ask the server for changes at most once a minute when the app comes back
@@ -236,14 +237,20 @@ function Shell() {
         return () => clearTimeout(t);
     }, [banner]);
 
-    // Check for changes on start, and when the app comes back to the front
+    // Check for changes on start, and when the app comes back to the front; count the open for the owner's statistics
     useEffect(() => {
         refresh();
+        countOpen();
+        sendStats(shell.statsUrl);
         const sub = AppState.addEventListener('change', s => {
-            if (s === 'active' && Date.now() - lastCheck.current > CHECK_EVERY) refresh();
+            if (s !== 'active') return;
+            countOpen();
+            sendStats(shell.statsUrl);
+            if (Date.now() - lastCheck.current > CHECK_EVERY) refresh();
         });
         return () => sub.remove();
     }, [refresh]);
+    useEffect(() => { countPage(active); }, [active]);
 
     // Pages in the bottom bar (up to 5) and pages in the ☰ menu (a page can be in both); the ☰ shows when the
     // owner hasn't turned it off and at least one page is in it

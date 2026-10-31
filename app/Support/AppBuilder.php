@@ -205,7 +205,7 @@ class AppBuilder
      * pages, slider/cards/reviews/FAQ/social/notice/space blocks, splash picture, intro). Apps built with an older
      * one are flagged in the builder.
      */
-    public const SHELL_VERSION = 3; // 3: push notifications
+    public const SHELL_VERSION = 4; // 3: push notifications, 4: usage statistics
 
     /**
      * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when
@@ -480,6 +480,8 @@ class AppBuilder
             'googleServices' => $push ? base64_encode($push) : null,
             'notificationIcon' => $push ? base64_encode((string) $disk->get($app->dir().'/notification.png')) : null,
             'pushTopic' => $push ? Firebase::topic($app->id) : null,
+            // Where the app sends its one anonymous usage summary a day (Api\AppStatsController)
+            'statsUrl' => rtrim(config('builder.apps.callback_url') ?: config('app.url'), '/').'/api/app-stats/'.$app->id,
             'keystore' => $app->keystore,
             'keystorePassword' => $app->keystore_password,
         ];

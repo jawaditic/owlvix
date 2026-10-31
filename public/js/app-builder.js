@@ -938,7 +938,7 @@
 
     /* ------------------------------------------------ build & download */
     let poll = null;
-    const OUTDATED = { features: 'it doesn’t have the newest features (push notifications, ☰ menu, new blocks)', push: 'it can’t receive notifications yet',
+    const OUTDATED = { features: 'it doesn’t have the newest features (statistics, push notifications, ☰ menu, new blocks)', push: 'it can’t receive notifications yet',
         name: 'the name changed', icon: 'the icon changed', splash: 'the splash screen changed', intro: 'the intro changed' };
     const outOfDate = x => (x.out_of_date || []).map(k => OUTDATED[k] || k).join('; ');
     const fmtMB = n => (n ? (n / 1048576).toFixed(1) + ' MB' : '');
@@ -998,6 +998,7 @@
             ${x.needs_website ? step(n++, x.allowed, 'Show us the website is yours', verify) : ''}
             ${step(n++, b?.status === 'done', 'Build your Android app', buildBody)}
         </div>${files}
+        ${statsHtml(x)}
         ${pushHtml(x)}
         ${kitHtml(x)}
         <div class="ab-ios"><b>🍎 Want it on the iPhone App Store?</b><p class="fb-hint">Apple only takes apps from the owner’s own developer account. We publish iPhone apps for you, with logins, payments and push notifications if you need them.</p><a href="#contact" class="btn btn--sm btn--ghost" data-act="ios">Ask for a free quote</a></div>
@@ -1005,6 +1006,53 @@
         $$('[data-qr-for]', box).forEach(el => withQR(() => (el.innerHTML = window.OwlQR.svg(el.dataset.qrFor, { color: '#0f172a' }))));
         if (running) poll = setTimeout(refresh, 20000);
     };
+    /* ------------------------------------------------ statistics (anonymous daily totals sent by phones) */
+    const stats = {}; // app id → { at, data }
+    const statsHtml = x => {
+        if (!x.version_code) return '';
+        const s = stats[x.id];
+        if (!s || Date.now() - s.at > 300000) {
+            stats[x.id] = { at: Date.now(), data: s?.data || null };
+            api('GET', `/builder/apps/${x.id}/stats`).then(r => { stats[x.id] = { at: Date.now(), data: r }; if (current()?.id === x.id && !$('[data-panel="build"]').hidden) { const el = $('[data-stats]'); if (el) el.outerHTML = statsHtml(x); } }).catch(() => {});
+        }
+        const d = stats[x.id]?.data;
+        if (!d) return '<div class="ab-stats" data-stats><b>📊 Statistics</b><p class="fb-hint">Loading…</p></div>';
+        const fmt = n => Number(n).toLocaleString();
+        const max = Math.max(1, ...d.days.map(r => r.active));
+        const none = !d.days.some(r => r.active);
+        const day = iso => new Date(iso + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        const topMax = Math.max(1, ...d.pages.map(p => p.views));
+        return `<div class="ab-stats" data-stats><b>📊 Statistics <small>— last 30 days</small></b>
+            <div class="ab-stats__tiles">
+                <div><span>Installs</span><strong>${fmt(d.installs)}</strong><small>all time</small></div>
+                <div><span>Daily users</span><strong>${fmt(d.daily_users)}</strong><small>average, last 7 days</small></div>
+                <div><span>App opens</span><strong>${fmt(d.opens)}</strong><small>last 30 days</small></div>
+            </div>
+            ${none ? `<p class="fb-hint">No numbers yet. Phones send a summary once a day, so they appear the day after people start using ${x.out_of_date?.includes('features') ? 'the new build of ' : ''}your app.</p>` : `
+            <figure class="ab-chart" aria-label="Phones that used the app each day">
+                <figcaption>People using the app each day</figcaption>
+                <div class="ab-chart__plot" role="list">${d.days.map(r => `<span role="listitem" class="ab-chart__bar" tabindex="0" style="--h:${Math.round(r.active / max * 100)}%"
+                    data-tip="${esc(day(r.day))}: ${fmt(r.active)} ${r.active === 1 ? 'person' : 'people'}, ${fmt(r.opens)} opens${r.installs ? `, ${fmt(r.installs)} new` : ''}"
+                    aria-label="${esc(day(r.day))}: ${r.active} people, ${r.opens} opens"><i></i></span>`).join('')}</div>
+                <div class="ab-chart__axis"><span>${esc(day(d.days[0].day))}</span><span>Yesterday</span></div>
+                <div class="ab-chart__tip" data-chart-tip hidden></div>
+            </figure>`}
+            ${d.pages.length ? `<div class="ab-stats__pages"><span class="ab-sub">Most viewed pages</span><ol>${d.pages.map(p => `<li><span>${esc(p.page)}</span><i style="--w:${Math.round(p.views / topMax * 100)}%"></i><b>${fmt(p.views)}</b></li>`).join('')}</ol></div>` : ''}
+        </div>`;
+    };
+    // Hover / focus a bar: show its day's numbers
+    const showTip = bar => {
+        const tip = bar.closest('.ab-chart')?.querySelector('[data-chart-tip]'); if (!tip) return;
+        tip.textContent = bar.dataset.tip; tip.hidden = false;
+        const fig = bar.closest('.ab-chart').getBoundingClientRect(), b = bar.getBoundingClientRect();
+        tip.style.left = Math.min(Math.max(0, b.left - fig.left + b.width / 2 - tip.offsetWidth / 2), fig.width - tip.offsetWidth) + 'px';
+    };
+    const hideTip = el => { const tip = el.closest('.ab-chart')?.querySelector('[data-chart-tip]'); if (tip) tip.hidden = true; };
+    root.addEventListener('mouseover', e => { const bar = e.target.closest('.ab-chart__bar'); if (bar) showTip(bar); });
+    root.addEventListener('mouseout', e => { const bar = e.target.closest('.ab-chart__bar'); if (bar && !bar.contains(e.relatedTarget)) hideTip(bar); });
+    root.addEventListener('focusin', e => { if (e.target.matches?.('.ab-chart__bar')) showTip(e.target); });
+    root.addEventListener('focusout', e => { if (e.target.matches?.('.ab-chart__bar')) hideTip(e.target); });
+
     /* ------------------------------------------------ push notifications */
     const pushes = {}; // app id → sent notifications (newest first)
     const pushDraft = { title: '', body: '', tab: '' };
@@ -1069,7 +1117,7 @@
     const kitHtml = x => {
         if (!kitText.short) Object.assign(kitText, suggestTexts());
         const use = x.data_use || {}, dirty = D.dirty ? '<p class="fb-hint">Save your app first so the privacy policy shows your latest details.</p>' : '';
-        const yes = use.push ? `Answer <b>Yes</b> to collecting data, then tick only <b>Device or other IDs</b> (push notifications use Firebase Cloud Messaging) — collected, not shared, used for <b>App functionality</b>, processed ephemerally: <b>No</b>, required: <b>No</b> (people can turn notifications off). Data is encrypted in transit: <b>Yes</b>.${use.website ? ` Also answer for what <b>${esc(use.website)}</b> collects.` : ''}` : use.website ? `Your app shows <b>${esc(use.website)}</b>: answer about what that website collects (forms, bookings, accounts); data is encrypted in transit: <b>Yes</b>.` : 'Your app collects no data: answer <b>No</b> to “Does your app collect or share any of the required user data types?”.';
+        const yes = `Answer <b>Yes</b> to collecting data, then tick <b>App activity → App interactions</b> (anonymous counts of opens and page views) — used for <b>Analytics</b>${use.push ? ', and <b>Device or other IDs</b> (push notifications use Firebase Cloud Messaging) — used for <b>App functionality</b>' : ''}. For each: collected, not shared, processed ephemerally: <b>No</b>, required: <b>No</b>. Data is encrypted in transit: <b>Yes</b>. Way to request deletion: <b>No</b> (nothing is linked to a person).${use.website ? ` Also answer for what <b>${esc(use.website)}</b> collects (forms, bookings, accounts).` : ''}`;
         return `<details class="fb-settings ab-kit" ${kitOpen ? 'open' : ''}><summary>📋 Google Play listing kit</summary>
             <p class="fb-hint">Everything Google Play asks for in the store listing — made from your app.</p>
             <h3 class="ab-sub">1. Graphics</h3>

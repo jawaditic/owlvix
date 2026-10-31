@@ -159,6 +159,7 @@ Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->con
     Route::get('{id}/icon', 'icon')->where('id', '[a-z0-9]{16}')->name('icon');
     Route::post('{id}/push', 'push')->where('id', '[a-z0-9]{16}')->middleware('throttle:10,1,app-push')->name('push');
     Route::get('{id}/pushes', 'pushes')->where('id', '[a-z0-9]{16}')->name('pushes');
+    Route::get('{id}/stats', 'stats')->where('id', '[a-z0-9]{16}')->name('stats');
     Route::post('{id}/splash-video', 'splashVideo')->where('id', '[a-z0-9]{16}')->middleware('throttle:60,1,app-video')->name('splash-video');
     Route::get('{id}/keystore', 'keystore')->where('id', '[a-z0-9]{16}')->name('keystore');
     Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
