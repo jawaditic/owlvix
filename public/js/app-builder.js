@@ -41,6 +41,7 @@
         social: { name: 'Social links', icon: 'social', make: () => ({ title: 'Follow us', links: {} }) },
         notice: { name: 'Notice', icon: 'notice', make: () => ({ text: 'We’re open on bank holidays!', tone: 'info' }) },
         spacer: { name: 'Space', icon: 'spacer', make: () => ({ size: 'medium' }) },
+        booking: { name: 'Bookings', icon: 'calendar', make: () => ({ title: 'Book an appointment', text: 'Pick a time — we’ll confirm on WhatsApp.', services: [{ name: 'Haircut', info: '30 min · $25' }, { name: 'Colour', info: '90 min · from $70' }], days: [1, 2, 3, 4, 5, 6], from: '09:00', to: '17:00', slot: 30, ahead: 30 }) },
         products: { name: 'Products & orders', icon: 'cart', make: () => ({ title: '', items: [newItem('products'), { ...newItem('products'), name: 'Second product', price: '12' }] }) },
     };
     /** A new row for blocks with items. */
@@ -323,6 +324,9 @@
             }
             case 'notice': { const [bg, fg] = TONES[b.tone] || TONES.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33">${esc(b.text)}</div>` : ''; }
             case 'spacer': return `<div style="height:${{ small: 6, large: 30 }[b.size] ?? 15}px"></div>`;
+            case 'booking': return `<div class="ab-n-pad"><div class="ab-n-book"><span style="background:${c.primary}1f">${svgIcon('calendar', c.primary, 16)}</span><b>${esc(b.title || 'Book an appointment')}</b>${b.text ? `<p>${esc(b.text)}</p>` : ''}
+                ${(b.services || []).filter(s => s.name?.trim()).map(s => `<div class="ab-n-row"><span class="ab-n-rb"><b>${esc(s.name)}</b></span><small>${esc(s.info || '')}</small></div>`).join('')}
+                <em style="background:${c.primary};color:${ink(c.primary)}">Book an appointment</em></div></div>`;
             case 'products': {
                 const items = (b.items || []).filter(i => i.name?.trim()), cur = A().shop?.currency || '$';
                 const price = p => (String(p ?? '').trim() === '' || isNaN(+String(p).replace(',', '.')) ? 'Ask us' : cur + (+String(p).replace(',', '.') % 1 ? (+String(p).replace(',', '.')).toFixed(2) : +String(p).replace(',', '.')));
@@ -467,8 +471,20 @@
                 + Object.entries(SOCIAL).map(([k, [name]]) => field(name, `links.${k}`, b.links?.[k], { max: 300, type: 'url', ph: 'https://' })).join('') + '</div>';
             case 'notice': return field('Text', 'text', b.text, { max: 300, area: true, rows: 2 })
                 + `<label>Colour<select data-f="tone">${Object.entries(TONES).map(([k, t]) => `<option value="${k}" ${b.tone === k ? 'selected' : ''}>${t[2]}</option>`).join('')}</select></label>`;
+            case 'booking': {
+                const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], order = [1, 2, 3, 4, 5, 6, 0];
+                return field('Title', 'title', b.title, { max: 80 }) + field('Text <small>— optional</small>', 'text', b.text, { max: 300, area: true, rows: 2 })
+                    + `<p class="fb-hint">People pick a service, a day and a time, then send you the request on WhatsApp or by email (set up under “More settings → Orders & bookings”). You confirm it — the app doesn’t know which times are already taken.</p>
+                    <div class="ab-items">${(b.services || []).map((sv, i) => `<div class="ab-hours__row"><input data-f="services.${i}.name" value="${esc(sv.name)}" maxlength="60" placeholder="Service" aria-label="Service ${i + 1}"><input data-f="services.${i}.info" value="${esc(sv.info || '')}" maxlength="40" placeholder="30 min · $25" aria-label="Service ${i + 1} details">
+                        <span class="fb-q__tools"><button type="button" data-svdel="${i}" class="fb-del" title="Remove">✕</button></span></div>`).join('')}</div>
+                    <button type="button" class="btn btn--sm btn--ghost" data-svadd ${(b.services || []).length >= 20 ? 'disabled' : ''}>＋ Add service</button>
+                    <div class="ab-field"><span>Open for bookings</span><div class="ab-days">${order.map(d => `<label class="fb-check"><input type="checkbox" data-bday="${d}" ${(b.days || []).includes(d) ? 'checked' : ''}> ${DAYS[d]}</label>`).join('')}</div></div>
+                    <div class="fb-2"><label>First appointment<input type="time" data-f="from" value="${esc(b.from)}" step="900"></label><label>Last one ends by<input type="time" data-f="to" value="${esc(b.to)}" step="900"></label>
+                    <label>Each appointment<select data-f="slot" data-num>${[15, 20, 30, 45, 60, 90, 120].map(m => `<option value="${m}" ${+b.slot === m ? 'selected' : ''}>${m < 60 ? m + ' minutes' : m / 60 + (m === 60 ? ' hour' : ' hours')}</option>`).join('')}</select></label>
+                    <label>Book up to<select data-f="ahead" data-num>${[7, 14, 30, 60, 90].map(n => `<option value="${n}" ${+b.ahead === n ? 'selected' : ''}>${n} days ahead</option>`).join('')}</select></label></div>`;
+            }
             case 'products': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
-                + `<p class="fb-hint">People tap a product, choose how many and send you the order on WhatsApp or by email (set up under “More settings → Orders”).</p>`
+                + `<p class="fb-hint">People tap a product, choose how many and send you the order on WhatsApp or by email (set up under “More settings → Orders & bookings”).</p>`
                 + items(b, 'Product', (it, i) => `<div class="fb-2">${field('Name', `items.${i}.name`, it.name, { max: 80 })}${field(`Price <small>— ${esc(A().shop?.currency || '$')}, empty = “Ask us”</small>`, `items.${i}.price`, it.price, { max: 12, mode: 'decimal', ph: '9.50' })}</div>`
                     + field('Category <small>— optional, e.g. Drinks</small>', `items.${i}.category`, it.category, { max: 40 })
                     + field('Description <small>— optional</small>', `items.${i}.text`, it.text, { max: 400, area: true, rows: 2 })
@@ -557,6 +573,11 @@
 
     root.addEventListener('input', e => {
         const el = e.target, a = A();
+        if (el.dataset.bday !== undefined) {
+            const b = blockOf(el); if (!b) return;
+            const d = +el.dataset.bday; b.days = (b.days || []).filter(x => x !== d); if (el.checked) b.days.push(d);
+            drawPhone(); markDirty(); return;
+        }
         if (el.dataset.f) {
             const b = blockOf(el); if (!b) return;
             const v = el.type === 'checkbox' ? el.checked : el.dataset.num !== undefined ? +el.value : el.value;
@@ -751,6 +772,8 @@
             else if (t.dataset.idel) b.items.splice(+t.dataset.idel, 1);
             else if (t.dataset.imove) { const k = +t.dataset.ii, j = k + +t.dataset.imove; [b.items[k], b.items[j]] = [b.items[j], b.items[k]]; }
             else if (t.dataset.hadd !== undefined) b.rows.push({ day: '', time: '' });
+            else if (t.dataset.svadd !== undefined) (b.services ||= []).push({ name: '', info: '' });
+            else if (t.dataset.svdel) b.services.splice(+t.dataset.svdel, 1);
             else if (t.dataset.hdel) b.rows.splice(+t.dataset.hdel, 1);
             else return;
             drawBlocks(); drawPhone(); markDirty();
@@ -871,7 +894,7 @@
         if (!a.name.trim()) return 'Please give your app a name.';
         if (D.icon.mode === 'image' && !logo) return 'Please add your logo, or switch the icon to letters.';
         if (a.tabs.some(t => !t.label.trim())) return 'Please give each tab a name.';
-        if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'products' && (b.items || []).some(i => i.name?.trim()))) && !a.shop.whatsapp.trim() && !a.shop.email.trim()) return 'Your app has products: add a WhatsApp number or email for orders under “More settings → Orders”.';
+        if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'booking' || (b.type === 'products' && (b.items || []).some(i => i.name?.trim())))) && !a.shop.whatsapp.trim() && !a.shop.email.trim()) return 'Your app takes orders or bookings: add a WhatsApp number or email for them under “More settings → Orders & bookings”.';
         if (a.tabs.some(t => t.type === 'web') && !siteUrl()) return 'You have a tab that shows your website: add your website address (starting with https://) under “More settings”.';
         return null;
     };
@@ -952,6 +975,7 @@
         if (b.type === 'video' && b.id) out.url = 'https://www.youtube.com/watch?v=' + b.id;
         if (b.type === 'cards') out.items = (b.items || []).map(i => ({ icon: 'star', title: '', text: '', ...i, action: i.action || { kind: '', value: '' } }));
         if (b.type === 'social') out.links = { ...(b.links || {}) };
+        if (b.type === 'booking') { out.services = (b.services || []).map(s => ({ name: '', info: '', ...s })); out.days = b.days || []; }
         if (b.type === 'products') out.items = (b.items || []).map(i => ({ name: '', price: '', category: '', text: '', image: null, ...i, price: i.price ?? '' }));
         return out;
     };

@@ -16,6 +16,7 @@
     const reviews = (title, rows) => ({ type: 'reviews', title, items: rows.map(([text, name, stars = 5]) => ({ text, name, stars })) });
     const faq = (title, rows) => ({ type: 'faq', title, items: rows.map(([q, a]) => ({ q, a })) });
     const products = (title, rows) => ({ type: 'products', title, items: rows.map(([name, price, category = '', text = '']) => ({ name, price, category, text, image: null })) });
+    const booking = (title, text, services, days, from, to, slot) => ({ type: 'booking', title, text, services: services.map(([name, info = '']) => ({ name, info })), days, from, to, slot, ahead: 30 });
     const notice = (text, tone = 'info') => ({ type: 'notice', text, tone });
     const contact = (o = {}) => ({ type: 'contact', title: 'Get in touch', phone: '+1 555 0100', whatsapp: '', email: 'hello@example.com', address: '12 High Street, Your Town', website: '', ...o });
     const hours = (rows, title = 'Opening hours') => ({ type: 'hours', title, rows: rows.map(([day, time]) => ({ day, time })) });
@@ -63,11 +64,11 @@
             ],
         },
         {
-            id: 'salon', name: 'Salon & beauty', note: 'Services, prices & booking', sample: 'Bloom Studio',
+            id: 'salon', name: 'Salon & beauty', note: 'Services, prices & bookings', sample: 'Bloom Studio', shop: { currency: '$', whatsapp: '+1 555 0100', email: '', note: '' },
             colors: { primary: '#db2777', bar: '#fff7fb', icon: '#db2777', splash: '#fff7fb' },
             tabs: [
                 screen('Home', 'home', [
-                    hero('Feel your best', 'Hair, nails and skin by an award-winning team.', 'Book now', wa('+1 555 0100')),
+                    hero('Feel your best', 'Hair, nails and skin by an award-winning team.', 'Book now', tab(3)),
                     cards('Our services', [['star', 'Hair', 'Cuts, colour & styling', tab(1)], ['heart', 'Nails', 'Gel, acrylics, nail art', tab(1)], ['user', 'Skin', 'Facials & peels', tab(1)], ['tag', 'Offers', 'New client 20% off', tab(1)]]),
                     reviews('Client love', [['Best balayage I’ve ever had. I felt so looked after.', 'Amira'], ['Quick, friendly and my nails lasted three weeks!', 'Jess']]),
                 ]),
@@ -78,7 +79,8 @@
                     list('Skin', [['Signature facial', '60 minutes', '$70']]),
                 ]),
                 screen('Gallery', 'image', [para('Add pictures of your work here.', 'center'), { type: 'gallery', images: [], columns: 3 }]),
-                screen('Contact', 'calendar', [btn('Book on WhatsApp', wa('+1 555 0100')), contact({ title: 'Visit us' }), hours(weekHours), social({ instagram: 'https://instagram.com/yoursalon' })]),
+                screen('Book', 'calendar', [booking('Book your visit', 'Pick a time and we’ll confirm on WhatsApp.', [['Cut & finish', '45 min · from $45'], ['Full colour', '2 h · from $85'], ['Gel manicure', '45 min · $35'], ['Signature facial', '60 min · $70']], [2, 3, 4, 5, 6], '09:00', '18:00', 30),
+                    contact({ title: 'Visit us' }), hours(weekHours), social({ instagram: 'https://instagram.com/yoursalon' })]),
             ],
         },
         {
@@ -120,16 +122,18 @@
             ],
         },
         {
-            id: 'clinic', name: 'Clinic & dental', note: 'Treatments, team & appointments', sample: 'Bright Smile Dental',
+            id: 'clinic', name: 'Clinic & dental', note: 'Treatments, fees & appointments', sample: 'Bright Smile Dental', shop: { currency: '$', whatsapp: '+1 555 0100', email: '', note: '' },
             colors: { primary: '#0284c7', bar: '#ffffff', icon: '#0284c7', splash: '#f0f9ff' },
             tabs: [
                 screen('Home', 'home', [
-                    hero('Gentle care for the whole family', 'Same-week appointments and evening slots.', 'Book an appointment', tel('+1 555 0100')),
+                    hero('Gentle care for the whole family', 'Same-week appointments and evening slots.', 'Book an appointment', tab(2)),
                     cards('Treatments', [['star', 'Check-ups', 'Exam & clean'], ['heart', 'Whitening', 'In-chair or at home'], ['user', 'Children', 'Free under 12s'], ['bell', 'Emergency', 'Same-day help']]),
                     reviews('Patient reviews', [['I used to dread the dentist. Not any more — so calm and kind.', 'Priya S.']]),
                 ]),
                 screen('Fees', 'tag', [list('Common treatments', [['Check-up & clean', '', '$65'], ['Filling', '', 'from $90'], ['Whitening', '', '$250']]), faq('Before your visit', [['Do I need to register?', 'No — just book and bring photo ID.'], ['Do you take insurance?', 'We accept most major plans.']])]),
-                screen('Contact', 'phone', [notice('Dental emergency? Call us — we keep slots free every day.', 'warning'), contact({ title: 'Contact the clinic' }), hours([['Mon – Thu', '8:00 – 19:00'], ['Friday', '8:00 – 17:00'], ['Saturday', '9:00 – 13:00']])]),
+                screen('Book', 'calendar', [notice('Dental emergency? Call us — we keep slots free every day.', 'warning'),
+                    booking('Request an appointment', 'Choose a time; our reception confirms by WhatsApp within the hour.', [['Check-up & clean', '45 min'], ['Whitening consultation', '30 min'], ['Child check-up', '30 min']], [1, 2, 3, 4, 5, 6], '08:00', '19:00', 30),
+                    contact({ title: 'Contact the clinic' }), hours([['Mon – Thu', '8:00 – 19:00'], ['Friday', '8:00 – 17:00'], ['Saturday', '9:00 – 13:00']])]),
             ],
         },
         {

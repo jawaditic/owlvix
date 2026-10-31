@@ -440,7 +440,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame(['owner' => 'Joe’s Bakery Ltd', 'email' => 'privacy@joes.example', 'extra' => "We also take orders by phone.\nThanks!"], $r['settings']['privacy']);
         $this->assertSame(route('builder.apps.privacy', $r['id']), $r['privacy_url']);
         // What the app does decides what the policy says
-        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false, 'orders' => false], $r['data_use']);
+        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false, 'orders' => false, 'bookings' => false], $r['data_use']);
 
         $page = $this->get($r['privacy_url'])->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
         $page->assertSee('Privacy policy for Joe’s Bakery', false)->assertSee('provided by Joe’s Bakery Ltd', false)
@@ -575,7 +575,7 @@ class AppBuilderTest extends TestCase
             ['name' => '', 'price' => '3'], // no name: dropped
         ]]];
         // Products need somewhere for orders to go
-        $this->save($token, $app)->assertStatus(422)->assertJsonFragment(['error' => 'Your app has products: add a WhatsApp number or email for orders under “More settings”.']);
+        $this->save($token, $app)->assertStatus(422)->assertJsonFragment(['error' => 'Your app takes orders: add a WhatsApp number or email for them under “More settings”.']);
         $this->save($token, $app + ['shop' => ['whatsapp' => '12', 'email' => '']])->assertStatus(422);
         $this->save($token, $app + ['shop' => ['email' => 'nope']])->assertStatus(422);
 
@@ -592,6 +592,31 @@ class AppBuilderTest extends TestCase
         // Prices must be numbers
         $app['tabs'][1]['blocks'][0]['items'][0]['price'] = 'four';
         $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $app + ['shop' => ['whatsapp' => '+44 7700 900123']]])->assertStatus(422);
+    }
+
+    public function test_booking_requests(): void
+    {
+        $token = $this->signIn();
+        $good = ['type' => 'booking', 'title' => 'Book', 'services' => [['name' => 'Haircut', 'info' => '30 min'], ['name' => '']], 'days' => [1, '2', 9, 1], 'from' => '09:00', 'to' => '17:30', 'slot' => 30, 'ahead' => 500];
+        $with = function (array $block, array $shop = ['whatsapp' => '+44 7700 900123']) {
+            $app = $this->app(['shop' => $shop]);
+            $app['tabs'][2]['blocks'] = [$block];
+
+            return $app;
+        };
+        // Needs somewhere to send requests, open days, sensible times and slot length
+        $this->save($token, $with($good, []))->assertStatus(422)->assertJsonFragment(['error' => 'Your app takes bookings: add a WhatsApp number or email for them under “More settings”.']);
+        $this->save($token, $with(['days' => []] + $good))->assertStatus(422);
+        $this->save($token, $with(['from' => '18:00'] + $good))->assertStatus(422);
+        $this->save($token, $with(['to' => '25:00'] + $good))->assertStatus(422);
+        $this->save($token, $with(['slot' => 7] + $good))->assertStatus(422);
+
+        $b = $this->save($token, $with($good))->assertOk()->json('app.tabs.2.blocks.0');
+        $this->assertSame([['name' => 'Haircut', 'info' => '30 min']], $b['services']);
+        $this->assertSame([1, 2], $b['days']);
+        $this->assertSame(['09:00', '17:30', 30, 90], [$b['from'], $b['to'], $b['slot'], $b['ahead']]);
+        $id = $this->api($token)->getJson('/builder/apps')->json('apps.0.id');
+        $this->get(route('builder.apps.privacy', $id))->assertSee('When you ask for an appointment');
     }
 
     public function test_up_to_fifteen_pages_with_a_menu(): void

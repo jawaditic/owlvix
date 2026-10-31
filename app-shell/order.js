@@ -22,7 +22,7 @@ const Stepper = ({ value, onChange, color, label }) => (
 );
 
 /** A bottom sheet over the app. */
-function Sheet({ visible, onClose, children, insets }) {
+export function Sheet({ visible, onClose, children, insets }) {
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheetWrap}>

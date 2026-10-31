@@ -2459,6 +2459,13 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-n-prods img, .ab-n-prods span { width: 100%; aspect-ratio: 1; object-fit: cover; display: grid; place-items: center; margin-bottom: 3px; }
 .ab-n-prods b { padding: 0 7px; font-size: 11px; line-height: 1.3; color: #0f172a; }
 .ab-n-prods em { padding: 0 7px; font-style: normal; font-weight: 800; font-size: 11.5px; }
+.ab-n-book { display: grid; gap: 6px; justify-items: start; padding: 12px; border-radius: 12px; background: #fff; border: 1px solid rgba(15, 23, 42, .1); }
+.ab-n-book > span { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; }
+.ab-n-book > b { font-size: 14px; color: #0f172a; }
+.ab-n-book > p { margin: 0; font-size: 11px; color: #334155; }
+.ab-n-book .ab-n-row { width: 100%; padding: 4px 0; min-height: 0; border-bottom: 1px solid rgba(15, 23, 42, .08); }
+.ab-n-book > em { justify-self: stretch; text-align: center; font-style: normal; font-weight: 700; font-size: 12px; padding: 9px; border-radius: 9px; margin-top: 4px; }
+.ab-days { display: flex; flex-wrap: wrap; gap: 4px 14px; }
 /* Statistics */
 .ab-stats { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--card-border); border-radius: 14px; }
 .ab-stats > b small { font-weight: 500; color: var(--muted); }

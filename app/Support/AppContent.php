@@ -30,7 +30,7 @@ class AppContent
     public const MAX_NEW_BYTES = 12_000_000;
 
     public const TYPES = ['hero', 'heading', 'text', 'image', 'button', 'list', 'gallery', 'contact', 'hours', 'video', 'divider',
-        'slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'spacer', 'products'];
+        'slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'spacer', 'products', 'booking'];
 
     /** Social networks the "social" block links to (each value is the page's https address). */
     public const SOCIAL = ['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin', 'pinterest', 'snapchat'];
@@ -147,6 +147,7 @@ class AppContent
             'social' => $this->social($b),
             'notice' => ($t = $this->text($b['text'] ?? '', 300, true)) !== '' ? ['type' => 'notice', 'text' => $t, 'tone' => in_array($b['tone'] ?? '', ['info', 'success', 'warning'], true) ? $b['tone'] : 'info'] : null,
             'products' => $this->products($b),
+            'booking' => $this->booking($b),
             'spacer' => ['type' => 'spacer', 'size' => in_array($b['size'] ?? '', ['small', 'medium', 'large'], true) ? $b['size'] : 'medium'],
         };
     }
@@ -230,6 +231,42 @@ class AppContent
         }
 
         return $clean ? array_filter(['type' => 'products', 'title' => $this->text($b['title'] ?? '', 80), 'items' => $clean]) : null;
+    }
+
+    /**
+     * Appointment requests: services, the days and hours people can pick from and how long a slot is. The request is
+     * sent to the owner on WhatsApp or by email (AppBuilder settings "shop"), who confirms it.
+     */
+    private function booking(array $b): array
+    {
+        $services = [];
+        foreach (array_slice(is_array($b['services'] ?? null) ? array_values($b['services']) : [], 0, 21) as $sv) {
+            if (is_array($sv) && ($name = $this->text($sv['name'] ?? '', 60)) !== '') {
+                $services[] = array_filter(['name' => $name, 'info' => $this->text($sv['info'] ?? '', 40)]);
+            }
+        }
+        if (count($services) > 20) {
+            throw new AppContentError($this->where.'a booking block can have up to 20 services.');
+        }
+        $days = array_values(array_unique(array_filter(is_array($b['days'] ?? null) ? $b['days'] : [], fn ($d) => is_int($d) || ctype_digit((string) $d))));
+        $days = array_values(array_filter(array_map('intval', $days), fn ($d) => $d >= 0 && $d <= 6));
+        sort($days);
+        $time = fn ($v) => is_string($v) && preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $v) ? $v : null;
+        $from = $time($b['from'] ?? null) ?? throw new AppContentError($this->where.'please set the time bookings start.');
+        $to = $time($b['to'] ?? null) ?? throw new AppContentError($this->where.'please set the time bookings end.');
+        $slot = (int) ($b['slot'] ?? 30);
+        if (! $days) {
+            throw new AppContentError($this->where.'pick at least one day people can book.');
+        }
+        if ($from >= $to) {
+            throw new AppContentError($this->where.'the last booking time must be after the first.');
+        }
+        if (! in_array($slot, [15, 20, 30, 45, 60, 90, 120], true)) {
+            throw new AppContentError($this->where.'please pick how long each appointment is.');
+        }
+
+        return array_filter(['type' => 'booking', 'title' => $this->text($b['title'] ?? '', 80), 'text' => $this->text($b['text'] ?? '', 300, true),
+            'services' => $services, 'days' => $days, 'from' => $from, 'to' => $to, 'slot' => $slot, 'ahead' => max(1, min(90, (int) ($b['ahead'] ?? 30)))], fn ($v) => $v !== '' && $v !== []);
     }
 
     /** Small cards in a grid: an icon, a title and a line of text (features, services, reasons to choose you). */

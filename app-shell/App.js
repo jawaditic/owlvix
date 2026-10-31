@@ -17,6 +17,7 @@ import { Block, Empty, Icon, isDark } from './blocks';
 import { color, fetchContent, startContent, str } from './content';
 import { countOpen, countPage, sendStats } from './stats';
 import { OrderButton, OrderSheet, ProductSheet } from './order';
+import { BookingSheet } from './booking';
 
 const shell = Constants.expoConfig?.extra?.shell ?? {};
 const CHECK_EVERY = 60 * 1000; // ask the server for changes at most once a minute when the app comes back
@@ -207,6 +208,7 @@ function Shell() {
             openUrl: openOutside,
             shop: doc?.shop && typeof doc.shop === 'object' ? doc.shop : null,
             openProduct: p => setProduct(p),
+            openBooking: b => setBooking(b),
             openTab: i => { if (i >= 0 && i < tabs.length) { setOpened(o => (o.includes(i) ? o : [...o, i])); setActive(i); } },
             refresh,
         };
@@ -266,6 +268,7 @@ function Shell() {
     const [cart, setCart] = useState([]);       // the order basket: [{ name, price, qty }]
     const [product, setProduct] = useState(null);
     const [orderOpen, setOrderOpen] = useState(false);
+    const [booking, setBooking] = useState(null); // the booking block being filled in
 
     // New content may have fewer tabs
     useEffect(() => {
@@ -358,6 +361,7 @@ function Shell() {
                     setCart(c => { const i = c.findIndex(l => l.name === p.name && l.price === p.price); return i < 0 ? [...c, { name: p.name, price: p.price, qty }] : c.map((l, j) => (j === i ? { ...l, qty: Math.min(99, l.qty + qty) } : l)); });
                     setProduct(null);
                 }} />
+            <BookingSheet block={booking} ctx={ctx} insets={insets} appName={str(shell.name)} onClose={() => setBooking(null)} />
             <OrderSheet visible={orderOpen} cart={cart} setCart={setCart} ctx={ctx} insets={insets} appName={str(shell.name)} onClose={() => setOrderOpen(false)} />
             {banner && (
                 <Pressable onPress={() => { if (/^\d+$/.test(banner.tab || '')) ctx.openTab(+banner.tab); setBanner(null); }} accessibilityRole="button"

@@ -163,10 +163,10 @@
                             <label>Offline title <small>— shown when a website tab can’t load</small><input data-o="title" maxlength="60" placeholder="You’re offline"></label>
                             <label>Offline message<input data-o="text" maxlength="200" placeholder="Check your internet connection and try again."></label>
                             <label>Offline button<input data-o="button" maxlength="30" placeholder="Try again"></label>
-                            <h3 class="ab-sub">Orders <small>— for the Products block: customers send you their order</small></h3>
+                            <h3 class="ab-sub">Orders &amp; bookings <small>— where orders (Products block) and appointment requests (Bookings block) are sent</small></h3>
                             <div class="fb-2">
-                                <label>WhatsApp number for orders<input data-shop="whatsapp" type="tel" maxlength="25" placeholder="+44 7700 900123"></label>
-                                <label>Email for orders<input data-shop="email" type="email" maxlength="150" placeholder="orders@yourbusiness.com"></label>
+                                <label>WhatsApp number<input data-shop="whatsapp" type="tel" maxlength="25" placeholder="+44 7700 900123"></label>
+                                <label>Email<input data-shop="email" type="email" maxlength="150" placeholder="orders@yourbusiness.com"></label>
                                 <label>Currency symbol<input data-shop="currency" maxlength="6" placeholder="$"></label>
                                 <label>Note on the order screen <small>— optional</small><input data-shop="note" maxlength="200" placeholder="Pay when you collect. Ready in 20 minutes."></label>
                             </div>

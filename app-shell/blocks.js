@@ -7,6 +7,7 @@ import { FlatList, Image, ImageBackground, LayoutAnimation, Modal, Pressable, Sc
 import Svg, { Path } from 'react-native-svg';
 import { action, image, str } from './content';
 import ICONS from './icons.json';
+import { BookingBlock } from './booking';
 
 const INK = '#0f172a';
 const MUTED = '#64748b';
@@ -373,6 +374,7 @@ export function Block({ b, ctx }) {
         case 'social': return <Social b={b} ctx={ctx} />;
         case 'notice': { const [bg, fg] = TONES[b.tone] || TONES.info; return <View style={[styles.pad, styles.notice, { backgroundColor: bg, borderColor: fg + '33' }]}><Text style={[styles.noticeText, { color: fg }]}>{str(b.text)}</Text></View>; }
         case 'products': return <Products b={b} ctx={ctx} />;
+        case 'booking': return <BookingBlock b={b} ctx={ctx} />;
         case 'spacer': return <View style={{ height: { small: 8, large: 44 }[b.size] ?? 22 }} />;
         default: return null;
     }

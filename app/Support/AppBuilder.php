@@ -127,9 +127,9 @@ class AppBuilder
         if ($shop['email'] !== '' && ! filter_var($shop['email'], FILTER_VALIDATE_EMAIL)) {
             return 'The email address for orders doesn’t look right.';
         }
-        $sells = collect($content['tabs'])->flatMap(fn ($t) => $t['blocks'] ?? [])->contains('type', 'products');
-        if ($sells && $shop['whatsapp'] === '' && $shop['email'] === '') {
-            return 'Your app has products: add a WhatsApp number or email for orders under “More settings”.';
+        $types = collect($content['tabs'])->flatMap(fn ($t) => $t['blocks'] ?? [])->pluck('type');
+        if (($types->contains('products') || $types->contains('booking')) && $shop['whatsapp'] === '' && $shop['email'] === '') {
+            return 'Your app takes '.($types->contains('products') ? 'orders' : 'bookings').': add a WhatsApp number or email for them under “More settings”.';
         }
 
         // For the app's privacy policy page (/app-privacy/{id}), which Google Play asks for
@@ -177,6 +177,7 @@ class AppBuilder
             'links' => $actions->contains('url'),
             'push' => Firebase::enabled(),
             'orders' => $blocks->contains('type', 'products'),
+            'bookings' => $blocks->contains('type', 'booking'),
         ];
     }
 
@@ -226,7 +227,7 @@ class AppBuilder
      * pages, slider/cards/reviews/FAQ/social/notice/space blocks, splash picture, intro). Apps built with an older
      * one are flagged in the builder.
      */
-    public const SHELL_VERSION = 5; // 3: push notifications, 4: usage statistics, 5: products and orders
+    public const SHELL_VERSION = 6; // 3: push notifications, 4: usage statistics, 5: products and orders, 6: bookings
 
     /**
      * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when
