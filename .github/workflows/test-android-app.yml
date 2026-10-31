@@ -1,0 +1,60 @@
+# Test build of the app in app-shell/, made from the demo content in app-shell/shell.example.json (products, booking,
+# loyalty card — PIN 1234 —, Arabic, dark mode…). It needs no website, keys or Firebase: it shows the Android build
+# works and gives an APK to try on a phone (download it from the run's "Artifacts"). Started by hand from the
+# Actions tab, or by the website's GitHub token. Customers' apps are built by build-android-app.yml instead.
+name: Test Android app (demo)
+run-name: Demo app test build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-test-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: app-shell
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app-shell/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install
+        working-directory: app-shell
+        run: npm ci --no-audit --no-fund
+
+      - name: Demo settings and a throwaway signing key
+        working-directory: app-shell
+        run: node scripts/prepare.mjs
+
+      - name: Make the Android project
+        working-directory: app-shell
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Build the APK
+        working-directory: app-shell/android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: owlvix-demo-apk
+          path: app-shell/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 14

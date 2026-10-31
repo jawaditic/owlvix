@@ -4,36 +4,69 @@
     "versionName": "1.0.0",
     "versionCode": 1,
     "contentUrl": "https://owlvix.com/app-data/demo/content.json",
-    "colors": { "primary": "#16a34a", "bar": "#ffffff", "splash": "#ffffff", "icon": "#16a34a" },
+    "colors": { "primary": "#7c4a2d", "bar": "#fdf8f3", "splash": "#fdf8f3", "icon": "#7c4a2d" },
     "statusBar": "dark",
+    "splashWidth": 180,
     "content": {
         "v": 1,
         "rev": 1,
         "base": "https://owlvix.com/app-data/demo/",
-        "colors": { "primary": "#16a34a", "bar": "#ffffff" },
+        "colors": { "primary": "#7c4a2d", "bar": "#fdf8f3" },
         "statusBar": "dark",
         "externalLinks": "browser",
-        "hosts": ["owlvix.com"],
+        "hosts": [],
+        "menu": "show",
+        "lang": "en",
+        "style": { "theme": "auto", "corners": "rounded", "font": "modern" },
+        "shop": { "currency": "$", "whatsapp": "15550100", "email": "hello@example.com", "note": "Demo: orders open WhatsApp but go nowhere real." },
         "offline": { "title": "You're offline", "text": "Check your internet connection and try again.", "button": "Try again" },
         "tabs": [
-            { "label": "Home", "icon": "home", "type": "screen", "blocks": [
-                { "type": "hero", "title": "Owlvix Demo", "text": "A native app made with the free mobile app builder.", "button": { "label": "See our services", "action": { "kind": "tab", "value": 1 } } },
-                { "type": "heading", "text": "Welcome", "align": "left" },
-                { "type": "text", "text": "Every screen here is drawn with native Android components. Change it in the builder and it updates here — no new build needed.", "align": "left" },
-                { "type": "button", "label": "Visit owlvix.com", "action": { "kind": "url", "value": "https://owlvix.com/" }, "style": "outline" },
+            { "label": "Home", "icon": "home", "type": "screen", "bar": true, "menu": true, "blocks": [
+                { "type": "hero", "title": "Owlvix Demo Café", "text": "A demo of the free mobile app builder — every screen is native.", "button": { "label": "Order ahead", "action": { "kind": "tab", "value": 1 } } },
+                { "type": "notice", "text": "This is a test build. The loyalty card PIN is 1234.", "tone": "info" },
+                { "type": "loyalty", "card": "democard01", "title": "Coffee card", "reward": "Free coffee", "text": "A stamp with every coffee.", "stamps": 8, "pinHash": "3c64a30f5af3d1a70fc6d3100eae4a32e1147c1380a1d52d95c08a11786d0922" },
+                { "type": "cards", "title": "Why people love us", "columns": 2, "items": [
+                    { "icon": "heart", "title": "Fresh daily", "text": "Baked every morning." },
+                    { "icon": "star", "title": "4.9 rating", "text": "Over 500 reviews." }
+                ] },
+                { "type": "reviews", "title": "What customers say", "items": [
+                    { "text": "Best flat white in town.", "name": "Maya", "stars": 5 },
+                    { "text": "Lovely staff and cosy seats.", "name": "Sam", "stars": 4 }
+                ] },
                 { "type": "video", "id": "aqz-KE-bpKQ", "title": "A short video" }
             ] },
-            { "label": "Services", "icon": "grid", "type": "screen", "blocks": [
-                { "type": "list", "title": "What we do", "items": [
-                    { "title": "Websites", "text": "Fast, simple sites that bring customers.", "price": "from $499" },
-                    { "title": "Mobile apps", "text": "Android and iPhone apps.", "price": "from $1,999" },
-                    { "title": "Free tools", "text": "Builders and checkers.", "action": { "kind": "url", "value": "https://owlvix.com/free-tools" } }
+            { "label": "Order", "icon": "cart", "type": "screen", "bar": true, "menu": true, "blocks": [
+                { "type": "products", "title": "Order ahead", "items": [
+                    { "name": "Espresso", "price": 3, "category": "Coffee" },
+                    { "name": "Flat white", "price": 4.2, "category": "Coffee", "text": "Double shot, silky milk" },
+                    { "name": "Cinnamon bun", "price": 3.8, "category": "Bakery" },
+                    { "name": "Cake of the day", "category": "Bakery", "text": "Ask us what's fresh" }
                 ] }
             ] },
-            { "label": "Contact", "icon": "chat", "type": "screen", "blocks": [
-                { "type": "contact", "title": "Get in touch", "email": "hello@owlvix.com", "website": "https://owlvix.com/" },
-                { "type": "hours", "title": "Opening hours", "rows": [ { "day": "Mon – Fri", "time": "9:00 – 17:00" }, { "day": "Sat – Sun", "time": "Closed" } ] }
+            { "label": "Book", "icon": "calendar", "type": "screen", "bar": true, "menu": true, "blocks": [
+                { "type": "booking", "title": "Book a table", "text": "Pick a time — we confirm on WhatsApp.", "services": [{ "name": "Table for 2", "info": "1 hour" }, { "name": "Table for 4", "info": "1 hour" }], "days": [1, 2, 3, 4, 5, 6], "from": "09:00", "to": "18:00", "slot": 30, "ahead": 30 }
+            ] },
+            { "label": "Info", "icon": "info", "type": "screen", "bar": true, "menu": true, "blocks": [
+                { "type": "faq", "title": "Questions", "items": [{ "q": "Do you have Wi-Fi?", "a": "Yes, free for customers." }, { "q": "Are dogs welcome?", "a": "Of course!" }] },
+                { "type": "contact", "title": "Find us", "phone": "+1 555 0100", "email": "hello@example.com", "address": "12 High Street" },
+                { "type": "hours", "title": "Opening hours", "rows": [{ "day": "Mon – Fri", "time": "7:00 – 17:00" }, { "day": "Sat – Sun", "time": "8:00 – 16:00" }] },
+                { "type": "social", "title": "Follow us", "links": { "instagram": "https://instagram.com/owlvix" } }
+            ] },
+            { "label": "About", "icon": "book", "type": "screen", "bar": false, "menu": true, "blocks": [
+                { "type": "heading", "text": "About this demo" },
+                { "type": "text", "text": "This page is only in the ☰ menu, not the bottom bar. Switch to Arabic in the ☰ menu to see a translation." }
             ] }
-        ]
+        ],
+        "translations": {
+            "ar": { "tabs": [
+                { "label": "الرئيسية", "icon": "home", "type": "screen", "bar": true, "menu": true, "blocks": [
+                    { "type": "hero", "title": "مقهى أولفيكس التجريبي", "text": "نسخة تجريبية من منشئ التطبيقات المجاني.", "button": { "label": "اطلب مسبقًا", "action": { "kind": "tab", "value": 1 } } },
+                    { "type": "loyalty", "card": "democard01", "title": "بطاقة القهوة", "reward": "قهوة مجانية", "stamps": 8, "pinHash": "3c64a30f5af3d1a70fc6d3100eae4a32e1147c1380a1d52d95c08a11786d0922" }
+                ] },
+                { "label": "اطلب", "icon": "cart", "type": "screen", "bar": true, "menu": true, "blocks": [
+                    { "type": "products", "title": "اطلب مسبقًا", "items": [{ "name": "إسبريسو", "price": 3, "category": "قهوة" }, { "name": "فلات وايت", "price": 4.2, "category": "قهوة" }] }
+                ] }
+            ] }
+        }
     }
 }
