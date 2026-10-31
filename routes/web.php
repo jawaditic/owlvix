@@ -57,6 +57,7 @@ Route::view('/image-compressor', 'tools.image-compressor')->name('image-compress
 Route::view('/email-signature-generator', 'tools.email-signature')->name('email-signature');
 Route::view('/form-builder', 'tools.form-builder')->name('form-builder');
 Route::view('/email-template-builder', 'tools.email-builder')->name('email-builder');
+Route::view('/resume-builder', 'tools.resume-builder')->name('resume-builder');
 Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
 Route::view('/funnel-builder', 'tools.funnel-builder')->name('funnel-builder');
 // More free builders: the same editor with its own starting templates (App\Support\BuilderKits)
@@ -66,6 +67,7 @@ Route::view('/link-in-bio-builder', 'tools.kit-builder', ['kit' => 'links'])->na
 Route::view('/coming-soon-page-builder', 'tools.kit-builder', ['kit' => 'soon'])->name('coming-soon-builder');
 Route::view('/event-website-builder', 'tools.kit-builder', ['kit' => 'event'])->name('event-website-builder');
 Route::view('/restaurant-menu-builder', 'tools.kit-builder', ['kit' => 'menu'])->name('menu-builder');
+Route::view('/mobile-app-builder', 'tools.app-builder')->name('app-builder');
 Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
 Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');
 Route::post('/meta-tag-preview', [\App\Http\Controllers\FreeToolsController::class, 'meta'])->middleware('throttle:8,1,tool-meta')->name('meta-preview.run');
@@ -148,6 +150,20 @@ Route::prefix('builder')->name('builder.')->controller(\App\Http\Controllers\Bui
         Route::post('surveys/{id}/delete', 'deleteSurvey')->where('id', '[a-z0-9]{16}')->name('surveys.delete');
     });
 });
+// Mobile app builder: your apps, website check and Android builds (public/js/app-builder.js)
+Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->controller(\App\Http\Controllers\AppBuilderController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::post('/', 'save')->middleware('throttle:30,1,app-save')->name('save');
+    Route::post('{id}/verify', 'verify')->where('id', '[a-z0-9]{16}')->name('verify');
+    Route::post('{id}/build', 'build')->where('id', '[a-z0-9]{16}')->middleware('throttle:6,1,app-build')->name('build');
+    Route::get('{id}/icon', 'icon')->where('id', '[a-z0-9]{16}')->name('icon');
+    Route::get('{id}/keystore', 'keystore')->where('id', '[a-z0-9]{16}')->name('keystore');
+    Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
+});
+// Finished app files (signed links from the builder page and the "your app is ready" email)
+Route::get('/app-builds/{build}/{kind}', [\App\Http\Controllers\AppBuilderController::class, 'download'])
+    ->whereNumber('build')->whereIn('kind', ['apk', 'aab'])
+    ->middleware(['signed', 'throttle:30,1,app-download'])->withoutMiddleware($stateless)->name('builder.apps.download');
 // Funnel step stats beacon from published pages (sendBeacon from a sandboxed page): no session, cookies or CSRF
 Route::post('/fs', [\App\Http\Controllers\BuilderPublicController::class, 'beacon'])->withoutMiddleware('web')->name('builder.beacon');
 // Contact forms on builder pages (posted from any host, so no CSRF token: see bootstrap/app.php)

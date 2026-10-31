@@ -1,0 +1,115 @@
+# Builds one Android app for the Owlvix mobile app builder (/mobile-app-builder).
+# Started by the website (App\Support\AppBuilder::dispatch) — not by hand. It fetches the app's settings from the
+# website, builds app-shell/ into a signed APK (to try on a phone) and AAB (for Google Play), and uploads them back.
+# Nothing from the job is ever put into a shell command: app-shell/scripts/prepare.mjs writes it to files.
+name: Build Android app
+run-name: Android app build ${{ inputs.build_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: Build number on the website
+        required: true
+      api:
+        description: The build's API address, e.g. https://owlvix.com/api/app-builds/12
+        required: true
+      token:
+        description: One-time pass for this build
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-build-${{ inputs.build_id }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OWLVIX_API: ${{ inputs.api }}
+      OWLVIX_JOB_TOKEN: ${{ inputs.token }}
+    steps:
+      - name: Hide the build pass in logs
+        run: echo "::add-mask::$OWLVIX_JOB_TOKEN"
+
+      - name: Check the API address
+        run: |
+          [[ "$OWLVIX_API" =~ ^https://[a-z0-9.-]+/api/app-builds/[0-9]+$ ]] || { echo "Bad API address"; exit 1; }
+
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: app-shell
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app-shell/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install
+        working-directory: app-shell
+        run: npm ci --no-audit --no-fund
+
+      - name: Get the app's settings
+        working-directory: app-shell
+        env:
+          OWLVIX_JOB_URL: ${{ inputs.api }}/job
+        run: node scripts/prepare.mjs
+
+      - name: Make the Android project
+        working-directory: app-shell
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Build APK and AAB
+        working-directory: app-shell/android
+        # The AAB carries every phone type (Google Play sends each phone its part); the APK, installed by hand,
+        # only needs real phones' ARM code, which makes it much smaller.
+        run: |
+          ./gradlew bundleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=armeabi-v7a,arm64-v8a
+
+      - name: Check they're signed with the app's own key
+        working-directory: app-shell/android/app/build/outputs
+        run: |
+          want=$(keytool -list -keystore "$OWLVIX_UPLOAD_STORE_FILE" -storepass "$OWLVIX_UPLOAD_STORE_PASSWORD" -alias upload -rfc | openssl x509 -noout -fingerprint -sha256 | cut -d= -f2)
+          got=$(keytool -printcert -jarfile bundle/release/app-release.aab -rfc | openssl x509 -noout -fingerprint -sha256 | cut -d= -f2)
+          [ -n "$want" ] && [ "$want" = "$got" ] || { echo "AAB is not signed with the upload key"; exit 1; }
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$apksigner" verify --print-certs apk/release/app-release.apk | grep -qi "$(echo "$want" | tr -d ':' | tr 'A-F' 'a-f')" || { echo "APK is not signed with the upload key"; exit 1; }
+
+      - name: Send the files to the website
+        working-directory: app-shell/android/app/build/outputs
+        run: |
+          upload() { # kind file — in 4 MB parts
+            local kind=$1 file=$2 dir part=0 offset=0
+            dir=$(mktemp -d)
+            split -b 4m -d -a 3 "$file" "$dir/p"
+            for p in "$dir"/p*; do
+              curl -fsS --retry 3 -X POST -H "Authorization: Bearer $OWLVIX_JOB_TOKEN" -H "Content-Type: application/octet-stream" \
+                --data-binary "@$p" "$OWLVIX_API/upload?kind=$kind&part=$part&offset=$offset" > /dev/null
+              offset=$((offset + $(stat -c %s "$p"))); part=$((part + 1))
+            done
+          }
+          upload apk apk/release/app-release.apk
+          upload aab bundle/release/app-release.aab
+          if [ "$OWLVIX_KEYSTORE_CREATED" = "1" ]; then upload keystore "$OWLVIX_UPLOAD_STORE_FILE"; fi
+          jq -n --arg apk "$(sha256sum apk/release/app-release.apk | cut -d' ' -f1)" --arg aab "$(sha256sum bundle/release/app-release.aab | cut -d' ' -f1)" \
+            '{status: "done", sha256: {apk: $apk, aab: $aab}}' > finish.json
+          curl -fsS --retry 3 -X POST -H "Authorization: Bearer $OWLVIX_JOB_TOKEN" -H "Content-Type: application/json" \
+            --data-binary @finish.json "$OWLVIX_API/finish"
+
+      - name: Tell the website it failed
+        if: failure()
+        run: |
+          curl -sS -X POST -H "Authorization: Bearer $OWLVIX_JOB_TOKEN" -H "Content-Type: application/json" \
+            -d '{"status":"failed","error":"Workflow failed, see GitHub Actions run ${{ github.run_id }}"}' "$OWLVIX_API/finish" || true

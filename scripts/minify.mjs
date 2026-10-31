@@ -21,6 +21,8 @@ export const FILES = [
     'js/form-builder.js',
     'js/qr.js',
     'js/email-builder.js',
+    'js/resume-builder.js',
+    'js/app-builder.js',
 ];
 
 for (const file of FILES) {

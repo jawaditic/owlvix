@@ -1,0 +1,11 @@
+node_modules/
+android/
+ios/
+.expo/
+shell.json
+assets/icon.png
+assets/adaptive.png
+assets/splash.png
+signing/
+build/
+build.log
