@@ -271,7 +271,7 @@ class AppBuilder
      */
     // 3: push notifications, 4: usage statistics, 5: products and orders, 6: bookings, 7: dark mode, corners, fonts,
     // 8: loyalty card, 9: languages
-    public const SHELL_VERSION = 9;
+    public const SHELL_VERSION = 10;
 
     /**
      * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when
@@ -570,6 +570,8 @@ class AppBuilder
             'pushTopic' => $push ? Firebase::topic($app->id) : null,
             // Where the app sends its one anonymous usage summary a day (Api\AppStatsController)
             'statsUrl' => rtrim(config('builder.apps.callback_url') ?: config('app.url'), '/').'/api/app-stats/'.$app->id,
+            // Where staff PINs for loyalty cards are checked (Api\AppLoyaltyController)
+            'loyaltyUrl' => rtrim(config('builder.apps.callback_url') ?: config('app.url'), '/').'/api/app-loyalty/'.$app->id,
             'keystore' => $app->keystore,
             'keystorePassword' => $app->keystore_password,
         ];

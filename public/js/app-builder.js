@@ -521,7 +521,7 @@
                 + `<div class="fb-2">${field('Reward', 'reward', b.reward, { max: 60, ph: 'Free coffee' })}<label>Stamps needed<select data-f="stamps" data-num>${[4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<option value="${n}" ${+b.stamps === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>`
                 + field('Text <small>— optional</small>', 'text', b.text, { max: 200, ph: 'Get a stamp with every coffee.' })
                 + `<label>Staff PIN <small>— 4 to 8 digits; staff type it on the customer’s phone to add a stamp or give the reward</small><input data-f="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" value="${esc(b.pin || '')}" placeholder="${b.pinHash ? 'Set ✓ — type a new PIN to change it' : 'e.g. 4821'}"></label>
-                    <p class="fb-hint">Stamps are kept on each customer’s phone. Keep the PIN to your team; change it any time (it takes effect when you save).</p>`;
+                    <p class="fb-hint">Stamps are kept on each customer’s phone. Staff type the PIN on it to add a stamp (the phone needs internet; we check the PIN and block guessing). Keep the PIN to your team; change it any time (it takes effect when you save).</p>`;
             case 'booking': {
                 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], order = [1, 2, 3, 4, 5, 6, 0];
                 return field('Title', 'title', b.title, { max: 80 }) + field('Text <small>— optional</small>', 'text', b.text, { max: 300, area: true, rows: 2 })

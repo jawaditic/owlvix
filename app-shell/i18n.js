@@ -26,7 +26,7 @@ const W = {
         request_ready: 'Your request is ready to send in {via}. {app} will confirm your appointment.', done: 'Done',
         loyalty_card: 'Loyalty card', stamps_for: '{n} stamps = {reward}', reward_ready: '🎉 Your reward is ready: {reward}! Show this to staff.',
         get_reward: 'Get my reward', add_stamp: 'Add a stamp', rewards_so_far: 'Rewards so far: {n}', give_reward: 'Give the reward',
-        hand_phone: 'Please hand your phone to a member of staff.', staff_pin: 'Staff PIN', too_many: 'Too many wrong PINs. Please try again in a few minutes.', wrong_pin: 'That PIN isn’t right.',
+        hand_phone: 'Please hand your phone to a member of staff.', staff_pin: 'Staff PIN', too_many: 'Too many wrong PINs. Please try again in a few minutes.', wrong_pin: 'That PIN isn’t right.', pin_offline: 'No internet: connect to check the PIN.',
         // in orders and booking requests (main language)
         m_order: 'Hello! I’d like to order:', m_book: 'Hello! I’d like to book an appointment:', m_total: 'Total', m_name: 'Name', m_note: 'Note', m_phone: 'Phone',
         m_service: 'Service', m_when: 'When', m_sent_from: '(Sent from the {app} app)', m_order_subject: 'Order from the {app} app', m_book_subject: 'Booking request from the {app} app',
@@ -48,7 +48,7 @@ const W = {
         request_ready: 'طلبك جاهز للإرسال في {via}. سيؤكد {app} موعدك.', done: 'تم',
         loyalty_card: 'بطاقة الولاء', stamps_for: '{n} أختام = {reward}', reward_ready: '🎉 مكافأتك جاهزة: {reward}! اعرض هذا على الموظف.',
         get_reward: 'احصل على مكافأتي', add_stamp: 'أضف ختمًا', rewards_so_far: 'المكافآت حتى الآن: {n}', give_reward: 'منح المكافأة',
-        hand_phone: 'من فضلك سلّم هاتفك لأحد الموظفين.', staff_pin: 'رمز الموظف', too_many: 'محاولات خاطئة كثيرة. حاول بعد بضع دقائق.', wrong_pin: 'الرمز غير صحيح.',
+        hand_phone: 'من فضلك سلّم هاتفك لأحد الموظفين.', staff_pin: 'رمز الموظف', too_many: 'محاولات خاطئة كثيرة. حاول بعد بضع دقائق.', wrong_pin: 'الرمز غير صحيح.', pin_offline: 'لا يوجد إنترنت: اتصل للتحقق من الرمز.',
     },
     ur: {
         no_app_title: 'نہیں کھل سکا', no_app: 'اس فون پر {via} نہیں کھل سکا۔ براہ کرم {to} پر ہم سے رابطہ کریں۔',
@@ -67,7 +67,7 @@ const W = {
         request_ready: 'آپ کی درخواست {via} میں بھیجنے کے لیے تیار ہے۔ {app} آپ کی اپائنٹمنٹ کی تصدیق کرے گا۔', done: 'ہو گیا',
         loyalty_card: 'لائلٹی کارڈ', stamps_for: '{n} اسٹیمپ = {reward}', reward_ready: '🎉 آپ کا انعام تیار ہے: {reward}! یہ عملے کو دکھائیں۔',
         get_reward: 'میرا انعام لیں', add_stamp: 'اسٹیمپ لگوائیں', rewards_so_far: 'اب تک کے انعامات: {n}', give_reward: 'انعام دیں',
-        hand_phone: 'براہ کرم اپنا فون عملے کے کسی رکن کو دیں۔', staff_pin: 'عملے کا PIN', too_many: 'بہت زیادہ غلط PIN۔ چند منٹ بعد کوشش کریں۔', wrong_pin: 'یہ PIN درست نہیں۔',
+        hand_phone: 'براہ کرم اپنا فون عملے کے کسی رکن کو دیں۔', staff_pin: 'عملے کا PIN', too_many: 'بہت زیادہ غلط PIN۔ چند منٹ بعد کوشش کریں۔', wrong_pin: 'یہ PIN درست نہیں۔', pin_offline: 'انٹرنیٹ نہیں: PIN چیک کرنے کے لیے کنیکٹ کریں۔',
     },
     hi: {
         no_app_title: 'खुल नहीं सका', no_app: 'इस फ़ोन पर {via} नहीं खुल सका। कृपया {to} पर हमसे संपर्क करें।',
@@ -86,7 +86,7 @@ const W = {
         request_ready: 'आपका अनुरोध {via} में भेजने के लिए तैयार है। {app} आपकी अपॉइंटमेंट पक्की करेगा।', done: 'हो गया',
         loyalty_card: 'लॉयल्टी कार्ड', stamps_for: '{n} स्टैम्प = {reward}', reward_ready: '🎉 आपका इनाम तैयार है: {reward}! यह स्टाफ़ को दिखाएँ।',
         get_reward: 'मेरा इनाम लें', add_stamp: 'स्टैम्प लगवाएँ', rewards_so_far: 'अब तक के इनाम: {n}', give_reward: 'इनाम दें',
-        hand_phone: 'कृपया अपना फ़ोन स्टाफ़ को दें।', staff_pin: 'स्टाफ़ PIN', too_many: 'बहुत सारे गलत PIN। कुछ मिनट बाद कोशिश करें।', wrong_pin: 'यह PIN सही नहीं है।',
+        hand_phone: 'कृपया अपना फ़ोन स्टाफ़ को दें।', staff_pin: 'स्टाफ़ PIN', too_many: 'बहुत सारे गलत PIN। कुछ मिनट बाद कोशिश करें।', wrong_pin: 'यह PIN सही नहीं है।', pin_offline: 'इंटरनेट नहीं: PIN जाँचने के लिए कनेक्ट करें।',
     },
     es: {
         no_app_title: 'No se pudo abrir', no_app: 'No pudimos abrir {via} en este teléfono. Escríbenos a {to}.',
@@ -105,7 +105,7 @@ const W = {
         request_ready: 'Tu solicitud está lista para enviar en {via}. {app} confirmará tu cita.', done: 'Listo',
         loyalty_card: 'Tarjeta de fidelidad', stamps_for: '{n} sellos = {reward}', reward_ready: '🎉 ¡Tu premio está listo: {reward}! Enséñaselo al personal.',
         get_reward: 'Canjear mi premio', add_stamp: 'Añadir sello', rewards_so_far: 'Premios conseguidos: {n}', give_reward: 'Entregar el premio',
-        hand_phone: 'Entrega tu teléfono a un miembro del personal.', staff_pin: 'PIN del personal', too_many: 'Demasiados PIN incorrectos. Inténtalo en unos minutos.', wrong_pin: 'Ese PIN no es correcto.',
+        hand_phone: 'Entrega tu teléfono a un miembro del personal.', staff_pin: 'PIN del personal', too_many: 'Demasiados PIN incorrectos. Inténtalo en unos minutos.', wrong_pin: 'Ese PIN no es correcto.', pin_offline: 'Sin internet: conéctate para comprobar el PIN.',
     },
     fr: {
         no_app_title: 'Impossible d’ouvrir', no_app: "Impossible d’ouvrir {via} sur ce téléphone. Contactez-nous à {to}.",
@@ -124,7 +124,7 @@ const W = {
         request_ready: 'Votre demande est prête à être envoyée dans {via}. {app} confirmera votre rendez-vous.', done: 'Terminé',
         loyalty_card: 'Carte de fidélité', stamps_for: '{n} tampons = {reward}', reward_ready: '🎉 Votre récompense est prête : {reward} ! Montrez ceci au personnel.',
         get_reward: 'Obtenir ma récompense', add_stamp: 'Ajouter un tampon', rewards_so_far: 'Récompenses obtenues : {n}', give_reward: 'Donner la récompense',
-        hand_phone: 'Veuillez tendre votre téléphone à un membre du personnel.', staff_pin: 'Code du personnel', too_many: 'Trop de codes erronés. Réessayez dans quelques minutes.', wrong_pin: 'Ce code est incorrect.',
+        hand_phone: 'Veuillez tendre votre téléphone à un membre du personnel.', staff_pin: 'Code du personnel', too_many: 'Trop de codes erronés. Réessayez dans quelques minutes.', wrong_pin: 'Ce code est incorrect.', pin_offline: 'Pas d’internet : connectez-vous pour vérifier le code.',
     },
     de: {
         no_app_title: 'Konnte nicht geöffnet werden', no_app: '{via} lässt sich auf diesem Handy nicht öffnen. Bitte schreib uns an {to}.',
@@ -143,7 +143,7 @@ const W = {
         request_ready: 'Deine Anfrage ist in {via} bereit zum Senden. {app} bestätigt deinen Termin.', done: 'Fertig',
         loyalty_card: 'Treuekarte', stamps_for: '{n} Stempel = {reward}', reward_ready: '🎉 Deine Prämie ist bereit: {reward}! Zeig das dem Personal.',
         get_reward: 'Prämie einlösen', add_stamp: 'Stempel hinzufügen', rewards_so_far: 'Bisherige Prämien: {n}', give_reward: 'Prämie ausgeben',
-        hand_phone: 'Bitte gib dein Handy einem Mitarbeiter.', staff_pin: 'Mitarbeiter-PIN', too_many: 'Zu viele falsche PINs. Bitte in ein paar Minuten erneut versuchen.', wrong_pin: 'Diese PIN ist falsch.',
+        hand_phone: 'Bitte gib dein Handy einem Mitarbeiter.', staff_pin: 'Mitarbeiter-PIN', too_many: 'Zu viele falsche PINs. Bitte in ein paar Minuten erneut versuchen.', wrong_pin: 'Diese PIN ist falsch.', pin_offline: 'Kein Internet: zum Prüfen der PIN bitte verbinden.',
     },
     pt: {
         no_app_title: 'Não foi possível abrir', no_app: 'Não foi possível abrir o {via} neste telemóvel. Contacte-nos em {to}.',
@@ -162,7 +162,7 @@ const W = {
         request_ready: 'O seu pedido está pronto para enviar no {via}. {app} irá confirmar a marcação.', done: 'Feito',
         loyalty_card: 'Cartão de fidelidade', stamps_for: '{n} carimbos = {reward}', reward_ready: '🎉 O seu prémio está pronto: {reward}! Mostre isto ao funcionário.',
         get_reward: 'Receber o meu prémio', add_stamp: 'Adicionar carimbo', rewards_so_far: 'Prémios até agora: {n}', give_reward: 'Entregar o prémio',
-        hand_phone: 'Entregue o telemóvel a um funcionário.', staff_pin: 'PIN do funcionário', too_many: 'Demasiados PIN errados. Tente daqui a alguns minutos.', wrong_pin: 'Esse PIN não está correto.',
+        hand_phone: 'Entregue o telemóvel a um funcionário.', staff_pin: 'PIN do funcionário', too_many: 'Demasiados PIN errados. Tente daqui a alguns minutos.', wrong_pin: 'Esse PIN não está correto.', pin_offline: 'Sem internet: conecte-se para verificar o PIN.',
     },
     tr: {
         no_app_title: 'Açılamadı', no_app: 'Bu telefonda {via} açılamadı. Lütfen {to} üzerinden bize ulaşın.',
@@ -181,7 +181,7 @@ const W = {
         request_ready: 'İsteğiniz {via} içinde gönderilmeye hazır. {app} randevunuzu onaylayacak.', done: 'Tamam',
         loyalty_card: 'Sadakat kartı', stamps_for: '{n} damga = {reward}', reward_ready: '🎉 Ödülünüz hazır: {reward}! Bunu personele gösterin.',
         get_reward: 'Ödülümü al', add_stamp: 'Damga ekle', rewards_so_far: 'Şimdiye kadarki ödüller: {n}', give_reward: 'Ödülü ver',
-        hand_phone: 'Lütfen telefonunuzu bir personele verin.', staff_pin: 'Personel PIN', too_many: 'Çok fazla yanlış PIN. Birkaç dakika sonra tekrar deneyin.', wrong_pin: 'Bu PIN doğru değil.',
+        hand_phone: 'Lütfen telefonunuzu bir personele verin.', staff_pin: 'Personel PIN', too_many: 'Çok fazla yanlış PIN. Birkaç dakika sonra tekrar deneyin.', wrong_pin: 'Bu PIN doğru değil.', pin_offline: 'İnternet yok: PIN’i doğrulamak için bağlanın.',
     },
     id: {
         no_app_title: 'Tidak bisa dibuka', no_app: '{via} tidak bisa dibuka di ponsel ini. Silakan hubungi kami di {to}.',
@@ -200,7 +200,7 @@ const W = {
         request_ready: 'Permintaan Anda siap dikirim di {via}. {app} akan mengonfirmasi janji Anda.', done: 'Selesai',
         loyalty_card: 'Kartu loyalitas', stamps_for: '{n} stempel = {reward}', reward_ready: '🎉 Hadiah Anda siap: {reward}! Tunjukkan ini ke staf.',
         get_reward: 'Ambil hadiah saya', add_stamp: 'Tambah stempel', rewards_so_far: 'Hadiah sejauh ini: {n}', give_reward: 'Berikan hadiah',
-        hand_phone: 'Silakan berikan ponsel Anda ke staf.', staff_pin: 'PIN staf', too_many: 'Terlalu banyak PIN salah. Coba lagi beberapa menit lagi.', wrong_pin: 'PIN itu salah.',
+        hand_phone: 'Silakan berikan ponsel Anda ke staf.', staff_pin: 'PIN staf', too_many: 'Terlalu banyak PIN salah. Coba lagi beberapa menit lagi.', wrong_pin: 'PIN itu salah.', pin_offline: 'Tidak ada internet: sambungkan untuk memeriksa PIN.',
     },
     ru: {
         no_app_title: 'Не удалось открыть', no_app: 'Не удалось открыть {via} на этом телефоне. Свяжитесь с нами: {to}.',
@@ -219,7 +219,7 @@ const W = {
         request_ready: 'Запрос готов к отправке в {via}. {app} подтвердит вашу запись.', done: 'Готово',
         loyalty_card: 'Карта лояльности', stamps_for: '{n} штампов = {reward}', reward_ready: '🎉 Ваш подарок готов: {reward}! Покажите это сотруднику.',
         get_reward: 'Получить подарок', add_stamp: 'Добавить штамп', rewards_so_far: 'Получено подарков: {n}', give_reward: 'Выдать подарок',
-        hand_phone: 'Передайте телефон сотруднику.', staff_pin: 'PIN сотрудника', too_many: 'Слишком много неверных PIN. Попробуйте через несколько минут.', wrong_pin: 'Неверный PIN.',
+        hand_phone: 'Передайте телефон сотруднику.', staff_pin: 'PIN сотрудника', too_many: 'Слишком много неверных PIN. Попробуйте через несколько минут.', wrong_pin: 'Неверный PIN.', pin_offline: 'Нет интернета: подключитесь, чтобы проверить PIN.',
     },
     zh: {
         no_app_title: '无法打开', no_app: '无法在此手机上打开{via}。请通过 {to} 联系我们。',
@@ -238,7 +238,7 @@ const W = {
         request_ready: '您的请求已在{via}中准备好发送。{app} 会确认您的预约。', done: '完成',
         loyalty_card: '会员卡', stamps_for: '{n} 个印章 = {reward}', reward_ready: '🎉 您的奖励已就绪：{reward}！请向店员出示。',
         get_reward: '领取奖励', add_stamp: '盖章', rewards_so_far: '已获奖励：{n}', give_reward: '发放奖励',
-        hand_phone: '请将手机交给店员。', staff_pin: '店员 PIN', too_many: 'PIN 错误次数过多，请几分钟后再试。', wrong_pin: 'PIN 不正确。',
+        hand_phone: '请将手机交给店员。', staff_pin: '店员 PIN', too_many: 'PIN 错误次数过多，请几分钟后再试。', wrong_pin: 'PIN 不正确。', pin_offline: '没有网络：请联网以验证 PIN。',
     },
 };
 

@@ -25,6 +25,7 @@ Route::prefix('app-builds/{build}')->whereNumber('build')->middleware('throttle:
 });
 
 // Mobile app builder: one anonymous usage summary a day from each phone (app-shell/stats.js)
+Route::post('app-loyalty/{id}', [\App\Http\Controllers\Api\AppLoyaltyController::class, 'check'])->where('id', '[a-z0-9]{16}')->middleware('throttle:20,1,app-loyalty');
 Route::post('app-stats/{id}', [\App\Http\Controllers\Api\AppStatsController::class, 'store'])->where('id', '[a-z0-9]{16}')->middleware('throttle:30,1,app-stats');
 
 // Admin side

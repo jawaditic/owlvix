@@ -236,7 +236,8 @@ class AppContent
 
     /**
      * A loyalty card kept on the customer's phone: staff type a PIN on it to add a stamp or give the reward. Only a
-     * hash of the PIN is published (salted with the card's id), never the PIN itself.
+     * hash of the PIN is kept (salted with the card's id), never the PIN itself, and it isn't published: phones
+     * send the PIN to Api\AppLoyaltyController, which checks it and limits wrong tries.
      */
     private function loyalty(array $b): array
     {
@@ -584,9 +585,19 @@ class AppContent
 
         // Pages of a website show only once the owner has proved the site is theirs (see AppBuilder::allowed)
         $webOk = AppBuilder::allowed($app);
-        $tabs = fn (array $tabs) => $webOk ? $tabs : array_map(fn ($t) => ($t['type'] ?? '') !== 'web' ? $t
+        // the PIN's hash stays here: phones ask the website to check a PIN (Api\AppLoyaltyController), so it can't be guessed offline
+        $noPins = function (array $t) {
+            foreach ($t['blocks'] ?? [] as $i => $b) {
+                if (($b['type'] ?? '') === 'loyalty') {
+                    unset($t['blocks'][$i]['pinHash']);
+                }
+            }
+
+            return $t;
+        };
+        $tabs = fn (array $tabs) => array_map($noPins, $webOk ? $tabs : array_map(fn ($t) => ($t['type'] ?? '') !== 'web' ? $t
             : ['label' => $t['label'], 'icon' => $t['icon'], 'type' => 'screen', 'bar' => $t['bar'] ?? true, 'menu' => $t['menu'] ?? true,
-                'blocks' => [['type' => 'notice', 'text' => 'This page will appear soon.', 'tone' => 'info']]], $tabs);
+                'blocks' => [['type' => 'notice', 'text' => 'This page will appear soon.', 'tone' => 'info']]], $tabs));
 
         return [
             'v' => 1,

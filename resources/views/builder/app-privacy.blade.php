@@ -63,7 +63,7 @@
                 <li>Videos are shown with their picture from YouTube, and tapping one opens it in YouTube. Loading the picture and watching the video are covered by Google’s privacy policy.</li>
             @endif
             @if ($use['loyalty'] ?? false)
-                <li>Your loyalty card stamps are kept only on your phone; nobody else can see them. Uninstalling the app removes them.</li>
+                <li>Your loyalty card stamps are kept only on your phone; nobody else can see them. Uninstalling the app removes them. When staff type their PIN to add a stamp, the PIN and the card number are sent to owlvix.com only to check the PIN — nothing about you is sent or kept.</li>
             @endif
             @if ($use['bookings'] ?? false)
                 <li>When you ask for an appointment, the app opens WhatsApp or your email app with your request written out (the time, your name and phone number); you see it and send it yourself. The app doesn’t keep or send it anywhere else.</li>

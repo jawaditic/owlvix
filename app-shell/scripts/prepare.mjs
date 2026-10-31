@@ -54,6 +54,7 @@ const shell = {
     statusBar: job.statusBar === 'light' ? 'light' : 'dark',
     push: null, // set below when this build has push notifications
     statsUrl: job.statsUrl ? https(job.statsUrl) : null,
+    loyaltyUrl: job.loyaltyUrl ? https(job.loyaltyUrl) : null,
     splashWidth: Number.isInteger(job.splashWidth) && job.splashWidth >= 80 && job.splashWidth <= 300 ? job.splashWidth : 180,
     content,
 };

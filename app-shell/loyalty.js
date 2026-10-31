@@ -1,6 +1,7 @@
 // Loyalty card: stamps kept on this phone (one card per loyalty block, by its id). Staff type their PIN on the phone
-// to add a stamp, and again to give the reward when the card is full. The content only has a hash of the PIN
-// (sha256 of "card:PIN"); five wrong PINs lock the card for 10 minutes.
+// to add a stamp, and again to give the reward when the card is full. The website checks the PIN (shell.loyaltyUrl,
+// so the PIN can't be worked out from the content) and limits wrong tries; this phone also locks the card for 10
+// minutes after five wrong PINs. Only the demo build (no loyaltyUrl) checks a hash in its content instead.
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t } from './i18n';
@@ -10,6 +11,21 @@ import { Pop, Press } from './anim';
 import { Icon } from './blocks';
 import { str } from './content';
 import { Sheet } from './order';
+import Constants from 'expo-constants';
+
+const LOYALTY_URL = Constants.expoConfig?.extra?.shell?.loyaltyUrl || null;
+
+/** 'ok' | 'wrong' | 'locked' | 'offline' */
+async function checkPin(b, pin) {
+    if (!LOYALTY_URL) return b.pinHash && sha256(`${b.card}:${pin}`) === b.pinHash ? 'ok' : 'wrong';
+    try {
+        const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 12000);
+        const res = await fetch(LOYALTY_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ card: b.card, pin }), signal: ctrl.signal });
+        clearTimeout(timer);
+        if (res.ok) return 'ok';
+        return res.status === 429 ? 'locked' : res.status === 422 ? 'wrong' : 'offline';
+    } catch { return 'offline'; }
+}
 
 /* ---------- SHA-256 (small, for checking the staff PIN) ---------- */
 const K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
@@ -102,12 +118,19 @@ export function LoyaltyBlock({ b, ctx }) {
 function PinSheet({ visible, b, ctx, full, onClose, onDone }) {
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
+    const [busy, setBusy] = useState(false);
     const input = useRef(null);
     const close = () => { setPin(''); setError(''); onClose(); };
-    const check = () => {
+    const check = async () => {
+        if (busy || pin.length < 4) return;
         const c = cardOf(b.card);
         if (Date.now() < (c.lockedUntil || 0)) { setError(t('too_many')); return; }
-        if (sha256(`${b.card}:${pin}`) === b.pinHash) {
+        setBusy(true);
+        const result = await checkPin(b, pin);
+        setBusy(false);
+        if (result === 'offline') { setError(t('pin_offline')); return; }
+        if (result === 'locked') { setPin(''); setError(t('too_many')); return; }
+        if (result === 'ok') {
             c.wrong = 0; keep(); setPin(''); setError(''); onDone();
         } else {
             c.wrong = (c.wrong || 0) + 1;
@@ -122,7 +145,7 @@ function PinSheet({ visible, b, ctx, full, onClose, onDone }) {
             <TextInput ref={input} value={pin} onChangeText={v => setPin(v.replace(/\D/g, '').slice(0, 8))} placeholder={t('staff_pin')} keyboardType="number-pad" secureTextEntry
                 style={styles.input} onSubmitEditing={check} placeholderTextColor="#94a3b8" accessibilityLabel={t('staff_pin')} />
             {!!error && <Text style={styles.error}>{error}</Text>}
-            <Pressable disabled={pin.length < 4} onPress={check} style={[styles.btn, { backgroundColor: ctx.primary }, pin.length < 4 && { opacity: 0.45 }]} accessibilityRole="button">
+            <Pressable disabled={pin.length < 4 || busy} onPress={check} style={[styles.btn, { backgroundColor: ctx.primary }, (pin.length < 4 || busy) && { opacity: 0.45 }]} accessibilityRole="button" accessibilityState={{ busy, disabled: pin.length < 4 || busy }}>
                 <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{full ? t('give_reward') : t('add_stamp')}</Text>
             </Pressable>
         </Sheet>

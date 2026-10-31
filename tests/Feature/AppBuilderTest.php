@@ -671,7 +671,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern', 'nav' => 'floating', 'motion' => 'on'], $r['settings']['style']);
     }
 
-    public function test_loyalty_card_publishes_only_a_hash_of_the_pin(): void
+    public function test_loyalty_pin_is_checked_by_the_website_and_never_published(): void
     {
         $token = $this->signIn();
         $card = ['type' => 'loyalty', 'card' => 'abcd1234efgh', 'title' => 'Coffee card', 'reward' => 'Free coffee', 'stamps' => 10, 'pin' => '4821'];
@@ -692,6 +692,20 @@ class AppBuilderTest extends TestCase
         $this->assertSame(hash('sha256', 'abcd1234efgh:4821'), $b['pinHash']);
         $this->assertArrayNotHasKey('pin', $b);
         $this->assertStringNotContainsString('4821', File::get($this->public."/{$r['id']}/content.json"));
+        $this->assertArrayNotHasKey('pinHash', $this->contentFile($r['id'])['tabs'][0]['blocks'][0]); // nothing to guess offline
+
+        // Phones ask the website; wrong PINs are limited per card (all phones together)
+        $check = fn ($pin, $card = 'abcd1234efgh') => $this->postJson("/api/app-loyalty/{$r['id']}", ['card' => $card, 'pin' => $pin]);
+        $check('4821')->assertOk()->assertJsonPath('ok', true);
+        $check('1111')->assertStatus(422)->assertJsonPath('error', 'wrong');
+        $check('1111', 'zzzz9999zzzz')->assertNotFound();
+        $check(['4821'])->assertStatus(422);
+        $this->postJson('/api/app-loyalty/aaaaaaaaaaaaaaaa', ['card' => 'abcd1234efgh', 'pin' => '4821'])->assertNotFound();
+        \Illuminate\Support\Facades\RateLimiter::clear('app-loyalty');
+        for ($i = 0; $i < 11; $i++) {
+            \Illuminate\Support\Facades\RateLimiter::hit("app-loyalty:{$r['id']}:abcd1234efgh", 3600);
+        }
+        $check('4821')->assertStatus(429)->assertJsonPath('error', 'locked');
 
         // Saving again with only the hash keeps the PIN; a new PIN replaces it
         $again = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $with(['pin' => '', 'pinHash' => $b['pinHash']] + $card)])->assertOk()->json('app.tabs.0.blocks.0');
@@ -894,6 +908,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame('com.joesbakery.app', $job['package']);
         $this->assertSame(1, $job['versionCode']);
         $this->assertSame("https://owlvix.test/app-data/{$id}/content.json", $job['contentUrl']);
+        $this->assertSame("https://owlvix.test/api/app-loyalty/{$id}", $job['loyaltyUrl']);
         $this->assertSame($this->contentFile($id), $job['content']); // built in, so the app works offline from the start
         $this->assertSame(['sites.owlvix.test'], $job['content']['hosts']);
         $this->assertSame('#16a34a', $job['colors']['primary']);
