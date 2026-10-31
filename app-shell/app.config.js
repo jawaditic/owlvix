@@ -34,7 +34,7 @@ module.exports = {
     ios: { bundleIdentifier: shell.package, buildNumber: String(shell.versionCode) },
     plugins: [
         ['expo-splash-screen', { image: './assets/splash.png', imageWidth: shell.splashWidth || 180, resizeMode: 'contain', backgroundColor: shell.colors.splash }],
-        ['expo-build-properties', { android: { usesCleartextTraffic: false, enableMinifyInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true } }],
+        ['expo-build-properties', { android: { usesCleartextTraffic: false, enableMinifyInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: false } }],
         './plugins/with-release-signing',
         './plugins/with-bundled-images',
         ...(push ? [

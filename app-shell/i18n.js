@@ -10,6 +10,7 @@ export const RTL = ['ar', 'ur'];
 
 const W = {
     en: {
+        no_app_title: 'Couldn’t open it', no_app: "We couldn’t open {via} on this phone. Please contact us at {to}.",
         offline_title: 'You’re offline', offline_text: 'Check your internet connection and try again.', try_again: 'Try again', skip: 'Skip',
         open_menu: 'Open menu', close: 'Close', made_with: 'Made with Owlvix', report: 'Report this app', language: 'Language', nothing_here: 'Nothing here yet.',
         ask_us: 'Ask us', price_on_request: 'Price on request', how_many: 'How many', one_more: 'One more', one_less: 'One less',
@@ -31,6 +32,7 @@ const W = {
         m_service: 'Service', m_when: 'When', m_sent_from: '(Sent from the {app} app)', m_order_subject: 'Order from the {app} app', m_book_subject: 'Booking request from the {app} app',
     },
     ar: {
+        no_app_title: 'تعذّر الفتح', no_app: 'تعذّر فتح {via} على هذا الهاتف. تواصل معنا على {to}.',
         offline_title: 'لا يوجد اتصال', offline_text: 'تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.', try_again: 'حاول مرة أخرى', skip: 'تخطٍّ',
         open_menu: 'فتح القائمة', close: 'إغلاق', made_with: 'صُنع باستخدام Owlvix', report: 'الإبلاغ عن التطبيق', language: 'اللغة', nothing_here: 'لا يوجد شيء هنا بعد.',
         ask_us: 'اسألنا', price_on_request: 'السعر عند الطلب', how_many: 'الكمية', one_more: 'واحد إضافي', one_less: 'واحد أقل',
@@ -49,6 +51,7 @@ const W = {
         hand_phone: 'من فضلك سلّم هاتفك لأحد الموظفين.', staff_pin: 'رمز الموظف', too_many: 'محاولات خاطئة كثيرة. حاول بعد بضع دقائق.', wrong_pin: 'الرمز غير صحيح.',
     },
     ur: {
+        no_app_title: 'نہیں کھل سکا', no_app: 'اس فون پر {via} نہیں کھل سکا۔ براہ کرم {to} پر ہم سے رابطہ کریں۔',
         offline_title: 'آپ آف لائن ہیں', offline_text: 'اپنا انٹرنیٹ کنکشن چیک کریں اور دوبارہ کوشش کریں۔', try_again: 'دوبارہ کوشش کریں', skip: 'چھوڑیں',
         open_menu: 'مینو کھولیں', close: 'بند کریں', made_with: 'Owlvix سے بنایا گیا', report: 'اس ایپ کی رپورٹ کریں', language: 'زبان', nothing_here: 'یہاں ابھی کچھ نہیں ہے۔',
         ask_us: 'ہم سے پوچھیں', price_on_request: 'قیمت پوچھنے پر', how_many: 'کتنے', one_more: 'ایک اور', one_less: 'ایک کم',
@@ -67,6 +70,7 @@ const W = {
         hand_phone: 'براہ کرم اپنا فون عملے کے کسی رکن کو دیں۔', staff_pin: 'عملے کا PIN', too_many: 'بہت زیادہ غلط PIN۔ چند منٹ بعد کوشش کریں۔', wrong_pin: 'یہ PIN درست نہیں۔',
     },
     hi: {
+        no_app_title: 'खुल नहीं सका', no_app: 'इस फ़ोन पर {via} नहीं खुल सका। कृपया {to} पर हमसे संपर्क करें।',
         offline_title: 'आप ऑफ़लाइन हैं', offline_text: 'अपना इंटरनेट कनेक्शन जाँचें और फिर कोशिश करें।', try_again: 'फिर कोशिश करें', skip: 'छोड़ें',
         open_menu: 'मेनू खोलें', close: 'बंद करें', made_with: 'Owlvix से बनाया गया', report: 'इस ऐप की रिपोर्ट करें', language: 'भाषा', nothing_here: 'यहाँ अभी कुछ नहीं है।',
         ask_us: 'हमसे पूछें', price_on_request: 'कीमत पूछने पर', how_many: 'कितने', one_more: 'एक और', one_less: 'एक कम',
@@ -85,6 +89,7 @@ const W = {
         hand_phone: 'कृपया अपना फ़ोन स्टाफ़ को दें।', staff_pin: 'स्टाफ़ PIN', too_many: 'बहुत सारे गलत PIN। कुछ मिनट बाद कोशिश करें।', wrong_pin: 'यह PIN सही नहीं है।',
     },
     es: {
+        no_app_title: 'No se pudo abrir', no_app: 'No pudimos abrir {via} en este teléfono. Escríbenos a {to}.',
         offline_title: 'Sin conexión', offline_text: 'Revisa tu conexión a internet y vuelve a intentarlo.', try_again: 'Reintentar', skip: 'Saltar',
         open_menu: 'Abrir menú', close: 'Cerrar', made_with: 'Hecho con Owlvix', report: 'Denunciar esta app', language: 'Idioma', nothing_here: 'Aún no hay nada aquí.',
         ask_us: 'Pregúntanos', price_on_request: 'Precio a consultar', how_many: 'Cantidad', one_more: 'Uno más', one_less: 'Uno menos',
@@ -103,6 +108,7 @@ const W = {
         hand_phone: 'Entrega tu teléfono a un miembro del personal.', staff_pin: 'PIN del personal', too_many: 'Demasiados PIN incorrectos. Inténtalo en unos minutos.', wrong_pin: 'Ese PIN no es correcto.',
     },
     fr: {
+        no_app_title: 'Impossible d’ouvrir', no_app: "Impossible d’ouvrir {via} sur ce téléphone. Contactez-nous à {to}.",
         offline_title: 'Hors ligne', offline_text: 'Vérifiez votre connexion internet et réessayez.', try_again: 'Réessayer', skip: 'Passer',
         open_menu: 'Ouvrir le menu', close: 'Fermer', made_with: 'Créé avec Owlvix', report: 'Signaler cette app', language: 'Langue', nothing_here: 'Rien ici pour le moment.',
         ask_us: 'Nous demander', price_on_request: 'Prix sur demande', how_many: 'Quantité', one_more: 'Un de plus', one_less: 'Un de moins',
@@ -121,6 +127,7 @@ const W = {
         hand_phone: 'Veuillez tendre votre téléphone à un membre du personnel.', staff_pin: 'Code du personnel', too_many: 'Trop de codes erronés. Réessayez dans quelques minutes.', wrong_pin: 'Ce code est incorrect.',
     },
     de: {
+        no_app_title: 'Konnte nicht geöffnet werden', no_app: '{via} lässt sich auf diesem Handy nicht öffnen. Bitte schreib uns an {to}.',
         offline_title: 'Du bist offline', offline_text: 'Prüfe deine Internetverbindung und versuche es erneut.', try_again: 'Erneut versuchen', skip: 'Überspringen',
         open_menu: 'Menü öffnen', close: 'Schließen', made_with: 'Erstellt mit Owlvix', report: 'Diese App melden', language: 'Sprache', nothing_here: 'Hier ist noch nichts.',
         ask_us: 'Frag uns', price_on_request: 'Preis auf Anfrage', how_many: 'Menge', one_more: 'Eins mehr', one_less: 'Eins weniger',
@@ -139,6 +146,7 @@ const W = {
         hand_phone: 'Bitte gib dein Handy einem Mitarbeiter.', staff_pin: 'Mitarbeiter-PIN', too_many: 'Zu viele falsche PINs. Bitte in ein paar Minuten erneut versuchen.', wrong_pin: 'Diese PIN ist falsch.',
     },
     pt: {
+        no_app_title: 'Não foi possível abrir', no_app: 'Não foi possível abrir o {via} neste telemóvel. Contacte-nos em {to}.',
         offline_title: 'Sem ligação', offline_text: 'Verifique a sua ligação à internet e tente novamente.', try_again: 'Tentar novamente', skip: 'Saltar',
         open_menu: 'Abrir menu', close: 'Fechar', made_with: 'Feito com Owlvix', report: 'Denunciar esta app', language: 'Idioma', nothing_here: 'Ainda não há nada aqui.',
         ask_us: 'Pergunte-nos', price_on_request: 'Preço sob consulta', how_many: 'Quantidade', one_more: 'Mais um', one_less: 'Menos um',
@@ -157,6 +165,7 @@ const W = {
         hand_phone: 'Entregue o telemóvel a um funcionário.', staff_pin: 'PIN do funcionário', too_many: 'Demasiados PIN errados. Tente daqui a alguns minutos.', wrong_pin: 'Esse PIN não está correto.',
     },
     tr: {
+        no_app_title: 'Açılamadı', no_app: 'Bu telefonda {via} açılamadı. Lütfen {to} üzerinden bize ulaşın.',
         offline_title: 'Çevrimdışısınız', offline_text: 'İnternet bağlantınızı kontrol edip tekrar deneyin.', try_again: 'Tekrar dene', skip: 'Geç',
         open_menu: 'Menüyü aç', close: 'Kapat', made_with: 'Owlvix ile yapıldı', report: 'Bu uygulamayı bildir', language: 'Dil', nothing_here: 'Burada henüz bir şey yok.',
         ask_us: 'Bize sorun', price_on_request: 'Fiyat sorunuz', how_many: 'Adet', one_more: 'Bir tane daha', one_less: 'Bir tane az',
@@ -175,6 +184,7 @@ const W = {
         hand_phone: 'Lütfen telefonunuzu bir personele verin.', staff_pin: 'Personel PIN', too_many: 'Çok fazla yanlış PIN. Birkaç dakika sonra tekrar deneyin.', wrong_pin: 'Bu PIN doğru değil.',
     },
     id: {
+        no_app_title: 'Tidak bisa dibuka', no_app: '{via} tidak bisa dibuka di ponsel ini. Silakan hubungi kami di {to}.',
         offline_title: 'Anda sedang offline', offline_text: 'Periksa koneksi internet Anda lalu coba lagi.', try_again: 'Coba lagi', skip: 'Lewati',
         open_menu: 'Buka menu', close: 'Tutup', made_with: 'Dibuat dengan Owlvix', report: 'Laporkan aplikasi ini', language: 'Bahasa', nothing_here: 'Belum ada apa-apa di sini.',
         ask_us: 'Tanya kami', price_on_request: 'Harga atas permintaan', how_many: 'Jumlah', one_more: 'Tambah satu', one_less: 'Kurangi satu',
@@ -193,6 +203,7 @@ const W = {
         hand_phone: 'Silakan berikan ponsel Anda ke staf.', staff_pin: 'PIN staf', too_many: 'Terlalu banyak PIN salah. Coba lagi beberapa menit lagi.', wrong_pin: 'PIN itu salah.',
     },
     ru: {
+        no_app_title: 'Не удалось открыть', no_app: 'Не удалось открыть {via} на этом телефоне. Свяжитесь с нами: {to}.',
         offline_title: 'Нет подключения', offline_text: 'Проверьте подключение к интернету и попробуйте снова.', try_again: 'Повторить', skip: 'Пропустить',
         open_menu: 'Открыть меню', close: 'Закрыть', made_with: 'Сделано в Owlvix', report: 'Пожаловаться на приложение', language: 'Язык', nothing_here: 'Здесь пока ничего нет.',
         ask_us: 'Уточните у нас', price_on_request: 'Цена по запросу', how_many: 'Количество', one_more: 'Ещё один', one_less: 'На один меньше',
@@ -211,6 +222,7 @@ const W = {
         hand_phone: 'Передайте телефон сотруднику.', staff_pin: 'PIN сотрудника', too_many: 'Слишком много неверных PIN. Попробуйте через несколько минут.', wrong_pin: 'Неверный PIN.',
     },
     zh: {
+        no_app_title: '无法打开', no_app: '无法在此手机上打开{via}。请通过 {to} 联系我们。',
         offline_title: '当前离线', offline_text: '请检查网络连接后重试。', try_again: '重试', skip: '跳过',
         open_menu: '打开菜单', close: '关闭', made_with: '由 Owlvix 制作', report: '举报此应用', language: '语言', nothing_here: '这里还没有内容。',
         ask_us: '咨询我们', price_on_request: '价格面议', how_many: '数量', one_more: '加一', one_less: '减一',

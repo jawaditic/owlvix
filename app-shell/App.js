@@ -17,7 +17,7 @@ import { WebView } from 'react-native-webview';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import INTRO from './intro';
 import { Block, Empty, Icon, isDark } from './blocks';
-import { color, fetchContent, setBundled, startContent, str } from './content';
+import { color, fetchContent, setBundled, startContent, str, usableTabs } from './content';
 import { countOpen, countPage, sendStats } from './stats';
 import { OrderButton, OrderSheet, ProductSheet } from './order';
 import { BookingSheet } from './booking';
@@ -60,11 +60,13 @@ function Intro({ onDone }) {
     const fade = useRef(new Animated.Value(1)).current;
     const done = useRef(false);
     const insets = useSafeAreaInsets();
+    const onDoneRef = useRef(onDone);
+    onDoneRef.current = onDone;
     const finish = useCallback(() => {
         if (done.current) return;
         done.current = true;
-        Animated.timing(fade, { toValue: 0, duration: 350, useNativeDriver: true }).start(onDone);
-    }, [fade, onDone]);
+        Animated.timing(fade, { toValue: 0, duration: 350, useNativeDriver: true }).start(() => onDoneRef.current());
+    }, [fade]);
     useEffect(() => {
         const t = setTimeout(finish, INTRO.type === 'image' ? INTRO_PICTURE_MS : INTRO_MAX_MS);
         return () => clearTimeout(t);
@@ -108,7 +110,7 @@ function Screen({ tab, ctx, register, index }) {
         await ctx.refresh();
         setRefreshing(false);
     }, [ctx]);
-    const blocks = tab.blocks.filter(b => b && typeof b === 'object');
+    const blocks = (Array.isArray(tab.blocks) ? tab.blocks : []).filter(b => b && typeof b === 'object');
     return (
         <ScrollView ref={ref} style={styles.screen} contentContainerStyle={styles.screenInner}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[ctx.primary]} />}>
@@ -182,6 +184,14 @@ function Shell() {
     stateRef.current = state;
     const doc = state.doc;
     const [active, setActive] = useState(0);
+    const [menu, setMenu] = useState(false);
+    const [intro, setIntro] = useState(!!INTRO?.source);
+    const [banner, setBanner] = useState(null); // a notification that arrived while the app was open
+    const [cart, setCart] = useState([]);       // the order basket: [{ name, price, qty }]
+    const [product, setProduct] = useState(null);
+    const [orderOpen, setOrderOpen] = useState(false);
+    const [booking, setBooking] = useState(null); // the booking block being filled in
+    const [sheetKey, setSheetKey] = useState(0);  // a new key each time a sheet opens, so it starts fresh
     const [opened, setOpened] = useState([0]); // tabs shown so far (kept, so each tab remembers its place)
     const pages = useRef({});
     const lastCheck = useRef(0);
@@ -197,10 +207,10 @@ function Shell() {
     const [chosenLang, setChosenLang] = useState(savedLanguage);
     const mainLang = typeof doc?.lang === 'string' ? doc.lang : 'en';
     const translations = doc?.translations && typeof doc.translations === 'object' ? doc.translations : {};
-    const languages = [mainLang, ...Object.keys(translations).filter(l => Array.isArray(translations[l]?.tabs) && translations[l].tabs.length)];
+    const languages = [mainLang, ...Object.keys(translations).filter(l => l !== mainLang && usableTabs(translations[l]?.tabs))];
     const lang = languages.includes(chosenLang) ? chosenLang : languages.includes(phoneLanguage()) ? phoneLanguage() : mainLang;
     setLanguage(lang); // the app's own words follow
-    const pickLanguage = l => { setChosenLang(l); try { Promise.resolve(langFile().write(l)).catch(() => {}); } catch {} };
+    const pickLanguage = l => { setChosenLang(l); try { langFile().writeSync(l); } catch {} };
     const tabs = (lang === mainLang ? doc?.tabs : translations[lang]?.tabs) ?? [];
     // The owner's look (light/dark, corners, font): every file's styles are rebuilt before the screens draw
     const scheme = useColorScheme();
@@ -229,8 +239,8 @@ function Shell() {
             },
             openUrl: openOutside,
             shop: doc?.shop && typeof doc.shop === 'object' ? doc.shop : null,
-            openProduct: p => setProduct(p),
-            openBooking: b => setBooking(b),
+            openProduct: p => { setSheetKey(k => k + 1); setProduct(p); },
+            openBooking: b => { setSheetKey(k => k + 1); setBooking(b); },
             lang,
             mainLang,
             insets,
@@ -287,13 +297,6 @@ function Shell() {
     const bar = tabs.map((t, i) => i).filter(i => (tabs[i].bar === undefined ? i < 5 : !!tabs[i].bar)).slice(0, 5);
     const inMenu = tabs.map((t, i) => i).filter(i => (tabs[i].menu === undefined ? !bar.includes(i) : !!tabs[i].menu));
     const hasMenu = doc?.menu !== 'hide' && (inMenu.length > 0 || languages.length > 1); // (the language picker is in the menu)
-    const [menu, setMenu] = useState(false);
-    const [intro, setIntro] = useState(!!INTRO?.source);
-    const [banner, setBanner] = useState(null); // a notification that arrived while the app was open
-    const [cart, setCart] = useState([]);       // the order basket: [{ name, price, qty }]
-    const [product, setProduct] = useState(null);
-    const [orderOpen, setOrderOpen] = useState(false);
-    const [booking, setBooking] = useState(null); // the booking block being filled in
 
     // New content may have fewer tabs
     useEffect(() => {
@@ -394,12 +397,12 @@ function Shell() {
             ) : (
                 <View style={{ height: insets.bottom, backgroundColor: C.bar }} />
             )}
-            <ProductSheet product={product} ctx={ctx} insets={insets} onClose={() => setProduct(null)}
+            <ProductSheet key={`p${sheetKey}`} product={product} ctx={ctx} insets={insets} onClose={() => setProduct(null)}
                 onAdd={(p, qty) => {
                     setCart(c => { const i = c.findIndex(l => l.name === p.name && l.price === p.price); return i < 0 ? [...c, { name: p.name, price: p.price, qty }] : c.map((l, j) => (j === i ? { ...l, qty: Math.min(99, l.qty + qty) } : l)); });
                     setProduct(null);
                 }} />
-            <BookingSheet block={booking} ctx={ctx} insets={insets} appName={str(shell.name)} onClose={() => setBooking(null)} />
+            <BookingSheet key={`b${sheetKey}`} block={booking} ctx={ctx} insets={insets} appName={str(shell.name)} onClose={() => setBooking(null)} />
             <OrderSheet visible={orderOpen} cart={cart} setCart={setCart} ctx={ctx} insets={insets} appName={str(shell.name)} onClose={() => setOrderOpen(false)} />
             {banner && (
                 <Pressable onPress={() => { if (/^\d+$/.test(banner.tab || '')) ctx.openTab(+banner.tab); setBanner(null); }} accessibilityRole="button"

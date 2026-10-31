@@ -1,7 +1,7 @@
 // Loyalty card: stamps kept on this phone (one card per loyalty block, by its id). Staff type their PIN on the phone
 // to add a stamp, and again to give the reward when the card is full. The content only has a hash of the PIN
 // (sha256 of "card:PIN"); five wrong PINs lock the card for 10 minutes.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t } from './i18n';
 import { File, Paths } from 'expo-file-system';
@@ -51,7 +51,7 @@ const load = () => {
     if (!saved || typeof saved !== 'object') saved = {};
     return saved;
 };
-const keep = () => { try { Promise.resolve(file().write(JSON.stringify(saved))).catch(() => {}); } catch {} };
+const keep = () => { try { file().writeSync(JSON.stringify(saved)); } catch {} };
 const cardOf = id => (load()[id] ??= { stamps: 0, rewards: 0, wrong: 0, lockedUntil: 0 });
 
 let styles;
@@ -99,6 +99,7 @@ export function LoyaltyBlock({ b, ctx }) {
 function PinSheet({ visible, b, ctx, full, onClose, onDone }) {
     const [pin, setPin] = useState('');
     const [error, setError] = useState('');
+    const input = useRef(null);
     const close = () => { setPin(''); setError(''); onClose(); };
     const check = () => {
         const c = cardOf(b.card);
@@ -112,11 +113,11 @@ function PinSheet({ visible, b, ctx, full, onClose, onDone }) {
         }
     };
     return (
-        <Sheet visible={visible} onClose={close} insets={ctx.insets || { bottom: 0 }}>
+        <Sheet visible={visible} onClose={close} insets={ctx.insets || { bottom: 0 }} onShow={() => setTimeout(() => input.current?.focus(), 150)}>
             <Text style={styles.sheetTitle}>{full ? t('give_reward') : t('add_stamp')}</Text>
             <Text style={styles.text}>{t('hand_phone')}</Text>
-            <TextInput value={pin} onChangeText={v => setPin(v.replace(/\D/g, '').slice(0, 8))} placeholder={t('staff_pin')} keyboardType="number-pad" secureTextEntry
-                style={styles.input} autoFocus onSubmitEditing={check} placeholderTextColor="#94a3b8" accessibilityLabel={t('staff_pin')} />
+            <TextInput ref={input} value={pin} onChangeText={v => setPin(v.replace(/\D/g, '').slice(0, 8))} placeholder={t('staff_pin')} keyboardType="number-pad" secureTextEntry
+                style={styles.input} onSubmitEditing={check} placeholderTextColor="#94a3b8" accessibilityLabel={t('staff_pin')} />
             {!!error && <Text style={styles.error}>{error}</Text>}
             <Pressable disabled={pin.length < 4} onPress={check} style={[styles.btn, { backgroundColor: ctx.primary }, pin.length < 4 && { opacity: 0.45 }]} accessibilityRole="button">
                 <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{full ? t('give_reward') : t('add_stamp')}</Text>

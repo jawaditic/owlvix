@@ -2,7 +2,7 @@
 // order is written out and opened in WhatsApp or the email app, so the customer sees it and sends it themselves to
 // the owner (shop settings in the content: currency, WhatsApp number, email, a note such as "Pay on collection").
 import { useState } from 'react';
-import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t, tIn } from './i18n';
 import { onLook } from './theme';
 import { Icon, money } from './blocks';
@@ -22,9 +22,9 @@ const Stepper = ({ value, onChange, color, label }) => (
 );
 
 /** A bottom sheet over the app. */
-export function Sheet({ visible, onClose, children, insets }) {
+export function Sheet({ visible, onClose, children, insets, onShow }) {
     return (
-        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onShow={onShow} statusBarTranslucent>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheetWrap}>
                 <Pressable style={styles.shade} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('close')} />
                 <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
@@ -43,7 +43,7 @@ export function ProductSheet({ product, ctx, insets, onClose, onAdd }) {
     return (
         <Sheet visible={!!product} onClose={onClose} insets={insets}>
             {product && (
-                <ScrollView style={{ maxHeight: 560 }} contentContainerStyle={{ gap: 10 }}>
+                <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 10 }}>
                     {img && <Image source={{ uri: img.uri }} style={[styles.bigImg, { aspectRatio: Math.max(1, Math.min(img.ratio, 2)) }]} resizeMode="cover" />}
                     <Text style={styles.title}>{product.name}</Text>
                     <Text style={[styles.price, { color: ctx.primary }]}>{typeof product.price === 'number' ? money(product.price, ctx.shop) : t('price_on_request')}</Text>
@@ -96,7 +96,7 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
         const url = how === 'whatsapp'
             ? `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(text)}`
             : `mailto:${shop.email}?subject=${encodeURIComponent(tIn(ml, 'm_order_subject', { app: appName }))}&body=${encodeURIComponent(text)}`;
-        Linking.openURL(url).then(() => setSent(true)).catch(() => {});
+        Linking.openURL(url).then(() => setSent(true)).catch(() => Alert.alert(t('no_app_title'), t('no_app', { via: how === 'whatsapp' ? t('whatsapp_app') : t('email_app'), to: how === 'whatsapp' ? '+' + shop.whatsapp : shop.email })));
     };
     const close = () => { setSent(false); onClose(); };
     return (
@@ -111,7 +111,7 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
                     <Pressable onPress={() => setSent(false)} style={styles.link} accessibilityRole="button"><Text style={[styles.linkText, { color: ctx.primary }]}>{t('back_to_order')}</Text></Pressable>
                 </View>
             ) : (
-                <ScrollView style={{ maxHeight: 560 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
+                <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
                     {cart.map((l, i) => (
                         <View key={i} style={styles.line}>
                             <View style={{ flex: 1 }}>
@@ -146,7 +146,7 @@ let T;
 const makeStyles = (t, r, f) => StyleSheet.create({
     sheetWrap: { flex: 1, justifyContent: 'flex-end' },
     shade: { ...StyleSheet.absoluteFillObject, backgroundColor: t.shade },
-    sheet: { backgroundColor: t.card, borderTopLeftRadius: r(22), borderTopRightRadius: r(22), paddingHorizontal: 18, paddingTop: 10, gap: 10, elevation: 16 },
+    sheet: { maxHeight: '92%', flexShrink: 1, backgroundColor: t.card, borderTopLeftRadius: r(22), borderTopRightRadius: r(22), paddingHorizontal: 18, paddingTop: 10, gap: 10, elevation: 16 },
     grip: { alignSelf: 'center', width: 40, height: 5, borderRadius: r(3), backgroundColor: t.soft, marginBottom: 6 },
     bigImg: { width: '100%', borderRadius: r(16), backgroundColor: t.soft },
     title: { fontFamily: f, fontSize: 22, fontWeight: '800', color: t.ink },

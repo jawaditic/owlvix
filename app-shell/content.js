@@ -8,10 +8,12 @@ const HEX = /^#[0-9a-f]{6}$/i;
 const IMAGE = /^[a-f0-9]{20}\.(jpg|png|webp)$/;
 
 /** A content document we can show: anything else is ignored. */
+/** A list of pages we can show (the main language's, or a translation's). */
+export const usableTabs = tabs => Array.isArray(tabs) && tabs.length > 0 && tabs.length <= 15
+    && tabs.every(t => t && typeof t === 'object' && typeof t.label === 'string' && (t.type === 'web' ? typeof t.url === 'string' : Array.isArray(t.blocks)));
+
 export const usable = doc => !!doc && typeof doc === 'object' && doc.v === 1 && Number.isFinite(doc.rev)
-    && typeof doc.base === 'string' && /^https:\/\//.test(doc.base)
-    && Array.isArray(doc.tabs) && doc.tabs.length > 0 && doc.tabs.length <= 15
-    && doc.tabs.every(t => t && typeof t.label === 'string' && (t.type === 'web' ? typeof t.url === 'string' : Array.isArray(t.blocks)));
+    && typeof doc.base === 'string' && /^https:\/\//.test(doc.base) && usableTabs(doc.tabs);
 
 const cacheFile = () => new File(Paths.document, 'owlvix-content.json');
 
@@ -38,7 +40,7 @@ export async function fetchContent(url, current) {
         const doc = await res.json();
         if (!usable(doc) || (current?.doc && doc.rev < current.doc.rev)) return null;
         const next = { doc, etag: res.headers.get('etag') };
-        try { Promise.resolve(cacheFile().write(JSON.stringify(next))).catch(() => {}); } catch {}
+        try { cacheFile().writeSync(JSON.stringify(next)); } catch {}
         return next;
     } catch {
         return null;

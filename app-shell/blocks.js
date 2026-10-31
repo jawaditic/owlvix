@@ -22,7 +22,7 @@ export const isDark = hex => {
 export function Icon({ name, color, size = 24, width = 1.8 }) {
     return (
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
-            <Path d={ICONS[name] ?? ICONS.home} />
+            <Path d={Object.prototype.hasOwnProperty.call(ICONS, name) ? ICONS[name] : ICONS.home} />
         </Svg>
     );
 }
@@ -133,7 +133,7 @@ function Gallery({ b, ctx }) {
                     <FlatList data={imgs} horizontal pagingEnabled initialScrollIndex={Math.max(open, 0)} keyExtractor={(_, i) => String(i)}
                         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })} showsHorizontalScrollIndicator={false}
                         renderItem={({ item }) => <Image source={{ uri: item.uri }} style={{ width, height: '100%' }} resizeMode="contain" />} />
-                    <Pressable onPress={() => setOpen(-1)} style={styles.close} accessibilityRole="button" accessibilityLabel={t('close')}>
+                    <Pressable onPress={() => setOpen(-1)} style={[styles.close, { top: (ctx.insets?.top || 32) + 12 }]} accessibilityRole="button" accessibilityLabel={t('close')}>
                         <Text style={styles.closeText}>✕</Text>
                     </Pressable>
                 </View>
@@ -224,14 +224,16 @@ function Slider({ b, ctx }) {
 
 /** Feature cards: an icon, a title and a line, in one or two columns. */
 function Cards({ b, ctx }) {
+    const { width } = useWindowDimensions();
     const items = Array.isArray(b.items) ? b.items : [];
     const two = b.columns !== 1;
+    const cardW = Math.floor((width - 32 - 10) / 2); // two per row on any screen width
     return (
         <View style={styles.pad}>
             {!!str(b.title) && <Text style={styles.cardTitle} accessibilityRole="header">{b.title}</Text>}
             <View style={[styles.grid, { gap: 10 }]}>
                 {items.map((it, i) => (
-                    <Tap key={i} act={it?.action} ctx={ctx} label={str(it?.title)} style={[styles.feature, { width: two ? '48.4%' : '100%' }]}>
+                    <Tap key={i} act={it?.action} ctx={ctx} label={str(it?.title)} style={[styles.feature, { width: two ? cardW : '100%' }]}>
                         <View style={[styles.featureIc, { backgroundColor: ctx.primary + '1a' }]}><Icon name={it?.icon} color={ctx.primary} size={22} /></View>
                         {!!str(it?.title) && <Text style={styles.featureTitle}>{it.title}</Text>}
                         {!!str(it?.text) && <Text style={styles.rowText}>{it.text}</Text>}
@@ -420,7 +422,7 @@ const makeStyles = (t, r, f) => StyleSheet.create({
     hoursTime: { fontFamily: f, fontSize: 15, color: t.muted },
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
     viewer: { flex: 1, backgroundColor: '#000' },
-    close: { position: 'absolute', top: 44, right: 16, width: 44, height: 44, borderRadius: r(22), backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+    close: { position: 'absolute', top: 12, right: 16, width: 44, height: 44, borderRadius: r(22), backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
     closeText: { fontFamily: f, color: '#fff', fontSize: 20, fontWeight: '700' },
     video: { width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', borderRadius: r(14) },
     play: { width: 64, height: 64, borderRadius: r(32), backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', paddingLeft: 4 },

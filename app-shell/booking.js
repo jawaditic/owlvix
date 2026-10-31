@@ -2,7 +2,7 @@
 // send it to the owner on WhatsApp or by email (they confirm it). Days, hours and slot length come from the block;
 // there's no calendar on a server, so the owner keeps track of what's taken.
 import { useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { dateNames, t, tIn } from './i18n';
 import { onLook } from './theme';
 import { Icon } from './blocks';
@@ -96,7 +96,7 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
         const url = how === 'whatsapp'
             ? `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(text)}`
             : `mailto:${shop.email}?subject=${encodeURIComponent(tIn(ml, 'm_book_subject', { app: appName }))}&body=${encodeURIComponent(text)}`;
-        Linking.openURL(url).then(() => setSent(true)).catch(() => {});
+        Linking.openURL(url).then(() => setSent(true)).catch(() => Alert.alert(t('no_app_title'), t('no_app', { via: how === 'whatsapp' ? t('whatsapp_app') : t('email_app'), to: how === 'whatsapp' ? '+' + shop.whatsapp : shop.email })));
     };
 
     return (
@@ -110,7 +110,7 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
                     </Pressable>
                 </View>
             ) : (
-                <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
+                <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
                     {services.length > 0 && <>
                         <Text style={styles.step}>{t('service')}</Text>
                         <View style={styles.wrap}>
