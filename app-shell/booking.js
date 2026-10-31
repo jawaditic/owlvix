@@ -166,26 +166,26 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
 
 let styles;
 let T;
-const makeStyles = (t, r, f) => StyleSheet.create({
-    card: { marginHorizontal: 16, marginTop: 14, backgroundColor: t.card, borderRadius: r(18), padding: 18, gap: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: t.border },
+const makeStyles = (t, r, f, h) => StyleSheet.create({
+    card: { marginHorizontal: 16, marginTop: 14, backgroundColor: t.card, borderRadius: r(20), padding: 18, gap: 10, ...t.lift },
     badge: { width: 44, height: 44, borderRadius: r(14), alignItems: 'center', justifyContent: 'center' },
-    title: { fontFamily: f, fontSize: 20, fontWeight: '800', color: t.ink },
-    sheetTitle: { fontFamily: f, fontSize: 22, fontWeight: '800', color: t.ink },
+    title: { fontFamily: h, fontSize: 21, fontWeight: '700', color: t.ink },
+    sheetTitle: { fontFamily: h, fontSize: 24, fontWeight: '700', color: t.ink, letterSpacing: -0.2 },
     text: { fontFamily: f, fontSize: 15, lineHeight: 22, color: t.text },
     services: { gap: 6 },
     service: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.line },
     serviceName: { fontFamily: f, fontSize: 15, fontWeight: '600', color: t.ink, flexShrink: 1 },
     muted: { fontFamily: f, fontSize: 14, color: t.muted },
-    btn: { borderRadius: r(14), paddingVertical: 15, alignItems: 'center', marginTop: 4 },
+    btn: { borderRadius: r(18), minHeight: 56, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', marginTop: 4, ...t.liftSmall },
     btnText: { fontFamily: f, fontSize: 16, fontWeight: '700' },
     off: { opacity: 0.45 },
     step: { fontFamily: f, fontSize: 13, fontWeight: '700', color: t.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
     wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { minWidth: 64, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: r(12), borderWidth: 1.5, borderColor: t.border, backgroundColor: t.card },
+    chip: { minWidth: 64, alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: r(16), borderWidth: 1.5, borderColor: 'transparent', backgroundColor: t.card, ...t.liftSmall },
     chipWide: { alignItems: 'flex-start' },
     chipText: { fontFamily: f, fontSize: 15, fontWeight: '700', color: t.ink },
     chipSub: { fontFamily: f, fontSize: 12, color: t.muted },
     dayNum: { fontFamily: f, fontSize: 20, fontWeight: '800', color: t.ink },
     input: { fontFamily: f, borderWidth: 1, borderColor: t.border, borderRadius: r(12), paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: t.ink, textAlignVertical: 'top' },
 });
-onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });
+onLook(({ t, r, f, h }) => { T = t; styles = makeStyles(t, r, f, h); });

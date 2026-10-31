@@ -111,6 +111,21 @@
                                         <button type="button" data-style="font:modern">Modern</button>
                                         <button type="button" data-style="font:classic" style="font-family: Georgia, serif">Classic</button>
                                         <button type="button" data-style="font:condensed" style="font-family: 'Arial Narrow', 'Roboto Condensed', sans-serif; font-stretch: condensed">Condensed</button>
+                                        <button type="button" data-style="font:plain">Plain</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fb-2">
+                                <div class="ab-field"><span>Bottom bar</span>
+                                    <div class="ab-seg" role="group" aria-label="Bottom bar style">
+                                        <button type="button" data-style="nav:floating">Floating</button>
+                                        <button type="button" data-style="nav:classic">Classic</button>
+                                    </div>
+                                </div>
+                                <div class="ab-field"><span>Animations</span>
+                                    <div class="ab-seg" role="group" aria-label="Animations">
+                                        <button type="button" data-style="motion:on">On</button>
+                                        <button type="button" data-style="motion:off">Off</button>
                                     </div>
                                 </div>
                             </div>

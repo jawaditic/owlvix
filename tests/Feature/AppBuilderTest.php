@@ -623,14 +623,14 @@ class AppBuilderTest extends TestCase
     {
         $token = $this->signIn();
         $r = $this->save($token)->assertOk()->json('app');
-        $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern'], $r['settings']['style']);
+        $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern', 'nav' => 'floating', 'motion' => 'on'], $r['settings']['style']);
         $this->assertSame($r['settings']['style'], $this->contentFile($r['id'])['style']);
 
-        $r = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['style' => ['theme' => 'auto', 'corners' => 'square', 'font' => 'classic']])])->assertOk()->json('app');
-        $this->assertSame(['theme' => 'auto', 'corners' => 'square', 'font' => 'classic'], $this->contentFile($r['id'])['style']);
+        $r = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['style' => ['theme' => 'auto', 'corners' => 'square', 'font' => 'classic', 'nav' => 'classic', 'motion' => 'off']])])->assertOk()->json('app');
+        $this->assertSame(['theme' => 'auto', 'corners' => 'square', 'font' => 'classic', 'nav' => 'classic', 'motion' => 'off'], $this->contentFile($r['id'])['style']);
         // Unknown values fall back
-        $r = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['style' => ['theme' => 'neon', 'corners' => 'x', 'font' => 'comic']])])->assertOk()->json('app');
-        $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern'], $r['settings']['style']);
+        $r = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['style' => ['theme' => 'neon', 'corners' => 'x', 'font' => 'comic', 'nav' => 'x', 'motion' => 'x']])])->assertOk()->json('app');
+        $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern', 'nav' => 'floating', 'motion' => 'on'], $r['settings']['style']);
     }
 
     public function test_loyalty_card_publishes_only_a_hash_of_the_pin(): void

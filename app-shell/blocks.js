@@ -10,6 +10,7 @@ import Svg, { Path } from 'react-native-svg';
 import { action, image, str } from './content';
 import ICONS from './icons.json';
 import { BookingBlock } from './booking';
+import { KenBurns, Press, Ring, Wiggle } from './anim';
 import { LoyaltyBlock } from './loyalty';
 
 
@@ -39,9 +40,9 @@ function Tap({ act, ctx, style, children, label }) {
     if (!go) return <View style={style}>{children}</View>;
     const onPress = () => (go.tab !== undefined ? ctx.openTab(go.tab) : ctx.openUrl(go.url));
     return (
-        <Pressable onPress={onPress} style={({ pressed }) => [style, pressed && styles.pressed]} accessibilityRole={go.tab !== undefined ? 'button' : 'link'} accessibilityLabel={label}>
+        <Press onPress={onPress} style={style} accessibilityRole={go.tab !== undefined ? 'button' : 'link'} accessibilityLabel={label}>
             {children}
-        </Pressable>
+        </Press>
     );
 }
 
@@ -53,15 +54,25 @@ function Hero({ b, ctx }) {
             {!!str(b.title) && <Text style={[styles.heroTitle, { color: img ? '#fff' : ctx.onPrimary }]} accessibilityRole="header">{b.title}</Text>}
             {!!str(b.text) && <Text style={[styles.heroText, { color: img ? 'rgba(255,255,255,0.92)' : ctx.onPrimary }]}>{b.text}</Text>}
             {btn && (
-                <Tap act={btn.action} ctx={ctx} style={[styles.heroBtn, { backgroundColor: img ? ctx.primary : ctx.onPrimary }]} label={btn.label}>
-                    <Text style={[styles.btnText, { color: img ? ctx.onPrimary : ctx.primary }]}>{btn.label}</Text>
-                </Tap>
+                <View style={{ alignSelf: 'flex-start', marginTop: 10 }}>
+                    <Ring color={img ? '#ffffff' : ctx.onPrimary} />
+                    <Tap act={btn.action} ctx={ctx} style={[styles.heroBtn, { marginTop: 0, backgroundColor: img ? ctx.primary : ctx.onPrimary }]} label={btn.label}>
+                        <Text style={[styles.btnText, { color: img ? ctx.onPrimary : ctx.primary }]}>{btn.label}</Text>
+                    </Tap>
+                </View>
             )}
         </View>
     );
+    // A picture drifts slowly behind the words; without one, soft circles of light on the main colour
     return img
-        ? <ImageBackground source={{ uri: img.uri }} style={styles.hero} imageStyle={styles.heroImg} resizeMode="cover">{inner}</ImageBackground>
-        : <View style={[styles.hero, { backgroundColor: ctx.primary }]}>{inner}</View>;
+        ? <View style={styles.hero}><KenBurns uri={img.uri} />{inner}</View>
+        : (
+            <View style={[styles.hero, { backgroundColor: ctx.primary }]}>
+                <View pointerEvents="none" style={[styles.glow, { right: -50, top: -60, width: 190, height: 190 }]} />
+                <View pointerEvents="none" style={[styles.glow, { left: -40, bottom: -70, width: 150, height: 150 }]} />
+                {inner}
+            </View>
+        );
 }
 
 function Picture({ b, ctx }) {
@@ -336,14 +347,14 @@ function Products({ b, ctx }) {
                         {g.items.map((it, i) => {
                             const img = image(it.image, ctx.base);
                             return (
-                                <Pressable key={i} onPress={() => ctx.openProduct(it)} style={({ pressed }) => [styles.product, { width: w }, pressed && styles.pressed]}
+                                <Press key={i} onPress={() => ctx.openProduct(it)} style={[styles.product, { width: w }]}
                                     accessibilityRole="button" accessibilityLabel={`${it.name}${typeof it.price === 'number' ? ', ' + money(it.price, ctx.shop) : ''}`}>
                                     {img ? <Image source={{ uri: img.uri }} style={styles.productImg} /> : <View style={[styles.productImg, styles.productNoImg, { backgroundColor: ctx.primary + '14' }]}><Icon name="store" color={ctx.primary} size={28} /></View>}
                                     <View style={styles.productBody}>
                                         <Text style={styles.productName} numberOfLines={2}>{it.name}</Text>
                                         <Text style={[styles.productPrice, { color: ctx.primary }]}>{typeof it.price === 'number' ? money(it.price, ctx.shop) : t('ask_us')}</Text>
                                     </View>
-                                </Pressable>
+                                </Press>
                             );
                         })}
                     </View>
@@ -375,7 +386,15 @@ export function Block({ b, ctx }) {
         case 'reviews': return <Reviews b={b} />;
         case 'faq': return <Faq b={b} ctx={ctx} />;
         case 'social': return <Social b={b} ctx={ctx} />;
-        case 'notice': { const tones = T.dark ? DARK_TONES : TONES, [bg, fg] = tones[b.tone] || tones.info; return <View style={[styles.pad, styles.notice, { backgroundColor: bg, borderColor: fg + '33' }]}><Text style={[styles.noticeText, { color: fg }]}>{str(b.text)}</Text></View>; }
+        case 'notice': {
+            const tones = T.dark ? DARK_TONES : TONES, [bg, fg] = tones[b.tone] || tones.info;
+            return (
+                <View style={[styles.pad, styles.notice, { backgroundColor: bg, borderColor: fg + '33' }]}>
+                    <Wiggle><Icon name="bell" color={fg} size={20} /></Wiggle>
+                    <Text style={[styles.noticeText, { color: fg, flex: 1 }]}>{str(b.text)}</Text>
+                </View>
+            );
+        }
         case 'products': return <Products b={b} ctx={ctx} />;
         case 'booking': return <BookingBlock b={b} ctx={ctx} />;
         case 'loyalty': return <LoyaltyBlock b={b} ctx={ctx} />;
@@ -389,63 +408,63 @@ export const Empty = () => <Text style={[styles.pad, styles.rowText, styles.cent
 
 let styles;
 let T;
-const makeStyles = (t, r, f) => StyleSheet.create({
+const makeStyles = (t, r, f, h) => StyleSheet.create({
     pad: { marginHorizontal: 16, marginTop: 14 },
     center: { textAlign: 'center' },
     natural: { textAlign: 'auto', writingDirection: 'auto' }, // right-to-left languages line up on the right
     pressed: { opacity: 0.7 },
-    hero: { minHeight: 220, justifyContent: 'flex-end' },
-    heroImg: {},
+    hero: { minHeight: 236, justifyContent: 'flex-end', marginHorizontal: 16, marginTop: 14, borderRadius: r(20), overflow: 'hidden', ...t.lift },
+    glow: { position: 'absolute', borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.10)' },
     heroInner: { padding: 22, paddingTop: 40, gap: 8 },
-    heroShade: { backgroundColor: 'rgba(0,0,0,0.38)', flexGrow: 1, justifyContent: 'flex-end' },
-    heroTitle: { fontFamily: f, fontSize: 28, fontWeight: '800', lineHeight: 34 },
+    heroShade: { backgroundColor: 'rgba(17,17,20,0.42)', flexGrow: 1, justifyContent: 'flex-end' },
+    heroTitle: { fontFamily: h, fontSize: 28, fontWeight: '700', lineHeight: 34, letterSpacing: -0.3 },
     heroText: { fontFamily: f, fontSize: 16, lineHeight: 23 },
-    heroBtn: { alignSelf: 'flex-start', marginTop: 8, paddingHorizontal: 22, paddingVertical: 12, borderRadius: r(999) },
-    heading: { fontFamily: f, fontSize: 22, fontWeight: '800', color: t.ink, lineHeight: 28, marginTop: 22 },
+    heroBtn: { alignSelf: 'flex-start', marginTop: 10, paddingHorizontal: 24, paddingVertical: 13, borderRadius: r(999) },
+    heading: { fontFamily: h, fontSize: 22, fontWeight: '700', color: t.ink, lineHeight: 28, marginTop: 24, letterSpacing: -0.2 },
     text: { fontFamily: f, fontSize: 16, lineHeight: 24, color: t.text },
-    picture: { width: '100%', borderRadius: r(14), backgroundColor: t.line },
-    round: { borderRadius: r(14) },
+    picture: { width: '100%', borderRadius: r(16), backgroundColor: t.line },
+    round: { borderRadius: r(16) },
     caption: { fontFamily: f, fontSize: 13, color: t.muted, marginTop: 6, textAlign: 'center' },
-    btn: { borderRadius: r(12), paddingVertical: 14, alignItems: 'center' },
-    btnText: { fontFamily: f, fontSize: 16, fontWeight: '700' },
-    cardTitle: { fontFamily: f, fontSize: 13, fontWeight: '700', color: t.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8, marginLeft: 4 },
-    card: { backgroundColor: t.card, borderRadius: r(14), borderWidth: StyleSheet.hairlineWidth, borderColor: t.border, overflow: 'hidden' },
+    btn: { borderRadius: r(18), minHeight: 56, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', ...t.liftSmall },
+    btnText: { fontFamily: f, fontSize: 17, fontWeight: '700' },
+    cardTitle: { fontFamily: h, fontSize: 19, fontWeight: '600', color: t.ink, marginBottom: 10, marginLeft: 2 },
+    card: { backgroundColor: t.card, borderRadius: r(18), ...t.lift },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, minHeight: 52 },
-    rowLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border },
+    rowLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line },
     rowBody: { flex: 1, gap: 2 },
     rowTitle: { fontFamily: f, fontSize: 16, fontWeight: '600', color: t.ink },
     rowText: { fontFamily: f, fontSize: 14, lineHeight: 20, color: t.muted },
     rowLabel: { fontFamily: f, fontSize: 12, color: t.muted },
     price: { fontFamily: f, fontSize: 16, fontWeight: '700' },
-    thumb: { width: 56, height: 56, borderRadius: r(10), backgroundColor: t.line },
+    thumb: { width: 60, height: 60, borderRadius: r(14), backgroundColor: t.line },
     badge: { width: 38, height: 38, borderRadius: r(19), alignItems: 'center', justifyContent: 'center' },
     hoursTime: { fontFamily: f, fontSize: 15, color: t.muted },
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
     viewer: { flex: 1, backgroundColor: '#000' },
     close: { position: 'absolute', top: 12, right: 16, width: 44, height: 44, borderRadius: r(22), backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
     closeText: { fontFamily: f, color: '#fff', fontSize: 20, fontWeight: '700' },
-    video: { width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', borderRadius: r(14) },
+    video: { width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', borderRadius: r(16), overflow: 'hidden' },
     play: { width: 64, height: 64, borderRadius: r(32), backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', paddingLeft: 4 },
-    category: { fontFamily: f, fontSize: 17, fontWeight: '800', color: t.ink, marginTop: 8, marginBottom: 8 },
-    product: { backgroundColor: t.card, borderRadius: r(16), overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: t.border },
-    productImg: { width: '100%', aspectRatio: 1, backgroundColor: t.line },
+    category: { fontFamily: h, fontSize: 19, fontWeight: '600', color: t.ink, marginTop: 10, marginBottom: 10 },
+    product: { backgroundColor: t.card, borderRadius: r(16), padding: 8, ...t.lift },
+    productImg: { width: '100%', aspectRatio: 1, borderRadius: r(12), backgroundColor: t.line },
     productNoImg: { alignItems: 'center', justifyContent: 'center' },
-    productBody: { padding: 10, gap: 4 },
+    productBody: { paddingHorizontal: 4, paddingTop: 10, paddingBottom: 4, gap: 4 },
     productName: { fontFamily: f, fontSize: 14, fontWeight: '700', color: t.ink, lineHeight: 19 },
     productPrice: { fontFamily: f, fontSize: 15, fontWeight: '800' },
     dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 },
-    dot: { width: 7, height: 7, borderRadius: r(4), backgroundColor: '#cbd5e1' },
-    feature: { backgroundColor: t.card, borderRadius: r(16), padding: 14, gap: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: t.border },
-    featureIc: { width: 40, height: 40, borderRadius: r(12), alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+    dot: { width: 9, height: 9, borderRadius: 999, backgroundColor: t.soft },
+    feature: { backgroundColor: t.card, borderRadius: r(18), padding: 14, gap: 6, ...t.lift },
+    featureIc: { width: 42, height: 42, borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
     featureTitle: { fontFamily: f, fontSize: 15, fontWeight: '700', color: t.ink },
     review: { padding: 16, gap: 10 },
     reviewText: { fontFamily: f, fontSize: 15, lineHeight: 22, color: t.text },
     faqSign: { fontFamily: f, fontSize: 22, fontWeight: '600', width: 22, textAlign: 'center' },
     faqA: { paddingHorizontal: 14, paddingBottom: 14, marginTop: -4 },
-    chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: r(999) },
+    chip: { paddingHorizontal: 18, height: 40, justifyContent: 'center', borderRadius: r(999), ...t.liftSmall },
     chipText: { fontFamily: f, fontSize: 14, fontWeight: '700' },
-    notice: { borderRadius: r(14), padding: 14, borderWidth: 1 },
+    notice: { borderRadius: r(16), padding: 14, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
     noticeText: { fontFamily: f, fontSize: 15, lineHeight: 22, fontWeight: '600' },
-    divider: { height: StyleSheet.hairlineWidth, backgroundColor: t.border, marginHorizontal: 16, marginTop: 20, marginBottom: 6 },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: t.border, marginHorizontal: 16, marginTop: 22, marginBottom: 8 },
 });
-onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });
+onLook(({ t, r, f, h }) => { T = t; styles = makeStyles(t, r, f, h); });

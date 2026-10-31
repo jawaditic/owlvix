@@ -182,7 +182,9 @@ class AppBuilder
                 'style' => [
                     'theme' => in_array($in['style']['theme'] ?? '', ['dark', 'auto'], true) ? $in['style']['theme'] : 'light',
                     'corners' => in_array($in['style']['corners'] ?? '', ['soft', 'square'], true) ? $in['style']['corners'] : 'rounded',
-                    'font' => in_array($in['style']['font'] ?? '', ['classic', 'condensed'], true) ? $in['style']['font'] : 'modern',
+                    'font' => in_array($in['style']['font'] ?? '', ['classic', 'condensed', 'plain'], true) ? $in['style']['font'] : 'modern',
+                    'nav' => ($in['style']['nav'] ?? '') === 'classic' ? 'classic' : 'floating', // the floating navy bar (Aiiplan) or a full-width one
+                    'motion' => ($in['style']['motion'] ?? '') === 'off' ? 'off' : 'on',
                 ],
             ],
         ];

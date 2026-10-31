@@ -8,7 +8,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, AppState, BackHandler, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
-import { applyLook, look, onLook } from './theme';
+import { applyLook, look, mix, onLook } from './theme';
+import { Enter, FadeUp, Loader, Press, setMotion } from './anim';
 import { File, Paths } from 'expo-file-system';
 import { LANGUAGES, setLanguage, t } from './i18n';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,6 +45,9 @@ const openOutside = url => {
 const langFile = () => new File(Paths.document, 'owlvix-language.txt');
 const savedLanguage = () => { try { const f = langFile(); return f.exists ? f.textSync().trim() : ''; } catch { return ''; } };
 const phoneLanguage = () => { try { return (Intl.DateTimeFormat().resolvedOptions().locale || 'en').slice(0, 2).toLowerCase(); } catch { return 'en'; } };
+
+// The app's icon for the opening loader (scripts/prepare.mjs writes it before each build)
+const LOADER_ICON = (() => { try { return require('./assets/icon.png'); } catch { return null; } })();
 
 const INTRO_PICTURE_MS = 2500;
 const INTRO_MAX_MS = 15000; // a video longer than this is cut short
@@ -112,9 +116,9 @@ function Screen({ tab, ctx, register, index }) {
     }, [ctx]);
     const blocks = (Array.isArray(tab.blocks) ? tab.blocks : []).filter(b => b && typeof b === 'object');
     return (
-        <ScrollView ref={ref} style={styles.screen} contentContainerStyle={styles.screenInner}
+        <ScrollView ref={ref} style={styles.screen} contentContainerStyle={[styles.screenInner, { paddingBottom: ctx.navSpace + 28 }]}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[ctx.primary]} />}>
-            {blocks.length ? blocks.map((b, i) => <Block key={i} b={b} ctx={ctx} />) : <Empty />}
+            {blocks.length ? blocks.map((b, i) => <FadeUp key={i} index={i}><Block b={b} ctx={ctx} /></FadeUp>) : <Empty />}
         </ScrollView>
     );
 }
@@ -216,11 +220,16 @@ function Shell() {
     const scheme = useColorScheme();
     const lk = look(doc?.style, scheme);
     applyLook(lk);
+    setMotion(lk.motion);
     const C = {
         primary: color(doc?.colors?.primary, color(shell.colors?.primary, '#16a34a')),
         bar: color(doc?.colors?.bar, color(shell.colors?.bar, '#ffffff')),
     };
     if (lk.t.dark && !isDark(C.bar)) C.bar = '#111827'; // light bars would glare in dark mode
+    // The floating bar (Aiiplan): the owner's bar colour when it's dark, else a deep navy shade of the main colour
+    const floating = lk.nav === 'floating';
+    const navBg = isDark(C.bar) ? C.bar : mix(C.primary, '#0b0a1f', 0.74);
+    const navOn = (h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return r * 0.299 + g * 0.587 + b * 0.114; })(C.primary) < 60 ? '#ffffff' : C.primary; // a very dark main colour would vanish on the bar
     const ctx = useMemo(() => {
         const hosts = Array.isArray(doc?.hosts) ? doc.hosts.filter(h => typeof h === 'string') : [];
         return {
@@ -241,13 +250,14 @@ function Shell() {
             shop: doc?.shop && typeof doc.shop === 'object' ? doc.shop : null,
             openProduct: p => { setSheetKey(k => k + 1); setProduct(p); },
             openBooking: b => { setSheetKey(k => k + 1); setBooking(b); },
+            navSpace: floating ? 68 + 14 + Math.max(insets.bottom, 8) : 0, // the floating bar covers the bottom of each screen
             lang,
             mainLang,
             insets,
             openTab: i => { if (i >= 0 && i < tabs.length) { setOpened(o => (o.includes(i) ? o : [...o, i])); setActive(i); } },
             refresh,
         };
-    }, [doc, C.primary, C.bar, refresh, insets, lang]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [doc, C.primary, C.bar, refresh, insets, lang, floating]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // A native first screen is ready at once; a website tab hides the splash when its page loads (or after 5 s)
     useEffect(() => {
@@ -337,12 +347,14 @@ function Shell() {
                 {!tabs.length && <Offline ctx={ctx} onRetry={refresh} />}
                 {tabs.map((tab, i) => opened.includes(i) && (
                     <View key={`${i}-${tab.type}-${tab.url ?? ''}`} style={[StyleSheet.absoluteFill, { opacity: i === active ? 1 : 0 }]} pointerEvents={i === active ? 'auto' : 'none'}>
-                        {tab.type === 'web'
-                            ? <WebTab tab={tab} ctx={ctx} register={register} index={i} onFirstLoad={hideSplash} />
-                            : <Screen tab={tab} ctx={ctx} register={register} index={i} />}
+                        <Enter trigger={i === active ? i + 1 : 0} style={{ flex: 1 }}>
+                            {tab.type === 'web'
+                                ? <WebTab tab={tab} ctx={ctx} register={register} index={i} onFirstLoad={hideSplash} />
+                                : <Screen tab={tab} ctx={ctx} register={register} index={i} />}
+                        </Enter>
                     </View>
                 ))}
-                <OrderButton cart={cart} ctx={ctx} bottom={16} onPress={() => setOrderOpen(true)} />
+                <OrderButton cart={cart} ctx={ctx} bottom={ctx.navSpace + 14} onPress={() => setOrderOpen(true)} />
             </View>
             <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)} statusBarTranslucent>
                 <View style={styles.drawerWrap}>
@@ -382,7 +394,19 @@ function Shell() {
                     <Pressable style={styles.drawerShade} onPress={() => setMenu(false)} accessibilityRole="button" accessibilityLabel={t('close')} />
                 </View>
             </Modal>
-            {bar.length > 1 ? (
+            {bar.length > 1 && floating ? (
+                <View style={[styles.float, { bottom: Math.max(insets.bottom, 8) + 6, backgroundColor: navBg }]} accessibilityRole="tablist">
+                    {bar.map(i => {
+                        const tab = tabs[i], on = i === active;
+                        return (
+                            <Press key={i} onPress={() => pick(i)} accessibilityRole="tab" accessibilityState={{ selected: on }} accessibilityLabel={str(tab.label)}
+                                style={[styles.floatBtn, { backgroundColor: on ? navOn : 'rgba(255,255,255,0.07)' }]}>
+                                <Icon name={tab.icon} color={on ? (navOn === '#ffffff' ? C.primary : ctx.onPrimary) : 'rgba(255,255,255,0.78)'} size={22} />
+                            </Press>
+                        );
+                    })}
+                </View>
+            ) : bar.length > 1 ? (
                 <View style={[styles.bar, { backgroundColor: C.bar, paddingBottom: Math.max(insets.bottom, 6) }]} accessibilityRole="tablist">
                     {bar.map(i => {
                         const tab = tabs[i], col = i === active ? C.primary : muted;
@@ -395,8 +419,9 @@ function Shell() {
                     })}
                 </View>
             ) : (
-                <View style={{ height: insets.bottom, backgroundColor: C.bar }} />
+                <View style={{ height: floating ? 0 : insets.bottom, backgroundColor: C.bar }} />
             )}
+            {floating && <View style={{ height: insets.bottom, backgroundColor: lk.t.bg }} />}
             <ProductSheet key={`p${sheetKey}`} product={product} ctx={ctx} insets={insets} onClose={() => setProduct(null)}
                 onAdd={(p, qty) => {
                     setCart(c => { const i = c.findIndex(l => l.name === p.name && l.price === p.price); return i < 0 ? [...c, { name: p.name, price: p.price, qty }] : c.map((l, j) => (j === i ? { ...l, qty: Math.min(99, l.qty + qty) } : l)); });
@@ -415,6 +440,7 @@ function Shell() {
                 </Pressable>
             )}
             {intro && <Intro onDone={() => setIntro(false)} />}
+            <Loader icon={LOADER_ICON} color={C.primary} track={mix(C.primary, lk.t.dark ? '#0b1120' : '#ffffff', 0.85)} ready={!!doc} dark={lk.t.dark} />
         </View>
     );
 }
@@ -429,7 +455,7 @@ export default function App() {
 
 let styles;
 let T;
-const makeStyles = (t, r, f) => StyleSheet.create({
+const makeStyles = (t, r, f, h) => StyleSheet.create({
     root: { flex: 1 },
     pages: { flex: 1, backgroundColor: t.bg },
     screen: { flex: 1, backgroundColor: t.bg },
@@ -443,13 +469,16 @@ const makeStyles = (t, r, f) => StyleSheet.create({
     bannerBody: { fontFamily: f, fontSize: 14, color: t.text, marginTop: 2 },
     skip: { position: 'absolute', right: 16, paddingHorizontal: 16, paddingVertical: 8, borderRadius: r(999), backgroundColor: 'rgba(0,0,0,0.45)' },
     skipText: { fontFamily: f, color: '#fff', fontSize: 14, fontWeight: '700' },
+    float: { position: 'absolute', left: 14, right: 14, height: 68, borderRadius: r(34), flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 10, zIndex: 7,
+        shadowColor: '#1E1B49', shadowOpacity: 0.28, shadowRadius: 22, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
+    floatBtn: { width: 48, height: 48, borderRadius: r(999), alignItems: 'center', justifyContent: 'center' },
     header: { flexDirection: 'row', alignItems: 'center', height: 52, paddingHorizontal: 8, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.border },
     burger: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: r(22) },
-    headerTitle: { fontFamily: f, flex: 1, fontSize: 18, fontWeight: '700' },
+    headerTitle: { fontFamily: h, flex: 1, fontSize: 20, fontWeight: '600' },
     drawerWrap: { flex: 1, flexDirection: 'row' },
     drawer: { width: '80%', maxWidth: 320, backgroundColor: t.card, paddingHorizontal: 12, elevation: 12 },
     drawerShade: { flex: 1, backgroundColor: t.shade },
-    drawerName: { fontFamily: f, fontSize: 20, fontWeight: '800', color: t.ink, marginHorizontal: 12, marginBottom: 14 },
+    drawerName: { fontFamily: h, fontSize: 22, fontWeight: '700', color: t.ink, marginHorizontal: 12, marginBottom: 14 },
     drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 13, borderRadius: r(12) },
     drawerText: { fontFamily: f, flex: 1, fontSize: 16, fontWeight: '600', color: t.ink },
     langs: { paddingHorizontal: 12, paddingTop: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border },
@@ -463,9 +492,9 @@ const makeStyles = (t, r, f) => StyleSheet.create({
     tab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 2 },
     tabText: { fontFamily: f, fontSize: 11, fontWeight: '600' },
     offline: { ...StyleSheet.absoluteFillObject, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
-    offlineTitle: { fontFamily: f, fontSize: 20, fontWeight: '700', color: t.ink, textAlign: 'center', marginTop: 8 },
+    offlineTitle: { fontFamily: h, fontSize: 22, fontWeight: '700', color: t.ink, textAlign: 'center', marginTop: 8 },
     offlineText: { fontFamily: f, fontSize: 15, color: t.muted, textAlign: 'center', maxWidth: 320 },
     retry: { marginTop: 14, paddingHorizontal: 26, paddingVertical: 12, borderRadius: r(999) },
     retryText: { fontFamily: f, fontSize: 15, fontWeight: '700' },
 });
-onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });
+onLook(({ t, r, f, h }) => { T = t; styles = makeStyles(t, r, f, h); });

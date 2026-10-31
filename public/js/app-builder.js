@@ -75,7 +75,7 @@
 
     const fresh = () => ({
         id: null, dirty: true, iconDirty: true, base: '', editLang: 'en', mainTabs: null,
-        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, style: { theme: 'light', corners: 'rounded', font: 'modern' }, lang: 'en', translations: {}, tabs: starter(),
+        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on' }, lang: 'en', translations: {}, tabs: starter(),
             colors: { primary: '#16a34a', bar: '#ffffff', icon: '#16a34a', splash: '#ffffff' },
             offline: { title: '', text: '', button: '' } },
         icon: { mode: 'letter', letter: '', image: null, zoom: 70, fill: false },
@@ -92,7 +92,7 @@
         D.base ||= '';
         D.app.privacy = { owner: '', email: '', extra: '', ...(D.app.privacy || {}) };
         D.app.shop = { currency: '$', whatsapp: '', email: '', note: '', ...(D.app.shop || {}) };
-        D.app.style = { theme: 'light', corners: 'rounded', font: 'modern', ...(D.app.style || {}) };
+        D.app.style = { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on', ...(D.app.style || {}) };
         D.app.lang ||= 'en';
         D.app.translations ||= {};
         D.editLang ||= D.app.lang; // the language whose pages are being edited (they're in D.app.tabs; the main pages wait in D.mainTabs)
@@ -121,10 +121,11 @@
             .then(() => { try { localStorage.setItem(STORE, JSON.stringify({ idb: true, id: D.id })); } catch {} draftAtRisk = false; syncSave(); })
             .catch(() => { draftAtRisk = true; syncSave(); });
     };
-    let view = 'app', activeTab = 0, previewMenu = false, previewIntro = false;
+    let view = 'app', activeTab = 0, previewMenu = false, previewIntro = false, enterNext = true, showLoader = true; // the preview opens like the app: loader, then cards rising in
     const openBlocks = new WeakSet(); // block cards shown open in the editor
 
     /* ------------------------------------------------ helpers */
+    const mixHex = (a, b, w) => { const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); const [x, y] = [p(a), p(b)]; return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * w).toString(16).padStart(2, '0')).join(''); };
     const isDark = hex => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); return r * 0.299 + g * 0.587 + b * 0.114 < 150; };
     const ink = hex => (isDark(hex) ? '#ffffff' : '#0f172a');
     const slug = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '').slice(0, 30);
@@ -306,9 +307,9 @@
         switch (b.type) {
             case 'hero': {
                 const img = imgSrc(b.image), btn = b.button?.label?.trim() ? b.button : null;
-                return `<div class="ab-n-hero${img ? ' has-img' : ''}" style="${img ? `background-image:url('${esc(img)}')` : `background:${c.primary};color:${on}`}"><div>
+                return `<div class="ab-n-hero${img ? ' has-img' : ''}" style="${img ? '' : `background:${c.primary};color:${on}`}">${img ? `<i class="ab-n-kb" style="background-image:url('${esc(img)}')"></i>` : '<i class="ab-n-glow"></i><i class="ab-n-glow b"></i>'}<div>
                     ${b.title ? `<h3>${esc(b.title)}</h3>` : ''}${b.text ? `<p>${esc(b.text)}</p>` : ''}
-                    ${btn ? pv.tap(btn.action, esc(btn.label), 'ab-n-herobtn" style="background:' + (img ? c.primary : on) + ';color:' + (img ? on : c.primary)) : ''}</div></div>`;
+                    ${btn ? `<span class="ab-n-ring" style="--ring:${img ? '#fff' : on}">${pv.tap(btn.action, esc(btn.label), 'ab-n-herobtn" style="background:' + (img ? c.primary : on) + ';color:' + (img ? on : c.primary))}</span>` : ''}</div></div>`;
             }
             case 'heading': return b.text?.trim() ? `<h4 class="ab-n-h" style="text-align:${b.align === 'center' ? 'center' : 'start'}">${esc(b.text)}</h4>` : '';
             case 'text': return b.text?.trim() ? `<p class="ab-n-p" style="text-align:${b.align === 'center' ? 'center' : 'start'}">${esc(b.text)}</p>` : '';
@@ -351,7 +352,7 @@
                 const links = Object.entries(b.links || {}).filter(([k, v]) => SOCIAL[k] && v?.trim());
                 return links.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct" style="text-align:center">${esc(b.title)}</h5>` : ''}<div class="ab-n-social">${links.map(([k]) => `<span style="background:${SOCIAL[k][1]};color:${k === 'snapchat' ? '#111' : '#fff'}">${SOCIAL[k][0]}</span>`).join('')}</div></div>` : '';
             }
-            case 'notice': { const st = A().style || {}, dk = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches), tones = dk ? DARK_TONES : TONES, [bg, fg] = tones[b.tone] || tones.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33">${esc(b.text)}</div>` : ''; }
+            case 'notice': { const st = A().style || {}, dk = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches), tones = dk ? DARK_TONES : TONES, [bg, fg] = tones[b.tone] || tones.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33"><i class="ab-n-wig">${svgIcon('bell', fg, 16)}</i><span>${esc(b.text)}</span></div>` : ''; }
             case 'spacer': return `<div style="height:${{ small: 6, large: 30 }[b.size] ?? 15}px"></div>`;
             case 'loyalty': {
                 const n = Math.max(4, Math.min(12, +b.stamps || 10));
@@ -410,11 +411,18 @@
             const bar = tabs.map((x, i) => i).filter(i => inBar(tabs[i], i)).slice(0, MAX_BAR), menuPages = tabs.map((x, i) => i).filter(i => inMenu(tabs[i], i)), hasMenu = a.menu !== 'hide' && menuPages.length > 0;
             const header = hasMenu ? `<div class="ab-ph__head" style="background:${c.bar};color:${barInk}"><button type="button" data-pmenu aria-label="Open menu"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><b>${esc(t.label || 'Page')}</b></div>` : '';
             const drawer = hasMenu && previewMenu ? `<div class="ab-ph__drawer"><div><b>${esc(a.name || 'Your app')}</b>${menuPages.map(i => [tabs[i], i]).map(([x, i]) => `<button type="button" data-ptab="${i}" class="${i === activeTab ? 'is-on' : ''}" style="${i === activeTab ? `background:${c.primary}1a;color:${c.primary}` : ''}">${svgIcon(x.icon, i === activeTab ? c.primary : '#475569', 16)}<span>${esc(x.label || 'Page')}</span></button>`).join('')}</div><button type="button" class="ab-ph__shade" data-pmenu aria-label="Close menu"></button></div>` : '';
-            phone.innerHTML = `<div class="ab-ph__screen${dark ? ' is-dark' : ''} is-${esc(st.corners || 'rounded')} is-${esc(st.font || 'modern')}">${status}${header}${body}
-                ${bar.length > 1 ? `<div class="ab-ph__tabs" style="background:${c.bar}">${bar.map(i => {
+            const floatBar = st.nav !== 'classic', still = st.motion === 'off', entering = enterNext && !still; enterNext = false;
+            const navBg = isDark(c.bar) ? c.bar : mixHex(c.primary, '#0b0a1f', 0.74);
+            const navOn = (h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return r * 0.299 + g * 0.587 + b * 0.114; })(c.primary) < 60 ? '#ffffff' : c.primary;
+            phone.innerHTML = `<div class="ab-ph__screen${dark ? ' is-dark' : ''} is-${esc(st.corners || 'rounded')} is-${esc(st.font || 'modern')}${floatBar ? ' is-float' : ''}${still ? ' is-still' : ''}${entering ? ' is-enter' : ''}">${status}${header}${body}
+                ${bar.length > 1 && floatBar ? `<div class="ab-ph__float" style="background:${navBg}">${bar.map(i => {
+                    const x = tabs[i], onTab = i === activeTab;
+                    return `<button type="button" data-ptab="${i}" aria-label="${esc(x.label || 'Tab')}" style="background:${onTab ? navOn : 'rgba(255,255,255,.07)'}">${svgIcon(x.icon, onTab ? (navOn === '#ffffff' ? c.primary : ink(c.primary)) : 'rgba(255,255,255,.78)', 18)}</button>`;
+                }).join('')}</div>` : ''}${bar.length > 1 && !floatBar ? `<div class="ab-ph__tabs" style="background:${c.bar}">${bar.map(i => {
                     const x = tabs[i], col = i === activeTab ? c.primary : muted;
                     return `<button type="button" data-ptab="${i}" style="color:${col}">${svgIcon(x.icon, col)}<span>${esc(x.label || 'Tab')}</span></button>`;
-                }).join('')}</div>` : ''}${drawer}</div>`;
+                }).join('')}</div>` : ''}${drawer}${showLoader && !still ? `<div class="ab-ph__loader" style="--c:${c.primary}"><i>${'<canvas width="62" height="62" data-loader-icon></canvas>'}</i><b></b><span><em></em></span></div>` : ''}</div>`;
+            if (showLoader) { showLoader = false; const cv = $('[data-loader-icon]', phone); if (cv) paintIcon(cv, 0.27); }
         }
         paintIcon($('[data-icon-prev]'));
     };
@@ -607,7 +615,7 @@
         drawSitePick();
     };
     const drawAll = () => { drawSettings(); drawLangs(); drawTabs(); drawBlocks(); drawPhone(); syncSave(); };
-    const selectTab = i => { activeTab = i; $$('.ab-tab').forEach((r, j) => r.classList.toggle('is-on', j === activeTab)); drawBlocks(); drawPhone(); };
+    const selectTab = i => { enterNext = true; activeTab = i; $$('.ab-tab').forEach((r, j) => r.classList.toggle('is-on', j === activeTab)); drawBlocks(); drawPhone(); };
 
     const markDirty = (icon = false) => { D.dirty = true; if (icon) D.iconDirty = true; save(); syncSave(); };
     const curBlocks = () => A().tabs[activeTab].blocks;
@@ -770,7 +778,7 @@
         if (t.closest('summary') && t.closest('.fb-q__tools')) e.preventDefault(); // block tools don't open/close the card
         const b = blockOf(t), blocks = curBlocks();
         if (t.dataset.tab) showTab(t.dataset.tab);
-        else if (t.dataset.view) { view = t.dataset.view; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === t))); drawPhone(); }
+        else if (t.dataset.view) { view = t.dataset.view; if (view === 'app') { enterNext = true; showLoader = true; } $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === t))); drawPhone(); }
         else if (t.dataset.lang) switchLang(t.dataset.lang);
         else if (t.dataset.langDel) {
             const code = t.dataset.langDel;
@@ -1022,7 +1030,7 @@
             : { label: t.label, icon: t.icon, type: 'screen', bar: t.bar, menu: t.menu, path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
         const tabs = toEdit(x.tabs);
         D = { id: x.id, editLang: x.settings.lang || 'en', mainTabs: null, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
-            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', ...(x.settings.style || {}) }, lang: x.settings.lang || 'en', translations: Object.fromEntries(Object.entries(x.translations || {}).map(([c, v]) => [c, toEdit(v.tabs)])), tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
+            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on', ...(x.settings.style || {}) }, lang: x.settings.lang || 'en', translations: Object.fromEntries(Object.entries(x.translations || {}).map(([c, v]) => [c, toEdit(v.tabs)])), tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
             icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
         if (!x.has_notification_icon) D.iconDirty = true; // apps saved before notifications: send the icon on the next save
         activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(() => { drawAll(); drawLangs(); }); drawMine();

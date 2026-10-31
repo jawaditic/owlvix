@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t } from './i18n';
 import { File, Paths } from 'expo-file-system';
 import { onLook } from './theme';
+import { Pop, Press } from './anim';
 import { Icon } from './blocks';
 import { str } from './content';
 import { Sheet } from './order';
@@ -80,9 +81,11 @@ export function LoyaltyBlock({ b, ctx }) {
             {!!str(b.text) && <Text style={styles.text}>{b.text}</Text>}
             <View style={styles.stamps} accessibilityLabel={`${state.stamps} / ${need}`}>
                 {Array.from({ length: need }, (_, i) => (
-                    <View key={i} style={[styles.stamp, i < state.stamps && { backgroundColor: ctx.primary, borderColor: ctx.primary }]}>
-                        {i < state.stamps ? <Icon name="star" color={ctx.onPrimary} size={18} /> : <Text style={styles.stampNum}>{i + 1}</Text>}
-                    </View>
+                    <Pop key={i} trigger={i < state.stamps ? state.stamps + ':' + i : 'empty'}>
+                        <View style={[styles.stamp, i < state.stamps && { backgroundColor: ctx.primary, borderColor: ctx.primary, borderStyle: 'solid' }]}>
+                            {i < state.stamps ? <Icon name="star" color={ctx.onPrimary} size={18} /> : <Text style={styles.stampNum}>{i + 1}</Text>}
+                        </View>
+                    </Pop>
                 ))}
             </View>
             {full && <Text style={[styles.ready, { color: ctx.primary }]}>{t('reward_ready', { reward: str(b.reward) })}</Text>}
@@ -126,21 +129,21 @@ function PinSheet({ visible, b, ctx, full, onClose, onDone }) {
     );
 }
 
-const makeStyles = (t, r, f) => StyleSheet.create({
-    card: { marginHorizontal: 16, marginTop: 14, backgroundColor: t.card, borderRadius: r(18), padding: 18, gap: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: t.border },
+const makeStyles = (t, r, f, h) => StyleSheet.create({
+    card: { marginHorizontal: 16, marginTop: 14, backgroundColor: t.card, borderRadius: r(20), padding: 18, gap: 12, ...t.lift },
     head: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     badge: { width: 44, height: 44, borderRadius: r(14), alignItems: 'center', justifyContent: 'center' },
-    title: { fontFamily: f, fontSize: 18, fontWeight: '800', color: t.ink },
-    sheetTitle: { fontFamily: f, fontSize: 22, fontWeight: '800', color: t.ink },
+    title: { fontFamily: h, fontSize: 20, fontWeight: '700', color: t.ink },
+    sheetTitle: { fontFamily: h, fontSize: 24, fontWeight: '700', color: t.ink },
     text: { fontFamily: f, fontSize: 15, lineHeight: 22, color: t.text },
     muted: { fontFamily: f, fontSize: 14, color: t.muted },
     stamps: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
     stamp: { width: 46, height: 46, borderRadius: r(999), borderWidth: 2, borderStyle: 'dashed', borderColor: t.border, alignItems: 'center', justifyContent: 'center' },
     stampNum: { fontFamily: f, fontSize: 13, color: t.muted, fontWeight: '600' },
     ready: { fontFamily: f, fontSize: 15, fontWeight: '700', textAlign: 'center' },
-    btn: { borderRadius: r(14), paddingVertical: 15, alignItems: 'center' },
+    btn: { borderRadius: r(18), minHeight: 56, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', ...t.liftSmall },
     btnText: { fontFamily: f, fontSize: 16, fontWeight: '700' },
     input: { fontFamily: f, borderWidth: 1, borderColor: t.border, borderRadius: r(12), paddingHorizontal: 14, paddingVertical: 14, fontSize: 22, letterSpacing: 6, textAlign: 'center', color: t.ink, backgroundColor: t.input },
     error: { fontFamily: f, fontSize: 14, color: '#dc2626', textAlign: 'center' },
 });
-onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });
+onLook(({ t, r, f, h }) => { T = t; styles = makeStyles(t, r, f, h); });

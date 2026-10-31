@@ -6,6 +6,7 @@ import { Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable
 import { t, tIn } from './i18n';
 import { onLook } from './theme';
 import { Icon, money } from './blocks';
+import { Pop } from './anim';
 import { image, str } from './content';
 
 
@@ -66,10 +67,12 @@ export function OrderButton({ cart, ctx, bottom, onPress }) {
     if (!count) return null;
     const total = cart.reduce((n, l) => n + (typeof l.price === 'number' ? l.price * l.qty : 0), 0);
     return (
-        <Pressable onPress={onPress} style={[styles.fab, { bottom, backgroundColor: ctx.primary }]} accessibilityRole="button" accessibilityLabel={`${t('your_order')}: ${count} ${t('items')}`}>
+        <Pop trigger={count} style={{ position: 'absolute', right: 16, bottom, zIndex: 8, elevation: 8 }}>
+        <Pressable onPress={onPress} style={[styles.fab, { position: 'relative', right: 0, backgroundColor: ctx.primary }]} accessibilityRole="button" accessibilityLabel={`${t('your_order')}: ${count} ${t('items')}`}>
             <Icon name="cart" color={ctx.onPrimary} size={20} />
             <Text style={[styles.fabText, { color: ctx.onPrimary }]}>{count} · {total ? money(total, ctx.shop) : t('view_order')}</Text>
         </Pressable>
+        </Pop>
     );
 }
 
@@ -143,13 +146,13 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
 
 let styles;
 let T;
-const makeStyles = (t, r, f) => StyleSheet.create({
+const makeStyles = (t, r, f, h) => StyleSheet.create({
     sheetWrap: { flex: 1, justifyContent: 'flex-end' },
     shade: { ...StyleSheet.absoluteFillObject, backgroundColor: t.shade },
-    sheet: { maxHeight: '92%', flexShrink: 1, backgroundColor: t.card, borderTopLeftRadius: r(22), borderTopRightRadius: r(22), paddingHorizontal: 18, paddingTop: 10, gap: 10, elevation: 16 },
+    sheet: { maxHeight: '92%', flexShrink: 1, backgroundColor: t.card, borderTopLeftRadius: r(28), borderTopRightRadius: r(28), paddingHorizontal: 18, paddingTop: 10, gap: 10, elevation: 16 },
     grip: { alignSelf: 'center', width: 40, height: 5, borderRadius: r(3), backgroundColor: t.soft, marginBottom: 6 },
-    bigImg: { width: '100%', borderRadius: r(16), backgroundColor: t.soft },
-    title: { fontFamily: f, fontSize: 22, fontWeight: '800', color: t.ink },
+    bigImg: { width: '100%', borderRadius: r(18), backgroundColor: t.soft },
+    title: { fontFamily: h, fontSize: 24, fontWeight: '700', color: t.ink, letterSpacing: -0.2 },
     price: { fontFamily: f, fontSize: 18, fontWeight: '800' },
     text: { fontFamily: f, fontSize: 15, lineHeight: 22, color: t.text },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 },
@@ -157,8 +160,8 @@ const makeStyles = (t, r, f) => StyleSheet.create({
     stepBtn: { width: 36, height: 36, borderRadius: r(18), borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
     stepText: { fontFamily: f, fontSize: 20, fontWeight: '700', marginTop: -2 },
     qty: { fontFamily: f, minWidth: 22, textAlign: 'center', fontSize: 16, fontWeight: '700', color: t.ink },
-    btn: { borderRadius: r(14), paddingVertical: 15, alignItems: 'center', paddingHorizontal: 14 },
-    btnOutline: { borderWidth: 2, backgroundColor: 'transparent' },
+    btn: { borderRadius: r(18), minHeight: 56, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, ...t.liftSmall },
+    btnOutline: { borderWidth: 2, backgroundColor: 'transparent', elevation: 0, shadowOpacity: 0 },
     btnText: { fontFamily: f, fontSize: 16, fontWeight: '700' },
     link: { alignItems: 'center', paddingVertical: 8 },
     linkText: { fontFamily: f, fontSize: 15, fontWeight: '600' },
@@ -169,6 +172,6 @@ const makeStyles = (t, r, f) => StyleSheet.create({
     lineName: { fontFamily: f, fontSize: 16, fontWeight: '600', color: t.ink },
     lineMuted: { fontFamily: f, fontSize: 14, color: t.muted },
     total: { fontFamily: f, fontSize: 17, fontWeight: '800', color: t.ink, textAlign: 'right' },
-    input: { fontFamily: f, borderWidth: 1, borderColor: t.border, borderRadius: r(12), paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: t.ink, textAlignVertical: 'top' },
+    input: { fontFamily: f, borderWidth: 1, borderColor: t.border, borderRadius: r(14), paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: t.ink, textAlignVertical: 'top' },
 });
-onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });
+onLook(({ t, r, f, h }) => { T = t; styles = makeStyles(t, r, f, h); });
