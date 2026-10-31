@@ -8,9 +8,9 @@
             <button type="button" class="lpb-tb" data-act="add-page" title="Add a page">＋ Page</button>
         </div>
         <div class="lpb-top__group lpb-devices" role="group" aria-label="Preview size">
-            <button type="button" data-device="desktop" aria-pressed="true" title="Desktop">🖥</button>
-            <button type="button" data-device="tablet" aria-pressed="false" title="Tablet">▭</button>
-            <button type="button" data-device="mobile" aria-pressed="false" title="Mobile">📱</button>
+            <button type="button" data-device="desktop" aria-pressed="true" title="Preview on a computer screen">🖥</button>
+            <button type="button" data-device="tablet" aria-pressed="false" title="Preview on a tablet">▭</button>
+            <button type="button" data-device="mobile" aria-pressed="false" title="Preview on a phone">📱</button>
         </div>
         <div class="lpb-top__group">
             <button type="button" class="lpb-tb" data-act="undo" title="Undo (Ctrl/Cmd+Z)">↩ Undo</button>

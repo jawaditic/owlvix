@@ -40,7 +40,7 @@
             <div class="fb-top">
                 <div class="fb-tpls"><span>Design:</span><div data-designs></div></div>
                 <div class="fb-top__actions">
-                    <label class="rb-mini" title="Accent colour"><span class="sr-only">Accent colour</span><input type="color" data-look="color"></label>
+                    <label class="rb-mini" title="Pick the CV’s accent colour"><span class="sr-only">Accent colour</span><input type="color" data-look="color"></label>
                     <label class="sr-only" for="rb-font">Font</label><select id="rb-font" class="rb-font" data-look="font"></select>
                     <button type="button" class="btn btn--sm btn--glow" data-pdf>Download PDF</button>
                 </div>

@@ -2318,6 +2318,36 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-seg button { padding: 6px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--text-2); font: 600 .82rem Inter, sans-serif; cursor: pointer; }
 .ab-seg button[aria-pressed="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0, 0, 0, .12); }
 .ab-views { justify-self: center; }
+/* full-screen preview */
+.ab-views-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.ab-full-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--line, rgba(30,27,73,.12)); border-radius: 999px; background: var(--card, #fff); color: var(--ink, #111); font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; transition: background .2s, border-color .2s, transform .2s; }
+.ab-full-btn:hover { border-color: #1ec773; transform: translateY(-1px); }
+.ab-full-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ab-full-btn__off, .ab-prev-wrap.is-full [data-full] .ab-full-btn__on, .ab.is-full [data-app-full] .ab-full-btn__on { display: none; }
+.ab-prev-wrap.is-full [data-full] .ab-full-btn__off, .ab.is-full [data-app-full] .ab-full-btn__off { display: block; }
+.wz .ab-full-btn { display: none; }
+.ab-prev-wrap:not(.is-full) .ab-full-btn, .ab-full-btn--app { width: 40px; padding: 0; justify-content: center; flex: 0 0 40px; }
+/* the whole builder in full screen */
+.fb.is-full { position: fixed; inset: 0; z-index: 1000; width: auto; max-width: none; margin: 0; border: 0; border-radius: 0; overflow: auto; overscroll-behavior: contain; padding: 18px clamp(16px, 2.4vw, 32px) 32px;
+    animation: ab-full-in .28s cubic-bezier(.2, .8, .2, 1); }
+.fb.is-full .fb-prev-wrap { top: 12px; }
+@media (max-height: 859px) { .ab.is-full .ab-prev-wrap:not(.is-full) { position: sticky; } }
+/* tooltips */
+.ow-tip { position: fixed; z-index: 9500; max-width: 240px; padding: 6px 10px; border-radius: 8px; background: #111827; color: #fff; outline: 1px solid rgba(255, 255, 255, .14); font-size: .78rem; font-weight: 600; line-height: 1.3; pointer-events: none; box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+    opacity: 0; transform: translateY(4px); transition: opacity .15s, transform .15s; }
+.ow-tip.is-on { opacity: 1; transform: none; }
+.ow-tip::after { content: ""; position: absolute; left: var(--ow-tip-x, 50%); top: 100%; margin-left: -5px; border: 5px solid transparent; border-top-color: #111827; }
+.ow-tip.is-below::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #111827; }
+@media (prefers-reduced-motion: reduce) { .ow-tip, .fb.is-full { transition: none; animation: none; } }
+.ab-prev-wrap:not(.is-full) .ab-full-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html.ab-full-open { overflow: hidden; }
+.ab-prev-wrap.is-full { position: fixed; inset: 0; z-index: 9000; top: 0; align-content: center; justify-items: center; gap: 14px; padding: 16px; overflow: auto;
+    background: radial-gradient(circle at 50% 30%, rgba(30, 199, 115, .18), transparent 60%), rgba(8, 12, 24, .94); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: ab-full-in .28s cubic-bezier(.2, .8, .2, 1); }
+.ab-prev-wrap.is-full > .fb-hint { display: none; }
+.ab-prev-wrap.is-full .ab-views { background: rgba(255, 255, 255, .92); }
+.ab-prev-wrap.is-full .ab-full-btn { background: #fff; color: #111; border-color: transparent; }
+@keyframes ab-full-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ab-prev-wrap.is-full { animation: none; } }
 .ab-iconrow { display: flex; gap: 16px; align-items: flex-start; margin-top: 10px; }
 .ab-iconprev { flex: none; width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, .4); }
 .ab-iconctl { display: grid; gap: 10px; flex: 1; min-width: 0; }

@@ -73,7 +73,7 @@
                 ]);
             @endphp
             <div class="nav-drop nav-drop--more" data-nav-drop>
-                <button type="button" class="nav-drop__btn nav-more__btn" aria-expanded="false" aria-haspopup="true" aria-label="More pages" title="More"
+                <button type="button" class="nav-drop__btn nav-more__btn" aria-expanded="false" aria-haspopup="true" aria-label="More pages" title="More pages and links"
                     @if (request()->routeIs('about')) aria-current="page" @endif>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
                 </button>

@@ -211,7 +211,7 @@
         if (sEl) {
             if (f.kind === 'section') sEl.classList.add('ed-sel-s');
             sEl.insertAdjacentHTML('afterbegin', `<span class="ed-tag">Section${B.isFull(f.sec) ? ' · ' + esc(W[f.sec.cols[0].widgets[0].type].label) : ''}</span><div class="ed-bar ed-bar--s" data-for="${f.sec.id}">
-                <button data-ed="drag" draggable="true" title="Drag to move">${ICON.drag}</button><button data-ed="up" title="Move section up" ${f.si === 0 ? 'disabled' : ''}>${ICON.up}</button><button data-ed="down" title="Move section down" ${f.si === secs.length - 1 ? 'disabled' : ''}>${ICON.down}</button>
+                <button data-ed="drag" draggable="true" title="Drag to move this section">${ICON.drag}</button><button data-ed="up" title="Move section up" ${f.si === 0 ? 'disabled' : ''}>${ICON.up}</button><button data-ed="down" title="Move section down" ${f.si === secs.length - 1 ? 'disabled' : ''}>${ICON.down}</button>
                 <button data-ed="edit" title="Section settings">${ICON.edit}</button><button data-ed="dup" title="Duplicate section">${ICON.copy}</button><button data-ed="savetpl" title="Save as my template">${ICON.save}</button><button data-ed="del" class="ed-del" title="Delete section">${ICON.trash}</button></div>`);
         }
         if (f.kind === 'col') {
@@ -224,8 +224,8 @@
             if (wEl && !B.isFull(f.sec)) {
                 wEl.classList.add('ed-sel-w');
                 const n = f.col.widgets.length;
-                wEl.insertAdjacentHTML('afterbegin', `<div class="ed-bar ed-bar--w" data-for="${f.obj.id}"><button data-ed="drag" draggable="true" title="Drag to move">${ICON.drag}</button><button data-ed="edit">${esc(W[f.obj.type].label)}</button>
-                    <button data-ed="up" ${f.wi === 0 ? 'disabled' : ''} title="Move up">${ICON.up}</button><button data-ed="down" ${f.wi === n - 1 ? 'disabled' : ''} title="Move down">${ICON.down}</button><button data-ed="dup" title="Duplicate">${ICON.copy}</button><button data-ed="del" class="ed-del" title="Delete">${ICON.trash}</button></div>`);
+                wEl.insertAdjacentHTML('afterbegin', `<div class="ed-bar ed-bar--w" data-for="${f.obj.id}"><button data-ed="drag" draggable="true" title="Drag to move this widget">${ICON.drag}</button><button data-ed="edit">${esc(W[f.obj.type].label)}</button>
+                    <button data-ed="up" ${f.wi === 0 ? 'disabled' : ''} title="Move this widget up">${ICON.up}</button><button data-ed="down" ${f.wi === n - 1 ? 'disabled' : ''} title="Move this widget down">${ICON.down}</button><button data-ed="dup" title="Make a copy of this widget">${ICON.copy}</button><button data-ed="del" class="ed-del" title="Delete this widget">${ICON.trash}</button></div>`);
             } else if (wEl) sEl?.classList.add('ed-sel-s');
             if (sel.target && sel.target !== '_') wEl?.querySelectorAll(`[data-e^="${f.obj.id}|"]`).forEach(el => { if (styleKey(el.dataset.e.split('|')[1]) === sel.target) el.classList.add('ed-target'); });
         }
@@ -316,7 +316,7 @@
         rtEl = el;
         doc().body.insertAdjacentHTML('beforeend', `<div class="ed-rt" contenteditable="false">
             <button data-rt="bold" title="Bold"><b>B</b></button><button data-rt="italic" title="Italic"><i>I</i></button><button data-rt="underline" title="Underline"><u>U</u></button>
-            <button data-rt="link" title="Add link">🔗</button><button data-rt="insertUnorderedList" title="Bullet list">••</button><button data-rt="insertOrderedList" title="Numbered list">1.</button><button data-rt="removeFormat" title="Clear formatting">⌫</button></div>`);
+            <button data-rt="link" title="Turn the selected text into a link">🔗</button><button data-rt="insertUnorderedList" title="Bullet list">••</button><button data-rt="insertOrderedList" title="Numbered list">1.</button><button data-rt="removeFormat" title="Clear formatting">⌫</button></div>`);
         positionRt();
     };
     const hideRt = () => { doc()?.querySelectorAll('.ed-rt').forEach(t => t.remove()); rtEl = null; };
@@ -566,7 +566,7 @@
             return `<input data-f="${key}" value="${esc(it[k] ?? '')}" placeholder="${k === 'url' ? 'https://…' : ''}">`;
         };
         return `<div class="lpb-list"><span>${f.label}</span>${list.map((it, i) => `<div class="lpb-row">${f.fields.map(c => cell(it, i, c)).join('')}
-            <button type="button" data-list="${f.k}|${i}|up" title="Move up" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" data-list="${f.k}|${i}|del" title="Remove">✕</button></div>`).join('')}
+            <button type="button" data-list="${f.k}|${i}|up" title="Move this row up" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" data-list="${f.k}|${i}|del" title="Remove this row">✕</button></div>`).join('')}
             ${list.length < f.max ? `<button type="button" class="btn btn--sm btn--ghost" data-list="${f.k}|-1|add">+ Add</button>` : ''}</div>`;
     };
 
@@ -582,7 +582,7 @@
         color: (st, k, label) => {
             const v = sv(st, k);
             return `<div class="lpb-ctl">${label} ${devBadge()}<span class="lpb-colorctl">${B.GLOBAL.map(gl => `<button type="button" class="lpb-sw ${v === 'g:' + gl ? 'is-on' : ''}" style="--sw:var(--g-${gl})" data-sty-val="${k}|g:${gl}" title="Global ${gl} colour"></button>`).join('')}
-                <input type="color" data-sty="${k}" value="${/^#/.test(v) ? v : '#000000'}" title="Custom colour"><button type="button" class="lpb-clear" data-sty-val="${k}|" title="Clear">✕</button></span></div>`;
+                <input type="color" data-sty="${k}" value="${/^#/.test(v) ? v : '#000000'}" title="Custom colour"><button type="button" class="lpb-clear" data-sty-val="${k}|" title="Clear this colour (use the default)">✕</button></span></div>`;
         },
         box: (st, label, keys) => `<div class="lpb-ctl">${label} ${devBadge()}<span class="lpb-box">${keys.map(([k, l]) => `<label><input type="number" data-sty="${k}" value="${esc(sv(st, k))}" placeholder="${esc(inherited(st, k) || '–')}"><small>${l}</small></label>`).join('')}</span></div>`,
     };
@@ -768,7 +768,7 @@
             const on = sel && find(sel.id)?.sec.id === s.id && (sel.kind === 'section' || full);
             const colsHtml = full ? '' : `<ul>${s.cols.map((c, ci) => `<li><button type="button" data-nav="${c.id}" class="${sel?.id === c.id ? 'is-sel' : ''}">▤ Column ${ci + 1}</button>${c.widgets.length ? `<ul>${c.widgets.map(w => `<li><button type="button" data-nav="${w.id}" class="${sel?.id === w.id ? 'is-sel' : ''}">${esc(W[w.type].label)}</button></li>`).join('')}</ul>` : ''}</li>`).join('')}</ul>`;
             return `<li><div class="lpb-nav-row"><button type="button" data-nav="${full ? s.cols[0].widgets[0].id : s.id}" class="${on ? 'is-sel' : ''}">▦ ${esc(label)}</button>
-                <button type="button" data-nav-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move up">↑</button><button type="button" data-nav-mv="${i}|1" ${i === secs.length - 1 ? 'disabled' : ''} title="Move down">↓</button></div>${colsHtml}</li>`;
+                <button type="button" data-nav-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move this section up the page">↑</button><button type="button" data-nav-mv="${i}|1" ${i === secs.length - 1 ? 'disabled' : ''} title="Move this section down the page">↓</button></div>${colsHtml}</li>`;
         }).join('') || '<li class="lpb-hint">This page is empty — add something from the Add tab.</li>';
     };
     const pagePanel = $('[data-tab-panel=page]');
@@ -834,7 +834,7 @@
         const steps = P.pages, nx = B.nextOf(pg, P);
         return `<details class="lpb-acc" open><summary>Funnel steps</summary><ol class="lpb-flow">${steps.map((p, i) => `<li class="${i === pageIdx ? 'is-on' : ''}">
                 <button type="button" data-step-go="${i}"><b>${i + 1}</b><span>${esc(p.title)}<small>${esc(B.STEP_TYPES[p.type] || 'Page')}${p.ab?.on ? ' · A/B' : ''}</small></span></button>
-                <span class="lpb-flow__mv"><button type="button" data-step-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move up">↑</button><button type="button" data-step-mv="${i}|1" ${i === steps.length - 1 ? 'disabled' : ''} title="Move down">↓</button></span></li>`).join('<li class="lpb-flow__arrow" aria-hidden="true">↓</li>')}</ol>
+                <span class="lpb-flow__mv"><button type="button" data-step-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move this step earlier in the funnel">↑</button><button type="button" data-step-mv="${i}|1" ${i === steps.length - 1 ? 'disabled' : ''} title="Move this step later in the funnel">↓</button></span></li>`).join('<li class="lpb-flow__arrow" aria-hidden="true">↓</li>')}</ol>
             <button type="button" class="btn btn--sm btn--ghost" data-act-step>＋ Add step</button></details>
             <details class="lpb-acc" open><summary>This step</summary>
             <label>Step type<select data-pg="type">${Object.entries(B.STEP_TYPES).map(([k, l]) => `<option value="${k}" ${pg.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>

@@ -109,11 +109,14 @@
             // Accessibility/SEO: name the style dropdown, and give the link pop-up's
             // action links a harmless address so they count as proper links
             box.querySelectorAll('.ql-picker-label').forEach(el => el.setAttribute('aria-label', 'Text style'));
+            const tips = { bold: 'Bold — make the selected text thick', italic: 'Italic — slant the selected text', underline: 'Underline the selected text', strike: 'Strike through the selected text',
+                ordered: 'Numbered list (1, 2, 3…)', bullet: 'Bullet list (•)', blockquote: 'Quote — set the text apart', 'code-block': 'Code — for code or exact text', link: 'Link — turn the selected text into a link', clean: 'Clear formatting from the selected text' };
             const names = { bold: 'Bold', italic: 'Italic', underline: 'Underline', strike: 'Strikethrough', blockquote: 'Quote', 'code-block': 'Code', link: 'Link', clean: 'Clear formatting' };
             box.querySelectorAll('.ql-toolbar button').forEach(b => {
                 const key = [...b.classList].find(c => c.startsWith('ql-'))?.slice(3);
                 const name = key === 'list' ? (b.value === 'ordered' ? 'Numbered list' : 'Bullet list') : names[key];
-                if (name && !b.hasAttribute('aria-label')) b.setAttribute('aria-label', name);
+                if (name) b.setAttribute('aria-label', name); // Quill's own labels are lower-case code names
+                if (key && tips[key === 'list' ? b.value : key]) b.dataset.tip = tips[key === 'list' ? b.value : key];
             });
             box.querySelectorAll('.ql-tooltip a:not([href])').forEach(a => {
                 a.setAttribute('href', '#');
@@ -792,5 +795,44 @@
             if (!navigator.sendBeacon?.('/t', body)) fetch('/t', { method: 'POST', body, keepalive: true }).catch(() => {});
         };
         lookupCountry().then(c => send(/^[a-z]{2}$/.test(c) ? c : ''), () => send(''));
+    })();
+    /* ---------- Tooltips ---------- */
+    // Buttons with no words (an icon or symbol like ↑ ✕ ⧉ 🖥) explain themselves with a small dark label on hover
+    // or keyboard focus. The label comes from data-tip, then title, then aria-label. Buttons with words don't need
+    // one (a data-tip still forces it). The title moves into data-tip so the browser's own tooltip doesn't show twice.
+    (() => {
+        const tip = document.createElement('div');
+        tip.className = 'ow-tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
+        let on = null;
+        const wordless = el => { let t = el.textContent; el.querySelectorAll('.sr-only').forEach(x => { t = t.replace(x.textContent, ''); }); return !t.replace(/[^\p{L}\p{N}]/gu, ''); };
+        const hide = () => { tip.hidden = true; tip.classList.remove('is-on'); on = null; };
+        const show = el => {
+            if (!el.dataset.tip && !wordless(el)) return;
+            if (el.title) {
+                if (!el.dataset.tip) el.dataset.tip = el.title;
+                if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', el.title);
+                el.removeAttribute('title');
+            }
+            const text = el.dataset.tip || el.getAttribute('aria-label'); if (!text || el.disabled) return;
+            const host = document.fullscreenElement && document.fullscreenElement !== document.documentElement ? document.fullscreenElement : document.body;
+            if (tip.parentNode !== host) host.append(tip);
+            on = el; tip.textContent = text; tip.hidden = false; tip.classList.remove('is-on', 'is-below');
+            const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+            let top = r.top - h - 8; if (top < 6) { top = r.bottom + 8; tip.classList.add('is-below'); }
+            const left = Math.max(6, Math.min(innerWidth - w - 6, r.left + r.width / 2 - w / 2));
+            tip.style.top = `${top}px`; tip.style.left = `${left}px`;
+            tip.style.setProperty('--ow-tip-x', `${r.left + r.width / 2 - left}px`);
+            requestAnimationFrame(() => tip.classList.add('is-on'));
+        };
+        const target = e => e.target.closest?.('button, a[data-tip], a[aria-label], label[title], label[data-tip], summary[data-tip]');
+        if (matchMedia('(hover: hover)').matches) {
+            document.addEventListener('mouseover', e => { const el = target(e); if (el && el !== on) show(el); });
+            document.addEventListener('mouseout', e => { if (on && !on.contains(e.relatedTarget)) hide(); });
+        }
+        document.addEventListener('focusin', e => { const el = target(e); if (el && el.matches(':focus-visible')) show(el); });
+        document.addEventListener('focusout', hide);
+        document.addEventListener('click', () => { if (on) hide(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && on) hide(); });
+        addEventListener('scroll', () => { if (on) hide(); }, true);
     })();
 })();

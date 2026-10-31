@@ -560,7 +560,7 @@
             <select data-t="icon" data-i="${i}" aria-label="Tab ${i + 1} icon">${Object.keys(ICONS).map(k => `<option value="${k}" ${t.icon === k ? 'selected' : ''}>${ICON_NAMES[k] || k}</option>`).join('')}</select>
             <span class="ab-tab__ic" aria-hidden="true">${svgIcon(t.icon, 'currentColor')}</span>
             <input data-t="label" data-i="${i}" data-v="pagename" maxlength="24" value="${esc(t.label)}" placeholder="Name" aria-label="Page ${i + 1} name">
-            <span class="fb-q__tools"><button type="button" data-tmove="-1" data-i="${i}" title="Move left" ${i ? '' : 'disabled'}>↑</button><button type="button" data-tmove="1" data-i="${i}" title="Move right" ${i < tabs.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-tdel="${i}" title="Remove" class="fb-del" ${tabs.length > 1 ? '' : 'disabled'}>✕</button></span>
+            <span class="fb-q__tools"><button type="button" data-tmove="-1" data-i="${i}" title="Move this page earlier in the app’s menu" ${i ? '' : 'disabled'}>↑</button><button type="button" data-tmove="1" data-i="${i}" title="Move this page later in the app’s menu" ${i < tabs.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-tdel="${i}" title="Remove this page from the app" class="fb-del" ${tabs.length > 1 ? '' : 'disabled'}>✕</button></span>
             <div class="ab-tab__kind">
                 <div class="ab-tab__where"><span>Show in:</span>
                     <label class="fb-check"><input type="checkbox" data-t="bar" data-i="${i}" ${inBar(t, i) ? 'checked' : ''}> Bottom bar</label>
@@ -596,7 +596,7 @@
     /** Rows of a block (list, cards, reviews, FAQ) with move/remove, and an "add" button. */
     const items = (b, label, body) => {
         const n = (b.items || []).length;
-        return `<div class="ab-items">${(b.items || []).map((it, i) => `<div class="ab-item"><div class="ab-item__head"><b>${label} ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-imove="1" data-ii="${i}" title="Move down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-idel="${i}" title="Remove" class="fb-del">✕</button></span></div>${body(it, i)}</div>`).join('')}</div>
+        return `<div class="ab-items">${(b.items || []).map((it, i) => `<div class="ab-item"><div class="ab-item__head"><b>${label} ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move this item up the list" ${i ? '' : 'disabled'}>↑</button><button type="button" data-imove="1" data-ii="${i}" title="Move this item down the list" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-idel="${i}" title="Remove this item" class="fb-del">✕</button></span></div>${body(it, i)}</div>`).join('')}</div>
             <button type="button" class="btn btn--sm btn--ghost" data-iadd ${n >= MAX_ITEMS[b.type] ? 'disabled' : ''}>＋ Add ${label.toLowerCase()}</button>`;
     };
     const pics = (b, type) => `<div class="ab-gal">${(b.images || []).map((img, i) => `<span><img src="${esc(imgSrc(img))}" alt=""><button type="button" data-gdel="${i}" aria-label="Remove picture ${i + 1}">✕</button></span>`).join('')}</div>
@@ -613,7 +613,7 @@
             case 'button': return field('Label', 'label', b.label, { max: 40 }) + actionField('Tapping it', 'action', b.action)
                 + `<label>Style<select data-f="style"><option value="solid" ${b.style !== 'outline' ? 'selected' : ''}>Filled</option><option value="outline" ${b.style === 'outline' ? 'selected' : ''}>Outline</option></select></label>`;
             case 'list': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + `<div class="ab-items">${(b.items || []).map((it, i) => `<div class="ab-item">
-                    <div class="ab-item__head"><b>Item ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-imove="1" data-ii="${i}" title="Move down" ${i < b.items.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-idel="${i}" title="Remove" class="fb-del">✕</button></span></div>
+                    <div class="ab-item__head"><b>Item ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move this item up the list" ${i ? '' : 'disabled'}>↑</button><button type="button" data-imove="1" data-ii="${i}" title="Move this item down the list" ${i < b.items.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-idel="${i}" title="Remove this item" class="fb-del">✕</button></span></div>
                     <div class="fb-2">${field('Name', `items.${i}.title`, it.title, { max: 80 })}${field('Price <small>— optional</small>', `items.${i}.price`, it.price, { max: 20, ph: '$10' })}</div>
                     ${field('Description <small>— optional</small>', `items.${i}.text`, it.text, { max: 400, area: true, rows: 2 })}
                     ${imageField('Picture <small>— optional</small>', `items.${i}.image`, it.image)}${actionField('Tapping it', `items.${i}.action`, it.action)}</div>`).join('')}</div>
@@ -626,7 +626,7 @@
                 + field('Address', 'address', b.address, { max: 200, area: true, rows: 2 });
             case 'hours': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + `<div class="ab-hours">${(b.rows || []).map((r, i) => `<div class="ab-hours__row">
                     <input data-f="rows.${i}.day" value="${esc(r.day)}" maxlength="30" placeholder="Monday" aria-label="Day"><input data-f="rows.${i}.time" value="${esc(r.time)}" maxlength="60" placeholder="9:00 – 17:00" aria-label="Hours">
-                    <span class="fb-q__tools"><button type="button" data-hdel="${i}" class="fb-del" title="Remove">✕</button></span></div>`).join('')}</div>
+                    <span class="fb-q__tools"><button type="button" data-hdel="${i}" class="fb-del" title="Remove this day’s hours">✕</button></span></div>`).join('')}</div>
                 <button type="button" class="btn btn--sm btn--ghost" data-hadd ${(b.rows || []).length >= 14 ? 'disabled' : ''}>＋ Add row</button>`;
             case 'video': return field(`YouTube link${youtubeId(b.url) === 'aqz-KE-bpKQ' ? ' <small>— a demo video for now: paste your own link</small>' : ''}`, 'url', b.url, { max: 300, v: 'youtube', type: 'url', ph: 'https://www.youtube.com/watch?v=…' }) + field('Title <small>— optional</small>', 'title', b.title, { max: 120 });
             case 'divider': return '<p class="fb-hint">A thin line between blocks.</p>';
@@ -654,7 +654,7 @@
                 return field('Title', 'title', b.title, { max: 80 }) + field('Text <small>— optional</small>', 'text', b.text, { max: 300, area: true, rows: 2 })
                     + `<p class="fb-hint">People pick a service, a day and a time, then send you the request on WhatsApp or by email (set up under “More settings → Orders & bookings”). You confirm it — the app doesn’t know which times are already taken.</p>
                     <div class="ab-items">${(b.services || []).map((sv, i) => `<div class="ab-hours__row"><input data-f="services.${i}.name" value="${esc(sv.name)}" maxlength="60" placeholder="Service" aria-label="Service ${i + 1}"><input data-f="services.${i}.info" value="${esc(sv.info || '')}" maxlength="40" placeholder="30 min · $25" aria-label="Service ${i + 1} details">
-                        <span class="fb-q__tools"><button type="button" data-svdel="${i}" class="fb-del" title="Remove">✕</button></span></div>`).join('')}</div>
+                        <span class="fb-q__tools"><button type="button" data-svdel="${i}" class="fb-del" title="Remove this service">✕</button></span></div>`).join('')}</div>
                     <button type="button" class="btn btn--sm btn--ghost" data-svadd ${(b.services || []).length >= 20 ? 'disabled' : ''}>＋ Add service</button>
                     <div class="ab-field"><span>Open for bookings</span><div class="ab-days">${order.map(d => `<label class="fb-check"><input type="checkbox" data-bday="${d}" ${(b.days || []).includes(d) ? 'checked' : ''}> ${DAYS[d]}</label>`).join('')}</div></div>
                     <div class="fb-2"><label>First appointment<input type="time" data-f="from" value="${esc(b.from)}" step="900"></label><label>Last one ends by<input type="time" data-f="to" data-v="until" value="${esc(b.to)}" step="900"></label>
@@ -689,7 +689,7 @@
         const blocks = t.blocks;
         box.innerHTML = blocks.length ? blocks.map((b, i) => `<details class="ab-blk" data-b="${i}" ${openBlocks.has(b) ? 'open' : ''}>
             <summary><span class="ab-blk__ic" aria-hidden="true">${svgIcon(BLOCKS[b.type]?.icon, 'currentColor', 18)}</span><b>${esc(BLOCKS[b.type]?.name || b.type)}</b><small>${esc(blockSummary(b))}</small>
-                <span class="fb-q__tools"><button type="button" data-bmove="-1" title="Move up" aria-label="Move block up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-bmove="1" title="Move down" aria-label="Move block down" ${i < blocks.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-bcopy title="Duplicate" aria-label="Duplicate block" ${blocks.length >= MAX_BLOCKS ? 'disabled' : ''}>⧉</button><button type="button" data-bdel title="Remove" aria-label="Remove block" class="fb-del">✕</button></span></summary>
+                <span class="fb-q__tools"><button type="button" data-bmove="-1" title="Move this block up the screen" aria-label="Move block up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-bmove="1" title="Move this block down the screen" aria-label="Move block down" ${i < blocks.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-bcopy title="Make a copy of this block" aria-label="Duplicate block" ${blocks.length >= MAX_BLOCKS ? 'disabled' : ''}>⧉</button><button type="button" data-bdel title="Remove this block" aria-label="Remove block" class="fb-del">✕</button></span></summary>
             <div class="ab-blk__body">${blockFields(b)}</div></details>`).join('') : '<p class="fb-hint">This screen is empty. Add your first block below.</p>';
         $$('[data-add-type]').forEach(x => (x.disabled = blocks.length >= MAX_BLOCKS));
     };
@@ -908,6 +908,61 @@
             drawSettings(); drawTabs(); drawBlocks(); drawPhone(); markDirty(true);
         }
     });
+
+    // Full screen: the whole builder, or just the phone preview (on top of it). The browser's own full screen is
+    // asked for while either is open; the phone is enlarged with CSS zoom so it looks like a bigger phone.
+    // Esc (or the browser leaving full screen) closes the top one first.
+    const prevWrap = root.querySelector('.ab-prev-wrap');
+    const appFull = () => root.classList.contains('is-full'), prevFull = () => prevWrap.classList.contains('is-full');
+    const fitFull = () => {
+        const ph = $('[data-phone]'); ph.style.zoom = '';
+        if (!prevFull()) return;
+        const r = ph.getBoundingClientRect(); if (!r.height) return;
+        const z = Math.min((innerHeight - 120) / r.height, (innerWidth - 32) / r.width);
+        ph.style.zoom = String(Math.max(0.6, Math.min(1.7, z)).toFixed(3));
+    };
+    const syncScreen = () => {
+        const want = appFull() || prevFull();
+        document.documentElement.classList.toggle('ab-full-open', want);
+        try {
+            if (want && !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
+            if (!want && document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+        } catch { /* the overlay works without the browser's full screen */ }
+    };
+    const label = (btn, on, name) => {
+        const tip = on ? 'Leave full screen (Esc)' : name === 'preview' ? 'See the phone preview full screen' : 'Fill the screen with the builder';
+        btn.setAttribute('aria-pressed', String(on)); btn.setAttribute('aria-label', tip); btn.dataset.tip = tip;
+        const s = btn.querySelector('span'); if (s) s.textContent = on ? 'Close' : 'Full screen';
+    };
+    const setFull = (on, noScreen) => {
+        if (on === prevFull()) return;
+        prevWrap.classList.toggle('is-full', on);
+        label(prevWrap.querySelector('[data-full]'), on, 'preview');
+        if (!noScreen) syncScreen(); else document.documentElement.classList.toggle('ab-full-open', appFull() || on);
+        fitFull();
+        if (on) prevWrap.querySelector('[data-full]').focus();
+    };
+    const setAppFull = (on, noScreen) => {
+        if (on === appFull()) return;
+        root.classList.toggle('is-full', on);
+        label($('[data-app-full]'), on, 'builder');
+        if (!noScreen) syncScreen(); else document.documentElement.classList.toggle('ab-full-open', on || prevFull());
+        root.scrollTop = 0;
+    };
+    root.addEventListener('click', e => {
+        if (e.target.closest('[data-full]')) setFull(!prevFull());
+        else if (e.target.closest('[data-app-full]')) setAppFull(!appFull());
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Escape' || document.querySelector('dialog[open]') || root.querySelector('.wz')) return;
+        if (prevFull()) setFull(false); else if (appFull()) setAppFull(false);
+    });
+    document.addEventListener('fullscreenchange', () => {
+        if (document.fullscreenElement) { fitFull(); return; }
+        // the browser left full screen (Esc there never reaches the page): close the top one, keep the other as a big window
+        if (prevFull()) setFull(false, true); else if (appFull()) setAppFull(false, true);
+    });
+    addEventListener('resize', () => requestAnimationFrame(fitFull));
 
     root.addEventListener('click', async e => {
         const t = e.target.closest('button'); if (!t || !root.contains(t)) return;

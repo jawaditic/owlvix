@@ -212,7 +212,7 @@ ${rows}
         $('[data-blocks]').innerHTML = E.blocks.map((b, i) => {
             const [label, icon, , fields] = B[b.type], open = b.id === openId;
             return `<div class="fb-q${open ? ' is-open' : ''}" data-i="${i}"><div class="fb-q__head" data-toggle="${b.id}"><span class="fb-q__icon" aria-hidden="true">${esc(icon)}</span><span class="fb-q__label">${label}${summary(b) ? ` <small>· ${summary(b)}</small>` : ''}</span>
-                <span class="fb-q__tools"><button type="button" data-move="-1" title="Move up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" title="Move down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup title="Duplicate">⧉</button><button type="button" data-del title="Delete" class="fb-del">✕</button></span></div>
+                <span class="fb-q__tools"><button type="button" data-move="-1" title="Move this block up the email" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" title="Move this block down the email" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup title="Make a copy of this block">⧉</button><button type="button" data-del title="Delete this block" class="fb-del">✕</button></span></div>
                 ${open ? `<div class="fb-q__body">${fields.map(fl => fieldHtml(b, fl)).join('') || '<p class="fb-hint">Nothing to set.</p>'}</div>` : ''}</div>`;
         }).join('') || '<p class="fb-hint">Your email is empty — add a block below.</p>';
     };

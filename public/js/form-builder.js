@@ -59,7 +59,7 @@
     const fieldCard = (q, i) => {
         const open = q.id === openId, n = S().fields.length;
         const head = `<div class="fb-q__head" data-toggle="${q.id}"><span class="fb-q__icon" aria-hidden="true">${esc(TYPES[q.type][1])}</span><span class="fb-q__label">${esc(q.label) || '<i>No question yet</i>'}${q.required ? ' <em>*</em>' : ''}</span>
-            <span class="fb-q__tools"><button type="button" data-move="-1" data-i="${i}" title="Move up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" data-i="${i}" title="Move down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup="${i}" title="Duplicate">⧉</button><button type="button" data-del="${i}" title="Delete" class="fb-del">✕</button></span></div>`;
+            <span class="fb-q__tools"><button type="button" data-move="-1" data-i="${i}" title="Move this question up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" data-i="${i}" title="Move this question down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup="${i}" title="Make a copy of this question">⧉</button><button type="button" data-del="${i}" title="Delete this question" class="fb-del">✕</button></span></div>`;
         if (!open) return `<div class="fb-q">${head}</div>`;
         return `<div class="fb-q is-open">${head}<div class="fb-q__body">
             <div class="fb-2"><label>Question${q.type === 'heading' ? ' / title' : ''}<input data-q="label" data-i="${i}" maxlength="200" value="${esc(q.label)}"></label>

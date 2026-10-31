@@ -84,6 +84,10 @@
                     <button type="button" class="btn btn--sm btn--ghost" data-mine-signin hidden>📂 My apps</button>
                     <button type="button" class="btn btn--sm btn--ghost" data-new>＋ New app</button>
                     <button type="button" class="btn btn--sm btn--glow" data-save>Save app</button>
+                    <button type="button" class="ab-full-btn ab-full-btn--app" data-app-full aria-pressed="false" aria-label="Full screen builder" data-tip="Fill the screen with the builder">
+                        <svg class="ab-full-btn__on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                        <svg class="ab-full-btn__off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+                    </button>
                 </div>
                 {{-- add a block to the page on the phone, top right of the toolbar so it is always easy to find (same menu as under the screen's blocks) --}}
                 <details class="ab-add ab-add--prev" data-add-block-prev>
@@ -279,10 +283,17 @@
                 </div>
 
                 <div class="fb-prev-wrap ab-prev-wrap">
-                    <div class="ab-seg ab-views" role="group" aria-label="Preview">
-                        <button type="button" data-view="app" aria-pressed="true">App</button>
-                        <button type="button" data-view="splash" aria-pressed="false">Splash</button>
-                        <button type="button" data-view="home" aria-pressed="false">Home screen</button>
+                    <div class="ab-views-row">
+                        <div class="ab-seg ab-views" role="group" aria-label="Preview">
+                            <button type="button" data-view="app" aria-pressed="true">App</button>
+                            <button type="button" data-view="splash" aria-pressed="false">Splash</button>
+                            <button type="button" data-view="home" aria-pressed="false">Home screen</button>
+                        </div>
+                        <button type="button" class="ab-full-btn" data-full aria-pressed="false" aria-label="Full screen preview" data-tip="See the phone preview full screen">
+                            <svg class="ab-full-btn__on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+                            <svg class="ab-full-btn__off" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+                            <span>Full screen</span>
+                        </button>
                     </div>
                     <div class="ab-phone" data-phone></div>
                     <p class="fb-hint">Preview — on a phone every screen is drawn with native Android parts.</p>

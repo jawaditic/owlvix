@@ -149,7 +149,7 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
         ? `<label${o.wide ? ' class="rb-wide"' : ''}>${label}${o.hint ? ` <small>${o.hint}</small>` : ''}<textarea data-p="${path}" rows="${o.rows || 3}" maxlength="${o.max || 1000}" placeholder="${esc(o.ph || '')}">${esc(val)}</textarea></label>`
         : `<label${o.wide ? ' class="rb-wide"' : ''}>${label}<input data-p="${path}" maxlength="${o.max || 120}" value="${esc(val)}" placeholder="${esc(o.ph || '')}"${o.type ? ` type="${o.type}"` : ''}></label>`;
     const listHtml = (key, title, render, addLabel) => `<div class="rb-list">${R[key].map((x, i) => `<div class="fb-q is-open rb-item" data-list="${key}" data-i="${i}"><div class="fb-q__head"><span class="fb-q__label">${esc(title(x)) || '<i>New entry</i>'}</span>
-        <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} title="Move up">↑</button><button type="button" data-move="1" ${i < R[key].length - 1 ? '' : 'disabled'} title="Move down">↓</button><button type="button" data-del class="fb-del" title="Delete">✕</button></span></div>
+        <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} title="Move this entry up">↑</button><button type="button" data-move="1" ${i < R[key].length - 1 ? '' : 'disabled'} title="Move this entry down">↓</button><button type="button" data-del class="fb-del" title="Delete this entry">✕</button></span></div>
         <div class="fb-q__body fb-2">${render(x, `${key}.${i}`)}</div></div>`).join('')}</div>
         ${R[key].length < MAX[key] ? `<button type="button" class="btn btn--sm btn--ghost rb-add" data-add="${key}">＋ ${addLabel}</button>` : ''}`;
     const openState = {};

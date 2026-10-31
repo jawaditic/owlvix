@@ -42,8 +42,8 @@
                 <div class="fb-tpls"><span>Start from:</span><div data-templates></div></div>
                 <div class="fb-top__actions">
                     <div class="eb-devices" role="group" aria-label="Preview size">
-                        <button type="button" data-device="desktop" aria-pressed="true" title="Desktop">🖥</button>
-                        <button type="button" data-device="mobile" aria-pressed="false" title="Phone">📱</button>
+                        <button type="button" data-device="desktop" aria-pressed="true" title="Preview the email on a computer">🖥</button>
+                        <button type="button" data-device="mobile" aria-pressed="false" title="Preview the email on a phone">📱</button>
                     </div>
                     <button type="button" class="btn btn--sm btn--ghost" data-download>Download .html</button>
                     <button type="button" class="btn btn--sm btn--glow" data-copy>Copy HTML</button>
