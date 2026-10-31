@@ -238,7 +238,8 @@
             finished = true;
             try { localStorage.setItem(OFF, '1'); } catch {} // they've made their app: from now on the page opens on the builder
             const tasks = ['Laying out your pages', 'Painting your colours', 'Drawing your icon', 'Polishing the animations'];
-            $('[data-wz-count]', box).textContent = 'Done';
+            // the step counter becomes a "Done" button that closes the wizard (like ✕ or Keep editing)
+            $('[data-wz-count]', box).innerHTML = '<button type="button" class="wz__done" data-wz-close>✓ Done</button>';
             $('[data-wz-bar]', box).style.width = '100%';
             $('.wz__nav', box).hidden = true;
             const el = $('[data-wz-step]', box);
@@ -247,7 +248,7 @@
             const t = still() ? 0 : 1900;
             setTimeout(() => {
                 if (!box) return;
-                B.showApp(); bump();
+                B.showPage(0); B.showApp(); bump(); // the app opens on its first screen (Home), like on a phone
                 box.classList.add('is-done');
                 el.innerHTML = `<div class="wz__in from-right wz-done">${still() ? '' : '<div class="wz-confetti" aria-hidden="true">' + Array.from({ length: 18 }, (_, i) => `<i style="--i:${i}"></i>`).join('') + '</div>'}
                     <div class="wz-done__badge" aria-hidden="true">🎉</div>

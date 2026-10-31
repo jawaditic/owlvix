@@ -22,20 +22,35 @@
     /* ---------- Mobile menu ---------- */
     const toggle = document.querySelector('.nav__toggle');
     const links = document.querySelector('.nav__links');
-    toggle.addEventListener('click', () => {
-        const open = links.classList.toggle('is-open');
+    // On phones it fills the screen below the header (the page behind stays still); ☰ turns into ✕.
+    // The fold-out section holding the current page opens by itself.
+    const setMenu = open => {
+        links.classList.toggle('is-open', open);
         toggle.setAttribute('aria-expanded', open);
-    });
-    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
-        links.classList.remove('is-open');
-        toggle.setAttribute('aria-expanded', false);
-    }));
+        toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        document.documentElement.classList.toggle('nav-open', open);
+        if (open) {
+            links.scrollTop = 0;
+            const here = links.querySelector('.nav-drop:not(.nav-drop--more) [aria-current="page"]')?.closest('[data-nav-drop]');
+            // after this tap's "close dropdowns on outside click" has run
+            if (here) setTimeout(() => { here.classList.add('is-open'); here.querySelector('button').setAttribute('aria-expanded', true); });
+        }
+    };
+    toggle.addEventListener('click', () => setMenu(!links.classList.contains('is-open')));
+    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && links.classList.contains('is-open')) { setMenu(false); toggle.focus(); } });
+    matchMedia('(min-width: 761px)').addEventListener?.('change', e => { if (e.matches) setMenu(false); });
 
     /* ---------- "Free tools" dropdown in the menu (also opens on hover/focus via CSS) ---------- */
     document.querySelectorAll('[data-nav-drop]').forEach(drop => {
         const btn = drop.querySelector('button');
         const set = open => { drop.classList.toggle('is-open', open); btn.setAttribute('aria-expanded', open); };
-        btn.addEventListener('click', e => { e.stopPropagation(); set(!drop.classList.contains('is-open')); });
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            const open = !drop.classList.contains('is-open');
+            if (open) document.querySelectorAll('[data-nav-drop].is-open').forEach(d => { if (d !== drop) { d.classList.remove('is-open'); d.querySelector('button').setAttribute('aria-expanded', false); } });
+            set(open);
+        });
         document.addEventListener('click', e => { if (!drop.contains(e.target)) set(false); });
         drop.addEventListener('keydown', e => { if (e.key === 'Escape') { set(false); btn.focus(); } });
     });
