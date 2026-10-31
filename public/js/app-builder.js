@@ -32,10 +32,10 @@
         image: { name: 'Picture', icon: 'image', make: () => ({ image: null, caption: '', alt: '', round: true, action: { kind: '', value: '' } }) },
         button: { name: 'Button', icon: 'button', make: () => ({ label: 'Call us', style: 'solid', action: { kind: 'tel', value: '' } }) },
         list: { name: 'List / menu / prices', icon: 'list', make: () => ({ title: '', items: [{ title: 'Item', text: '', price: '', image: null, action: { kind: '', value: '' } }] }) },
-        gallery: { name: 'Gallery', icon: 'gallery', make: () => ({ images: [], columns: 2 }) },
+        gallery: { name: 'Gallery', icon: 'gallery', make: () => ({ images: DEMO_PICS.map(p => ({ ...p })), columns: 2 }) }, // starts with demo pictures to swap
         contact: { name: 'Contact', icon: 'phone', make: () => ({ title: 'Get in touch', phone: '', whatsapp: '', email: '', address: '', website: '' }) },
         hours: { name: 'Opening hours', icon: 'calendar', make: () => ({ title: 'Opening hours', rows: [{ day: 'Mon – Fri', time: '9:00 – 17:00' }, { day: 'Sat – Sun', time: 'Closed' }] }) },
-        video: { name: 'YouTube video', icon: 'play', make: () => ({ url: '', title: '' }) },
+        video: { name: 'YouTube video', icon: 'play', make: () => ({ url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', title: '' }) }, // demo: Big Buck Bunny (Blender, free to share) — owners paste their own
         divider: { name: 'Divider', icon: 'divider', make: () => ({}) },
         slider: { name: 'Picture slider', icon: 'slider', make: () => ({ images: [] }) },
         cards: { name: 'Feature cards', icon: 'cards', make: () => ({ title: '', columns: 2, items: [newItem('cards'), { ...newItem('cards'), icon: 'heart', title: 'Made with care' }] }) },
@@ -66,6 +66,22 @@
     const ACTIONS = { '': 'Nothing', tab: 'Open a tab', url: 'Open a website', tel: 'Call', whatsapp: 'WhatsApp', email: 'Email', map: 'Show on a map' };
     const ACTION_HINT = { url: 'https://…', tel: '+1 555 123 4567', whatsapp: 'Full number, e.g. +44 7700 900123', email: 'you@example.com', map: 'Address or place name' };
     const block = type => ({ type, ...BLOCKS[type].make() });
+    /** Ready-made pages for “＋ Add page”: a name, an icon and starting blocks (a type, or a type with some values). */
+    const PAGE_PRESETS = {
+        about: { name: 'About us', icon: 'user', blocks: [{ type: 'hero', title: 'About us', text: 'Who we are and what we love doing.' }, { type: 'text', text: 'Tell your story: how you started, what makes you different and the people behind it.' }, 'image'] },
+        prices: { name: 'Prices', icon: 'tag', blocks: [{ type: 'list', title: 'Our prices', items: [
+            { title: 'First item', text: 'A short description', price: '$20', image: null, action: { kind: '', value: '' } },
+            { title: 'Second item', text: 'A short description', price: '$35', image: null, action: { kind: '', value: '' } }] }] },
+        shop: { name: 'Shop', icon: 'cart', blocks: [{ type: 'products', title: 'Order online' }] },
+        book: { name: 'Book', icon: 'calendar', blocks: ['booking', 'hours'] },
+        gallery: { name: 'Gallery', icon: 'image', blocks: [{ type: 'heading', text: 'Our work' }, 'gallery'] },
+        offers: { name: 'Offers', icon: 'bell', blocks: [{ type: 'notice', text: 'New customers get 10% off their first visit!', tone: 'info' }, { type: 'cards', title: 'This month' }] },
+        loyalty: { name: 'Loyalty', icon: 'heart', blocks: ['loyalty'] },
+        reviews: { name: 'Reviews', icon: 'star', blocks: [{ type: 'reviews', title: 'What customers say', items: [newItem('reviews'), { ...newItem('reviews'), name: 'Regular customer', text: 'Always great service — I keep coming back.' }] }] },
+        faq: { name: 'FAQ', icon: 'info', blocks: [{ type: 'faq', title: 'Questions', items: [newItem('faq'), { q: 'Where can I park?', a: 'There’s free parking right outside.' }] }] },
+        video: { name: 'Videos', icon: 'play', blocks: [{ type: 'heading', text: 'Watch' }, 'video'] },
+        contact: { name: 'Contact', icon: 'phone', blocks: ['contact', 'hours', 'social'] },
+    };
     const starter = () => [
         { label: 'Home', icon: 'home', type: 'screen', path: '', blocks: [block('hero'), { type: 'heading', text: 'About us', align: 'left' },
             { type: 'text', text: 'Write a few lines about your business: what you offer and why people love it.', align: 'left' },
@@ -127,6 +143,7 @@
             .then(() => { if (seq !== saveSeq) return; try { localStorage.setItem(STORE, JSON.stringify({ idb: true, id: D.id })); } catch {} draftAtRisk = false; syncSave(); })
             .catch(() => { if (seq === saveSeq) { draftAtRisk = true; syncSave(); } });
     };
+    let psheet = null, pcart = [], pIn = false; // tap-through preview: the open sheet (product, order, booking) and a pretend basket
     let view = 'app', activeTab = 0, previewMenu = false, previewIntro = false, enterNext = true, showLoader = true; // the preview opens like the app: loader, then cards rising in
     const openBlocks = new WeakSet(); // block cards shown open in the editor
 
@@ -294,6 +311,40 @@
      * A picture for a screen: up to 1280 px; JPEG (small) unless it's a PNG that stays small (logos with see-through
      * parts). Named like the server names it (first 20 hex of its SHA-256), so after saving it's known by that name.
      */
+    /**
+     * Demo pictures for a new gallery: four simple drawn scenes (sunset, sea, forest, city at night), made here as
+     * JPEGs so they save like any other picture — no outside links. Ready a moment after the page loads.
+     */
+    const DEMO_PICS = [];
+    const paintDemo = ([sky1, sky2, sun, l1, l2, l3], night) => {
+        const W = 720, c = document.createElement('canvas'); c.width = c.height = W; const x = c.getContext('2d');
+        const g = x.createLinearGradient(0, 0, 0, W); g.addColorStop(0, sky1); g.addColorStop(1, sky2); x.fillStyle = g; x.fillRect(0, 0, W, W);
+        if (night) for (let i = 0; i < 70; i++) { x.fillStyle = `rgba(255,255,255,${0.3 + (i % 5) / 8})`; x.fillRect((i * 97) % W, (i * 53) % (W * 0.5), 2, 2); }
+        const glow = x.createRadialGradient(W * 0.68, W * 0.36, 10, W * 0.68, W * 0.36, W * 0.32); glow.addColorStop(0, sun + 'cc'); glow.addColorStop(1, sun + '00');
+        x.fillStyle = glow; x.fillRect(0, 0, W, W); x.fillStyle = sun; x.beginPath(); x.arc(W * 0.68, W * 0.36, W * 0.09, 0, Math.PI * 2); x.fill();
+        [[l1, 0.56, 0.07], [l2, 0.68, 0.06], [l3, 0.8, 0.05]].forEach(([col, y, a], k) => {
+            x.fillStyle = col; x.beginPath(); x.moveTo(0, W);
+            if (night && k === 1) { for (let px = 0; px < W; px += 48) { const h = W * (0.42 + ((px * 37) % 100) / 400); x.lineTo(px, h); x.lineTo(px + 40, h); x.lineTo(px + 40, W * y + 30); } }
+            else for (let px = 0; px <= W; px += 8) x.lineTo(px, W * y + Math.sin(px / W * Math.PI * (2 + k) + k) * W * a);
+            x.lineTo(W, W); x.closePath(); x.fill();
+        });
+        return c;
+    };
+    (async () => {
+        const scenes = [
+            [['#ff9a62', '#ffd3a5', '#fff4d6', '#e0705a', '#b54e5c', '#6d2f4f']],
+            [['#7cc6f2', '#d9f1ff', '#ffffff', '#3d9bd6', '#1f78b8', '#0f4f86']],
+            [['#a8e6cf', '#f1fbe9', '#fffbe0', '#5fb47c', '#3a8a5c', '#1f5c3e']],
+            [['#141e46', '#3d2a6b', '#ffe9a8', '#2a2350', '#1b1636', '#0e0b1f'], true],
+        ];
+        for (const [pal, night] of scenes) {
+            try {
+                const url = paintDemo(pal, night).toDataURL('image/jpeg', 0.82), bytes = Uint8Array.from(atob(url.split(',')[1]), ch => ch.charCodeAt(0));
+                const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 20);
+                DEMO_PICS.push({ src: url, name: hash + '.jpg', w: 720, h: 720 });
+            } catch { /* no demo pictures: the gallery just starts empty */ }
+        }
+    })();
     const readPhoto = async file => {
         const img = await loadPicture(file, 64);
         let out = file.type === 'image/png' ? shrink(img, 1280, 'image/png') : null;
@@ -308,7 +359,7 @@
         tap: (a, html, cls = '') => { const t = a?.kind && (a.kind === 'tab' || String(a.value ?? '').trim()) ? a : null; return t ? `<button type="button" class="ab-n-tap ${cls}" data-pact="${esc(JSON.stringify(t))}">${html}</button>` : `<div class="${cls}">${html}</div>`; },
         chev: '<i class="ab-n-chev" aria-hidden="true">›</i>',
     };
-    const blockHtml = (b, c) => {
+    const blockHtml = (b, c, bi = -1) => {
         const on = ink(c.primary);
         switch (b.type) {
             case 'hero': {
@@ -368,17 +419,86 @@
             }
             case 'booking': return `<div class="ab-n-pad"><div class="ab-n-book"><span style="background:${c.primary}1f">${svgIcon('calendar', c.primary, 16)}</span><b>${esc(b.title || 'Book an appointment')}</b>${b.text ? `<p>${esc(b.text)}</p>` : ''}
                 ${(b.services || []).filter(s => s.name?.trim()).map(s => `<div class="ab-n-row"><span class="ab-n-rb"><b>${esc(s.name)}</b></span><small>${esc(s.info || '')}</small></div>`).join('')}
-                <em style="background:${c.primary};color:${ink(c.primary)}">Book an appointment</em></div></div>`;
+                <em style="background:${c.primary};color:${ink(c.primary)}" data-pp="book" data-bi="${bi}" role="button" tabindex="0">Book an appointment</em></div></div>`;
             case 'products': {
-                const items = (b.items || []).filter(i => i.name?.trim()), cur = A().shop?.currency || '$';
+                const items = (b.items || []).map((i, ii) => ({ ...i, ii })).filter(i => i.name?.trim()), cur = A().shop?.currency || '$';
                 const price = p => (String(p ?? '').trim() === '' || isNaN(+String(p).replace(',', '.')) ? 'Ask us' : cur + (+String(p).replace(',', '.') % 1 ? (+String(p).replace(',', '.')).toFixed(2) : +String(p).replace(',', '.')));
                 const cats = [...new Set(items.map(i => i.category?.trim() || ''))];
                 return items.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct">${esc(b.title)}</h5>` : ''}${cats.map(cat => `${cat ? `<b class="ab-n-cat">${esc(cat)}</b>` : ''}<div class="ab-n-prods">${items.filter(i => (i.category?.trim() || '') === cat).map(i =>
-                    `<div>${i.image ? `<img src="${esc(imgSrc(i.image))}" alt="">` : `<span style="background:${c.primary}14">${svgIcon('store', c.primary, 18)}</span>`}<b>${esc(i.name)}</b><em style="color:${c.primary}">${esc(price(i.price))}</em></div>`).join('')}</div>`).join('')}</div>` : '';
+                    `<div data-pp="prod" data-bi="${bi}" data-ii="${i.ii}" role="button" tabindex="0">${i.image ? `<img src="${esc(imgSrc(i.image))}" alt="">` : `<span style="background:${c.primary}14">${svgIcon('store', c.primary, 18)}</span>`}<b>${esc(i.name)}</b><em style="color:${c.primary}">${esc(price(i.price))}</em></div>`).join('')}</div>`).join('')}</div>` : '';
             }
             default: return '';
         }
     };
+
+    /* ------------------------------------------------ preview: tap a product or "Book" to see the next steps (same steps and words as the app) */
+    const pNum = p => { const n = +String(p ?? '').trim().replace(',', '.'); return String(p ?? '').trim() === '' || isNaN(n) ? null : n; };
+    const pMoney = n => (A().shop?.currency || '$') + (n % 1 ? n.toFixed(2) : n);
+    const P_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], P_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const pDays = b => { const out = [], d = new Date(); d.setHours(0, 0, 0, 0); for (let i = 0; i <= (b.ahead || 30) && out.length < 14; i++) { const x = new Date(d); x.setDate(d.getDate() + i); if ((b.days || []).includes(x.getDay())) out.push(x); } return out; };
+    const pTimes = b => { const m = x => { const [h, mm] = String(x || '').split(':').map(Number); return h * 60 + (mm || 0); }, slot = +b.slot || 30, out = []; if (!b.from || !b.to) return out; for (let t = m(b.from); t + slot <= m(b.to); t += slot) out.push(`${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`); return out; };
+    const pVia = () => (A().shop?.whatsapp?.trim() ? 'WhatsApp' : 'your email app');
+    const pSendBtns = (c, what) => { const sh = A().shop || {}, wa = !!sh.whatsapp?.trim(), em = !!sh.email?.trim();
+        return `${wa || !em ? `<button type="button" class="ab-ps__btn" style="background:#25D366;color:#05341b" data-pp="send">Send ${what} on WhatsApp</button>` : ''}${em ? `<button type="button" class="ab-ps__btn${wa ? ' is-line' : ''}" style="${wa ? `color:${c.primary};border-color:${c.primary}` : `background:${c.primary};color:${ink(c.primary)}`}" data-pp="send">Send ${what} by email</button>` : ''}`; };
+    const pStep = (n, c) => `<span class="ab-ps__qty"><button type="button" data-pp="qty" data-d="-1" style="color:${c.primary};border-color:${c.primary}" aria-label="One less">−</button><b>${n}</b><button type="button" data-pp="qty" data-d="1" style="color:${c.primary};border-color:${c.primary}" aria-label="One more">+</button></span>`;
+    const sheetHtml = (c, t) => {
+        const blocks = t.blocks || [], appName = esc(A().name || 'the business');
+        const count = pcart.reduce((n, l) => n + l.qty, 0), total = pcart.reduce((n, l) => n + (l.price ?? 0) * l.qty, 0);
+        const fab = count && !psheet ? `<button type="button" class="ab-ps__fab" style="background:${c.primary};color:${ink(c.primary)}" data-pp="order">${count} · ${total ? pMoney(total) : 'View order'}</button>` : '';
+        if (!psheet) return fab;
+        let body = '';
+        if (psheet.k === 'prod') {
+            const it = blocks[psheet.bi]?.items?.[psheet.ii]; if (!it) { psheet = null; return fab; }
+            const p = pNum(it.price);
+            body = `${it.image ? `<img class="ab-ps__img" src="${esc(imgSrc(it.image))}" alt="">` : ''}<b class="ab-ps__t">${esc(it.name)}</b><em class="ab-ps__price" style="color:${c.primary}">${p === null ? 'Price on request' : pMoney(p)}</em>${it.text?.trim() ? `<p>${esc(it.text)}</p>` : ''}
+                <div class="ab-ps__row">${pStep(psheet.qty, c)}<button type="button" class="ab-ps__btn" style="background:${c.primary};color:${ink(c.primary)}" data-pp="add">Add to order${p === null ? '' : ' · ' + pMoney(p * psheet.qty)}</button></div>`;
+        } else if (psheet.k === 'order') {
+            const ask = pcart.some(l => l.price === null), note = A().shop?.note?.trim();
+            body = `<b class="ab-ps__t">Your order</b>` + (psheet.sent
+                ? `<p>Your order is ready to send in ${pVia()}. Once you’ve sent it, ${appName} will get back to you.</p><button type="button" class="ab-ps__btn" style="background:${c.primary};color:${ink(c.primary)}" data-pp="done">Done — start a new order</button><button type="button" class="ab-ps__link" style="color:${c.primary}" data-pp="back">Back to my order</button>`
+                : `${pcart.map((l, i) => `<div class="ab-ps__line"><span><b>${esc(l.name)}</b><small>${l.price === null ? 'Price on request' : pMoney(l.price * l.qty)}</small></span>${pStep(l.qty, c).replaceAll('data-pp="qty"', `data-pp="lqty" data-i="${i}"`)}</div>`).join('')}
+                    ${total ? `<b class="ab-ps__total">Total ${pMoney(total)}${ask ? ' + items priced on request' : ''}</b>` : ''}${note ? `<small>${esc(note)}</small>` : ''}
+                    <span class="ab-ps__in">Your name</span><span class="ab-ps__in is-tall">Note (time, address, allergies…)</span>${pSendBtns(c, 'order')}`);
+        } else if (psheet.k === 'book') {
+            const b = blocks[psheet.bi]; if (!b) { psheet = null; return fab; }
+            const svcs = (b.services || []).filter(x => x.name?.trim()), days = pDays(b), times = psheet.day === null ? [] : pTimes(b);
+            const chip = (on, attrs, inner) => `<button type="button" class="ab-ps__chip${on ? ' is-on' : ''}" style="${on ? `background:${c.primary};border-color:${c.primary};color:${ink(c.primary)}` : ''}" ${attrs}>${inner}</button>`;
+            body = `<b class="ab-ps__t">${esc(b.title || 'Book an appointment')}</b>` + (psheet.sent
+                ? `<p>Your request is ready to send in ${pVia()}. ${appName} will confirm your appointment.</p><button type="button" class="ab-ps__btn" style="background:${c.primary};color:${ink(c.primary)}" data-pp="done">Done</button>`
+                : `${svcs.length ? `<span class="ab-ps__step">Service</span><div class="ab-ps__chips">${svcs.map((x, i) => chip(psheet.svc === i, `data-pp="svc" data-i="${i}"`, `<b>${esc(x.name)}</b>${x.info ? `<small>${esc(x.info)}</small>` : ''}`)).join('')}</div>` : ''}
+                    <span class="ab-ps__step">Day</span>${days.length ? `<div class="ab-ps__chips is-scroll">${days.map((d, i) => chip(psheet.day === i, `data-pp="day" data-i="${i}"`, `<small>${P_DAYS[d.getDay()]}</small><b>${d.getDate()}</b><small>${P_MONTHS[d.getMonth()]}</small>`)).join('')}</div>` : '<small>No days are open for booking right now.</small>'}
+                    ${psheet.day !== null ? `<span class="ab-ps__step">Time</span>${times.length ? `<div class="ab-ps__chips is-grid">${times.map(x => chip(psheet.time === x, `data-pp="time" data-v="${x}"`, `<b>${x}</b>`)).join('')}</div>` : '<small>No times left on this day — please pick another.</small>'}` : ''}
+                    <span class="ab-ps__step">Your details</span><span class="ab-ps__in">Your name</span><span class="ab-ps__in">Phone number</span>
+                    ${(svcs.length && psheet.svc === null) || psheet.day === null || !psheet.time ? '<small>Pick a service, a day and a time, and add your name to send your request.</small>' : pSendBtns(c, 'request')}`);
+        }
+        const anim = pIn; pIn = false;
+        return `${fab}<div class="ab-ps${anim ? ' is-in' : ''}"><button type="button" class="ab-ps__shade" data-pp="close" aria-label="Close"></button><div class="ab-ps__panel"><i class="ab-ps__grip"></i>${body}</div></div>`;
+    };
+    $('[data-phone]').addEventListener('click', e => {
+        const el = e.target.closest('[data-pp]'); if (!el) return;
+        const k = el.dataset.pp, items = () => curBlocks()[psheet?.bi]?.items || [];
+        if (k === 'prod') psheet = { k: 'prod', bi: +el.dataset.bi, ii: +el.dataset.ii, qty: 1 };
+        else if (k === 'book') psheet = { k: 'book', bi: +el.dataset.bi, svc: null, day: null, time: null, sent: false };
+        else if (k === 'order') psheet = { k: 'order', sent: false };
+        else if (k === 'close') psheet = null;
+        else if (k === 'qty') psheet.qty = Math.max(1, Math.min(99, psheet.qty + +el.dataset.d));
+        else if (k === 'add') { const it = items()[psheet.ii], p = pNum(it?.price), l = pcart.find(x => x.name === it.name && x.price === p); if (l) l.qty = Math.min(99, l.qty + psheet.qty); else pcart.push({ name: it.name, price: p, qty: psheet.qty }); psheet = null; }
+        else if (k === 'lqty') { const l = pcart[+el.dataset.i]; l.qty += +el.dataset.d; if (l.qty < 1) pcart.splice(+el.dataset.i, 1); if (!pcart.length) psheet = null; }
+        else if (k === 'svc') psheet.svc = +el.dataset.i;
+        else if (k === 'day') { psheet.day = +el.dataset.i; psheet.time = null; }
+        else if (k === 'time') psheet.time = el.dataset.v;
+        else if (k === 'send') psheet.sent = true;
+        else if (k === 'back') psheet.sent = false;
+        else if (k === 'done') { if (psheet.k === 'order') pcart = []; psheet = null; }
+        else return;
+        e.stopPropagation(); pIn = ['prod', 'book', 'order', 'back', 'send'].includes(k);
+        const ph = $('[data-phone]'), keep = [ph.querySelector('.ab-ph__native')?.scrollTop || 0, ph.querySelector('.ab-ps__panel')?.scrollTop || 0, ph.querySelector('.ab-ps__chips.is-scroll')?.scrollLeft || 0], same = ['qty', 'svc', 'day', 'time', 'lqty'].includes(k);
+        drawPhone(); // (keep both scroll spots so a tap doesn't jump to the top)
+        const n = ph.querySelector('.ab-ph__native'); if (n) n.scrollTop = keep[0];
+        const pn = ph.querySelector('.ab-ps__panel'); if (pn && same) pn.scrollTop = keep[1];
+        const ds = ph.querySelector('.ab-ps__chips.is-scroll'); if (ds && same) ds.scrollLeft = keep[2];
+    });
+    $('[data-phone]').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-pp][role="button"]')) { e.preventDefault(); e.target.click(); } });
 
     const drawPhone = () => {
         const a = A(), st = a.style || {}, dark = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
@@ -411,7 +531,7 @@
                     <div class="ab-ph__sk"><i style="background:${c.primary}"></i><b></b><b></b><b class="s"></b><div class="ab-ph__cards"><span></span><span></span></div><b></b><b class="s"></b><span class="ab-ph__btn" style="background:${c.primary}"></span></div>
                     <p>${siteUrl() ? 'This page of your website shows here' : 'Add your website address in “More settings”'}</p></div>`;
             } else {
-                const html = (t.blocks || []).map(b => blockHtml(b, c)).join('');
+                const html = (t.blocks || []).map((b, bi) => blockHtml(b, c, bi)).join('');
                 body = `<div class="ab-ph__native"${['ar', 'ur'].includes(D.editLang) ? ' dir="rtl"' : ''}>${html || '<p class="ab-n-empty">Add blocks to this screen.</p>'}</div>`;
             }
             const bar = tabs.map((x, i) => i).filter(i => inBar(tabs[i], i)).slice(0, MAX_BAR), menuPages = tabs.map((x, i) => i).filter(i => inMenu(tabs[i], i)), hasMenu = a.menu !== 'hide' && menuPages.length > 0;
@@ -427,7 +547,7 @@
                 }).join('')}</div>` : ''}${bar.length > 1 && !floatBar ? `<div class="ab-ph__tabs" style="background:${c.bar}">${bar.map(i => {
                     const x = tabs[i], col = i === activeTab ? c.primary : muted;
                     return `<button type="button" data-ptab="${i}" style="color:${col}">${svgIcon(x.icon, col)}<span>${esc(x.label || 'Tab')}</span></button>`;
-                }).join('')}</div>` : ''}${drawer}${showLoader && !still ? `<div class="ab-ph__loader" style="--c:${c.primary}"><i>${'<canvas width="62" height="62" data-loader-icon></canvas>'}</i><b></b><span><em></em></span></div>` : ''}</div>`;
+                }).join('')}</div>` : ''}${drawer}${sheetHtml(c, t)}${showLoader && !still ? `<div class="ab-ph__loader" style="--c:${c.primary}"><i>${'<canvas width="62" height="62" data-loader-icon></canvas>'}</i><b></b><span><em></em></span></div>` : ''}</div>`;
             if (showLoader) { showLoader = false; const cv = $('[data-loader-icon]', phone); if (cv) paintIcon(cv, 0.27); }
         }
         paintIcon($('[data-icon-prev]'));
@@ -439,7 +559,7 @@
         $('[data-tabs]').innerHTML = tabs.map((t, i) => `<div class="ab-tab${i === activeTab ? ' is-on' : ''}" data-tabrow="${i}">
             <select data-t="icon" data-i="${i}" aria-label="Tab ${i + 1} icon">${Object.keys(ICONS).map(k => `<option value="${k}" ${t.icon === k ? 'selected' : ''}>${ICON_NAMES[k] || k}</option>`).join('')}</select>
             <span class="ab-tab__ic" aria-hidden="true">${svgIcon(t.icon, 'currentColor')}</span>
-            <input data-t="label" data-i="${i}" maxlength="24" value="${esc(t.label)}" placeholder="Name" aria-label="Page ${i + 1} name">
+            <input data-t="label" data-i="${i}" data-v="pagename" maxlength="24" value="${esc(t.label)}" placeholder="Name" aria-label="Page ${i + 1} name">
             <span class="fb-q__tools"><button type="button" data-tmove="-1" data-i="${i}" title="Move left" ${i ? '' : 'disabled'}>↑</button><button type="button" data-tmove="1" data-i="${i}" title="Move right" ${i < tabs.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-tdel="${i}" title="Remove" class="fb-del" ${tabs.length > 1 ? '' : 'disabled'}>✕</button></span>
             <div class="ab-tab__kind">
                 <div class="ab-tab__where"><span>Show in:</span>
@@ -449,13 +569,16 @@
                 ${t.type === 'web' ? `<div class="ab-tab__path"><span title="${esc(base)}">${esc(base.replace(/^https:\/\//, ''))}</span><input data-t="path" data-i="${i}" maxlength="200" value="${esc(t.path)}" placeholder="(home page)" aria-label="Tab ${i + 1} page" spellcheck="false" autocapitalize="off"></div>` : ''}
             </div>
         </div>`).join('');
-        $('[data-add-tab]').disabled = tabs.length >= MAX_TABS;
+        const full = tabs.length >= MAX_TABS;
+        $('[data-page-presets]').innerHTML = `<button type="button" data-add-tab ${full ? 'disabled' : ''}>${svgIcon('grid', 'currentColor', 20)}<span>Blank page</span></button>`
+            + Object.entries(PAGE_PRESETS).map(([k, p]) => `<button type="button" data-page-preset="${k}" ${full ? 'disabled' : ''}>${svgIcon(p.icon, 'currentColor', 20)}<span>${esc(p.name)}</span></button>`).join('');
+        $('[data-add-page] > summary').toggleAttribute('aria-disabled', full);
         drawMenuNote();
     };
 
     /* ------------------------------------------------ editor: the blocks of the open tab */
     const field = (label, path, v, opts = {}) => {
-        const attrs = `data-f="${path}" maxlength="${opts.max || 200}" placeholder="${esc(opts.ph || '')}"${opts.type ? ` type="${opts.type}"` : ''}${opts.mode ? ` inputmode="${opts.mode}"` : ''}`;
+        const attrs = `data-f="${path}" maxlength="${opts.max || 200}" placeholder="${esc(opts.ph || '')}"${opts.type ? ` type="${opts.type}"` : ''}${opts.mode ? ` inputmode="${opts.mode}"` : ''}${opts.v ? ` data-v="${opts.v}"` : ''}`;
         return `<label${opts.wide ? ' class="ab-wide"' : ''}>${label}${opts.area ? `<textarea ${attrs} rows="${opts.rows || 3}">${esc(v)}</textarea>` : `<input ${attrs} value="${esc(v)}">`}</label>`;
     };
     const imageField = (label, path, img) => `<div class="ab-imgf"><span>${label}</span>${img
@@ -466,7 +589,7 @@
         const tabs = A().tabs;
         const value = a.kind === 'tab'
             ? `<select data-f="${path}.value" data-num aria-label="Which tab">${tabs.map((t, i) => `<option value="${i}" ${+a.value === i ? 'selected' : ''}>${esc(t.label || 'Tab ' + (i + 1))}</option>`).join('')}</select>`
-            : a.kind ? `<input data-f="${path}.value" value="${esc(a.value)}" maxlength="${a.kind === 'url' ? 500 : 200}" placeholder="${esc(ACTION_HINT[a.kind] || '')}" ${a.kind === 'url' ? 'type="url" inputmode="url"' : a.kind === 'email' ? 'type="email"' : a.kind === 'tel' || a.kind === 'whatsapp' ? 'type="tel"' : ''} aria-label="${esc(ACTIONS[a.kind])}">` : '';
+            : a.kind ? `<input data-f="${path}.value" value="${esc(a.value)}" maxlength="${a.kind === 'url' ? 500 : 200}" placeholder="${esc(ACTION_HINT[a.kind] || '')}" ${a.kind === 'url' ? 'type="url" inputmode="url"' : a.kind === 'email' ? 'type="email"' : a.kind === 'tel' ? 'type="tel"' : a.kind === 'whatsapp' ? 'type="tel" data-v="whatsapp"' : ''} aria-label="${esc(ACTIONS[a.kind])}">` : '';
         return `<div class="ab-act"><span>${label}</span><div><select data-f="${path}.kind" data-redraw>${Object.entries(ACTIONS).map(([k, l]) => `<option value="${k}" ${a.kind === k ? 'selected' : ''}>${l}</option>`).join('')}</select>${value}</div></div>`;
     };
     const align = (path, v) => `<label>Align<select data-f="${path}"><option value="left" ${v !== 'center' ? 'selected' : ''}>Left</option><option value="center" ${v === 'center' ? 'selected' : ''}>Centre</option></select></label>`;
@@ -498,14 +621,14 @@
             case 'gallery': return pics(b, 'gallery') + `
                 <label>Columns<select data-f="columns" data-num><option value="2" ${b.columns !== 3 ? 'selected' : ''}>2</option><option value="3" ${b.columns === 3 ? 'selected' : ''}>3</option></select></label>`;
             case 'contact': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + '<p class="fb-hint">Fill in what you want to show — each line opens the phone’s dialer, WhatsApp, email or maps.</p><div class="fb-2">'
-                + field('Phone', 'phone', b.phone, { max: 25, type: 'tel', ph: '+1 555 123 4567' }) + field('WhatsApp', 'whatsapp', b.whatsapp, { max: 25, type: 'tel', ph: '+44 7700 900123' })
+                + field('Phone', 'phone', b.phone, { max: 25, type: 'tel', ph: '+1 555 123 4567' }) + field('WhatsApp', 'whatsapp', b.whatsapp, { max: 25, type: 'tel', ph: '+44 7700 900123', v: 'whatsapp' })
                 + field('Email', 'email', b.email, { max: 120, type: 'email' }) + field('Website', 'website', b.website, { max: 500, type: 'url', ph: 'https://' }) + '</div>'
                 + field('Address', 'address', b.address, { max: 200, area: true, rows: 2 });
             case 'hours': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + `<div class="ab-hours">${(b.rows || []).map((r, i) => `<div class="ab-hours__row">
                     <input data-f="rows.${i}.day" value="${esc(r.day)}" maxlength="30" placeholder="Monday" aria-label="Day"><input data-f="rows.${i}.time" value="${esc(r.time)}" maxlength="60" placeholder="9:00 – 17:00" aria-label="Hours">
                     <span class="fb-q__tools"><button type="button" data-hdel="${i}" class="fb-del" title="Remove">✕</button></span></div>`).join('')}</div>
                 <button type="button" class="btn btn--sm btn--ghost" data-hadd ${(b.rows || []).length >= 14 ? 'disabled' : ''}>＋ Add row</button>`;
-            case 'video': return field('YouTube link', 'url', b.url, { max: 300, type: 'url', ph: 'https://www.youtube.com/watch?v=…' }) + field('Title <small>— optional</small>', 'title', b.title, { max: 120 });
+            case 'video': return field(`YouTube link${youtubeId(b.url) === 'aqz-KE-bpKQ' ? ' <small>— a demo video for now: paste your own link</small>' : ''}`, 'url', b.url, { max: 300, v: 'youtube', type: 'url', ph: 'https://www.youtube.com/watch?v=…' }) + field('Title <small>— optional</small>', 'title', b.title, { max: 120 });
             case 'divider': return '<p class="fb-hint">A thin line between blocks.</p>';
             case 'slider': return `<p class="fb-hint">Pictures people swipe through — best when they're all the same shape.</p>` + pics(b, 'slider');
             case 'cards': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
@@ -524,7 +647,7 @@
             case 'loyalty': return field('Title', 'title', b.title, { max: 80 })
                 + `<div class="fb-2">${field('Reward', 'reward', b.reward, { max: 60, ph: 'Free coffee' })}<label>Stamps needed<select data-f="stamps" data-num>${[4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<option value="${n}" ${+b.stamps === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>`
                 + field('Text <small>— optional</small>', 'text', b.text, { max: 200, ph: 'Get a stamp with every coffee.' })
-                + `<label>Staff PIN <small>— 4 to 8 digits; staff type it on the customer’s phone to add a stamp or give the reward</small><input data-f="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" value="${esc(b.pin || '')}" placeholder="${b.pinHash ? 'Set ✓ — type a new PIN to change it' : 'e.g. 4821'}"></label>
+                + `<label>Staff PIN <small>— 4 to 8 digits; staff type it on the customer’s phone to add a stamp or give the reward</small><input data-f="pin" data-v="pin"${b.pinHash ? ' data-set="1"' : ''} type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" value="${esc(b.pin || '')}" placeholder="${b.pinHash ? 'Set ✓ — type a new PIN to change it' : 'e.g. 4821'}"></label>
                     <p class="fb-hint">Stamps are kept on each customer’s phone. Staff type the PIN on it to add a stamp (the phone needs internet; we check the PIN and block guessing). Keep the PIN to your team; change it any time (it takes effect when you save).</p>`;
             case 'booking': {
                 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], order = [1, 2, 3, 4, 5, 6, 0];
@@ -534,13 +657,13 @@
                         <span class="fb-q__tools"><button type="button" data-svdel="${i}" class="fb-del" title="Remove">✕</button></span></div>`).join('')}</div>
                     <button type="button" class="btn btn--sm btn--ghost" data-svadd ${(b.services || []).length >= 20 ? 'disabled' : ''}>＋ Add service</button>
                     <div class="ab-field"><span>Open for bookings</span><div class="ab-days">${order.map(d => `<label class="fb-check"><input type="checkbox" data-bday="${d}" ${(b.days || []).includes(d) ? 'checked' : ''}> ${DAYS[d]}</label>`).join('')}</div></div>
-                    <div class="fb-2"><label>First appointment<input type="time" data-f="from" value="${esc(b.from)}" step="900"></label><label>Last one ends by<input type="time" data-f="to" value="${esc(b.to)}" step="900"></label>
+                    <div class="fb-2"><label>First appointment<input type="time" data-f="from" value="${esc(b.from)}" step="900"></label><label>Last one ends by<input type="time" data-f="to" data-v="until" value="${esc(b.to)}" step="900"></label>
                     <label>Each appointment<select data-f="slot" data-num>${[15, 20, 30, 45, 60, 90, 120].map(m => `<option value="${m}" ${+b.slot === m ? 'selected' : ''}>${m < 60 ? m + ' minutes' : m / 60 + (m === 60 ? ' hour' : ' hours')}</option>`).join('')}</select></label>
                     <label>Book up to<select data-f="ahead" data-num>${[7, 14, 30, 60, 90].map(n => `<option value="${n}" ${+b.ahead === n ? 'selected' : ''}>${n} days ahead</option>`).join('')}</select></label></div>`;
             }
             case 'products': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
                 + `<p class="fb-hint">People tap a product, choose how many and send you the order on WhatsApp or by email (set up under “More settings → Orders & bookings”).</p>`
-                + items(b, 'Product', (it, i) => `<div class="fb-2">${field('Name', `items.${i}.name`, it.name, { max: 80 })}${field(`Price <small>— ${esc(A().shop?.currency || '$')}, empty = “Ask us”</small>`, `items.${i}.price`, it.price, { max: 12, mode: 'decimal', ph: '9.50' })}</div>`
+                + items(b, 'Product', (it, i) => `<div class="fb-2">${field('Name', `items.${i}.name`, it.name, { max: 80 })}${field(`Price <small>— ${esc(A().shop?.currency || '$')}, empty = “Ask us”</small>`, `items.${i}.price`, it.price, { max: 12, mode: 'decimal', ph: '9.50', v: 'price' })}</div>`
                     + field('Category <small>— optional, e.g. Drinks</small>', `items.${i}.category`, it.category, { max: 40 })
                     + field('Description <small>— optional</small>', `items.${i}.text`, it.text, { max: 400, area: true, rows: 2 })
                     + imageField('Picture <small>— optional</small>', `items.${i}.image`, it.image));
@@ -555,12 +678,14 @@
     const drawBlocks = () => {
         const t = A().tabs[activeTab] || A().tabs[0], box = $('[data-blocks]');
         $('[data-screen-name]').textContent = t.label || 'Tab ' + (activeTab + 1);
+        $('[data-screen-pick]').innerHTML = A().tabs.map((x, i) => `<option value="${i}"${i === activeTab ? ' selected' : ''}>${esc(x.label || 'Tab ' + (i + 1))}</option>`).join('');
         if (t.type === 'web') {
             box.innerHTML = `<p class="fb-hint">This tab shows ${siteUrl() ? `<b>${esc(tabUrl(t))}</b>` : 'a page of your website — add your website address under “More settings”'}. Switch it to “App screen” to build it from blocks instead.</p>`;
-            $('[data-add-block]').hidden = true;
+            $('[data-add-block-prev]').hidden = true;
             return;
         }
-        $('[data-add-block]').hidden = false;
+        $('[data-add-block-prev]').hidden = false;
+        $('[data-add-to]').textContent = `to “${t.label || 'this page'}”`;
         const blocks = t.blocks;
         box.innerHTML = blocks.length ? blocks.map((b, i) => `<details class="ab-blk" data-b="${i}" ${openBlocks.has(b) ? 'open' : ''}>
             <summary><span class="ab-blk__ic" aria-hidden="true">${svgIcon(BLOCKS[b.type]?.icon, 'currentColor', 18)}</span><b>${esc(BLOCKS[b.type]?.name || b.type)}</b><small>${esc(blockSummary(b))}</small>
@@ -623,7 +748,9 @@
         drawSitePick();
     };
     const drawAll = () => { drawSettings(); drawLangs(); drawTabs(); drawBlocks(); drawPhone(); syncSave(); };
-    const selectTab = i => { enterNext = true; activeTab = i; $$('.ab-tab').forEach((r, j) => r.classList.toggle('is-on', j === activeTab)); drawBlocks(); drawPhone(); };
+    const selectTab = i => { psheet = null; enterNext = true; activeTab = i; $$('.ab-tab').forEach((r, j) => r.classList.toggle('is-on', j === activeTab)); drawBlocks(); drawPhone(); };
+    $('[data-screen-pick]').addEventListener('change', e => { selectTab(+e.target.value); $('.ab-screen').open = true; }); // page picker in “1. Screen” (opens the section if it was folded)
+    $('.ab-screen > summary').addEventListener('click', e => { if (e.target.closest('.ab-pagepick')) e.preventDefault(); }); // using the picker doesn't fold the section
 
     let editSeq = 0; // counts edits, so a save knows whether anything changed while it was running
     const markDirty = (icon = false) => { D.dirty = true; editSeq++; if (icon) D.iconDirty = true; save(); syncSave(); };
@@ -818,8 +945,18 @@
         else if (t.dataset.pact) {
             const act = JSON.parse(t.dataset.pact);
             if (act.kind === 'tab' && tabs[+act.value]) { selectTab(+act.value); drawTabs(); }
+        } else if (t.dataset.pagePreset) {
+            const p = PAGE_PRESETS[t.dataset.pagePreset]; if (!p || tabs.length >= MAX_TABS) return;
+            t.closest('details')?.removeAttribute('open');
+            const bar = barCount() < MAX_BAR;
+            const nt = { label: p.name, icon: p.icon, type: 'screen', bar, menu: !bar, path: '', blocks: p.blocks.map(x => (typeof x === 'string' ? block(x) : { ...block(x.type), ...x })) };
+            eachLangTabs(ts => ts.push(JSON.parse(JSON.stringify(nt)))); // every language gets the page (to translate)
+            if (!bar) note('This page is in the ☰ menu — the bottom bar is full (5 pages).');
+            activeTab = tabs.length - 1; enterNext = true; psheet = null; drawTabs(); drawBlocks(); drawPhone(); markDirty();
+            track('app_builder_page', { preset: t.dataset.pagePreset });
         } else if (t.matches('[data-add-tab]')) {
             if (tabs.length >= MAX_TABS) return;
+            t.closest('details')?.removeAttribute('open');
             const used = tabs.map(x => x.icon), icon = ['grid', 'info', 'chat', 'calendar', 'store', 'location'].find(k => !used.includes(k)) || 'star';
             const nt = { label: ICON_NAMES[icon], icon, type: 'screen', bar: barCount() < MAX_BAR, menu: barCount() >= MAX_BAR, path: '', blocks: [{ type: 'heading', text: ICON_NAMES[icon], align: 'left' }] };
             eachLangTabs(ts => ts.push(JSON.parse(JSON.stringify(nt)))); // every language gets the page (to translate)
@@ -839,9 +976,15 @@
         } else if (t.dataset.addType) {
             if (blocks.length >= MAX_BLOCKS) return;
             const nb = block(t.dataset.addType); openBlocks.add(nb); blocks.push(nb);
+            const byPreview = !!t.closest('[data-add-block-prev]');
             t.closest('details')?.removeAttribute('open');
-            drawBlocks(); drawPhone(); markDirty(); track('app_builder_block', { type: nb.type });
-            $(`[data-b="${blocks.length - 1}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            if (byPreview && (view !== 'app' || previewMenu)) { view = 'app'; previewMenu = false; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app'))); }
+            drawBlocks(); drawPhone(); markDirty(); track('app_builder_block', { type: nb.type, from: byPreview ? 'preview' : 'list' });
+            if (byPreview) { // stay by the phone: show the new block at the bottom of the page there
+                const n = $('[data-phone] .ab-ph__native'); if (n) n.scrollTo({ top: n.scrollHeight, behavior: 'smooth' });
+                const scr = $('.ab-screen'); if (scr) scr.open = true; // so the note below is true
+                note(`${BLOCKS[nb.type].name} added to “${A().tabs[activeTab].label || 'this page'}” — its settings are open under “1. Screen”.`);
+            } else $(`[data-b="${blocks.length - 1}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         } else if (b) {
             const i = blocks.indexOf(b);
             if (t.dataset.bmove !== undefined) { const j = i + +t.dataset.bmove; [blocks[i], blocks[j]] = [blocks[j], blocks[i]]; }
@@ -862,6 +1005,13 @@
         }
     });
     root.addEventListener('focusin', e => { const r = e.target.closest('[data-tabrow]'); if (r && +r.dataset.tabrow !== activeTab) selectTab(+r.dataset.tabrow); });
+    // a click anywhere on a page's row (its icon, ticks, empty space…) shows that page in the preview
+    root.addEventListener('click', e => {
+        const r = e.target.closest('[data-tabrow]');
+        if (!r || e.target.closest('[data-tmove], [data-tdel]') || +r.dataset.tabrow === activeTab) return;
+        if (view !== 'app' || previewMenu) { view = 'app'; previewMenu = false; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app'))); }
+        selectTab(+r.dataset.tabrow);
+    });
     /** Buttons that open a tab keep pointing at the same tab when tabs move or go. */
     const fixTabLinks = (map, tabs = A().tabs) => tabs.forEach(t => (t.blocks || []).forEach(b => {
         [b.action, b.button?.action, ...(b.items || []).map(i => i.action)].forEach(a => { if (a?.kind === 'tab') a.value = Math.min(map(+a.value), tabs.length - 1); });
@@ -901,30 +1051,101 @@
     const dlg = $('[data-dialog]'), dlgBody = $('[data-dialog-body]');
     let afterSignIn = null;
     const openDialog = html => { dlgBody.innerHTML = html; if (!dlg.open) dlg.showModal(); dlgBody.querySelector('input:not([type=hidden])')?.focus(); };
-    dlg.addEventListener('click', e => { if (e.target === dlg || e.target.closest('[data-dialog-close]')) dlg.close(); });
-    const signIn = then => {
-        afterSignIn = then;
-        openDialog(`<h3>Sign in with your email</h3><p>We'll email you a 6-digit code — no password needed. Use the email you publish your Owlvix sites with, and we'll email your app to you when it's built.</p>
-            <form data-signin><label>Email<input type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label><p class="lpb-err" hidden></p><button class="btn btn--glow btn--block" type="submit">Send my code</button></form>`);
-    };
+    dlg.addEventListener('click', async e => {
+        if (e.target === dlg || e.target.closest('[data-dialog-close]')) return dlg.close();
+        if (e.target.closest('[data-code-other]')) { setPending(null); return emailStep(); }
+        if (e.target.closest('[data-code-have]')) { const inp = dlg.querySelector('[data-signin] [name=email]'); if (inp && liveCheck(inp)) return codeStep(inp.value.trim().toLowerCase()); inp?.focus(); return; } // (the email field says what's missing)
+        const again = e.target.closest('[data-code-again]'); if (!again) return;
+        const fm = again.closest('form'), err = fm.querySelector('.lpb-err'), email = fm.email.value;
+        again.disabled = true; err.hidden = true;
+        try { await api('POST', '/builder/account/code', { email }); setPending(email); err.textContent = 'We sent a new code — check your email.'; err.classList.add('is-ok'); err.hidden = false; }
+        catch (ex) { err.textContent = ex.message; err.classList.remove('is-ok'); err.hidden = false; }
+        finally { again.disabled = false; }
+    });
+    // A code asked for in the last 15 minutes is remembered, so signing in again goes straight to typing it
+    const PENDING = 'owlvix-builder-code', CODE_MS = 15 * 60e3;
+    const pending = () => { try { const p = JSON.parse(localStorage.getItem(PENDING) || 'null'); return p && Date.now() - p.at < CODE_MS ? p : null; } catch { return null; } };
+    const setPending = email => { try { email ? localStorage.setItem(PENDING, JSON.stringify({ email, at: Date.now() })) : localStorage.removeItem(PENDING); } catch {} };
+    const codeStep = email => openDialog(`<h3>Check your email</h3><p>We sent a 6-digit code to <b>${esc(email)}</b>. It's valid for 15 minutes.</p>
+        <form data-verify novalidate><input type="hidden" name="email" value="${esc(email)}"><label>Code<input name="code" data-v="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="123456"></label><p class="lpb-err" hidden></p><button class="btn btn--glow btn--block" type="submit">Sign in</button><p class="ab-codealt"><button type="button" data-code-again>Send a new code</button> · <button type="button" data-code-other>Use a different email</button></p></form>`);
+    const emailStep = () => openDialog(`<h3>Sign in with your email</h3><p>We'll email you a 6-digit code — no password needed. Use the email you publish your Owlvix sites with, and we'll email your app to you when it's built.</p>
+            <form data-signin novalidate><label>Email<input type="email" name="email" required autocomplete="email" placeholder="you@example.com"></label><p class="lpb-err" hidden></p><button class="btn btn--glow btn--block" type="submit">Send my code</button><p class="ab-codealt"><button type="button" data-code-have>Already have a code? Enter it</button></p></form>`);
+    const signIn = then => { afterSignIn = then; const p = pending(); if (p) codeStep(p.email); else emailStep(); };
     dlg.addEventListener('submit', async e => {
         e.preventDefault();
         const fm = e.target, err = fm.querySelector('.lpb-err'), b = fm.querySelector('button[type=submit]');
-        err.hidden = true; b.disabled = true;
+        err.hidden = true;
+        if (checkAll(fm)) return; // the field shows what's wrong
+        b.disabled = true;
         try {
             if (fm.matches('[data-signin]')) {
                 const email = fm.email.value.trim();
                 await api('POST', '/builder/account/code', { email });
-                openDialog(`<h3>Check your email</h3><p>We sent a 6-digit code to <b>${esc(email)}</b>. It's valid for 15 minutes.</p>
-                    <form data-verify><input type="hidden" name="email" value="${esc(email)}"><label>Code<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required placeholder="123456"></label><p class="lpb-err" hidden></p><button class="btn btn--glow btn--block" type="submit">Sign in</button></form>`);
+                setPending(email); codeStep(email);
             } else {
                 const r = await api('POST', '/builder/account/verify', { email: fm.email.value, code: fm.code.value.trim() });
-                token = r.token; try { localStorage.setItem('owlvix-builder-token', token); } catch {}
+                token = r.token; try { localStorage.setItem('owlvix-builder-token', token); } catch {} setPending(null);
                 dlg.close(); track('builder_sign_in', { from: 'app_builder' }); await loadAccount(); afterSignIn?.();
             }
         } catch (ex) { err.textContent = ex.message; err.hidden = false; }
         finally { b.disabled = false; }
     });
+
+    /* ------------------------------------------------ live checks on every field (as people type), same look as the site's forms */
+    // A field's checks come from its type (email, url, tel), `required`, and data-v (space-separated rule names).
+    const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+    const RULES = {
+        required: (v, el) => (v ? '' : el.type === 'email' ? 'Please enter your email.' : 'Please fill this in.'),
+        appname: v => (v ? '' : 'Please give your app a name.'),
+        pagename: v => (v ? '' : 'Please give this page a name.'),
+        email: v => (!v || isEmail(v) ? '' : 'Please enter a valid email, like you@example.com.'),
+        url: v => { if (!v) return ''; if (/\s/.test(v)) return 'A web address has no spaces.'; try { const u = new URL(v); return /^https?:$/.test(u.protocol) && u.hostname.includes('.') ? '' : 'Please enter a full address, like https://example.com.'; } catch { return 'Please enter a full address, starting with https://'; } },
+        https: v => RULES.url(v) || (!v || v.startsWith('https://') ? '' : 'Your website needs to start with https://'),
+        youtube: v => (!v || youtubeId(v) ? '' : 'That doesn’t look like a YouTube link — copy it from the Share button on YouTube.'),
+        tel: v => { if (!v) return ''; if (!/^\+?[\d ()\-.]+$/.test(v)) return 'Use only numbers, spaces and +, like +1 555 123 4567.'; const n = v.replace(/\D/g, '').length; return n < 6 ? 'That number looks too short.' : n > 15 ? 'That number looks too long.' : ''; },
+        whatsapp: v => { if (!v) return ''; if (!/^\+?[\d ()\-.]+$/.test(v)) return 'Use only numbers, spaces and +, like +44 7700 900123.'; const n = v.replace(/\D/g, '').length; return n < 8 || n > 15 ? 'Use the full number with the country code, like +44 7700 900123.' : ''; },
+        price: v => (!v || /^\d{1,7}([.,]\d{1,2})?$/.test(v) ? '' : 'Use a number like 9.50, or leave it empty for “Ask us”.'),
+        pin: (v, el) => (!v ? (el.dataset.set ? '' : 'Set a staff PIN of 4 to 8 digits.') : /^\d{4,8}$/.test(v) ? '' : 'The PIN is 4 to 8 digits — numbers only.'),
+        until: (v, el) => { const from = el.closest('.fb-2')?.querySelector('[data-f="from"]')?.value; return v && from && v <= from ? 'This needs to be later than the first appointment.' : ''; },
+        version: v => (!v || /^\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(v) ? '' : 'The version looks like 1.0.0.'),
+        package: (v, el) => { if (!v || el.readOnly) return ''; v = v.toLowerCase(); if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,5}$/.test(v)) return 'Use lowercase words joined by dots, like com.yourbusiness.app.'; return /^(com\.owlvix|com\.example|com\.android|com\.google|android|java)\./.test(v + '.') ? 'Please use your own name, like com.yourbusiness.app.' : ''; },
+        code: v => (/^\d{6}$/.test(v) ? '' : v ? 'The code is 6 digits — check the email we sent.' : 'Please enter the 6-digit code from your email.'),
+    };
+    const rulesOf = el => {
+        const r = (el.dataset.v || '').split(' ').filter(k => RULES[k]);
+        if (el.type === 'email') r.push('email');
+        if (el.type === 'url' && !r.some(k => k === 'https' || k === 'youtube')) r.push('url');
+        if (el.type === 'tel' && !r.includes('whatsapp')) r.push('tel');
+        if (el.required && !r.some(k => ['required', 'appname', 'pagename', 'code'].includes(k))) r.unshift('required');
+        return r;
+    };
+    let liveId = 0;
+    /** Checks one field and shows or clears its message; returns true when it's fine. */
+    const liveCheck = el => {
+        const rules = rulesOf(el); if (!rules.length || el.disabled || el.type === 'hidden') return true;
+        const v = el.value.trim(), msg = rules.map(k => RULES[k](v, el)).find(Boolean) || '';
+        let note = el.liveNote;
+        if (msg && !note?.isConnected) { note = el.liveNote = document.createElement('small'); note.className = 'live-err'; note.id = `ab-err-${++liveId}`; note.setAttribute('role', 'alert'); (el.closest('.ab-hours__row, .ab-act > div') || el).after(note); }
+        if (note) { note.textContent = msg; note.hidden = !msg; }
+        const was = el.hasAttribute('aria-invalid');
+        el.toggleAttribute('aria-invalid', !!msg);
+        if (msg) el.setAttribute('aria-describedby', note.id); else el.removeAttribute('aria-describedby');
+        el.classList.toggle('is-valid', !msg && was && !!v); // green once a mistake is fixed
+        return !msg;
+    };
+    const isField = el => el?.matches?.('input, textarea') && rulesOf(el).length;
+    [root, ...(root.contains(dlg) ? [] : [dlg])].forEach(box => {
+        box.addEventListener('focusout', e => { const el = e.target; if (isField(el) && (el.value.trim() || el.dataset.touched)) liveCheck(el); });
+        box.addEventListener('input', e => { const el = e.target; if (!isField(el)) return; el.dataset.touched = '1'; if (el.hasAttribute('aria-invalid') || el.classList.contains('is-valid')) liveCheck(el); });
+        box.addEventListener('change', e => { const el = e.target; if (el.matches?.('[data-f="from"]')) { const to = el.closest('.fb-2')?.querySelector('[data-v~="until"]'); if (to) liveCheck(to); } else if (isField(el) && el.type === 'time') liveCheck(el); });
+    });
+    /** Checks every field on the page (opening a folded section to show the first problem); returns the first bad one. */
+    const checkAll = box => {
+        const onPage = el => !el.closest('[hidden], dialog:not([open])') && (box !== root || !dlg.contains(el)) && (el.getClientRects().length || el.closest('details:not([open])')); // (not the sign-in box or anything off screen)
+        const bad = [...box.querySelectorAll('input, textarea')].filter(el => isField(el) && onPage(el) && (el.value.trim() || rulesOf(el).some(k => ['required', 'appname', 'pagename', 'code'].includes(k))) && !liveCheck(el));
+        if (bad[0]) { for (let d = bad[0].closest('details'); d; d = d.parentElement.closest('details')) d.open = true; bad[0].focus({ preventScroll: true }); bad[0].scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        return bad[0] || null;
+    };
     const loadAccount = async () => {
         const [acc, list] = await Promise.all([api('GET', '/builder/account'), api('GET', '/builder/apps')]);
         sites = (acc.sites || []).filter(s => s.status === 'live'); apps = list.apps; enabled = list.enabled; stripeOn = list.stripe || {};
@@ -970,6 +1191,7 @@
     const drawMine = () => {
         const sel = $('[data-mine]');
         sel.hidden = !apps?.length;
+        $('[data-mine-signin]').hidden = !!token; // signed out: “My apps” signs in, then the list appears
         sel.innerHTML = `<option value="">My apps (${apps?.length || 0})…</option>` + (apps || []).map(x => `<option value="${x.id}" ${x.id === D.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
     };
     const drawSitePick = () => {
@@ -1034,6 +1256,7 @@
     const saveApp = async () => {
         if (saving) return false;
         if (iconLoading) { note('Still loading your app’s icon and splash — try again in a moment.'); return false; }
+        if (!$('[data-panel="design"]').hidden && checkAll(root)) { note('Please fix the field marked in red, then save again.'); return false; }
         const problem = check();
         if (problem) { showTab('design'); note(problem); return false; }
         if (!token) { signIn(() => saveApp().then(ok => ok && !$('[data-panel="build"]').hidden && drawBuild())); return false; }
@@ -1078,8 +1301,9 @@
     $('[data-new]').addEventListener('click', async () => {
         if (D.dirty && !await ask('Start a new app?', 'Unsaved changes to this one will be lost.', 'Start new app')) return;
         forgetOther();
-        D = fresh(); logo = null; splashPic = null; activeTab = 0; save(); drawAll(); drawMine(); showTab('design'); $('[data-tpl-wrap]').open = true;
+        D = fresh(); logo = null; splashPic = null; activeTab = 0; save(); drawAll(); drawMine(); showTab('design'); $('[data-tpl-wrap]').open = true; document.dispatchEvent(new Event('owl-app-new')); // (the quick setup wizard starts it)
     });
+    $('[data-mine-signin]').addEventListener('click', () => signIn(() => { if (apps?.length) { const s = $('[data-mine]'); s.focus(); s.showPicker?.(); } else note('You haven’t saved an app yet — press “Save app” and it will show here.'); }));
     $('[data-mine]').addEventListener('change', async e => {
         const x = apps?.find(y => y.id === e.target.value); if (!x) return;
         if (D.dirty && !await ask('Open this app?', 'Unsaved changes to the current one will be lost.', 'Open app')) { e.target.value = D.id || ''; return; }
@@ -1395,11 +1619,11 @@
      * The preview is copied into an SVG picture with its pictures and styles inlined, then drawn on a canvas.
      */
     const screenshot = async (i, kind = 'app') => {
-        const keep = { view, activeTab, previewMenu, previewIntro };
-        view = kind; activeTab = i; previewMenu = false; previewIntro = false; drawPhone();
+        const keep = { view, activeTab, previewMenu, previewIntro, psheet, pcart };
+        view = kind; activeTab = i; previewMenu = false; previewIntro = false; psheet = null; pcart = []; drawPhone();
         const screen = $('[data-phone] .ab-ph__screen').cloneNode(true);
         const canvases = [...$('[data-phone]').querySelectorAll('canvas')].map(cv => cv.toDataURL());
-        ({ view, activeTab, previewMenu, previewIntro } = keep); drawPhone();
+        ({ view, activeTab, previewMenu, previewIntro, psheet, pcart } = keep); drawPhone();
         [...screen.querySelectorAll('canvas')].forEach((cv, n) => { const im = document.createElement('img'); im.src = canvases[n]; im.style.cssText = cv.style.cssText; im.width = cv.width; cv.replaceWith(im); });
         for (const im of screen.querySelectorAll('img')) if (!im.src.startsWith('data:')) im.src = await asDataUrl(im.src) || 'data:,';
         for (const el of screen.querySelectorAll('[style*="url("]')) {
@@ -1518,7 +1742,7 @@
         drawAll(); markDirty(true); track('app_builder_template', { template: t.id });
         if (quiet) return;
         note(`${t.name} template added — now change the words and add your pictures.${a.tabs.some(x => (x.blocks || []).some(b => b.type === 'loyalty')) ? ' Set a staff PIN for the loyalty card before saving.' : ''}`);
-        $('.ab-screen')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const scr = $('.ab-screen'); if (scr) { scr.open = true; scr.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     };
 
     /* ------------------------------------------------ hooks for the quick setup wizard (public/js/app-wizard.js) */
@@ -1535,6 +1759,28 @@
             activeTab = 0;
         },
         changed: (icon = false) => { drawAll(); markDirty(icon); },
+        redraw: () => drawAll(),
+        maxPages: MAX_TABS,
+        maxBar: MAX_BAR,
+        /** Shows a page in the preview. */
+        showPage: i => { if (!A().tabs[i] || (i === activeTab && view === 'app' && !previewMenu)) return; view = 'app'; previewMenu = false; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app'))); selectTab(i); },
+        inBar: (t, i) => inBar(t, i), inMenu: (t, i) => inMenu(t, i),
+        /** Puts a page in the bottom bar and/or the ☰ menu (in every language, so they stay alike); false when the bar is full. */
+        place: (i, where, on) => {
+            if (where === 'bar' && on && !inBar(A().tabs[i], i) && barCount() >= MAX_BAR) return false;
+            const was = A().tabs.map((t, k) => [inBar(t, k), inMenu(t, k)]);
+            eachLangTabs(ts => ts.forEach((t, k) => { if (!was[k]) return; t.bar = was[k][0]; t.menu = was[k][1]; if (k === i) t[where] = on; }));
+            return true;
+        },
+        /** Adds a page (in every language) made of blocks: a type, or a type with some starting values. */
+        addPage: (label, icon, blocks) => {
+            if (A().tabs.length >= MAX_TABS) return false;
+            const bar = barCount() < MAX_BAR;
+            const nt = { label, icon, type: 'screen', bar, menu: !bar, path: '', blocks: blocks.map(x => (typeof x === 'string' ? block(x) : { ...block(x.type), ...x })) };
+            eachLangTabs(ts => ts.push(JSON.parse(JSON.stringify(nt))));
+            activeTab = A().tabs.length - 1;
+            return true;
+        },
         showApp, showSplash,
         save: () => saveApp(),
         toBuild: () => showTab('build'),
@@ -1542,19 +1788,22 @@
     document.dispatchEvent(new Event('owl-app-builder-ready'));
 
     /* ------------------------------------------------ start */
-    $('[data-add-types]').innerHTML = Object.entries(BLOCKS).map(([k, v]) => `<button type="button" data-add-type="${k}">${svgIcon(v.icon, 'currentColor', 20)}<span>${v.name}</span></button>`).join('');
+    $('[data-add-types-prev]').innerHTML = Object.entries(BLOCKS).map(([k, v]) => `<button type="button" data-add-type="${k}">${svgIcon(v.icon, 'currentColor', 20)}<span>${v.name}</span></button>`).join('');
+    // the preview's menu closes when clicking elsewhere
+    document.addEventListener('click', e => { $$('[data-add-block-prev], [data-add-page]').forEach(d => { if (d.open && !d.contains(e.target)) d.open = false; }); });
     drawTemplates();
-    $('[data-tpl-wrap]').open = !D.id; // new apps start here; saved apps keep it folded
-    (inIdb ? idb('readonly', st => st.get('draft')).then(d => { if (d?.app) { D = d; tidy(); $('[data-tpl-wrap]').open = !D.id; } }).catch(() => {}) : Promise.resolve())
+    // every section on the left starts folded; the person opens the one they need
+    (inIdb ? idb('readonly', st => st.get('draft')).then(d => { if (d?.app) { D = d; tidy(); } }).catch(() => {}) : Promise.resolve())
         .then(() => Promise.all([loadLogo(), loadSplashPic()]))
         .then(() => { drawAll(); drawMine(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
-    if (token) loadAccount().catch(() => {});
+    drawMine(); // (shows “My apps” to sign in when signed out)
+    if (token) loadAccount().catch(() => { drawMine(); });
     // back from Stripe's page
     const stripeBack = new URLSearchParams(location.search).get('stripe');
     if (stripeBack) {
         history.replaceState(null, '', location.pathname);
         const said = { 'connected-test': 'Stripe test account connected — the app now shows “Pay now” (test cards only).', 'connected-live': 'Stripe connected — the app now takes real card payments.',
             cancelled: 'Stripe wasn’t connected (you went back without allowing it).', failed: 'Stripe didn’t connect. Please try again.', expired: 'That Stripe link expired. Please click “Connect Stripe” again.' }[stripeBack];
-        if (said) setTimeout(() => { note(said); $('[data-pay-online]')?.scrollIntoView({ block: 'center' }); }, 600);
+        if (said) setTimeout(() => { note(said); const po = $('[data-pay-online]'); if (po) { const d = po.closest('details'); if (d) d.open = true; po.scrollIntoView({ block: 'center' }); } }, 600);
     }
 })();

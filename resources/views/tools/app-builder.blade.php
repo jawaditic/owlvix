@@ -40,8 +40,40 @@
 
 <section class="calc-wrap">
     <div class="container">
+        {{-- The way into the quick setup wizard (public/js/app-wizard.js): shown until the visitor starts or says no --}}
+        <div class="wzb" data-wz-banner hidden>
+            <div class="wzb__sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="wzb__owl">
+                <div class="wzb__bubble" aria-hidden="true"><span data-wzb-say>Hoo! Want your own app? I’ll help you make it — it takes about 2 minutes.</span></div>
+                <div class="wzb__perch">@include('partials.live-owl', ['width' => 150, 'variant' => 'dev', 'alt' => 'The Owlvix owl, ready to help you build your app'])</div>
+            </div>
+            <div class="wzb__text">
+                <span class="wzb__pill"><i aria-hidden="true"></i>Quick setup · about 2 minutes</span>
+                <h2>Let’s build <span class="accent">your app</span> together</h2>
+                <p>Answer a few easy questions and watch your app come to life on the phone as you go. No code, no cost.</p>
+                <ol class="wzb__steps">
+                    <li><b>1</b><span>Pick your<br>business</span></li>
+                    <li><b>2</b><span>Name, logo<br>&amp; colours</span></li>
+                    <li><b>3</b><span>Try it, then<br>save it</span></li>
+                </ol>
+                <div class="wzb__actions">
+                    <button type="button" class="btn btn--glow wzb__go" data-wz-start>🚀 Start building my app</button>
+                    <button type="button" class="wzb__no" data-wzb-no>or use the full builder →</button>
+                </div>
+            </div>
+            <div class="wzb__phone" aria-hidden="true">
+                <div class="wzb__screen">
+                    <span class="wzb__status"></span>
+                    <span class="wzb__hero"><i></i><i></i><em></em></span>
+                    <span class="wzb__cards"><i></i><i></i></span>
+                    <span class="wzb__line"></span><span class="wzb__line wzb__line--s"></span>
+                    <span class="wzb__btn"></span>
+                    <span class="wzb__nav"><i></i><i></i><i></i></span>
+                </div>
+            </div>
+        </div>
         <div class="fb ab card" data-ab data-qr="{{ \App\Support\Asset::url('js/qr.js') }}" data-site-builder="{{ route('website-builder') }}">
-            <div class="fb-top">
+            <div class="fb-top ab-top">
                 <div class="fb-tabs" role="tablist">
                     <button type="button" role="tab" data-tab="design" aria-selected="true">✏️ Design</button>
                     <button type="button" role="tab" data-tab="build" aria-selected="false">📦 Build &amp; download</button>
@@ -49,9 +81,15 @@
                 <div class="fb-top__actions">
                     <label class="sr-only" for="ab-mine">Open one of my apps</label>
                     <select id="ab-mine" class="fb-mine" data-mine hidden></select>
+                    <button type="button" class="btn btn--sm btn--ghost" data-mine-signin hidden>📂 My apps</button>
                     <button type="button" class="btn btn--sm btn--ghost" data-new>＋ New app</button>
                     <button type="button" class="btn btn--sm btn--glow" data-save>Save app</button>
                 </div>
+                {{-- add a block to the page on the phone, top right of the toolbar so it is always easy to find (same menu as under the screen's blocks) --}}
+                <details class="ab-add ab-add--prev" data-add-block-prev>
+                    <summary class="btn btn--sm btn--glow">＋ Add block <span class="ab-add__to" data-add-to></span></summary>
+                    <div class="ab-add__grid" data-add-types-prev></div>
+                </details>
             </div>
             <p class="fb-status" data-status></p>
             <p class="fb-note" data-note role="status" hidden></p>
@@ -59,13 +97,36 @@
             <div class="fb-layout ab-layout">
                 <div class="fb-edit">
                     <div data-panel="design">
-                        <details class="fb-settings ab-tpl" data-tpl-wrap open><summary>Start from a template</summary>
+                        <details class="fb-settings ab-screen" open><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span><span class="ab-sec__t">1. Screen: <label class="ab-pagepick"><span class="sr-only">Page to edit</span><span class="ab-pagepick__v" data-screen-name aria-hidden="true">Home</span><select data-screen-pick></select></label></span></summary>
+                            <div class="ab-blocks" data-blocks></div>
+                            <input type="file" accept="image/png,image/jpeg,image/webp" data-photo-file hidden>
+                        </details>
+
+                        <details class="fb-settings"><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></span><span class="ab-sec__t">2. Pages &amp; menu</span></summary>
+                            <div class="ab-langbar" data-langbar></div>
+                            <p class="fb-hint">Up to 15 pages, each a native screen you build from blocks (or a page of your website). For each page choose where its link goes: the bottom bar (up to 5), the ☰ menu at the top, or both.</p>
+                            <label>☰ Menu at the top
+                                <select data-menu>
+                                    <option value="show">Show it — with the pages ticked “☰ Menu” below</option>
+                                    <option value="hide">Don’t show it</option>
+                                </select>
+                            </label>
+                            <p class="ab-err" data-menu-note hidden></p>
+                            <div class="ab-tabs" data-tabs></div>
+                            {{-- ＋ Add page: a blank page or a ready-made one, filled with suitable blocks (list drawn by app-builder.js) --}}
+                            <details class="ab-add ab-add--page" data-add-page>
+                                <summary class="btn btn--sm btn--ghost">＋ Add page</summary>
+                                <div class="ab-add__grid" data-page-presets></div>
+                            </details>
+                        </details>
+
+                        <details class="fb-settings ab-tpl" data-tpl-wrap><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span><span class="ab-sec__t">Start from a template</span></summary>
                             <p class="fb-hint">Pick a ready-made app, then change the words and add your own pictures. Your name, icon and settings stay.</p>
                             <div class="ab-tpls" data-tpls></div>
                         </details>
 
-                        <details class="fb-settings" open><summary>1. Name &amp; icon</summary>
-                            <label>App name <small>— shown under the icon on the phone</small><input data-a="name" maxlength="30" placeholder="My Bakery"></label>
+                        <details class="fb-settings"><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/></svg></span><span class="ab-sec__t">3. Name &amp; icon</span></summary>
+                            <label>App name <small>— shown under the icon on the phone</small><input data-a="name" data-v="appname" maxlength="30" placeholder="My Bakery"></label>
                             <div class="ab-iconrow">
                                 <canvas class="ab-iconprev" width="120" height="120" data-icon-prev aria-label="Your app icon"></canvas>
                                 <div class="ab-iconctl">
@@ -85,7 +146,7 @@
                             </div>
                         </details>
 
-                        <details class="fb-settings" open><summary>2. Colours &amp; style</summary>
+                        <details class="fb-settings"><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.5 3.3A1.6 1.6 0 0 1 12 22z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></svg></span><span class="ab-sec__t">4. Colours &amp; style</span></summary>
                             <div class="fb-2">
                                 <label>Main colour <small>— buttons, active tab</small><input type="color" data-c="primary"></label>
                                 <label>Top &amp; bottom bars<input type="color" data-c="bar"></label>
@@ -131,7 +192,7 @@
                             </div>
                         </details>
 
-                        <details class="fb-settings ab-splash" open><summary>3. Splash screen</summary>
+                        <details class="fb-settings ab-splash"><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17v4M17 19h4"/></svg></span><span class="ab-sec__t">5. Splash screen</span></summary>
                             <p class="fb-hint">What people see for a moment while your app opens. <button type="button" class="ab-link" data-view-splash>See it in the preview</button></p>
                             <div class="fb-2">
                                 <label>Background colour<input type="color" data-c="splash"></label>
@@ -171,40 +232,20 @@
                             <p class="fb-hint" data-bg-note hidden></p>
                         </details>
 
-                        <details class="fb-settings" open><summary>4. Pages &amp; menu</summary>
-                            <div class="ab-langbar" data-langbar></div>
-                            <p class="fb-hint">Up to 15 pages, each a native screen you build from blocks (or a page of your website). For each page choose where its link goes: the bottom bar (up to 5), the ☰ menu at the top, or both.</p>
-                            <label>☰ Menu at the top
-                                <select data-menu>
-                                    <option value="show">Show it — with the pages ticked “☰ Menu” below</option>
-                                    <option value="hide">Don’t show it</option>
-                                </select>
-                            </label>
-                            <p class="ab-err" data-menu-note hidden></p>
-                            <div class="ab-tabs" data-tabs></div>
-                            <button type="button" class="btn btn--sm btn--ghost" data-add-tab>＋ Add page</button>
-                        </details>
-
-                        <details class="fb-settings ab-screen" open><summary>5. Screen: <span data-screen-name>Home</span></summary>
-                            <div class="ab-blocks" data-blocks></div>
-                            <details class="ab-add" data-add-block><summary class="btn btn--sm btn--glow">＋ Add block</summary><div class="ab-add__grid" data-add-types></div></details>
-                            <input type="file" accept="image/png,image/jpeg,image/webp" data-photo-file hidden>
-                        </details>
-
-                        <details class="fb-settings"><summary>6. More settings</summary>
+                        <details class="fb-settings"><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><span class="ab-sec__t">6. More settings</span></summary>
                             <label data-site-pick hidden>Pick one of your sites<select data-site></select></label>
-                            <label>Your website <small>— only needed for tabs that show a page of it</small><input data-a="url" type="url" inputmode="url" placeholder="https://www.yourbusiness.com" maxlength="500" autocomplete="url"></label>
+                            <label>Your website <small>— only needed for tabs that show a page of it</small><input data-a="url" data-v="https" type="url" inputmode="url" placeholder="https://www.yourbusiness.com" maxlength="500" autocomplete="url"></label>
                             <label>Links to other websites <small>— on website tabs</small><select data-a="external_links"><option value="browser">Open in the phone’s browser (recommended)</option><option value="app">Open inside the app</option></select></label>
                             <div class="fb-2">
-                                <label>Version<input data-a="version_name" maxlength="11" placeholder="1.0.0"></label>
-                                <label>App ID <small>— can’t change after the first build</small><input data-a="package" maxlength="100" placeholder="com.yourbusiness.app" spellcheck="false" autocapitalize="off"></label>
+                                <label>Version<input data-a="version_name" data-v="version" maxlength="11" placeholder="1.0.0"></label>
+                                <label>App ID <small>— can’t change after the first build</small><input data-a="package" data-v="package" maxlength="100" placeholder="com.yourbusiness.app" spellcheck="false" autocapitalize="off"></label>
                             </div>
                             <label>Offline title <small>— shown when a website tab can’t load</small><input data-o="title" maxlength="60" placeholder="You’re offline"></label>
                             <label>Offline message<input data-o="text" maxlength="200" placeholder="Check your internet connection and try again."></label>
                             <label>Offline button<input data-o="button" maxlength="30" placeholder="Try again"></label>
                             <h3 class="ab-sub">Orders &amp; bookings <small>— where orders (Products block) and appointment requests (Bookings block) are sent</small></h3>
                             <div class="fb-2">
-                                <label>WhatsApp number<input data-shop="whatsapp" type="tel" maxlength="25" placeholder="+44 7700 900123"></label>
+                                <label>WhatsApp number<input data-shop="whatsapp" data-v="whatsapp" type="tel" maxlength="25" placeholder="+44 7700 900123"></label>
                                 <label>Email<input data-shop="email" type="email" maxlength="150" placeholder="orders@yourbusiness.com"></label>
                                 <label>Currency symbol<input data-shop="currency" maxlength="6" placeholder="$"></label>
                                 <label>Note on the order screen <small>— optional</small><input data-shop="note" maxlength="200" placeholder="Pay when you collect. Ready in 20 minutes."></label>
@@ -254,7 +295,7 @@
             </dialog>
         </div>
 
-        <div class="lp-cta__box card speed-cta">
+        <div class="lp-cta__box card speed-cta ab-iphone-cta">
             <div class="lp-cta__owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl'])</div>
             <div><h2>Want it on the iPhone App Store too?</h2><p>We build and publish apps for iPhone and Android — with logins, payments, push notifications and the native features Apple asks for. Start free: we plan the first version at no cost.</p></div>
             <a href="{{ route('service.mobile-app-development') }}#contact" class="btn btn--glow" data-quote>Get a free quote <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>

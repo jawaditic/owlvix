@@ -693,7 +693,7 @@ class AppBuilderTest extends TestCase
         $b = $r['tabs'][0]['blocks'][0];
         $this->assertSame(hash('sha256', 'abcd1234efgh:4821'), $b['pinHash']);
         $this->assertArrayNotHasKey('pin', $b);
-        $this->assertStringNotContainsString('4821', File::get($this->public."/{$r['id']}/content.json"));
+        $this->assertDoesNotMatchRegularExpression('/"pin"|[^0-9]4821[^0-9]/', File::get($this->public."/{$r['id']}/content.json")); // (the rev, a timestamp, may contain those digits)
         $this->assertArrayNotHasKey('pinHash', $this->contentFile($r['id'])['tabs'][0]['blocks'][0]); // nothing to guess offline
 
         // Phones ask the website; wrong PINs are limited per card (all phones together)

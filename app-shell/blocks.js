@@ -270,7 +270,7 @@ function Reviews({ b }) {
     const w = items.length > 1 ? width * 0.78 : width - 32;
     return (
         <View style={{ marginTop: 14 }}>
-            {!!str(b.title) && <Text style={[styles.cardTitle, { marginHorizontal: 20 }]} accessibilityRole="header">{b.title}</Text>}
+            {!!str(b.title) && <Text style={[styles.cardTitle, { marginLeft: 18, marginRight: 16 }]} accessibilityRole="header">{b.title}</Text>}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={w + 10} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
                 {items.map((r, i) => (
                     <View key={i} style={[styles.card, styles.review, { width: w }]}>

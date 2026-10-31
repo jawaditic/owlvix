@@ -40,7 +40,9 @@ class BuilderController extends Controller
 
         foreach (['builder-code-ip:'.$request->ip(), 'builder-code:'.sha1($email)] as $key) {
             if (RateLimiter::tooManyAttempts($key, 3)) {
-                return $this->fail('Too many codes requested. Please wait a few minutes and try again.', 429);
+                $mins = max(1, (int) ceil(RateLimiter::availableIn($key) / 60));
+
+                return $this->fail("Too many codes requested. Please try again in {$mins} minute".($mins === 1 ? '' : 's').' — or enter a code we already sent you.', 429);
             }
         }
         RateLimiter::hit('builder-code-ip:'.$request->ip(), 600);
