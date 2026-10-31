@@ -663,6 +663,32 @@ class AppBuilderTest extends TestCase
         $this->get(route('builder.apps.privacy', $r['id']))->assertSee('loyalty card stamps are kept only on your phone');
     }
 
+    public function test_languages(): void
+    {
+        $token = $this->signIn();
+        $ar = [['label' => 'الرئيسية', 'icon' => 'home', 'type' => 'screen', 'blocks' => [['type' => 'heading', 'text' => 'مرحبا'], ['type' => 'image', 'image' => ['src' => $this->jpeg(220, 120)]]]]];
+        $r = $this->save($token, $this->app(['lang' => 'en', 'translations' => ['ar' => ['tabs' => $ar], 'xx' => ['tabs' => $ar], 'en' => ['tabs' => $ar]]]))->assertOk()->json('app');
+        $this->assertSame('en', $r['settings']['lang']);
+        $this->assertSame(['ar'], array_keys($r['translations'])); // unknown codes and the main language itself are ignored
+        $this->assertSame('مرحبا', $r['translations']['ar']['tabs'][0]['blocks'][0]['text']);
+        $doc = $this->contentFile($r['id']);
+        $this->assertSame('en', $doc['lang']);
+        $this->assertSame($r['translations']['ar']['tabs'], $doc['translations']['ar']['tabs']);
+        // A translation's picture is stored like any other
+        $this->assertFileExists($this->public."/{$r['id']}/img/".$doc['translations']['ar']['tabs'][0]['blocks'][1]['image']['src']);
+
+        // Problems in a translation say which language
+        $bad = [['label' => '', 'icon' => 'home', 'type' => 'screen', 'blocks' => []]];
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['translations' => ['ur' => ['tabs' => $bad]]])])->assertStatus(422)
+            ->assertJsonFragment(['error' => 'اردو: Each page needs a short name (up to 24 characters).']);
+        // Up to 4 translations
+        $five = array_fill_keys(['ar', 'ur', 'hi', 'es', 'fr'], ['tabs' => $ar]);
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['translations' => $five])])->assertStatus(422);
+        // Main language can be any supported one
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['lang' => 'ur'])])->assertOk()->assertJsonPath('app.settings.lang', 'ur');
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['lang' => 'klingon'])])->assertOk()->assertJsonPath('app.settings.lang', 'en');
+    }
+
     public function test_up_to_fifteen_pages_with_a_menu(): void
     {
         $token = $this->signIn();

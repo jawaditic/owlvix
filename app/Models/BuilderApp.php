@@ -113,6 +113,7 @@ class BuilderApp extends Model
             'url' => $this->url,
             'settings' => $this->settings,
             'tabs' => $this->content['tabs'] ?? [],
+            'translations' => (object) ($this->content['translations'] ?? []),
             'content_url' => \App\Support\AppContent::baseUrl($this).'content.json',
             'allowed' => \App\Support\AppBuilder::allowed($this),
             'needs_website' => \App\Support\AppBuilder::needsWebsite($this),

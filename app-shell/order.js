@@ -3,6 +3,7 @@
 // the owner (shop settings in the content: currency, WhatsApp number, email, a note such as "Pay on collection").
 import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { t, tIn } from './i18n';
 import { onLook } from './theme';
 import { Icon, money } from './blocks';
 import { image, str } from './content';
@@ -10,11 +11,11 @@ import { image, str } from './content';
 
 const Stepper = ({ value, onChange, color, label }) => (
     <View style={styles.stepper} accessibilityLabel={`${label}: ${value}`}>
-        <Pressable onPress={() => onChange(value - 1)} style={[styles.stepBtn, { borderColor: color }]} accessibilityRole="button" accessibilityLabel="One less" hitSlop={6}>
+        <Pressable onPress={() => onChange(value - 1)} style={[styles.stepBtn, { borderColor: color }]} accessibilityRole="button" accessibilityLabel={t('one_less')} hitSlop={6}>
             <Text style={[styles.stepText, { color }]}>−</Text>
         </Pressable>
         <Text style={styles.qty}>{value}</Text>
-        <Pressable onPress={() => onChange(value + 1)} style={[styles.stepBtn, { borderColor: color }]} accessibilityRole="button" accessibilityLabel="One more" hitSlop={6}>
+        <Pressable onPress={() => onChange(value + 1)} style={[styles.stepBtn, { borderColor: color }]} accessibilityRole="button" accessibilityLabel={t('one_more')} hitSlop={6}>
             <Text style={[styles.stepText, { color }]}>+</Text>
         </Pressable>
     </View>
@@ -25,7 +26,7 @@ export function Sheet({ visible, onClose, children, insets }) {
     return (
         <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.sheetWrap}>
-                <Pressable style={styles.shade} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close" />
+                <Pressable style={styles.shade} onPress={onClose} accessibilityRole="button" accessibilityLabel={t('close')} />
                 <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
                     <View style={styles.grip} />
                     {children}
@@ -45,12 +46,12 @@ export function ProductSheet({ product, ctx, insets, onClose, onAdd }) {
                 <ScrollView style={{ maxHeight: 560 }} contentContainerStyle={{ gap: 10 }}>
                     {img && <Image source={{ uri: img.uri }} style={[styles.bigImg, { aspectRatio: Math.max(1, Math.min(img.ratio, 2)) }]} resizeMode="cover" />}
                     <Text style={styles.title}>{product.name}</Text>
-                    <Text style={[styles.price, { color: ctx.primary }]}>{typeof product.price === 'number' ? money(product.price, ctx.shop) : 'Price on request'}</Text>
+                    <Text style={[styles.price, { color: ctx.primary }]}>{typeof product.price === 'number' ? money(product.price, ctx.shop) : t('price_on_request')}</Text>
                     {!!str(product.text) && <Text style={styles.text}>{product.text}</Text>}
                     <View style={styles.row}>
-                        <Stepper value={qty} onChange={n => setQty(Math.max(1, Math.min(99, n)))} color={ctx.primary} label="How many" />
+                        <Stepper value={qty} onChange={n => setQty(Math.max(1, Math.min(99, n)))} color={ctx.primary} label={t('how_many')} />
                         <Pressable onPress={() => { onAdd(product, qty); setQty(1); }} style={[styles.btn, { backgroundColor: ctx.primary, flex: 1 }]} accessibilityRole="button">
-                            <Text style={[styles.btnText, { color: ctx.onPrimary }]}>Add to order{typeof product.price === 'number' ? ` · ${money(product.price * qty, ctx.shop)}` : ''}</Text>
+                            <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{t('add_to_order')}{typeof product.price === 'number' ? ` · ${money(product.price * qty, ctx.shop)}` : ''}</Text>
                         </Pressable>
                     </View>
                 </ScrollView>
@@ -65,9 +66,9 @@ export function OrderButton({ cart, ctx, bottom, onPress }) {
     if (!count) return null;
     const total = cart.reduce((n, l) => n + (typeof l.price === 'number' ? l.price * l.qty : 0), 0);
     return (
-        <Pressable onPress={onPress} style={[styles.fab, { bottom, backgroundColor: ctx.primary }]} accessibilityRole="button" accessibilityLabel={`Your order: ${count} items`}>
+        <Pressable onPress={onPress} style={[styles.fab, { bottom, backgroundColor: ctx.primary }]} accessibilityRole="button" accessibilityLabel={`${t('your_order')}: ${count} ${t('items')}`}>
             <Icon name="cart" color={ctx.onPrimary} size={20} />
-            <Text style={[styles.fabText, { color: ctx.onPrimary }]}>{count} · {total ? money(total, ctx.shop) : 'View order'}</Text>
+            <Text style={[styles.fabText, { color: ctx.onPrimary }]}>{count} · {total ? money(total, ctx.shop) : t('view_order')}</Text>
         </Pressable>
     );
 }
@@ -78,35 +79,36 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
     const [note, setNote] = useState('');
     const [sent, setSent] = useState(false);
     const shop = ctx.shop || {};
+    const ml = ctx.mainLang || 'en'; // the owner reads orders in the app's main language
     const total = cart.reduce((n, l) => n + (typeof l.price === 'number' ? l.price * l.qty : 0), 0);
     const ask = cart.some(l => typeof l.price !== 'number');
     const setQty = (i, q) => setCart(c => (q < 1 ? c.filter((_, j) => j !== i) : c.map((l, j) => (j === i ? { ...l, qty: Math.min(99, q) } : l))));
     const message = () => [
-        'Hello! I’d like to order:',
+        tIn(ml, 'm_order'),
         ...cart.map(l => `${l.qty} × ${l.name}${typeof l.price === 'number' ? ' — ' + money(l.price * l.qty, shop) : ''}`),
-        total ? `Total: ${money(total, shop)}${ask ? ' (+ items priced on request)' : ''}` : '',
-        name.trim() ? `Name: ${name.trim()}` : '',
-        note.trim() ? `Note: ${note.trim()}` : '',
-        `(Sent from the ${appName} app)`,
+        total ? `${tIn(ml, 'm_total')}: ${money(total, shop)}${ask ? ' (' + tIn(ml, 'plus_on_request') + ')' : ''}` : '',
+        name.trim() ? `${tIn(ml, 'm_name')}: ${name.trim()}` : '',
+        note.trim() ? `${tIn(ml, 'm_note')}: ${note.trim()}` : '',
+        tIn(ml, 'm_sent_from', { app: appName }),
     ].filter(Boolean).join('\n');
     const send = how => {
         const text = message();
         const url = how === 'whatsapp'
             ? `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(text)}`
-            : `mailto:${shop.email}?subject=${encodeURIComponent(`Order from the ${appName} app`)}&body=${encodeURIComponent(text)}`;
+            : `mailto:${shop.email}?subject=${encodeURIComponent(tIn(ml, 'm_order_subject', { app: appName }))}&body=${encodeURIComponent(text)}`;
         Linking.openURL(url).then(() => setSent(true)).catch(() => {});
     };
     const close = () => { setSent(false); onClose(); };
     return (
         <Sheet visible={visible} onClose={close} insets={insets}>
-            <Text style={styles.title}>Your order</Text>
+            <Text style={styles.title}>{t('your_order')}</Text>
             {sent ? (
                 <View style={{ gap: 12, paddingVertical: 8 }}>
-                    <Text style={styles.text}>Your order is ready to send in {shop.whatsapp ? 'WhatsApp' : 'your email app'}. Once you’ve sent it, {appName} will get back to you.</Text>
+                    <Text style={styles.text}>{t('order_ready', { via: shop.whatsapp ? t('whatsapp_app') : t('email_app'), app: appName })}</Text>
                     <Pressable onPress={() => { setCart([]); setNote(''); close(); }} style={[styles.btn, { backgroundColor: ctx.primary }]} accessibilityRole="button">
-                        <Text style={[styles.btnText, { color: ctx.onPrimary }]}>Done — start a new order</Text>
+                        <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{t('done_new_order')}</Text>
                     </Pressable>
-                    <Pressable onPress={() => setSent(false)} style={styles.link} accessibilityRole="button"><Text style={[styles.linkText, { color: ctx.primary }]}>Back to my order</Text></Pressable>
+                    <Pressable onPress={() => setSent(false)} style={styles.link} accessibilityRole="button"><Text style={[styles.linkText, { color: ctx.primary }]}>{t('back_to_order')}</Text></Pressable>
                 </View>
             ) : (
                 <ScrollView style={{ maxHeight: 560 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
@@ -114,23 +116,23 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
                         <View key={i} style={styles.line}>
                             <View style={{ flex: 1 }}>
                                 <Text style={styles.lineName}>{l.name}</Text>
-                                <Text style={styles.lineMuted}>{typeof l.price === 'number' ? money(l.price * l.qty, shop) : 'Price on request'}</Text>
+                                <Text style={styles.lineMuted}>{typeof l.price === 'number' ? money(l.price * l.qty, shop) : t('price_on_request')}</Text>
                             </View>
                             <Stepper value={l.qty} onChange={q => setQty(i, q)} color={ctx.primary} label={l.name} />
                         </View>
                     ))}
-                    {!!total && <Text style={styles.total}>Total {money(total, shop)}{ask ? ' + items priced on request' : ''}</Text>}
+                    {!!total && <Text style={styles.total}>{t('total')} {money(total, shop)}{ask ? ' ' + t('plus_on_request') : ''}</Text>}
                     {!!str(shop.note) && <Text style={styles.lineMuted}>{shop.note}</Text>}
-                    <TextInput value={name} onChangeText={setName} placeholder="Your name" style={styles.input} maxLength={60} placeholderTextColor="#94a3b8" />
-                    <TextInput value={note} onChangeText={setNote} placeholder="Note (time, address, allergies…)" style={[styles.input, { minHeight: 70 }]} maxLength={400} multiline placeholderTextColor="#94a3b8" />
+                    <TextInput value={name} onChangeText={setName} placeholder={t('your_name')} style={styles.input} maxLength={60} placeholderTextColor="#94a3b8" />
+                    <TextInput value={note} onChangeText={setNote} placeholder={t('order_note')} style={[styles.input, { minHeight: 70 }]} maxLength={400} multiline placeholderTextColor="#94a3b8" />
                     {!!shop.whatsapp && (
                         <Pressable onPress={() => send('whatsapp')} style={[styles.btn, { backgroundColor: '#25d366' }]} accessibilityRole="button">
-                            <Text style={[styles.btnText, { color: '#05341b' }]}>Send order on WhatsApp</Text>
+                            <Text style={[styles.btnText, { color: '#05341b' }]}>{t('send_order_whatsapp')}</Text>
                         </Pressable>
                     )}
                     {!!shop.email && (
                         <Pressable onPress={() => send('email')} style={[styles.btn, shop.whatsapp ? styles.btnOutline : { backgroundColor: ctx.primary }, shop.whatsapp && { borderColor: ctx.primary }]} accessibilityRole="button">
-                            <Text style={[styles.btnText, { color: shop.whatsapp ? ctx.primary : ctx.onPrimary }]}>Send order by email</Text>
+                            <Text style={[styles.btnText, { color: shop.whatsapp ? ctx.primary : ctx.onPrimary }]}>{t('send_order_email')}</Text>
                         </Pressable>
                     )}
                 </ScrollView>

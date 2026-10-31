@@ -3,16 +3,15 @@
 // there's no calendar on a server, so the owner keeps track of what's taken.
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { dateNames, t, tIn } from './i18n';
 import { onLook } from './theme';
 import { Icon } from './blocks';
 import { str } from './content';
 import { Sheet } from './order';
 
-const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const mins = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
 const hhmm = n => `${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
-const label = d => `${DAY[d.getDay()]} ${d.getDate()} ${MONTH[d.getMonth()]}`;
+const label = (d, n) => `${n.days[d.getDay()]} ${d.getDate()} ${n.months[d.getMonth()]}`;
 
 /** The booking block on a screen: what can be booked, and a button. */
 export function BookingBlock({ b, ctx }) {
@@ -20,7 +19,7 @@ export function BookingBlock({ b, ctx }) {
     return (
         <View style={styles.card}>
             <View style={[styles.badge, { backgroundColor: ctx.primary + '1f' }]}><Icon name="calendar" color={ctx.primary} size={22} /></View>
-            <Text style={styles.title}>{str(b.title) || 'Book an appointment'}</Text>
+            <Text style={styles.title}>{str(b.title) || t('book_appointment')}</Text>
             {!!str(b.text) && <Text style={styles.text}>{b.text}</Text>}
             {services.length > 0 && (
                 <View style={styles.services}>
@@ -33,7 +32,7 @@ export function BookingBlock({ b, ctx }) {
                 </View>
             )}
             <Pressable onPress={() => ctx.openBooking(b)} style={({ pressed }) => [styles.btn, { backgroundColor: ctx.primary }, pressed && { opacity: 0.8 }]} accessibilityRole="button">
-                <Text style={[styles.btnText, { color: ctx.onPrimary }]}>Book an appointment</Text>
+                <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{t('book_appointment')}</Text>
             </Pressable>
         </View>
     );
@@ -55,6 +54,9 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
     const [note, setNote] = useState('');
     const [sent, setSent] = useState(false);
     const shop = ctx.shop || {};
+    const ml = ctx.mainLang || 'en'; // the owner reads requests in the app's main language
+    const mn = useMemo(() => dateNames(ml), [ml]);
+    const dn = useMemo(() => dateNames(ctx.lang || 'en'), [ctx.lang]);
     const b = block || {};
     const services = Array.isArray(b.services) ? b.services : [];
 
@@ -83,34 +85,34 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
     const close = () => { setSent(false); onClose(); };
     const send = how => {
         const text = [
-            'Hello! I’d like to book an appointment:',
-            service !== null ? `Service: ${str(services[service]?.name)}` : '',
-            `When: ${label(day)}, ${time}`,
-            `Name: ${name.trim()}`,
-            phone.trim() ? `Phone: ${phone.trim()}` : '',
-            note.trim() ? `Note: ${note.trim()}` : '',
-            `(Sent from the ${appName} app)`,
+            tIn(ml, 'm_book'),
+            service !== null ? `${tIn(ml, 'm_service')}: ${str(services[service]?.name)}` : '',
+            `${tIn(ml, 'm_when')}: ${label(day, mn)}, ${time}`,
+            `${tIn(ml, 'm_name')}: ${name.trim()}`,
+            phone.trim() ? `${tIn(ml, 'm_phone')}: ${phone.trim()}` : '',
+            note.trim() ? `${tIn(ml, 'm_note')}: ${note.trim()}` : '',
+            tIn(ml, 'm_sent_from', { app: appName }),
         ].filter(Boolean).join('\n');
         const url = how === 'whatsapp'
             ? `https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(text)}`
-            : `mailto:${shop.email}?subject=${encodeURIComponent(`Booking request from the ${appName} app`)}&body=${encodeURIComponent(text)}`;
+            : `mailto:${shop.email}?subject=${encodeURIComponent(tIn(ml, 'm_book_subject', { app: appName }))}&body=${encodeURIComponent(text)}`;
         Linking.openURL(url).then(() => setSent(true)).catch(() => {});
     };
 
     return (
         <Sheet visible={!!block} onClose={close} insets={insets}>
-            <Text style={styles.sheetTitle}>{str(b.title) || 'Book an appointment'}</Text>
+            <Text style={styles.sheetTitle}>{str(b.title) || t('book_appointment')}</Text>
             {sent ? (
                 <View style={{ gap: 12, paddingVertical: 8 }}>
-                    <Text style={styles.text}>Your request is ready to send in {shop.whatsapp ? 'WhatsApp' : 'your email app'}. {appName} will confirm your appointment.</Text>
+                    <Text style={styles.text}>{t('request_ready', { via: shop.whatsapp ? t('whatsapp_app') : t('email_app'), app: appName })}</Text>
                     <Pressable onPress={() => { setTime(null); setNote(''); close(); }} style={[styles.btn, { backgroundColor: ctx.primary }]} accessibilityRole="button">
-                        <Text style={[styles.btnText, { color: ctx.onPrimary }]}>Done</Text>
+                        <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{t('done')}</Text>
                     </Pressable>
                 </View>
             ) : (
                 <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ gap: 12 }} keyboardShouldPersistTaps="handled">
                     {services.length > 0 && <>
-                        <Text style={styles.step}>Service</Text>
+                        <Text style={styles.step}>{t('service')}</Text>
                         <View style={styles.wrap}>
                             {services.map((s, i) => (
                                 <Chip key={i} on={service === i} onPress={() => setService(i)} color={ctx.primary} wide>
@@ -119,18 +121,18 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
                             ))}
                         </View>
                     </>}
-                    <Text style={styles.step}>Day</Text>
+                    <Text style={styles.step}>{t('day')}</Text>
                     {days.length ? (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                             {days.map(d => (
                                 <Chip key={d.toDateString()} on={day?.toDateString() === d.toDateString()} onPress={() => { setDay(d); setTime(null); }} color={ctx.primary}>
-                                    {on => <><Text style={[styles.chipSub, on && { color: ctx.onPrimary }]}>{DAY[d.getDay()]}</Text><Text style={[styles.dayNum, on && { color: ctx.onPrimary }]}>{d.getDate()}</Text><Text style={[styles.chipSub, on && { color: ctx.onPrimary }]}>{MONTH[d.getMonth()]}</Text></>}
+                                    {on => <><Text style={[styles.chipSub, on && { color: ctx.onPrimary }]}>{dn.days[d.getDay()]}</Text><Text style={[styles.dayNum, on && { color: ctx.onPrimary }]}>{d.getDate()}</Text><Text style={[styles.chipSub, on && { color: ctx.onPrimary }]}>{dn.months[d.getMonth()]}</Text></>}
                                 </Chip>
                             ))}
                         </ScrollView>
-                    ) : <Text style={styles.muted}>No days are open for booking right now.</Text>}
+                    ) : <Text style={styles.muted}>{t('no_days')}</Text>}
                     {day && <>
-                        <Text style={styles.step}>Time</Text>
+                        <Text style={styles.step}>{t('time')}</Text>
                         {times.length ? (
                             <View style={styles.wrap}>
                                 {times.map(t => (
@@ -139,21 +141,21 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
                                     </Chip>
                                 ))}
                             </View>
-                        ) : <Text style={styles.muted}>No times left on this day — please pick another.</Text>}
+                        ) : <Text style={styles.muted}>{t('no_times')}</Text>}
                     </>}
-                    <Text style={styles.step}>Your details</Text>
-                    <TextInput value={name} onChangeText={setName} placeholder="Your name" style={styles.input} maxLength={60} placeholderTextColor="#94a3b8" />
-                    <TextInput value={phone} onChangeText={setPhone} placeholder="Phone number" style={styles.input} maxLength={25} keyboardType="phone-pad" placeholderTextColor="#94a3b8" />
-                    <TextInput value={note} onChangeText={setNote} placeholder="Anything we should know? (optional)" style={[styles.input, { minHeight: 64 }]} maxLength={300} multiline placeholderTextColor="#94a3b8" />
-                    {!ready && <Text style={styles.muted}>Pick {services.length && service === null ? 'a service, ' : ''}{!day ? 'a day, ' : ''}{!time ? 'a time, ' : ''}and add your name to send your request.</Text>}
+                    <Text style={styles.step}>{t('your_details')}</Text>
+                    <TextInput value={name} onChangeText={setName} placeholder={t('your_name')} style={styles.input} maxLength={60} placeholderTextColor="#94a3b8" />
+                    <TextInput value={phone} onChangeText={setPhone} placeholder={t('phone')} style={styles.input} maxLength={25} keyboardType="phone-pad" placeholderTextColor="#94a3b8" />
+                    <TextInput value={note} onChangeText={setNote} placeholder={t('anything_else')} style={[styles.input, { minHeight: 64 }]} maxLength={300} multiline placeholderTextColor="#94a3b8" />
+                    {!ready && <Text style={styles.muted}>{t('pick_to_send')}</Text>}
                     {!!shop.whatsapp && (
                         <Pressable disabled={!ready} onPress={() => send('whatsapp')} style={[styles.btn, { backgroundColor: '#25d366' }, !ready && styles.off]} accessibilityRole="button" accessibilityState={{ disabled: !ready }}>
-                            <Text style={[styles.btnText, { color: '#05341b' }]}>Send request on WhatsApp</Text>
+                            <Text style={[styles.btnText, { color: '#05341b' }]}>{t('send_request_whatsapp')}</Text>
                         </Pressable>
                     )}
                     {!!shop.email && (
                         <Pressable disabled={!ready} onPress={() => send('email')} style={[styles.btn, shop.whatsapp ? { borderWidth: 2, borderColor: ctx.primary } : { backgroundColor: ctx.primary }, !ready && styles.off]} accessibilityRole="button" accessibilityState={{ disabled: !ready }}>
-                            <Text style={[styles.btnText, { color: shop.whatsapp ? ctx.primary : ctx.onPrimary }]}>Send request by email</Text>
+                            <Text style={[styles.btnText, { color: shop.whatsapp ? ctx.primary : ctx.onPrimary }]}>{t('send_request_email')}</Text>
                         </Pressable>
                     )}
                 </ScrollView>

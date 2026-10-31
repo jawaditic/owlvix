@@ -74,8 +74,8 @@
     ];
 
     const fresh = () => ({
-        id: null, dirty: true, iconDirty: true, base: '',
-        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, style: { theme: 'light', corners: 'rounded', font: 'modern' }, tabs: starter(),
+        id: null, dirty: true, iconDirty: true, base: '', editLang: 'en', mainTabs: null,
+        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, style: { theme: 'light', corners: 'rounded', font: 'modern' }, lang: 'en', translations: {}, tabs: starter(),
             colors: { primary: '#16a34a', bar: '#ffffff', icon: '#16a34a', splash: '#ffffff' },
             offline: { title: '', text: '', button: '' } },
         icon: { mode: 'letter', letter: '', image: null, zoom: 70, fill: false },
@@ -93,6 +93,9 @@
         D.app.privacy = { owner: '', email: '', extra: '', ...(D.app.privacy || {}) };
         D.app.shop = { currency: '$', whatsapp: '', email: '', note: '', ...(D.app.shop || {}) };
         D.app.style = { theme: 'light', corners: 'rounded', font: 'modern', ...(D.app.style || {}) };
+        D.app.lang ||= 'en';
+        D.app.translations ||= {};
+        D.editLang ||= D.app.lang; // the language whose pages are being edited (they're in D.app.tabs; the main pages wait in D.mainTabs)
         D.splash = { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false, ...(D.splash || {}) };
     };
     const inIdb = !!D?.idb; // the design was too big for localStorage (pictures): it's in IndexedDB, loaded below
@@ -144,7 +147,28 @@
     /** Reads "items.2.title" from an object. */
     const getPath = (o, path) => path.split('.').reduce((x, k) => (x == null ? x : x[k]), o);
     const setPath = (o, path, v) => { const ks = path.split('.'), last = ks.pop(); const t = ks.reduce((x, k) => (x[k] ??= /^\d+$/.test(k) ? [] : {}), o); t[last] = v; };
-    const eachImage = fn => A().tabs.forEach(t => (t.blocks || []).forEach(b => {
+    /* Languages: D.app.tabs always holds the pages being edited. The main language's pages wait in D.mainTabs while
+       a translation is edited; each translation's pages are in D.app.translations[code] (null for the one being edited). */
+    const LANGS = { en: 'English', ar: 'العربية (Arabic)', ur: 'اردو (Urdu)', hi: 'हिन्दी (Hindi)', es: 'Español', fr: 'Français', de: 'Deutsch', pt: 'Português', tr: 'Türkçe', id: 'Bahasa Indonesia', ru: 'Русский', zh: '中文 (Chinese)' };
+    const mainTabs = () => (D.editLang === A().lang ? A().tabs : D.mainTabs);
+    const tabsOf = code => (code === D.editLang ? A().tabs : code === A().lang ? D.mainTabs : A().translations[code]);
+    const allTabs = () => [A().lang, ...Object.keys(A().translations)].flatMap(code => tabsOf(code) || []);
+    const switchLang = code => {
+        if (code === D.editLang) return;
+        if (D.editLang === A().lang) D.mainTabs = A().tabs; else A().translations[D.editLang] = A().tabs;
+        A().tabs = tabsOf(code);
+        if (code === A().lang) D.mainTabs = null; else A().translations[code] = null;
+        D.editLang = code; activeTab = 0; previewMenu = false; save(); drawAll(); drawLangs();
+    };
+    const drawLangs = () => {
+        const bar = $('[data-langbar]'); if (!bar) return;
+        const codes = [A().lang, ...Object.keys(A().translations)];
+        bar.innerHTML = `<div class="ab-langbar__row"><span>Languages:</span>${codes.map(c => `<button type="button" data-lang="${c}" aria-pressed="${c === D.editLang}">${esc(LANGS[c] || c)}${c === A().lang ? ' <small>(main)</small>' : ''}</button>`).join('')}
+            ${codes.length < 5 ? `<select data-lang-add aria-label="Add a language"><option value="">＋ Add language</option>${Object.entries(LANGS).filter(([c]) => !codes.includes(c)).map(([c, n]) => `<option value="${c}">${esc(n)}</option>`).join('')}</select>` : ''}</div>
+            ${D.editLang !== A().lang ? `<p class="fb-hint">Editing the <b>${esc(LANGS[D.editLang])}</b> pages — translate the words here. Pictures, prices and settings work the same in every language; new pages or blocks must be added in each language. <button type="button" class="ab-link" data-lang-del="${D.editLang}">Remove this language</button></p>`
+                : `<p class="fb-hint">Main language <select data-lang-main aria-label="Main language">${Object.entries(LANGS).filter(([c]) => c === A().lang || !codes.includes(c)).map(([c, n]) => `<option value="${c}" ${c === A().lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select> — the app opens in the phone’s language when you’ve added it, and people can switch in the ☰ menu. Orders and bookings reach you in the main language.</p>`}`;
+    };
+    const eachImage = fn => allTabs().forEach(t => (t.blocks || []).forEach(b => {
         if (b.image) fn(b.image); if (b.items) b.items.forEach(i => i.image && fn(i.image)); if (b.images) b.images.forEach(fn);
     }));
     const pendingBytes = () => { let n = 0; eachImage(i => { if (i.src?.startsWith('data:')) n += i.src.length; }); return n; };
@@ -286,8 +310,8 @@
                     ${b.title ? `<h3>${esc(b.title)}</h3>` : ''}${b.text ? `<p>${esc(b.text)}</p>` : ''}
                     ${btn ? pv.tap(btn.action, esc(btn.label), 'ab-n-herobtn" style="background:' + (img ? c.primary : on) + ';color:' + (img ? on : c.primary)) : ''}</div></div>`;
             }
-            case 'heading': return b.text?.trim() ? `<h4 class="ab-n-h" style="text-align:${b.align === 'center' ? 'center' : 'left'}">${esc(b.text)}</h4>` : '';
-            case 'text': return b.text?.trim() ? `<p class="ab-n-p" style="text-align:${b.align === 'center' ? 'center' : 'left'}">${esc(b.text)}</p>` : '';
+            case 'heading': return b.text?.trim() ? `<h4 class="ab-n-h" style="text-align:${b.align === 'center' ? 'center' : 'start'}">${esc(b.text)}</h4>` : '';
+            case 'text': return b.text?.trim() ? `<p class="ab-n-p" style="text-align:${b.align === 'center' ? 'center' : 'start'}">${esc(b.text)}</p>` : '';
             case 'image': return b.image ? `<div class="ab-n-pad">${pv.tap(b.action, `<img src="${esc(imgSrc(b.image))}" alt="${esc(b.alt || b.caption || '')}" class="ab-n-img${b.round ? ' is-round' : ''}">`)}${b.caption ? `<p class="ab-n-cap">${esc(b.caption)}</p>` : ''}</div>` : '';
             case 'button': return b.label?.trim() ? `<div class="ab-n-pad">${pv.tap(b.action, esc(b.label), 'ab-n-btn" style="' + (b.style === 'outline' ? `border:2px solid ${c.primary};color:${c.primary}` : `background:${c.primary};color:${on}`))}</div>` : '';
             case 'list': {
@@ -381,7 +405,7 @@
                     <p>${siteUrl() ? 'This page of your website shows here' : 'Add your website address in “More settings”'}</p></div>`;
             } else {
                 const html = (t.blocks || []).map(b => blockHtml(b, c)).join('');
-                body = `<div class="ab-ph__native">${html || '<p class="ab-n-empty">Add blocks to this screen.</p>'}</div>`;
+                body = `<div class="ab-ph__native"${['ar', 'ur'].includes(D.editLang) ? ' dir="rtl"' : ''}>${html || '<p class="ab-n-empty">Add blocks to this screen.</p>'}</div>`;
             }
             const bar = tabs.map((x, i) => i).filter(i => inBar(tabs[i], i)).slice(0, MAX_BAR), menuPages = tabs.map((x, i) => i).filter(i => inMenu(tabs[i], i)), hasMenu = a.menu !== 'hide' && menuPages.length > 0;
             const header = hasMenu ? `<div class="ab-ph__head" style="background:${c.bar};color:${barInk}"><button type="button" data-pmenu aria-label="Open menu"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><b>${esc(t.label || 'Page')}</b></div>` : '';
@@ -582,7 +606,7 @@
         drawSplashSettings();
         drawSitePick();
     };
-    const drawAll = () => { drawSettings(); drawTabs(); drawBlocks(); drawPhone(); syncSave(); };
+    const drawAll = () => { drawSettings(); drawLangs(); drawTabs(); drawBlocks(); drawPhone(); syncSave(); };
     const selectTab = i => { activeTab = i; $$('.ab-tab').forEach((r, j) => r.classList.toggle('is-on', j === activeTab)); drawBlocks(); drawPhone(); };
 
     const markDirty = (icon = false) => { D.dirty = true; if (icon) D.iconDirty = true; save(); syncSave(); };
@@ -702,6 +726,16 @@
     /** Show the splash in the preview phone (while its settings change). */
     const showSplash = () => { view = 'splash'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'splash'))); drawSplashSettings(); drawPhone(); };
     root.addEventListener('change', async e => {
+        if (e.target.matches('[data-lang-add]') && e.target.value) {
+            const code = e.target.value;
+            A().translations[code] = JSON.parse(JSON.stringify(mainTabs())); // start from the main pages, then translate
+            switchLang(code); markDirty(); track('app_builder_language', { lang: code });
+            note(`${LANGS[code]} added — translate the words on each page. Switch languages with the buttons above the pages.`);
+            return;
+        }
+        if (e.target.matches('[data-lang-main]')) {
+            A().lang = D.editLang = e.target.value; drawLangs(); markDirty(); return;
+        }
         if (e.target.matches('[data-bg-file]')) { await useBackground(e.target.files?.[0]); e.target.value = ''; return; }
         if (e.target.matches('[data-splash-file]')) { await useSplash(e.target.files?.[0]); e.target.value = ''; return; }
         if (e.target === photoInput) {
@@ -737,6 +771,12 @@
         const b = blockOf(t), blocks = curBlocks();
         if (t.dataset.tab) showTab(t.dataset.tab);
         else if (t.dataset.view) { view = t.dataset.view; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === t))); drawPhone(); }
+        else if (t.dataset.lang) switchLang(t.dataset.lang);
+        else if (t.dataset.langDel) {
+            const code = t.dataset.langDel;
+            if (!await ask(`Remove ${LANGS[code] || code}?`, 'Its translated pages are deleted when you save. Your main language stays as it is.', 'Remove language', true)) return;
+            switchLang(A().lang); delete A().translations[code]; drawLangs(); drawPhone(); markDirty();
+        }
         else if (t.dataset.style) {
             const [k, v] = t.dataset.style.split(':'); A().style[k] = v;
             $$('[data-style]').forEach(b => { const [k2, v2] = b.dataset.style.split(':'); b.setAttribute('aria-pressed', String(A().style[k2] === v2)); });
@@ -904,12 +944,16 @@
         if (o.items) o.items = o.items.map(i => ({ ...i, image: imageOut(i.image), action: actionOut(i.action) }));
         return o;
     };
+    const tabsOut = tabs => (tabs || []).map((t, i) => (t.type === 'web' ? { label: t.label.trim(), icon: t.icon, type: 'web', bar: inBar(t, i), menu: inMenu(t, i), url: tabUrl(t) }
+        : { label: t.label.trim(), icon: t.icon, type: 'screen', bar: inBar(t, i), menu: inMenu(t, i), blocks: t.blocks.map(blockOut) }));
     const payload = () => {
         const a = A();
         return {
             name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show', privacy: a.privacy, shop: a.shop, style: a.style,
             status_bar: isDark(a.colors.bar) ? 'light' : 'dark', colors: a.colors, offline: a.offline,
-            tabs: a.tabs.map((t, i) => (t.type === 'web' ? { label: t.label.trim(), icon: t.icon, type: 'web', bar: inBar(t, i), menu: inMenu(t, i), url: tabUrl(t) } : { label: t.label.trim(), icon: t.icon, type: 'screen', bar: inBar(t, i), menu: inMenu(t, i), blocks: t.blocks.map(blockOut) })),
+            tabs: tabsOut(mainTabs()),
+            lang: a.lang,
+            translations: Object.fromEntries(Object.keys(a.translations).map(c => [c, { tabs: tabsOut(tabsOf(c)) }])),
         };
     };
     const check = () => {
@@ -942,8 +986,8 @@
             const first = !D.id; D.id = r.app.id; D.dirty = false; D.iconDirty = false; D.splash.bgDirty = false;
             D.base = r.app.content_url.replace(/content\.json$/, '');
             eachImage(img => { if (img.src?.startsWith('data:') && img.name) { img.src = img.name; delete img.name; } }); // now stored on the server
-            const hashes = Object.fromEntries((r.app.tabs || []).flatMap(t => t.blocks || []).filter(b => b.type === 'loyalty').map(b => [b.card, b.pinHash]));
-            A().tabs.forEach(t => (t.blocks || []).forEach(b => { if (b.type === 'loyalty' && hashes[b.card]) { b.pinHash = hashes[b.card]; b.pin = ''; } })); // the PIN isn't kept in the browser
+            const hashes = Object.fromEntries([...(r.app.tabs || []), ...Object.values(r.app.translations || {}).flatMap(x => x.tabs || [])].flatMap(t => t.blocks || []).filter(b => b.type === 'loyalty').map(b => [b.card, b.pinHash]));
+            allTabs().forEach(t => (t.blocks || []).forEach(b => { if (b.type === 'loyalty' && hashes[b.card]) { b.pinHash = hashes[b.card]; b.pin = ''; } })); // the PIN isn't kept in the browser
             save();
             apps = [...(apps || []).filter(x => x.id !== r.app.id), r.app]; drawMine(); drawSettings();
             if (D.splash.bg === 'video' && bgVideo) {
@@ -973,14 +1017,15 @@
     const open = x => {
         const same = D.id === x.id, keepIcon = same ? D.icon : fresh().icon;
         const base = (x.url || '').replace(/[?#].*$/, '').replace(/\/$/, '');
-        const tabs = (x.tabs || []).map(t => (t.type === 'web'
+        const toEdit = list => (list || []).map(t => (t.type === 'web'
             ? { label: t.label, icon: t.icon, type: 'web', bar: t.bar, menu: t.menu, blocks: [], path: t.url === x.url ? '' : base && t.url.startsWith(base + '/') ? t.url.slice(base.length + 1) : t.url }
             : { label: t.label, icon: t.icon, type: 'screen', bar: t.bar, menu: t.menu, path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
-        D = { id: x.id, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
-            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', ...(x.settings.style || {}) }, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
+        const tabs = toEdit(x.tabs);
+        D = { id: x.id, editLang: x.settings.lang || 'en', mainTabs: null, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
+            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', ...(x.settings.style || {}) }, lang: x.settings.lang || 'en', translations: Object.fromEntries(Object.entries(x.translations || {}).map(([c, v]) => [c, toEdit(v.tabs)])), tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
             icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
         if (!x.has_notification_icon) D.iconDirty = true; // apps saved before notifications: send the icon on the next save
-        activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(drawAll); drawMine();
+        activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(() => { drawAll(); drawLangs(); }); drawMine();
         if (!same) api('GET', `/builder/apps/${x.id}/icon`).then(r => {
             if (D.id !== x.id) return;
             D.icon = { ...fresh().icon, ...r.design, image: r.logo || null };

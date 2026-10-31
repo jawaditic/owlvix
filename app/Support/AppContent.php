@@ -596,6 +596,8 @@ class AppContent
             'hosts' => $app->url ? [$app->host()] : [],
             'offline' => $s['offline'],
             'tabs' => $app->content['tabs'] ?? [],
+            'lang' => $s['lang'] ?? 'en',
+            'translations' => (object) ($app->content['translations'] ?? []),
         ];
     }
 

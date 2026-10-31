@@ -3,6 +3,7 @@
 // (sha256 of "card:PIN"); five wrong PINs lock the card for 10 minutes.
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { t } from './i18n';
 import { File, Paths } from 'expo-file-system';
 import { onLook } from './theme';
 import { Icon } from './blocks';
@@ -72,23 +73,23 @@ export function LoyaltyBlock({ b, ctx }) {
             <View style={styles.head}>
                 <View style={[styles.badge, { backgroundColor: ctx.primary + '1f' }]}><Icon name="star" color={ctx.primary} size={22} /></View>
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.title}>{str(b.title) || 'Loyalty card'}</Text>
-                    <Text style={styles.muted}>{need} stamps = {str(b.reward)}</Text>
+                    <Text style={styles.title}>{str(b.title) || t('loyalty_card')}</Text>
+                    <Text style={styles.muted}>{t('stamps_for', { n: need, reward: str(b.reward) })}</Text>
                 </View>
             </View>
             {!!str(b.text) && <Text style={styles.text}>{b.text}</Text>}
-            <View style={styles.stamps} accessibilityLabel={`${state.stamps} of ${need} stamps`}>
+            <View style={styles.stamps} accessibilityLabel={`${state.stamps} / ${need}`}>
                 {Array.from({ length: need }, (_, i) => (
                     <View key={i} style={[styles.stamp, i < state.stamps && { backgroundColor: ctx.primary, borderColor: ctx.primary }]}>
                         {i < state.stamps ? <Icon name="star" color={ctx.onPrimary} size={18} /> : <Text style={styles.stampNum}>{i + 1}</Text>}
                     </View>
                 ))}
             </View>
-            {full && <Text style={[styles.ready, { color: ctx.primary }]}>🎉 Your reward is ready: {str(b.reward)}! Show this to staff.</Text>}
+            {full && <Text style={[styles.ready, { color: ctx.primary }]}>{t('reward_ready', { reward: str(b.reward) })}</Text>}
             <Pressable onPress={() => setAsking(true)} style={({ pressed }) => [styles.btn, { backgroundColor: ctx.primary }, pressed && { opacity: 0.8 }]} accessibilityRole="button">
-                <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{full ? 'Get my reward' : 'Add a stamp'}</Text>
+                <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{full ? t('get_reward') : t('add_stamp')}</Text>
             </Pressable>
-            {state.rewards > 0 && <Text style={[styles.muted, { textAlign: 'center' }]}>Rewards so far: {state.rewards}</Text>}
+            {state.rewards > 0 && <Text style={[styles.muted, { textAlign: 'center' }]}>{t('rewards_so_far', { n: state.rewards })}</Text>}
             <PinSheet visible={asking} b={b} ctx={ctx} full={full} onClose={() => setAsking(false)} onDone={done} />
         </View>
     );
@@ -101,24 +102,24 @@ function PinSheet({ visible, b, ctx, full, onClose, onDone }) {
     const close = () => { setPin(''); setError(''); onClose(); };
     const check = () => {
         const c = cardOf(b.card);
-        if (Date.now() < (c.lockedUntil || 0)) { setError('Too many wrong PINs. Please try again in a few minutes.'); return; }
+        if (Date.now() < (c.lockedUntil || 0)) { setError(t('too_many')); return; }
         if (sha256(`${b.card}:${pin}`) === b.pinHash) {
             c.wrong = 0; keep(); setPin(''); setError(''); onDone();
         } else {
             c.wrong = (c.wrong || 0) + 1;
             if (c.wrong >= 5) { c.wrong = 0; c.lockedUntil = Date.now() + 10 * 60 * 1000; }
-            keep(); setPin(''); setError('That PIN isn’t right.');
+            keep(); setPin(''); setError(t('wrong_pin'));
         }
     };
     return (
         <Sheet visible={visible} onClose={close} insets={ctx.insets || { bottom: 0 }}>
-            <Text style={styles.sheetTitle}>{full ? 'Give the reward' : 'Add a stamp'}</Text>
-            <Text style={styles.text}>Please hand your phone to a member of staff.</Text>
-            <TextInput value={pin} onChangeText={v => setPin(v.replace(/\D/g, '').slice(0, 8))} placeholder="Staff PIN" keyboardType="number-pad" secureTextEntry
-                style={styles.input} autoFocus onSubmitEditing={check} placeholderTextColor="#94a3b8" accessibilityLabel="Staff PIN" />
+            <Text style={styles.sheetTitle}>{full ? t('give_reward') : t('add_stamp')}</Text>
+            <Text style={styles.text}>{t('hand_phone')}</Text>
+            <TextInput value={pin} onChangeText={v => setPin(v.replace(/\D/g, '').slice(0, 8))} placeholder={t('staff_pin')} keyboardType="number-pad" secureTextEntry
+                style={styles.input} autoFocus onSubmitEditing={check} placeholderTextColor="#94a3b8" accessibilityLabel={t('staff_pin')} />
             {!!error && <Text style={styles.error}>{error}</Text>}
             <Pressable disabled={pin.length < 4} onPress={check} style={[styles.btn, { backgroundColor: ctx.primary }, pin.length < 4 && { opacity: 0.45 }]} accessibilityRole="button">
-                <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{full ? 'Give reward' : 'Add stamp'}</Text>
+                <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{full ? t('give_reward') : t('add_stamp')}</Text>
             </Pressable>
         </Sheet>
     );

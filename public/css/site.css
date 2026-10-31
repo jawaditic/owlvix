@@ -2520,6 +2520,14 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-kit__grid a:hover img { border-color: var(--green); }
 .ab-kit__answers { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: .9rem; color: var(--text-2); }
 .ab-kit textarea { width: 100%; }
+.ab-langbar { display: grid; gap: 6px; }
+.ab-langbar__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .88rem; }
+.ab-langbar__row > span { color: var(--text-2); font-weight: 600; }
+.ab-langbar__row button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--card-border); background: var(--field); color: var(--text); font: 600 .82rem Inter, sans-serif; cursor: pointer; }
+.ab-langbar__row button[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--on-green, #04130b); }
+.ab-langbar__row button small { font-weight: 500; opacity: .8; }
+.ab-langbar__row select { width: auto !important; padding: 6px 10px !important; font-size: .82rem !important; border-radius: 999px !important; }
+.ab-langbar .fb-hint select { width: auto !important; display: inline-block; padding: 3px 8px !important; font-size: .82rem !important; }
 /* Templates */
 .ab-tpls { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
 .ab-tplc { display: grid; gap: 2px; justify-items: start; padding: 8px 8px 10px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--card); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }

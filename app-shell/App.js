@@ -9,6 +9,8 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, AppState, BackHandler, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { applyLook, look, onLook } from './theme';
+import { File, Paths } from 'expo-file-system';
+import { LANGUAGES, setLanguage, t } from './i18n';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { WebView } from 'react-native-webview';
@@ -35,6 +37,12 @@ const openOutside = url => {
     }
     Linking.openURL(url).catch(() => {});
 };
+
+/* The language the app is shown in: the one picked in the ☰ menu (kept on the phone), else the phone's, else the
+   app's main language — whichever the owner has translated the app into. */
+const langFile = () => new File(Paths.document, 'owlvix-language.txt');
+const savedLanguage = () => { try { const f = langFile(); return f.exists ? f.textSync().trim() : ''; } catch { return ''; } };
+const phoneLanguage = () => { try { return (Intl.DateTimeFormat().resolvedOptions().locale || 'en').slice(0, 2).toLowerCase(); } catch { return 'en'; } };
 
 const INTRO_PICTURE_MS = 2500;
 const INTRO_MAX_MS = 15000; // a video longer than this is cut short
@@ -65,8 +73,8 @@ function Intro({ onDone }) {
             {INTRO.type === 'video'
                 ? <IntroVideo source={INTRO.source} onEnd={finish} />
                 : <Image source={INTRO.source} style={StyleSheet.absoluteFill} resizeMode="cover" />}
-            <Pressable onPress={finish} style={[styles.skip, { top: insets.top + 12 }]} accessibilityRole="button" accessibilityLabel="Skip">
-                <Text style={styles.skipText}>Skip</Text>
+            <Pressable onPress={finish} style={[styles.skip, { top: insets.top + 12 }]} accessibilityRole="button" accessibilityLabel={t('skip')}>
+                <Text style={styles.skipText}>{t('skip')}</Text>
             </Pressable>
         </Animated.View>
     );
@@ -78,10 +86,10 @@ function Offline({ ctx, onRetry }) {
             <Svg width={56} height={56} viewBox="0 0 24 24" fill="none" stroke={ctx.primary} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
                 <Path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0M12 19h.01M3 3l18 18" />
             </Svg>
-            <Text style={styles.offlineTitle}>{str(ctx.offline.title) || 'You’re offline'}</Text>
-            <Text style={styles.offlineText}>{str(ctx.offline.text) || 'Check your internet connection and try again.'}</Text>
+            <Text style={styles.offlineTitle}>{(ctx.lang === ctx.mainLang && str(ctx.offline.title)) || t('offline_title')}</Text>
+            <Text style={styles.offlineText}>{(ctx.lang === ctx.mainLang && str(ctx.offline.text)) || t('offline_text')}</Text>
             <Pressable onPress={onRetry} style={[styles.retry, { backgroundColor: ctx.primary }]} accessibilityRole="button">
-                <Text style={[styles.retryText, { color: ctx.onPrimary }]}>{str(ctx.offline.button) || 'Try again'}</Text>
+                <Text style={[styles.retryText, { color: ctx.onPrimary }]}>{(ctx.lang === ctx.mainLang && str(ctx.offline.button)) || t('try_again')}</Text>
             </Pressable>
         </View>
     );
@@ -185,7 +193,14 @@ function Shell() {
         if (next) setState(next);
     }, []);
 
-    const tabs = doc?.tabs ?? [];
+    const [chosenLang, setChosenLang] = useState(savedLanguage);
+    const mainLang = typeof doc?.lang === 'string' ? doc.lang : 'en';
+    const translations = doc?.translations && typeof doc.translations === 'object' ? doc.translations : {};
+    const languages = [mainLang, ...Object.keys(translations).filter(l => Array.isArray(translations[l]?.tabs) && translations[l].tabs.length)];
+    const lang = languages.includes(chosenLang) ? chosenLang : languages.includes(phoneLanguage()) ? phoneLanguage() : mainLang;
+    setLanguage(lang); // the app's own words follow
+    const pickLanguage = l => { setChosenLang(l); try { Promise.resolve(langFile().write(l)).catch(() => {}); } catch {} };
+    const tabs = (lang === mainLang ? doc?.tabs : translations[lang]?.tabs) ?? [];
     // The owner's look (light/dark, corners, font): every file's styles are rebuilt before the screens draw
     const scheme = useColorScheme();
     const lk = look(doc?.style, scheme);
@@ -215,11 +230,13 @@ function Shell() {
             shop: doc?.shop && typeof doc.shop === 'object' ? doc.shop : null,
             openProduct: p => setProduct(p),
             openBooking: b => setBooking(b),
+            lang,
+            mainLang,
             insets,
             openTab: i => { if (i >= 0 && i < tabs.length) { setOpened(o => (o.includes(i) ? o : [...o, i])); setActive(i); } },
             refresh,
         };
-    }, [doc, C.primary, C.bar, refresh, insets]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [doc, C.primary, C.bar, refresh, insets, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // A native first screen is ready at once; a website tab hides the splash when its page loads (or after 5 s)
     useEffect(() => {
@@ -268,7 +285,7 @@ function Shell() {
     // owner hasn't turned it off and at least one page is in it
     const bar = tabs.map((t, i) => i).filter(i => (tabs[i].bar === undefined ? i < 5 : !!tabs[i].bar)).slice(0, 5);
     const inMenu = tabs.map((t, i) => i).filter(i => (tabs[i].menu === undefined ? !bar.includes(i) : !!tabs[i].menu));
-    const hasMenu = doc?.menu !== 'hide' && inMenu.length > 0;
+    const hasMenu = doc?.menu !== 'hide' && (inMenu.length > 0 || languages.length > 1); // (the language picker is in the menu)
     const [menu, setMenu] = useState(false);
     const [intro, setIntro] = useState(!!INTRO?.source);
     const [banner, setBanner] = useState(null); // a notification that arrived while the app was open
@@ -306,7 +323,7 @@ function Shell() {
             <View style={{ height: insets.top, backgroundColor: C.bar }} />
             {hasMenu && (
                 <View style={[styles.header, { backgroundColor: C.bar }]}>
-                    <Pressable onPress={() => setMenu(true)} style={styles.burger} accessibilityRole="button" accessibilityLabel="Open menu" hitSlop={8}>
+                    <Pressable onPress={() => setMenu(true)} style={styles.burger} accessibilityRole="button" accessibilityLabel={t('open_menu')} hitSlop={8}>
                         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={barInk} strokeWidth={2} strokeLinecap="round"><Path d="M4 7h16M4 12h16M4 17h16" /></Svg>
                     </Pressable>
                     <Text style={[styles.headerTitle, { color: barInk }]} numberOfLines={1} accessibilityRole="header">{str(tabs[active]?.label)}</Text>
@@ -339,13 +356,26 @@ function Shell() {
                                 );
                             })}
                         </ScrollView>
+                        {languages.length > 1 && (
+                            <View style={styles.langs} accessibilityRole="radiogroup" accessibilityLabel={t('language')}>
+                                <Text style={styles.langTitle}>🌐 {t('language')}</Text>
+                                <View style={styles.langRow}>
+                                    {languages.map(l => (
+                                        <Pressable key={l} onPress={() => { pickLanguage(l); setMenu(false); }} accessibilityRole="radio" accessibilityState={{ selected: l === lang }}
+                                            style={[styles.langChip, l === lang && { backgroundColor: C.primary, borderColor: C.primary }]}>
+                                            <Text style={[styles.langText, l === lang && { color: ctx.onPrimary }]}>{LANGUAGES[l] || l}</Text>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            </View>
+                        )}
                         {/^https:\/\//.test(doc?.report || '') && (
                             <Pressable onPress={() => { setMenu(false); openOutside(doc.report); }} accessibilityRole="link" style={styles.drawerFoot}>
-                                <Text style={styles.drawerFootText}>Made with Owlvix · Report this app</Text>
+                                <Text style={styles.drawerFootText}>{t('made_with')} · {t('report')}</Text>
                             </Pressable>
                         )}
                     </View>
-                    <Pressable style={styles.drawerShade} onPress={() => setMenu(false)} accessibilityRole="button" accessibilityLabel="Close menu" />
+                    <Pressable style={styles.drawerShade} onPress={() => setMenu(false)} accessibilityRole="button" accessibilityLabel={t('close')} />
                 </View>
             </Modal>
             {bar.length > 1 ? (
@@ -418,6 +448,11 @@ const makeStyles = (t, r, f) => StyleSheet.create({
     drawerName: { fontFamily: f, fontSize: 20, fontWeight: '800', color: t.ink, marginHorizontal: 12, marginBottom: 14 },
     drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 13, borderRadius: r(12) },
     drawerText: { fontFamily: f, flex: 1, fontSize: 16, fontWeight: '600', color: t.ink },
+    langs: { paddingHorizontal: 12, paddingTop: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border },
+    langTitle: { fontFamily: f, fontSize: 13, fontWeight: '700', color: t.muted },
+    langRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    langChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: r(999), borderWidth: 1, borderColor: t.border },
+    langText: { fontFamily: f, fontSize: 14, fontWeight: '600', color: t.ink },
     drawerFoot: { paddingHorizontal: 12, paddingTop: 12 },
     drawerFootText: { fontFamily: f, fontSize: 12, color: '#94a3b8' },
     bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border, paddingTop: 6 },

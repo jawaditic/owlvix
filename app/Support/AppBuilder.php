@@ -85,9 +85,27 @@ class AppBuilder
 
             return $url && $tabUrl && self::sameSite($tabUrl, $url, $own) ? $tabUrl : null;
         };
-        $content = (new AppContent($app))->clean($in['tabs'] ?? null, $webUrl);
+        $cleaner = new AppContent($app);
+        $content = $cleaner->clean($in['tabs'] ?? null, $webUrl);
         if (is_string($content)) {
             return $content;
+        }
+        // Languages: the main one, and up to 4 translations, each with its own pages (checked like the main ones)
+        $lang = array_key_exists($in['lang'] ?? '', self::LANGUAGES) ? $in['lang'] : 'en';
+        $translations = [];
+        foreach (is_array($in['translations'] ?? null) ? $in['translations'] : [] as $code => $tr) {
+            if (! array_key_exists($code, self::LANGUAGES) || $code === $lang || ! is_array($tr)) {
+                continue;
+            }
+            if (count($translations) >= self::MAX_TRANSLATIONS) {
+                return 'An app can have up to '.(self::MAX_TRANSLATIONS + 1).' languages.';
+            }
+            $clean = $cleaner->clean($tr['tabs'] ?? null, $webUrl);
+            if (is_string($clean)) {
+                return self::LANGUAGES[$code].': '.$clean;
+            }
+            $translations[$code] = ['tabs' => $clean['tabs']];
+            $content['images'] = $clean['images']; // (the picture list grows with each language)
         }
 
         $colors = [];
@@ -147,6 +165,7 @@ class AppBuilder
             'package' => $package,
             'url' => $url,
             'tabs' => $content['tabs'],
+            'translations' => $translations,
             'images' => $content['images'],
             'settings' => [
                 'version_name' => $version,
@@ -157,6 +176,7 @@ class AppBuilder
                 'menu' => ($in['menu'] ?? '') === 'hide' ? 'hide' : 'show',
                 'offline' => $offline,
                 'privacy' => $privacy,
+                'lang' => $lang,
                 'shop' => $shop,
                 // Look: light/dark (or follow the phone), corner roundness, font (Android's own fonts)
                 'style' => [
@@ -234,7 +254,9 @@ class AppBuilder
      * pages, slider/cards/reviews/FAQ/social/notice/space blocks, splash picture, intro). Apps built with an older
      * one are flagged in the builder.
      */
-    public const SHELL_VERSION = 8; // 3: push notifications, 4: usage statistics, 5: products and orders, 6: bookings, 7: dark mode, corners, fonts, 8: loyalty card
+    // 3: push notifications, 4: usage statistics, 5: products and orders, 6: bookings, 7: dark mode, corners, fonts,
+    // 8: loyalty card, 9: languages
+    public const SHELL_VERSION = 9;
 
     /**
      * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when
@@ -317,6 +339,12 @@ class AppBuilder
 
         return $changed;
     }
+
+    /** Languages an app can be in (the app has its own words for each: app-shell/i18n.js). */
+    public const LANGUAGES = ['en' => 'English', 'ar' => 'العربية', 'ur' => 'اردو', 'hi' => 'हिन्दी', 'es' => 'Español', 'fr' => 'Français',
+        'de' => 'Deutsch', 'pt' => 'Português', 'tr' => 'Türkçe', 'id' => 'Bahasa Indonesia', 'ru' => 'Русский', 'zh' => '中文'];
+
+    public const MAX_TRANSLATIONS = 4;
 
     /** Largest splash background video. */
     public const MAX_VIDEO_BYTES = 15 * 1048576;

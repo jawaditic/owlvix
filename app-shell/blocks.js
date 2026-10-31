@@ -4,6 +4,7 @@
 // checks them, and unknown block types are skipped, so an app keeps working when the builder gains new blocks.
 import { useState } from 'react';
 import { FlatList, Image, ImageBackground, LayoutAnimation, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { t } from './i18n';
 import { onLook } from './theme';
 import Svg, { Path } from 'react-native-svg';
 import { action, image, str } from './content';
@@ -68,9 +69,9 @@ function Picture({ b, ctx }) {
     if (!img) return null;
     return (
         <View style={styles.pad}>
-            <Tap act={b.action} ctx={ctx} label={str(b.caption) || 'Picture'}>
+            <Tap act={b.action} ctx={ctx} label={str(b.caption) || t('picture_of', { i: 1, n: 1 })}>
                 <Image source={{ uri: img.uri }} style={[styles.picture, { aspectRatio: Math.max(0.5, Math.min(img.ratio, 3)) }, b.round && styles.round]} resizeMode="cover" accessibilityIgnoresInvertColors
-                    accessible accessibilityRole="image" accessibilityLabel={str(b.alt) || str(b.caption) || 'Picture'} />
+                    accessible accessibilityRole="image" accessibilityLabel={str(b.alt) || str(b.caption) || t('picture_of', { i: 1, n: 1 })} />
             </Tap>
             {!!str(b.caption) && <Text style={styles.caption}>{b.caption}</Text>}
         </View>
@@ -123,7 +124,7 @@ function Gallery({ b, ctx }) {
     return (
         <View style={[styles.pad, styles.grid, { gap }]}>
             {imgs.map((img, i) => (
-                <Pressable key={i} onPress={() => setOpen(i)} accessibilityRole="imagebutton" accessibilityLabel={`Picture ${i + 1} of ${imgs.length}`}>
+                <Pressable key={i} onPress={() => setOpen(i)} accessibilityRole="imagebutton" accessibilityLabel={t('picture_of', { i: i + 1, n: imgs.length })}>
                     <Image source={{ uri: img.uri }} style={{ width: size, height: size, borderRadius: 10, backgroundColor: T.line }} />
                 </Pressable>
             ))}
@@ -132,7 +133,7 @@ function Gallery({ b, ctx }) {
                     <FlatList data={imgs} horizontal pagingEnabled initialScrollIndex={Math.max(open, 0)} keyExtractor={(_, i) => String(i)}
                         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })} showsHorizontalScrollIndicator={false}
                         renderItem={({ item }) => <Image source={{ uri: item.uri }} style={{ width, height: '100%' }} resizeMode="contain" />} />
-                    <Pressable onPress={() => setOpen(-1)} style={styles.close} accessibilityRole="button" accessibilityLabel="Close">
+                    <Pressable onPress={() => setOpen(-1)} style={styles.close} accessibilityRole="button" accessibilityLabel={t('close')}>
                         <Text style={styles.closeText}>✕</Text>
                     </Pressable>
                 </View>
@@ -143,11 +144,11 @@ function Gallery({ b, ctx }) {
 
 function Contact({ b, ctx }) {
     const rows = [
-        b.phone && { icon: 'phone', label: 'Call', value: b.phone, act: { kind: 'tel', value: b.phone } },
-        b.whatsapp && { icon: 'chat', label: 'WhatsApp', value: '+' + b.whatsapp, act: { kind: 'whatsapp', value: b.whatsapp } },
-        b.email && { icon: 'mail', label: 'Email', value: b.email, act: { kind: 'email', value: b.email } },
-        b.address && { icon: 'location', label: 'Directions', value: b.address, act: { kind: 'map', value: b.address } },
-        b.website && { icon: 'globe', label: 'Website', value: str(b.website).replace(/^https:\/\/(www\.)?/, '').replace(/\/$/, ''), act: { kind: 'url', value: b.website } },
+        b.phone && { icon: 'phone', label: t('call'), value: b.phone, act: { kind: 'tel', value: b.phone } },
+        b.whatsapp && { icon: 'chat', label: t('whatsapp'), value: '+' + b.whatsapp, act: { kind: 'whatsapp', value: b.whatsapp } },
+        b.email && { icon: 'mail', label: t('email'), value: b.email, act: { kind: 'email', value: b.email } },
+        b.address && { icon: 'location', label: t('directions'), value: b.address, act: { kind: 'map', value: b.address } },
+        b.website && { icon: 'globe', label: t('website'), value: str(b.website).replace(/^https:\/\/(www\.)?/, '').replace(/\/$/, ''), act: { kind: 'url', value: b.website } },
     ].filter(Boolean);
     return (
         <View style={styles.pad}>
@@ -190,7 +191,7 @@ function Video({ b, ctx }) {
     if (!/^[A-Za-z0-9_-]{11}$/.test(b.id || '')) return null;
     return (
         <View style={styles.pad}>
-            <Pressable onPress={() => ctx.openUrl('https://www.youtube.com/watch?v=' + b.id)} accessibilityRole="link" accessibilityLabel={str(b.title) || 'Play video'}
+            <Pressable onPress={() => ctx.openUrl('https://www.youtube.com/watch?v=' + b.id)} accessibilityRole="link" accessibilityLabel={str(b.title) || t('play_video')}
                 style={({ pressed }) => pressed && styles.pressed}>
                 <ImageBackground source={{ uri: `https://i.ytimg.com/vi/${b.id}/hqdefault.jpg` }} style={styles.video} imageStyle={styles.round} resizeMode="cover">
                     <View style={styles.play}><Svg width={30} height={30} viewBox="0 0 24 24"><Path d="M8 5v14l11-7z" fill="#fff" /></Svg></View>
@@ -213,7 +214,7 @@ function Slider({ b, ctx }) {
             <FlatList data={imgs} horizontal pagingEnabled showsHorizontalScrollIndicator={false} keyExtractor={(_, i) => String(i)}
                 style={[styles.round, { width: w, height: h }]}
                 onMomentumScrollEnd={e => setAt(Math.round(e.nativeEvent.contentOffset.x / w))}
-                renderItem={({ item, index }) => <Image source={{ uri: item.uri }} style={{ width: w, height: h }} resizeMode="cover" accessible accessibilityRole="image" accessibilityLabel={`Picture ${index + 1} of ${imgs.length}`} />} />
+                renderItem={({ item, index }) => <Image source={{ uri: item.uri }} style={{ width: w, height: h }} resizeMode="cover" accessible accessibilityRole="image" accessibilityLabel={t('picture_of', { i: index + 1, n: imgs.length })} />} />
             {imgs.length > 1 && (
                 <View style={styles.dots}>{imgs.map((_, i) => <View key={i} style={[styles.dot, i === at && { backgroundColor: ctx.primary, width: 18 }]} />)}</View>
             )}
@@ -338,7 +339,7 @@ function Products({ b, ctx }) {
                                     {img ? <Image source={{ uri: img.uri }} style={styles.productImg} /> : <View style={[styles.productImg, styles.productNoImg, { backgroundColor: ctx.primary + '14' }]}><Icon name="store" color={ctx.primary} size={28} /></View>}
                                     <View style={styles.productBody}>
                                         <Text style={styles.productName} numberOfLines={2}>{it.name}</Text>
-                                        <Text style={[styles.productPrice, { color: ctx.primary }]}>{typeof it.price === 'number' ? money(it.price, ctx.shop) : 'Ask us'}</Text>
+                                        <Text style={[styles.productPrice, { color: ctx.primary }]}>{typeof it.price === 'number' ? money(it.price, ctx.shop) : t('ask_us')}</Text>
                                     </View>
                                 </Pressable>
                             );
@@ -357,8 +358,8 @@ export function Block({ b, ctx }) {
     if (!b || typeof b !== 'object') return null;
     switch (b.type) {
         case 'hero': return <Hero b={b} ctx={ctx} />;
-        case 'heading': return <Text style={[styles.pad, styles.heading, b.align === 'center' && styles.center]} accessibilityRole="header">{str(b.text)}</Text>;
-        case 'text': return <Text style={[styles.pad, styles.text, b.align === 'center' && styles.center]} selectable>{str(b.text)}</Text>;
+        case 'heading': return <Text style={[styles.pad, styles.heading, b.align === 'center' ? styles.center : styles.natural]} accessibilityRole="header">{str(b.text)}</Text>;
+        case 'text': return <Text style={[styles.pad, styles.text, b.align === 'center' ? styles.center : styles.natural]} selectable>{str(b.text)}</Text>;
         case 'image': return <Picture b={b} ctx={ctx} />;
         case 'button': return <Button b={b} ctx={ctx} />;
         case 'list': return <List b={b} ctx={ctx} />;
@@ -382,13 +383,14 @@ export function Block({ b, ctx }) {
 }
 
 /** Shown when a screen has no blocks yet. */
-export const Empty = () => <Text style={[styles.pad, styles.rowText, styles.center, { marginTop: 40 }]}>Nothing here yet.</Text>;
+export const Empty = () => <Text style={[styles.pad, styles.rowText, styles.center, { marginTop: 40 }]}>{t('nothing_here')}</Text>;
 
 let styles;
 let T;
 const makeStyles = (t, r, f) => StyleSheet.create({
     pad: { marginHorizontal: 16, marginTop: 14 },
     center: { textAlign: 'center' },
+    natural: { textAlign: 'auto', writingDirection: 'auto' }, // right-to-left languages line up on the right
     pressed: { opacity: 0.7 },
     hero: { minHeight: 220, justifyContent: 'flex-end' },
     heroImg: {},

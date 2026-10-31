@@ -157,6 +157,7 @@
                         </details>
 
                         <details class="fb-settings" open><summary>4. Pages &amp; menu</summary>
+                            <div class="ab-langbar" data-langbar></div>
                             <p class="fb-hint">Up to 15 pages, each a native screen you build from blocks (or a page of your website). For each page choose where its link goes: the bottom bar (up to 5), the ☰ menu at the top, or both.</p>
                             <label>☰ Menu at the top
                                 <select data-menu>

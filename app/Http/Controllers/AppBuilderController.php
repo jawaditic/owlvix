@@ -55,8 +55,8 @@ class AppBuilderController extends Controller
         }
         $images = $data['images'];
         // rev: a bigger number on every save, so phones know which copy is newest
-        $data['content'] = ['rev' => max((int) floor(microtime(true) * 1000), ($app->content['rev'] ?? 0) + 1), 'tabs' => $data['tabs']];
-        unset($data['images'], $data['tabs']);
+        $data['content'] = ['rev' => max((int) floor(microtime(true) * 1000), ($app->content['rev'] ?? 0) + 1), 'tabs' => $data['tabs'], 'translations' => $data['translations']];
+        unset($data['images'], $data['tabs'], $data['translations']);
         $icon = $foreground = null;
         if ($request->has('icon') || ! $app) {
             $icon = AppBuilder::png($request->input('icon'));
