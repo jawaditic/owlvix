@@ -3,12 +3,11 @@
 // there's no calendar on a server, so the owner keeps track of what's taken.
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { onLook } from './theme';
 import { Icon } from './blocks';
 import { str } from './content';
 import { Sheet } from './order';
 
-const INK = '#0f172a';
-const MUTED = '#64748b';
 const DAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const mins = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
@@ -163,25 +162,28 @@ export function BookingSheet({ block, ctx, insets, appName, onClose }) {
     );
 }
 
-const styles = StyleSheet.create({
-    card: { marginHorizontal: 16, marginTop: 14, backgroundColor: '#fff', borderRadius: 18, padding: 18, gap: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(15,23,42,0.12)' },
-    badge: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    title: { fontSize: 20, fontWeight: '800', color: INK },
-    sheetTitle: { fontSize: 22, fontWeight: '800', color: INK },
-    text: { fontSize: 15, lineHeight: 22, color: '#334155' },
+let styles;
+let T;
+const makeStyles = (t, r, f) => StyleSheet.create({
+    card: { marginHorizontal: 16, marginTop: 14, backgroundColor: t.card, borderRadius: r(18), padding: 18, gap: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: t.border },
+    badge: { width: 44, height: 44, borderRadius: r(14), alignItems: 'center', justifyContent: 'center' },
+    title: { fontFamily: f, fontSize: 20, fontWeight: '800', color: t.ink },
+    sheetTitle: { fontFamily: f, fontSize: 22, fontWeight: '800', color: t.ink },
+    text: { fontFamily: f, fontSize: 15, lineHeight: 22, color: t.text },
     services: { gap: 6 },
-    service: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(15,23,42,0.1)' },
-    serviceName: { fontSize: 15, fontWeight: '600', color: INK, flexShrink: 1 },
-    muted: { fontSize: 14, color: MUTED },
-    btn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 4 },
-    btnText: { fontSize: 16, fontWeight: '700' },
+    service: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.line },
+    serviceName: { fontFamily: f, fontSize: 15, fontWeight: '600', color: t.ink, flexShrink: 1 },
+    muted: { fontFamily: f, fontSize: 14, color: t.muted },
+    btn: { borderRadius: r(14), paddingVertical: 15, alignItems: 'center', marginTop: 4 },
+    btnText: { fontFamily: f, fontSize: 16, fontWeight: '700' },
     off: { opacity: 0.45 },
-    step: { fontSize: 13, fontWeight: '700', color: MUTED, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
+    step: { fontFamily: f, fontSize: 13, fontWeight: '700', color: t.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
     wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    chip: { minWidth: 64, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(15,23,42,0.15)', backgroundColor: '#fff' },
+    chip: { minWidth: 64, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderRadius: r(12), borderWidth: 1.5, borderColor: t.border, backgroundColor: t.card },
     chipWide: { alignItems: 'flex-start' },
-    chipText: { fontSize: 15, fontWeight: '700', color: INK },
-    chipSub: { fontSize: 12, color: MUTED },
-    dayNum: { fontSize: 20, fontWeight: '800', color: INK },
-    input: { borderWidth: 1, borderColor: 'rgba(15,23,42,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: INK, textAlignVertical: 'top' },
+    chipText: { fontFamily: f, fontSize: 15, fontWeight: '700', color: t.ink },
+    chipSub: { fontFamily: f, fontSize: 12, color: t.muted },
+    dayNum: { fontFamily: f, fontSize: 20, fontWeight: '800', color: t.ink },
+    input: { fontFamily: f, borderWidth: 1, borderColor: t.border, borderRadius: r(12), paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: t.ink, textAlignVertical: 'top' },
 });
+onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });

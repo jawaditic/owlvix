@@ -7,7 +7,8 @@ import { useEventListener } from 'expo';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, AppState, BackHandler, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, AppState, BackHandler, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { applyLook, look, onLook } from './theme';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { WebView } from 'react-native-webview';
@@ -185,10 +186,15 @@ function Shell() {
     }, []);
 
     const tabs = doc?.tabs ?? [];
+    // The owner's look (light/dark, corners, font): every file's styles are rebuilt before the screens draw
+    const scheme = useColorScheme();
+    const lk = look(doc?.style, scheme);
+    applyLook(lk);
     const C = {
         primary: color(doc?.colors?.primary, color(shell.colors?.primary, '#16a34a')),
         bar: color(doc?.colors?.bar, color(shell.colors?.bar, '#ffffff')),
     };
+    if (lk.t.dark && !isDark(C.bar)) C.bar = '#111827'; // light bars would glare in dark mode
     const ctx = useMemo(() => {
         const hosts = Array.isArray(doc?.hosts) ? doc.hosts.filter(h => typeof h === 'string') : [];
         return {
@@ -326,7 +332,7 @@ function Shell() {
                                 return (
                                     <Pressable key={i} onPress={() => pick(i)} accessibilityRole="menuitem" accessibilityState={{ selected: on }}
                                         style={({ pressed }) => [styles.drawerItem, on && { backgroundColor: C.primary + '1a' }, pressed && { opacity: 0.7 }]}>
-                                        <Icon name={tab.icon} color={on ? C.primary : '#475569'} />
+                                        <Icon name={tab.icon} color={on ? C.primary : T.text} />
                                         <Text style={[styles.drawerText, on && { color: C.primary }]} numberOfLines={1}>{str(tab.label)}</Text>
                                     </Pressable>
                                 );
@@ -386,37 +392,40 @@ export default function App() {
     );
 }
 
-const styles = StyleSheet.create({
+let styles;
+let T;
+const makeStyles = (t, r, f) => StyleSheet.create({
     root: { flex: 1 },
-    pages: { flex: 1, backgroundColor: '#f6f7f9' },
-    screen: { flex: 1, backgroundColor: '#f6f7f9' },
+    pages: { flex: 1, backgroundColor: t.bg },
+    screen: { flex: 1, backgroundColor: t.bg },
     screenInner: { paddingBottom: 28 },
-    web: { flex: 1, backgroundColor: '#ffffff' },
+    web: { flex: 1, backgroundColor: t.card },
     progress: { position: 'absolute', top: 0, left: 0, height: 3 },
     intro: { backgroundColor: '#000', zIndex: 10, elevation: 10 },
-    banner: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: '#ffffff', elevation: 8, zIndex: 9,
+    banner: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: r(16), backgroundColor: t.card, elevation: 8, zIndex: 9,
         shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
-    bannerTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
-    bannerBody: { fontSize: 14, color: '#475569', marginTop: 2 },
-    skip: { position: 'absolute', right: 16, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.45)' },
-    skipText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-    header: { flexDirection: 'row', alignItems: 'center', height: 52, paddingHorizontal: 8, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(15,23,42,0.12)' },
-    burger: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
-    headerTitle: { flex: 1, fontSize: 18, fontWeight: '700' },
+    bannerTitle: { fontFamily: f, fontSize: 15, fontWeight: '700', color: t.ink },
+    bannerBody: { fontFamily: f, fontSize: 14, color: t.text, marginTop: 2 },
+    skip: { position: 'absolute', right: 16, paddingHorizontal: 16, paddingVertical: 8, borderRadius: r(999), backgroundColor: 'rgba(0,0,0,0.45)' },
+    skipText: { fontFamily: f, color: '#fff', fontSize: 14, fontWeight: '700' },
+    header: { flexDirection: 'row', alignItems: 'center', height: 52, paddingHorizontal: 8, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.border },
+    burger: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: r(22) },
+    headerTitle: { fontFamily: f, flex: 1, fontSize: 18, fontWeight: '700' },
     drawerWrap: { flex: 1, flexDirection: 'row' },
-    drawer: { width: '80%', maxWidth: 320, backgroundColor: '#ffffff', paddingHorizontal: 12, elevation: 12 },
-    drawerShade: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)' },
-    drawerName: { fontSize: 20, fontWeight: '800', color: '#0f172a', marginHorizontal: 12, marginBottom: 14 },
-    drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 13, borderRadius: 12 },
-    drawerText: { flex: 1, fontSize: 16, fontWeight: '600', color: '#0f172a' },
+    drawer: { width: '80%', maxWidth: 320, backgroundColor: t.card, paddingHorizontal: 12, elevation: 12 },
+    drawerShade: { flex: 1, backgroundColor: t.shade },
+    drawerName: { fontFamily: f, fontSize: 20, fontWeight: '800', color: t.ink, marginHorizontal: 12, marginBottom: 14 },
+    drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 13, borderRadius: r(12) },
+    drawerText: { fontFamily: f, flex: 1, fontSize: 16, fontWeight: '600', color: t.ink },
     drawerFoot: { paddingHorizontal: 12, paddingTop: 12 },
-    drawerFootText: { fontSize: 12, color: '#94a3b8' },
-    bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(15,23,42,0.12)', paddingTop: 6 },
+    drawerFootText: { fontFamily: f, fontSize: 12, color: '#94a3b8' },
+    bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border, paddingTop: 6 },
     tab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 2 },
-    tabText: { fontSize: 11, fontWeight: '600' },
-    offline: { ...StyleSheet.absoluteFillObject, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
-    offlineTitle: { fontSize: 20, fontWeight: '700', color: '#0f172a', textAlign: 'center', marginTop: 8 },
-    offlineText: { fontSize: 15, color: '#64748b', textAlign: 'center', maxWidth: 320 },
-    retry: { marginTop: 14, paddingHorizontal: 26, paddingVertical: 12, borderRadius: 999 },
-    retryText: { fontSize: 15, fontWeight: '700' },
+    tabText: { fontFamily: f, fontSize: 11, fontWeight: '600' },
+    offline: { ...StyleSheet.absoluteFillObject, backgroundColor: t.card, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
+    offlineTitle: { fontFamily: f, fontSize: 20, fontWeight: '700', color: t.ink, textAlign: 'center', marginTop: 8 },
+    offlineText: { fontFamily: f, fontSize: 15, color: t.muted, textAlign: 'center', maxWidth: 320 },
+    retry: { marginTop: 14, paddingHorizontal: 26, paddingVertical: 12, borderRadius: r(999) },
+    retryText: { fontFamily: f, fontSize: 15, fontWeight: '700' },
 });
+onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });

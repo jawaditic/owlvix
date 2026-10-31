@@ -619,6 +619,20 @@ class AppBuilderTest extends TestCase
         $this->get(route('builder.apps.privacy', $id))->assertSee('When you ask for an appointment');
     }
 
+    public function test_look_and_feel_settings(): void
+    {
+        $token = $this->signIn();
+        $r = $this->save($token)->assertOk()->json('app');
+        $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern'], $r['settings']['style']);
+        $this->assertSame($r['settings']['style'], $this->contentFile($r['id'])['style']);
+
+        $r = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['style' => ['theme' => 'auto', 'corners' => 'square', 'font' => 'classic']])])->assertOk()->json('app');
+        $this->assertSame(['theme' => 'auto', 'corners' => 'square', 'font' => 'classic'], $this->contentFile($r['id'])['style']);
+        // Unknown values fall back
+        $r = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['style' => ['theme' => 'neon', 'corners' => 'x', 'font' => 'comic']])])->assertOk()->json('app');
+        $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern'], $r['settings']['style']);
+    }
+
     public function test_up_to_fifteen_pages_with_a_menu(): void
     {
         $token = $this->signIn();

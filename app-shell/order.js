@@ -3,11 +3,10 @@
 // the owner (shop settings in the content: currency, WhatsApp number, email, a note such as "Pay on collection").
 import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { onLook } from './theme';
 import { Icon, money } from './blocks';
 import { image, str } from './content';
 
-const INK = '#0f172a';
-const MUTED = '#64748b';
 
 const Stepper = ({ value, onChange, color, label }) => (
     <View style={styles.stepper} accessibilityLabel={`${label}: ${value}`}>
@@ -140,31 +139,34 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
     );
 }
 
-const styles = StyleSheet.create({
+let styles;
+let T;
+const makeStyles = (t, r, f) => StyleSheet.create({
     sheetWrap: { flex: 1, justifyContent: 'flex-end' },
-    shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,23,42,0.45)' },
-    sheet: { backgroundColor: '#fff', borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 18, paddingTop: 10, gap: 10, elevation: 16 },
-    grip: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: '#e2e8f0', marginBottom: 6 },
-    bigImg: { width: '100%', borderRadius: 16, backgroundColor: 'rgba(15,23,42,0.06)' },
-    title: { fontSize: 22, fontWeight: '800', color: INK },
-    price: { fontSize: 18, fontWeight: '800' },
-    text: { fontSize: 15, lineHeight: 22, color: '#334155' },
+    shade: { ...StyleSheet.absoluteFillObject, backgroundColor: t.shade },
+    sheet: { backgroundColor: t.card, borderTopLeftRadius: r(22), borderTopRightRadius: r(22), paddingHorizontal: 18, paddingTop: 10, gap: 10, elevation: 16 },
+    grip: { alignSelf: 'center', width: 40, height: 5, borderRadius: r(3), backgroundColor: t.soft, marginBottom: 6 },
+    bigImg: { width: '100%', borderRadius: r(16), backgroundColor: t.soft },
+    title: { fontFamily: f, fontSize: 22, fontWeight: '800', color: t.ink },
+    price: { fontFamily: f, fontSize: 18, fontWeight: '800' },
+    text: { fontFamily: f, fontSize: 15, lineHeight: 22, color: t.text },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 },
     stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    stepBtn: { width: 36, height: 36, borderRadius: 18, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-    stepText: { fontSize: 20, fontWeight: '700', marginTop: -2 },
-    qty: { minWidth: 22, textAlign: 'center', fontSize: 16, fontWeight: '700', color: INK },
-    btn: { borderRadius: 14, paddingVertical: 15, alignItems: 'center', paddingHorizontal: 14 },
+    stepBtn: { width: 36, height: 36, borderRadius: r(18), borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+    stepText: { fontFamily: f, fontSize: 20, fontWeight: '700', marginTop: -2 },
+    qty: { fontFamily: f, minWidth: 22, textAlign: 'center', fontSize: 16, fontWeight: '700', color: t.ink },
+    btn: { borderRadius: r(14), paddingVertical: 15, alignItems: 'center', paddingHorizontal: 14 },
     btnOutline: { borderWidth: 2, backgroundColor: 'transparent' },
-    btnText: { fontSize: 16, fontWeight: '700' },
+    btnText: { fontFamily: f, fontSize: 16, fontWeight: '700' },
     link: { alignItems: 'center', paddingVertical: 8 },
-    linkText: { fontSize: 15, fontWeight: '600' },
-    fab: { position: 'absolute', right: 16, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 999, elevation: 8, zIndex: 8,
+    linkText: { fontFamily: f, fontSize: 15, fontWeight: '600' },
+    fab: { position: 'absolute', right: 16, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 18, paddingVertical: 13, borderRadius: r(999), elevation: 8, zIndex: 8,
         shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
-    fabText: { fontSize: 15, fontWeight: '800' },
-    line: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(15,23,42,0.12)' },
-    lineName: { fontSize: 16, fontWeight: '600', color: INK },
-    lineMuted: { fontSize: 14, color: MUTED },
-    total: { fontSize: 17, fontWeight: '800', color: INK, textAlign: 'right' },
-    input: { borderWidth: 1, borderColor: 'rgba(15,23,42,0.15)', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: INK, textAlignVertical: 'top' },
+    fabText: { fontFamily: f, fontSize: 15, fontWeight: '800' },
+    line: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: t.border },
+    lineName: { fontFamily: f, fontSize: 16, fontWeight: '600', color: t.ink },
+    lineMuted: { fontFamily: f, fontSize: 14, color: t.muted },
+    total: { fontFamily: f, fontSize: 17, fontWeight: '800', color: t.ink, textAlign: 'right' },
+    input: { fontFamily: f, borderWidth: 1, borderColor: t.border, borderRadius: r(12), paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: t.ink, textAlignVertical: 'top' },
 });
+onLook(({ t, r, f }) => { T = t; styles = makeStyles(t, r, f); });

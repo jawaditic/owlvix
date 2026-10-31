@@ -56,6 +56,7 @@
     const MAX_PICS = { gallery: 24, slider: 12 };
     const SOCIAL = { instagram: ['Instagram', '#e1306c'], facebook: ['Facebook', '#1877f2'], tiktok: ['TikTok', '#111111'], youtube: ['YouTube', '#ff0000'], x: ['X', '#111111'], linkedin: ['LinkedIn', '#0a66c2'], pinterest: ['Pinterest', '#e60023'], snapchat: ['Snapchat', '#fffc00'] };
     const TONES = { info: ['#eff6ff', '#1d4ed8', 'Blue'], success: ['#ecfdf5', '#047857', 'Green'], warning: ['#fffbeb', '#b45309', 'Amber'] };
+    const DARK_TONES = { info: ['#172554', '#93c5fd'], success: ['#052e22', '#6ee7b7'], warning: ['#3a2306', '#fcd34d'] };
     const ACTIONS = { '': 'Nothing', tab: 'Open a tab', url: 'Open a website', tel: 'Call', whatsapp: 'WhatsApp', email: 'Email', map: 'Show on a map' };
     const ACTION_HINT = { url: 'https://…', tel: '+1 555 123 4567', whatsapp: 'Full number, e.g. +44 7700 900123', email: 'you@example.com', map: 'Address or place name' };
     const block = type => ({ type, ...BLOCKS[type].make() });
@@ -71,7 +72,7 @@
 
     const fresh = () => ({
         id: null, dirty: true, iconDirty: true, base: '',
-        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, tabs: starter(),
+        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, style: { theme: 'light', corners: 'rounded', font: 'modern' }, tabs: starter(),
             colors: { primary: '#16a34a', bar: '#ffffff', icon: '#16a34a', splash: '#ffffff' },
             offline: { title: '', text: '', button: '' } },
         icon: { mode: 'letter', letter: '', image: null, zoom: 70, fill: false },
@@ -88,6 +89,7 @@
         D.base ||= '';
         D.app.privacy = { owner: '', email: '', extra: '', ...(D.app.privacy || {}) };
         D.app.shop = { currency: '$', whatsapp: '', email: '', note: '', ...(D.app.shop || {}) };
+        D.app.style = { theme: 'light', corners: 'rounded', font: 'modern', ...(D.app.style || {}) };
         D.splash = { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false, ...(D.splash || {}) };
     };
     const inIdb = !!D?.idb; // the design was too big for localStorage (pictures): it's in IndexedDB, loaded below
@@ -322,7 +324,7 @@
                 const links = Object.entries(b.links || {}).filter(([k, v]) => SOCIAL[k] && v?.trim());
                 return links.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct" style="text-align:center">${esc(b.title)}</h5>` : ''}<div class="ab-n-social">${links.map(([k]) => `<span style="background:${SOCIAL[k][1]};color:${k === 'snapchat' ? '#111' : '#fff'}">${SOCIAL[k][0]}</span>`).join('')}</div></div>` : '';
             }
-            case 'notice': { const [bg, fg] = TONES[b.tone] || TONES.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33">${esc(b.text)}</div>` : ''; }
+            case 'notice': { const st = A().style || {}, dk = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches), tones = dk ? DARK_TONES : TONES, [bg, fg] = tones[b.tone] || tones.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33">${esc(b.text)}</div>` : ''; }
             case 'spacer': return `<div style="height:${{ small: 6, large: 30 }[b.size] ?? 15}px"></div>`;
             case 'booking': return `<div class="ab-n-pad"><div class="ab-n-book"><span style="background:${c.primary}1f">${svgIcon('calendar', c.primary, 16)}</span><b>${esc(b.title || 'Book an appointment')}</b>${b.text ? `<p>${esc(b.text)}</p>` : ''}
                 ${(b.services || []).filter(s => s.name?.trim()).map(s => `<div class="ab-n-row"><span class="ab-n-rb"><b>${esc(s.name)}</b></span><small>${esc(s.info || '')}</small></div>`).join('')}
@@ -339,7 +341,8 @@
     };
 
     const drawPhone = () => {
-        const a = A(), c = a.colors, phone = $('[data-phone]'), tabs = a.tabs;
+        const a = A(), st = a.style || {}, dark = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+        const c = dark && !isDark(a.colors.bar) ? { ...a.colors, bar: '#111827' } : a.colors; phone = $('[data-phone]'), tabs = a.tabs;
         const time = '9:41', barInk = ink(c.bar), muted = isDark(c.bar) ? 'rgba(255,255,255,.6)' : 'rgba(15,23,42,.5)';
         const status = `<div class="ab-ph__status" style="background:${c.bar};color:${barInk}"><span>${time}</span><span class="ab-ph__sys">▮▮▮ ◔ ▭</span></div>`;
         if (view === 'splash') {
@@ -374,7 +377,7 @@
             const bar = tabs.map((x, i) => i).filter(i => inBar(tabs[i], i)).slice(0, MAX_BAR), menuPages = tabs.map((x, i) => i).filter(i => inMenu(tabs[i], i)), hasMenu = a.menu !== 'hide' && menuPages.length > 0;
             const header = hasMenu ? `<div class="ab-ph__head" style="background:${c.bar};color:${barInk}"><button type="button" data-pmenu aria-label="Open menu"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><b>${esc(t.label || 'Page')}</b></div>` : '';
             const drawer = hasMenu && previewMenu ? `<div class="ab-ph__drawer"><div><b>${esc(a.name || 'Your app')}</b>${menuPages.map(i => [tabs[i], i]).map(([x, i]) => `<button type="button" data-ptab="${i}" class="${i === activeTab ? 'is-on' : ''}" style="${i === activeTab ? `background:${c.primary}1a;color:${c.primary}` : ''}">${svgIcon(x.icon, i === activeTab ? c.primary : '#475569', 16)}<span>${esc(x.label || 'Page')}</span></button>`).join('')}</div><button type="button" class="ab-ph__shade" data-pmenu aria-label="Close menu"></button></div>` : '';
-            phone.innerHTML = `<div class="ab-ph__screen">${status}${header}${body}
+            phone.innerHTML = `<div class="ab-ph__screen${dark ? ' is-dark' : ''} is-${esc(st.corners || 'rounded')} is-${esc(st.font || 'modern')}">${status}${header}${body}
                 ${bar.length > 1 ? `<div class="ab-ph__tabs" style="background:${c.bar}">${bar.map(i => {
                     const x = tabs[i], col = i === activeTab ? c.primary : muted;
                     return `<button type="button" data-ptab="${i}" style="color:${col}">${svgIcon(x.icon, col)}<span>${esc(x.label || 'Tab')}</span></button>`;
@@ -551,6 +554,7 @@
         $$('[data-o]').forEach(el => (el.value = a.offline[el.dataset.o] ?? ''));
         $$('[data-pv]').forEach(el => (el.value = a.privacy[el.dataset.pv] ?? ''));
         $$('[data-shop]').forEach(el => (el.value = a.shop[el.dataset.shop] ?? ''));
+        $$('[data-style]').forEach(b => { const [k, v] = b.dataset.style.split(':'); b.setAttribute('aria-pressed', String(a.style[k] === v)); });
         $('[data-i="letter"]').value = D.icon.letter;
         $('[data-i="zoom"]').value = D.icon.zoom;
         $('[data-i="fill"]').checked = !!D.icon.fill;
@@ -719,6 +723,11 @@
         const b = blockOf(t), blocks = curBlocks();
         if (t.dataset.tab) showTab(t.dataset.tab);
         else if (t.dataset.view) { view = t.dataset.view; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === t))); drawPhone(); }
+        else if (t.dataset.style) {
+            const [k, v] = t.dataset.style.split(':'); A().style[k] = v;
+            $$('[data-style]').forEach(b => { const [k2, v2] = b.dataset.style.split(':'); b.setAttribute('aria-pressed', String(A().style[k2] === v2)); });
+            view = 'app'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app'))); drawPhone(); markDirty();
+        }
         else if (t.dataset.splashMode) { D.splash.mode = t.dataset.splashMode; previewIntro = false; showSplash(); markDirty(true); if (D.splash.mode === 'image' && !D.splash.image) $('[data-splash-file]').click(); }
         else if (t.dataset.bgMode) {
             D.splash.bg = t.dataset.bgMode; previewIntro = D.splash.bg !== 'color'; showSplash(); markDirty();
@@ -884,7 +893,7 @@
     const payload = () => {
         const a = A();
         return {
-            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show', privacy: a.privacy, shop: a.shop,
+            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show', privacy: a.privacy, shop: a.shop, style: a.style,
             status_bar: isDark(a.colors.bar) ? 'light' : 'dark', colors: a.colors, offline: a.offline,
             tabs: a.tabs.map((t, i) => (t.type === 'web' ? { label: t.label.trim(), icon: t.icon, type: 'web', bar: inBar(t, i), menu: inMenu(t, i), url: tabUrl(t) } : { label: t.label.trim(), icon: t.icon, type: 'screen', bar: inBar(t, i), menu: inMenu(t, i), blocks: t.blocks.map(blockOut) })),
         };
@@ -951,7 +960,7 @@
             ? { label: t.label, icon: t.icon, type: 'web', bar: t.bar, menu: t.menu, blocks: [], path: t.url === x.url ? '' : base && t.url.startsWith(base + '/') ? t.url.slice(base.length + 1) : t.url }
             : { label: t.label, icon: t.icon, type: 'screen', bar: t.bar, menu: t.menu, path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
         D = { id: x.id, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
-            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
+            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', ...(x.settings.style || {}) }, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
             icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
         if (!x.has_notification_icon) D.iconDirty = true; // apps saved before notifications: send the icon on the next save
         activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(drawAll); drawMine();

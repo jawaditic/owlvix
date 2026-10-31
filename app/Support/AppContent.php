@@ -562,6 +562,7 @@ class AppContent
             'menu' => ($s['menu'] ?? '') === 'hide' ? 'hide' : 'show',
             'report' => $app->reportUrl(),
             'shop' => $s['shop'] ?? null,
+            'style' => $s['style'] ?? ['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern'],
             'hosts' => $app->url ? [$app->host()] : [],
             'offline' => $s['offline'],
             'tabs' => $app->content['tabs'] ?? [],

@@ -85,11 +85,34 @@
                             </div>
                         </details>
 
-                        <details class="fb-settings" open><summary>2. Colours</summary>
+                        <details class="fb-settings" open><summary>2. Colours &amp; style</summary>
                             <div class="fb-2">
                                 <label>Main colour <small>— buttons, active tab</small><input type="color" data-c="primary"></label>
                                 <label>Top &amp; bottom bars<input type="color" data-c="bar"></label>
                                 <label>Icon background<input type="color" data-c="icon"></label>
+                            </div>
+                            <div class="ab-field"><span>Theme</span>
+                                <div class="ab-seg" role="group" aria-label="Theme">
+                                    <button type="button" data-style="theme:light">☀️ Light</button>
+                                    <button type="button" data-style="theme:dark">🌙 Dark</button>
+                                    <button type="button" data-style="theme:auto">Follow the phone</button>
+                                </div>
+                            </div>
+                            <div class="fb-2">
+                                <div class="ab-field"><span>Corners</span>
+                                    <div class="ab-seg" role="group" aria-label="Corners">
+                                        <button type="button" data-style="corners:rounded">Rounded</button>
+                                        <button type="button" data-style="corners:soft">Soft</button>
+                                        <button type="button" data-style="corners:square">Square</button>
+                                    </div>
+                                </div>
+                                <div class="ab-field"><span>Font</span>
+                                    <div class="ab-seg" role="group" aria-label="Font">
+                                        <button type="button" data-style="font:modern">Modern</button>
+                                        <button type="button" data-style="font:classic" style="font-family: Georgia, serif">Classic</button>
+                                        <button type="button" data-style="font:condensed" style="font-family: 'Arial Narrow', 'Roboto Condensed', sans-serif; font-stretch: condensed">Condensed</button>
+                                    </div>
+                                </div>
                             </div>
                         </details>
 
