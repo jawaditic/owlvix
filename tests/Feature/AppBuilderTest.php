@@ -35,6 +35,7 @@ class AppBuilderTest extends TestCase
             'builder.domain' => 'sites.owlvix.test',
             'builder.apps.github_repo' => 'owlvix/owlvix',
             'builder.apps.github_token' => 'gh-token',
+            'builder.apps.runner_key' => 'runner-key',
             'builder.apps.monthly_limit' => 100,
         ]);
     }
@@ -338,7 +339,7 @@ class AppBuilderTest extends TestCase
         $this->api($token)->postJson("/builder/apps/{$id}/build")->assertOk();
         $runner = null;
         Http::assertSent(function ($req) use (&$runner) {
-            $runner = $req['inputs']['token'];
+            $runner = self::unseal($req['inputs']['token']);
 
             return true;
         });
@@ -394,6 +395,7 @@ class AppBuilderTest extends TestCase
         $this->assertFalse($model->isLive());
         $doc = $this->contentFile($id);
         $this->assertSame('This app is no longer available.', $doc['tabs'][0]['blocks'][0]['text']);
+        $takenDownRev = $doc['rev'];
         $this->assertCount(0, File::files($this->public."/{$id}/img"));
         $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app()])->assertStatus(403);
         $this->api($token)->postJson("/builder/apps/{$id}/build")->assertStatus(403);
@@ -404,6 +406,7 @@ class AppBuilderTest extends TestCase
         $this->assertTrue(BuilderApp::find($id)->isLive());
         $this->assertCount(1, File::files($this->public."/{$id}/img"));
         $this->assertSame('image', collect($this->contentFile($id)['tabs'][0]['blocks'])->last()['type']);
+        $this->assertGreaterThan($takenDownRev, $this->contentFile($id)['rev']); // phones take the restored copy
     }
 
     public function test_the_builder_says_when_phones_need_a_new_build(): void
@@ -811,6 +814,14 @@ class AppBuilderTest extends TestCase
         $app->update(['url' => 'https://shop.joes.example/']);
         $this->assertFalse($app->fresh()->toApi()['allowed']);
 
+        // Until verified, phones get a placeholder instead of the website's pages (also in a translation)
+        $app->update(['url' => 'https://www.joes.example/', 'verified_host' => null]);
+        $doc = \App\Support\AppContent::document($app->fresh());
+        $this->assertSame([], $doc['hosts']);
+        $this->assertNotContains('web', array_column($doc['tabs'], 'type'));
+        $app->update(['verified_host' => 'www.joes.example']);
+        $this->assertContains('web', array_column(\App\Support\AppContent::document($app->fresh())['tabs'], 'type'));
+
         // Without website tabs there's nothing to check
         $this->api($token)->postJson('/builder/apps', ['id' => $app->id, 'app' => $this->app(['url' => 'https://www.joes.example'])])->assertOk()
             ->assertJsonPath('app.needs_website', false)->assertJsonPath('app.allowed', true);
@@ -828,7 +839,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame(1, $r['build']['version_code']);
         $runner = null;
         Http::assertSent(function ($req) use (&$runner) {
-            $runner = $req['inputs']['token'];
+            $runner = self::unseal($req['inputs']['token']);
 
             return $req->url() === 'https://api.github.com/repos/owlvix/owlvix/actions/workflows/build-android-app.yml/dispatches'
                 && $req->hasHeader('Authorization', 'Bearer gh-token')
@@ -881,7 +892,7 @@ class AppBuilderTest extends TestCase
         $this->api($token)->postJson("/builder/apps/{$id}/build")->assertOk();
         $runner = null;
         Http::assertSent(function ($req) use (&$runner) {
-            $runner = $req['inputs']['token'];
+            $runner = self::unseal($req['inputs']['token']);
 
             return true;
         });
@@ -967,7 +978,7 @@ class AppBuilderTest extends TestCase
         $this->api($token)->postJson("/builder/apps/{$id}/build")->assertOk();
         $runner = null;
         Http::assertSent(function ($req) use (&$runner) {
-            $runner = $req['inputs']['token'] ?? $runner;
+            $runner = (isset($req['inputs']['token']) ? self::unseal($req['inputs']['token']) : $runner);
 
             return true;
         });
@@ -1009,5 +1020,13 @@ class AppBuilderTest extends TestCase
             $this->save($token, $this->app(['package' => "com.joes.app$i"]))->assertOk();
         }
         $this->save($token, $this->app(['package' => 'com.joes.extra']))->assertStatus(422);
+    }
+
+    /** Opens a sealed build pass the way the workflow does (AES-256-GCM, iv | tag | text). */
+    private static function unseal(string $sealed): string
+    {
+        $b = base64_decode($sealed);
+
+        return (string) openssl_decrypt(substr($b, 28), 'aes-256-gcm', hash('sha256', 'runner-key', true), OPENSSL_RAW_DATA, substr($b, 0, 12), substr($b, 12, 16));
     }
 }

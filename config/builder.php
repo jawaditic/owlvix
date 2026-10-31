@@ -15,6 +15,9 @@ return [
     'apps' => [
         'github_repo' => env('APP_BUILDER_REPO'),            // e.g. jawaditic/owlvix
         'github_token' => env('APP_BUILDER_GITHUB_TOKEN'),
+        // Seals each build's one-time pass in the (public) Actions logs; the same value is the repo's
+        // OWLVIX_RUNNER_KEY secret. Any long random string, e.g. `openssl rand -hex 32`.
+        'runner_key' => env('APP_BUILDER_RUNNER_KEY'),
         'workflow' => env('APP_BUILDER_WORKFLOW', 'build-android-app.yml'),
         'ref' => env('APP_BUILDER_REF', 'main'),
         // Where the build server sends the finished app (defaults to APP_URL; must be reachable from the internet)

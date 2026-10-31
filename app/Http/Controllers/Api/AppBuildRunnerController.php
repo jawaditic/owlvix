@@ -72,6 +72,11 @@ class AppBuildRunnerController extends Controller
         $this->authorizeRunner($request, $build);
         $app = $build->app;
 
+        if (! $app->isLive()) {
+            $this->finishAs($build, 'failed', 'The app was taken down.');
+
+            return response()->json(['ok' => false, 'error' => 'app removed'], 410);
+        }
         if ($request->input('status') !== 'done') {
             $detail = Str::limit((string) $request->input('error', ''), 300, '');
             report(new \RuntimeException("App build {$build->id} ({$app->package}) failed: {$detail}"));

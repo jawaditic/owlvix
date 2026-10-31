@@ -57,6 +57,10 @@ class AppBuilderController extends Controller
         // rev: a bigger number on every save, so phones know which copy is newest
         $data['content'] = ['rev' => max((int) floor(microtime(true) * 1000), ($app->content['rev'] ?? 0) + 1), 'tabs' => $data['tabs'], 'translations' => $data['translations']];
         unset($data['images'], $data['tabs'], $data['translations']);
+        // every phone downloads this on each change: keep it small (pictures are separate files)
+        if (strlen((string) json_encode($data['content'])) > 1_000_000) {
+            return $this->fail('Your app has too much text. Please shorten some pages, or remove a language.', 422);
+        }
         $icon = $foreground = null;
         if ($request->has('icon') || ! $app) {
             $icon = AppBuilder::png($request->input('icon'));
@@ -154,6 +158,12 @@ class AppBuilderController extends Controller
         RateLimiter::hit('app-verify:'.$app->id, 600);
         if ($error = AppBuilder::verify($app)) {
             return $this->fail($error, 422);
+        }
+        // its website pages can show now: publish them (with a newer rev, so phones take it)
+        $app = $app->fresh();
+        if ($app->isLive() && AppBuilder::needsWebsite($app)) {
+            $app->forceFill(['content' => ['rev' => max((int) floor(microtime(true) * 1000), (int) ($app->content['rev'] ?? 0) + 1)] + ($app->content ?? [])])->save();
+            \App\Support\AppContent::publish($app);
         }
 
         return response()->json(['ok' => true, 'app' => $app->fresh()->toApi()]);

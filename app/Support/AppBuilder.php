@@ -29,10 +29,23 @@ class AppBuilder
         return $icons ??= json_decode((string) file_get_contents(base_path('app-shell/icons.json')), true) ?: [];
     }
 
-    /** Builds can run: GitHub repo and token are set. */
+    /** Builds can run: GitHub repo, token and the key that seals each build's pass are set. */
     public static function enabled(): bool
     {
-        return (bool) config('builder.apps.github_repo') && (bool) config('builder.apps.github_token');
+        return (bool) config('builder.apps.github_repo') && (bool) config('builder.apps.github_token') && (bool) config('builder.apps.runner_key');
+    }
+
+    /**
+     * Seals a build's one-time pass for the workflow (AES-256-GCM, key = sha256 of the shared runner key, which is
+     * also the repo's OWLVIX_RUNNER_KEY secret). The repo's Actions logs are public, so the pass never goes in plain.
+     */
+    public static function seal(string $pass): string
+    {
+        $iv = random_bytes(12);
+        $tag = '';
+        $box = openssl_encrypt($pass, 'aes-256-gcm', hash('sha256', (string) config('builder.apps.runner_key'), true), OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+
+        return base64_encode($iv.$tag.$box);
     }
 
     /**
@@ -91,7 +104,7 @@ class AppBuilder
             return $content;
         }
         // Languages: the main one, and up to 4 translations, each with its own pages (checked like the main ones)
-        $lang = array_key_exists($in['lang'] ?? '', self::LANGUAGES) ? $in['lang'] : 'en';
+        $lang = array_key_exists(is_string($in['lang'] ?? null) ? $in['lang'] : '', self::LANGUAGES) ? $in['lang'] : 'en';
         $translations = [];
         foreach (is_array($in['translations'] ?? null) ? $in['translations'] : [] as $code => $tr) {
             if (! array_key_exists($code, self::LANGUAGES) || $code === $lang || ! is_array($tr)) {
@@ -193,7 +206,7 @@ class AppBuilder
     /** What the app does, for its privacy policy and Google Play's data safety answers. */
     public static function dataUse(BuilderApp $app): array
     {
-        $blocks = collect($app->content['tabs'] ?? [])->flatMap(fn ($t) => $t['blocks'] ?? []);
+        $blocks = collect(self::allLangTabs($app))->flatMap(fn ($t) => $t['blocks'] ?? []);
         $actions = $blocks->flatMap(fn ($b) => array_filter([$b['action']['kind'] ?? null, $b['button']['action']['kind'] ?? null,
             ...array_map(fn ($i) => $i['action']['kind'] ?? null, $b['items'] ?? [])]));
 
@@ -383,7 +396,7 @@ class AppBuilder
         $in = is_array($in) ? $in : [];
 
         return ['mode' => in_array($in['mode'] ?? '', ['icon', 'logo', 'image'], true) ? $in['mode'] : 'icon',
-            'size' => array_key_exists($in['size'] ?? '', self::SPLASH_SIZES) ? $in['size'] : 'medium',
+            'size' => array_key_exists(is_string($in['size'] ?? null) ? $in['size'] : '', self::SPLASH_SIZES) ? $in['size'] : 'medium',
             'bg' => in_array($in['bg'] ?? '', ['color', 'image', 'video'], true) ? $in['bg'] : 'color'];
     }
 
@@ -438,7 +451,13 @@ class AppBuilder
     /** The app shows pages of a website (it has "web page" tabs), so the owner must show the website is theirs. */
     public static function needsWebsite(BuilderApp $app): bool
     {
-        return $app->url && collect($app->content['tabs'] ?? [])->contains('type', 'web');
+        return $app->url && collect(self::allLangTabs($app))->contains('type', 'web');
+    }
+
+    /** The pages of every language (the main one, then each translation). */
+    public static function allLangTabs(BuilderApp $app): array
+    {
+        return array_merge($app->content['tabs'] ?? [], ...array_map(fn ($tr) => $tr['tabs'] ?? [], array_values($app->content['translations'] ?? [])));
     }
 
     /**
@@ -562,7 +581,7 @@ class AppBuilder
                 ->timeout(15)
                 ->post("https://api.github.com/repos/{$repo}/actions/workflows/{$workflow}/dispatches", [
                     'ref' => config('builder.apps.ref'),
-                    'inputs' => ['build_id' => (string) $build->id, 'api' => $api, 'token' => $token],
+                    'inputs' => ['build_id' => (string) $build->id, 'api' => $api, 'token' => self::seal($token)],
                 ]);
         } catch (\Throwable $e) {
             report($e);

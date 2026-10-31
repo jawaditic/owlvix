@@ -30,10 +30,23 @@ jobs:
     timeout-minutes: 45
     env:
       OWLVIX_API: ${{ inputs.api }}
-      OWLVIX_JOB_TOKEN: ${{ inputs.token }}
     steps:
-      - name: Hide the build pass in logs
-        run: echo "::add-mask::$OWLVIX_JOB_TOKEN"
+      # The pass arrives sealed (AES-256-GCM with the OWLVIX_RUNNER_KEY secret, see AppBuilder::seal), because this
+      # repo's logs are public and GitHub prints a step's inputs and env in them. It's opened and hidden in one step.
+      - name: Open the build pass
+        env:
+          SEALED: ${{ inputs.token }}
+          RUNNER_KEY: ${{ secrets.OWLVIX_RUNNER_KEY }}
+        run: |
+          pass=$(node -e '
+            const c = require("crypto"), b = Buffer.from(process.env.SEALED || "", "base64");
+            const d = c.createDecipheriv("aes-256-gcm", c.createHash("sha256").update(process.env.RUNNER_KEY || "").digest(), b.subarray(0, 12));
+            d.setAuthTag(b.subarray(12, 28));
+            process.stdout.write(Buffer.concat([d.update(b.subarray(28)), d.final()]).toString());
+          ') || { echo "Could not open the build pass (is the OWLVIX_RUNNER_KEY secret set?)"; exit 1; }
+          [ -n "$pass" ] || exit 1
+          echo "::add-mask::$pass"
+          echo "OWLVIX_JOB_TOKEN=$pass" >> "$GITHUB_ENV"
 
       - name: Check the API address
         run: |

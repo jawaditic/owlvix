@@ -74,7 +74,7 @@ class AppContent
                 if ($label === '' || mb_strlen($label) > 24) {
                     return 'Each page needs a short name (up to 24 characters).';
                 }
-                $icon = array_key_exists($tab['icon'] ?? '', AppBuilder::icons()) ? $tab['icon'] : 'home';
+                $icon = array_key_exists(is_string($tab['icon'] ?? null) ? $tab['icon'] : '', AppBuilder::icons()) ? $tab['icon'] : 'home';
                 // In the bottom bar (the first five, unless the builder says otherwise) and/or in the ☰ menu (by
                 // default the pages that aren't in the bar); a page in neither opens only from buttons on other pages
                 $bar = array_key_exists('bar', $tab) ? (bool) $tab['bar'] : $i < self::MAX_BAR;
@@ -313,7 +313,7 @@ class AppContent
             }
             $x = array_filter(['title' => $this->text($item['title'] ?? '', 60), 'text' => $this->text($item['text'] ?? '', 200, true), 'action' => $this->action($item['action'] ?? null, $tabs)]);
             if (isset($x['title']) || isset($x['text'])) {
-                $clean[] = ['icon' => array_key_exists($item['icon'] ?? '', AppBuilder::icons()) ? $item['icon'] : 'star'] + $x;
+                $clean[] = ['icon' => array_key_exists(is_string($item['icon'] ?? null) ? $item['icon'] : '', AppBuilder::icons()) ? $item['icon'] : 'star'] + $x;
             }
         }
 
@@ -582,6 +582,12 @@ class AppContent
                     'blocks' => [['type' => 'notice', 'text' => 'This app is no longer available.', 'tone' => 'warning']]]]];
         }
 
+        // Pages of a website show only once the owner has proved the site is theirs (see AppBuilder::allowed)
+        $webOk = AppBuilder::allowed($app);
+        $tabs = fn (array $tabs) => $webOk ? $tabs : array_map(fn ($t) => ($t['type'] ?? '') !== 'web' ? $t
+            : ['label' => $t['label'], 'icon' => $t['icon'], 'type' => 'screen', 'bar' => $t['bar'] ?? true, 'menu' => $t['menu'] ?? true,
+                'blocks' => [['type' => 'notice', 'text' => 'This page will appear soon.', 'tone' => 'info']]], $tabs);
+
         return [
             'v' => 1,
             'rev' => (int) ($app->content['rev'] ?? 0),
@@ -593,11 +599,11 @@ class AppContent
             'report' => $app->reportUrl(),
             'shop' => $s['shop'] ?? null,
             'style' => ($s['style'] ?? []) + ['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern', 'nav' => 'floating', 'motion' => 'on'],
-            'hosts' => $app->url ? [$app->host()] : [],
+            'hosts' => $app->url && $webOk ? [$app->host()] : [],
             'offline' => $s['offline'],
-            'tabs' => $app->content['tabs'] ?? [],
+            'tabs' => $tabs($app->content['tabs'] ?? []),
             'lang' => $s['lang'] ?? 'en',
-            'translations' => (object) ($app->content['translations'] ?? []),
+            'translations' => (object) array_map(fn ($tr) => ['tabs' => $tabs($tr['tabs'] ?? [])] + $tr, $app->content['translations'] ?? []),
         ];
     }
 
@@ -644,6 +650,10 @@ class AppContent
         $public = self::dir($app);
         $private = BuilderApp::disk()->path($app->dir().'/offline');
         [$from, $to] = $live ? [$private, $public] : [$public, $private];
+        if ($live) {
+            // the take-down notice went out with a newer rev; phones ignore anything older, so restore with a newer one
+            $app->forceFill(['content' => ['rev' => max((int) floor(microtime(true) * 1000), (int) ($app->content['rev'] ?? 0) + 1)] + ($app->content ?? [])])->save();
+        }
         foreach (['img', 'builds'] as $folder) {
             if (is_dir("$from/$folder")) {
                 File::ensureDirectoryExists($to);

@@ -26,8 +26,13 @@ class AppStatsController extends Controller
         }
         $pageCount = count($app->content['tabs'] ?? []);
         $first = (bool) $request->boolean('new');
+        $seen = [];
         foreach ($days as $d) {
-            $day = is_array($d) ? (string) ($d['day'] ?? '') : '';
+            $day = is_array($d) && is_string($d['day'] ?? null) ? $d['day'] : '';
+            if (isset($seen[$day])) {
+                continue; // each day once per report
+            }
+            $seen[$day] = true;
             // Only the last week (phones can be offline for a while), never the future
             if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) || $day > now()->addDay()->toDateString() || $day < now()->subDays(8)->toDateString()) {
                 continue;
@@ -42,15 +47,18 @@ class AppStatsController extends Controller
                     $pages[(int) $i] = min(self::MAX_OPENS * 5, max(0, (int) $n));
                 }
             }
-            DB::transaction(function () use ($app, $day, $opens, $pages, &$first) {
-                $row = DB::table('builder_app_stats')->where('builder_app_id', $app->id)->where('day', $day)->lockForUpdate()->first();
-                $merged = $row ? (json_decode((string) $row->pages, true) ?: []) : [];
-                foreach ($pages as $i => $n) {
-                    $merged[$i] = ($merged[$i] ?? 0) + $n;
+            // counters go up in one statement each (safe when many phones report at once); the row is made first
+            DB::table('builder_app_stats')->insertOrIgnore(['builder_app_id' => $app->id, 'day' => $day, 'active' => 0, 'opens' => 0, 'installs' => 0, 'pages' => '{}']);
+            $q = DB::table('builder_app_stats')->where('builder_app_id', $app->id)->where('day', $day);
+            DB::transaction(function () use ($q, $opens, $pages, &$first) {
+                (clone $q)->update(['active' => DB::raw('active + 1'), 'opens' => DB::raw('opens + '.(int) $opens), 'installs' => DB::raw('installs + '.($first ? 1 : 0))]);
+                if ($pages) {
+                    $merged = json_decode((string) (clone $q)->value('pages'), true) ?: [];
+                    foreach ($pages as $i => $n) {
+                        $merged[$i] = ($merged[$i] ?? 0) + $n;
+                    }
+                    (clone $q)->update(['pages' => json_encode((object) $merged)]);
                 }
-                $values = ['active' => ($row->active ?? 0) + 1, 'opens' => ($row->opens ?? 0) + $opens, 'installs' => ($row->installs ?? 0) + ($first ? 1 : 0), 'pages' => json_encode((object) $merged)];
-                $row ? DB::table('builder_app_stats')->where('id', $row->id)->update($values)
-                    : DB::table('builder_app_stats')->insert(['builder_app_id' => $app->id, 'day' => $day] + $values);
                 $first = false; // an install counts once, on the oldest day sent
             });
         }

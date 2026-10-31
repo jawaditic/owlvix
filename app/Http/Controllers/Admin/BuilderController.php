@@ -55,6 +55,8 @@ class BuilderController extends Controller
     public function takedownApp(BuilderApp $app)
     {
         $app->update(['status' => 'removed']);
+        // builds still running can't deliver files any more (their pass stops working)
+        $app->builds()->whereIn('status', ['queued', 'building'])->update(['status' => 'failed', 'error' => 'The app was taken down.', 'token_hash' => null, 'job' => null, 'finished_at' => now()]);
         \App\Support\AppContent::setLive($app, false);
 
         return back()->with('status', 'The app '.$app->name.' was taken down.');
