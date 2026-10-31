@@ -536,6 +536,41 @@ class AppBuilderTest extends TestCase
         File::delete($file);
     }
 
+    public function test_a_full_firebase_project_sends_new_apps_to_the_next(): void
+    {
+        $token = $this->signIn();
+        $icon96 = imagecreatetruecolor(96, 96);
+        ob_start();
+        imagepng($icon96);
+        $notif = 'data:image/png;base64,'.base64_encode(ob_get_clean());
+        $id = $this->api($token)->postJson('/builder/apps', ['app' => $this->app(), 'icon' => $this->png(), 'foreground' => $this->png(), 'notification_icon' => $notif])->assertOk()->json('app.id');
+
+        $files = [];
+        foreach (['' => 'owlvix-one', '-2' => 'owlvix-two'] as $suffix => $project) {
+            $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+            openssl_pkey_export($key, $pem);
+            File::put($files[] = $this->public."-fb{$suffix}.json", json_encode(['project_id' => $project, 'private_key' => $pem, 'client_email' => "sa@{$project}.iam.gserviceaccount.com"]));
+        }
+        config(['builder.apps.firebase' => $files[0]]);
+        $config = base64_encode(json_encode(['project_info' => ['project_id' => 'owlvix-two'], 'client' => [['client_info' => ['android_client_info' => ['package_name' => 'com.joesbakery.app']]]]]));
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response(['access_token' => 'g-token']),
+            'firebase.googleapis.com/v1beta1/projects/*/androidApps?*' => Http::response(['apps' => []]),
+            'firebase.googleapis.com/v1beta1/projects/owlvix-one/androidApps' => Http::response(['error' => ['status' => 'RESOURCE_EXHAUSTED']], 429),
+            'firebase.googleapis.com/v1beta1/projects/owlvix-two/androidApps' => Http::response(['name' => 'operations/op2', 'done' => true, 'response' => ['appId' => '1:2:android:x']]),
+            'firebase.googleapis.com/v1beta1/projects/owlvix-two/androidApps/1:2:android:x/config' => Http::response(['configFileContents' => $config]),
+            'fcm.googleapis.com/*' => Http::response(['name' => 'm']),
+            'api.github.com/*' => Http::response('', 204),
+        ]);
+
+        $this->api($token)->postJson("/builder/apps/{$id}/build")->assertOk();
+        $this->assertTrue(BuilderAppBuild::first()->info['push']);
+        BuilderAppBuild::first()->update(['status' => 'done']);
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Hi', 'body' => 'x'])->assertOk();
+        Http::assertSent(fn ($req) => str_starts_with($req->url(), 'https://fcm.googleapis.com/v1/projects/owlvix-two/messages:send'));
+        File::delete($files);
+    }
+
     public function test_anonymous_daily_statistics(): void
     {
         $token = $this->signIn();

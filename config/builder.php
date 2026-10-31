@@ -32,6 +32,7 @@ return [
         'public_url' => env('APP_BUILDER_PUBLIC_URL'), // defaults to APP_URL/app-data
         // Push notifications: the owlvix-apps Firebase project's service account key (a JSON file, never in public_html).
         // Without it the builder hides notifications (App\Support\Firebase).
+        // A Firebase project holds 30 apps: add more projects' keys beside it as firebase-2.json, firebase-3.json…
         'firebase' => env('APP_BUILDER_FIREBASE') ?: storage_path('app/firebase.json'),
         'pushes_per_day' => (int) env('APP_BUILDER_PUSHES_PER_DAY', 3),
     ],

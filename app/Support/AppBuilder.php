@@ -299,6 +299,15 @@ class AppBuilder
         }
     }
 
+    /** The Firebase project an app was registered in (from its google-services.json), or null. */
+    public static function pushProject(BuilderApp $app): ?string
+    {
+        $file = $app->dir().'/google-services.json';
+        $json = BuilderApp::disk()->exists($file) ? json_decode((string) BuilderApp::disk()->get($file), true) : null;
+
+        return is_string($json['project_info']['project_id'] ?? null) ? $json['project_info']['project_id'] : null;
+    }
+
     /** A PNG data: URL of exactly $size × $size pixels: the bytes, or null. */
     public static function pngOfSize(mixed $dataUrl, int $size): ?string
     {
@@ -495,7 +504,8 @@ class AppBuilder
         if (self::isBuilderHost($app->host())) {
             return self::allowed($app) ? null : 'That page isn’t one of your published sites.';
         }
-        $res = SafeFetch::get($app->url, 12);
+        // the home page only: one page somewhere on a shared host mustn't prove the whole host
+        $res = SafeFetch::get('https://'.$app->host().'/', 12);
         if (! $res['ok']) {
             return $res['error'] ?? 'We couldn’t open your website.';
         }

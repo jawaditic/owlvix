@@ -9,6 +9,8 @@ use App\Support\AppBuilder;
 use App\Support\AppContent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -33,7 +35,16 @@ class AppBuilderController extends Controller
         ]);
     }
 
+    /**
+     * One save at a time per account: two saves of the same app could otherwise mix their pictures and content.json,
+     * and the app-per-account cap could be passed by sending two at once.
+     */
     public function save(Request $request): JsonResponse
+    {
+        return $this->oneAtATime($request, 'save', fn () => $this->saveNow($request));
+    }
+
+    private function saveNow(Request $request): JsonResponse
     {
         $account = $this->user($request);
         $app = null;
@@ -231,7 +242,13 @@ class AppBuilderController extends Controller
     }
 
     /** Sends a push notification to everyone with the app (Firebase Cloud Messaging, the app's topic). */
+    /** One at a time per account, so the daily limit can't be passed by sending several at once. */
     public function push(Request $request, string $id): JsonResponse
+    {
+        return $this->oneAtATime($request, 'push', fn () => $this->pushNow($request, $id));
+    }
+
+    private function pushNow(Request $request, string $id): JsonResponse
     {
         $app = $this->own($request, $id);
         if (! $app) {
@@ -263,7 +280,7 @@ class AppBuilderController extends Controller
             return $this->fail("You can send up to {$limit} notifications a day — people turn notifications off when they get too many.", 429);
         }
         try {
-            \App\Support\Firebase::send(\App\Support\Firebase::topic($app->id), $title, $body, $tab === null ? [] : ['tab' => (string) $tab]);
+            \App\Support\Firebase::send(\App\Support\Firebase::topic($app->id), $title, $body, $tab === null ? [] : ['tab' => (string) $tab], AppBuilder::pushProject($app));
             $sent = $app->pushes()->create(['title' => $title, 'body' => $body, 'tab' => $tab, 'status' => 'sent']);
         } catch (\Throwable $e) {
             report($e);
@@ -469,6 +486,15 @@ class AppBuilderController extends Controller
     private function user(Request $request): BuilderAccount
     {
         return $request->attributes->get('builder_account');
+    }
+
+    private function oneAtATime(Request $request, string $what, \Closure $fn): JsonResponse
+    {
+        try {
+            return Cache::lock("app-builder-{$what}:".$this->user($request)->id, 60)->block(15, $fn);
+        } catch (LockTimeoutException) {
+            return $this->fail('Your last change is still being saved. Please try again in a moment.', 429);
+        }
     }
 
     private function fail(string $error, int $status): JsonResponse
