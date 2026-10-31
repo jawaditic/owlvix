@@ -69,7 +69,8 @@ function Picture({ b, ctx }) {
     return (
         <View style={styles.pad}>
             <Tap act={b.action} ctx={ctx} label={str(b.caption) || 'Picture'}>
-                <Image source={{ uri: img.uri }} style={[styles.picture, { aspectRatio: Math.max(0.5, Math.min(img.ratio, 3)) }, b.round && styles.round]} resizeMode="cover" accessibilityIgnoresInvertColors />
+                <Image source={{ uri: img.uri }} style={[styles.picture, { aspectRatio: Math.max(0.5, Math.min(img.ratio, 3)) }, b.round && styles.round]} resizeMode="cover" accessibilityIgnoresInvertColors
+                    accessible accessibilityRole="image" accessibilityLabel={str(b.alt) || str(b.caption) || 'Picture'} />
             </Tap>
             {!!str(b.caption) && <Text style={styles.caption}>{b.caption}</Text>}
         </View>
@@ -212,7 +213,7 @@ function Slider({ b, ctx }) {
             <FlatList data={imgs} horizontal pagingEnabled showsHorizontalScrollIndicator={false} keyExtractor={(_, i) => String(i)}
                 style={[styles.round, { width: w, height: h }]}
                 onMomentumScrollEnd={e => setAt(Math.round(e.nativeEvent.contentOffset.x / w))}
-                renderItem={({ item }) => <Image source={{ uri: item.uri }} style={{ width: w, height: h }} resizeMode="cover" />} />
+                renderItem={({ item, index }) => <Image source={{ uri: item.uri }} style={{ width: w, height: h }} resizeMode="cover" accessible accessibilityRole="image" accessibilityLabel={`Picture ${index + 1} of ${imgs.length}`} />} />
             {imgs.length > 1 && (
                 <View style={styles.dots}>{imgs.map((_, i) => <View key={i} style={[styles.dot, i === at && { backgroundColor: ctx.primary, width: 18 }]} />)}</View>
             )}

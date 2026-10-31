@@ -366,6 +366,72 @@ class AppBuilderTest extends TestCase
         Storage::disk('local')->assertMissing("apps/{$id}/splash-bg.mp4");
     }
 
+    public function test_apps_can_be_reported_taken_down_and_restored(): void
+    {
+        Mail::fake();
+        config(['admin.email' => 'admin@owlvix.test']);
+        $token = $this->signIn();
+        $app = $this->app();
+        $app['tabs'][0]['blocks'][] = ['type' => 'image', 'image' => ['src' => $this->jpeg()], 'alt' => 'Our shop front'];
+        $r = $this->save($token, $app)->assertOk()->json('app');
+        $id = $r['id'];
+        $this->assertSame('Our shop front', collect($r['tabs'][0]['blocks'])->firstWhere('type', 'image')['alt']);
+        $this->assertSame(route('builder.apps.report', $id), $this->contentFile($id)['report']);
+
+        // Anyone can report it; the admin is emailed
+        $this->get("/app-report/{$id}")->assertOk()->assertSee('Report this app');
+        $this->post("/app-report/{$id}", ['reason' => 'Fake bank login'])->assertRedirect();
+        Mail::assertSent(\App\Mail\BuilderAppReported::class, fn ($m) => $m->hasTo('admin@owlvix.test'));
+        $this->assertSame(1, BuilderApp::find($id)->reports);
+
+        // The admin takes it down: phones see "unavailable", pictures go offline, the owner can't change or build it
+        $this->get('/admin/builder')->assertRedirect(route('admin.login'));
+        $this->post("/admin/builder/apps/{$id}/takedown")->assertRedirect(route('admin.login'));
+        $this->withSession(['is_admin' => true])->get('/admin/builder')->assertOk()->assertSee('Mobile apps')->assertSee('Reported 1×');
+        $this->withSession(['is_admin' => true])->post("/admin/builder/apps/{$id}/takedown")->assertRedirect();
+        $model = BuilderApp::find($id);
+        $this->assertFalse($model->isLive());
+        $doc = $this->contentFile($id);
+        $this->assertSame('This app is no longer available.', $doc['tabs'][0]['blocks'][0]['text']);
+        $this->assertCount(0, File::files($this->public."/{$id}/img"));
+        $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app()])->assertStatus(403);
+        $this->api($token)->postJson("/builder/apps/{$id}/build")->assertStatus(403);
+        $this->api($token)->getJson('/builder/apps')->assertJsonPath('apps.0.removed', true);
+
+        // Restored: everything is back
+        $this->withSession(['is_admin' => true])->post("/admin/builder/apps/{$id}/restore")->assertRedirect();
+        $this->assertTrue(BuilderApp::find($id)->isLive());
+        $this->assertCount(1, File::files($this->public."/{$id}/img"));
+        $this->assertSame('image', collect($this->contentFile($id)['tabs'][0]['blocks'])->last()['type']);
+    }
+
+    public function test_the_builder_says_when_phones_need_a_new_build(): void
+    {
+        Http::fake(['api.github.com/*' => Http::response('', 204)]);
+        $token = $this->signIn();
+        $id = $this->save($token)->json('app.id');
+        $this->assertSame([], $this->api($token)->getJson('/builder/apps')->json('apps.0.out_of_date')); // never built
+
+        // A finished build remembers what it was made from
+        $this->api($token)->postJson("/builder/apps/{$id}/build")->assertOk();
+        BuilderAppBuild::first()->update(['status' => 'done']);
+        $this->assertSame([], $this->api($token)->getJson('/builder/apps')->json('apps.0.out_of_date'));
+
+        // Content changes don't need a build; name and icon do
+        $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app(['tabs' => [0 => ['label' => 'Start']]])])->assertOk()->assertJsonPath('app.out_of_date', []);
+        $other = imagecreatetruecolor(1024, 1024);
+        imagefill($other, 0, 0, 0xff0000);
+        ob_start();
+        imagepng($other);
+        $red = 'data:image/png;base64,'.base64_encode(ob_get_clean());
+        $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app(['name' => 'Joe New']), 'icon' => $red, 'foreground' => $this->png()])
+            ->assertOk()->assertJsonPath('app.out_of_date', ['name', 'icon']);
+
+        // An app built with an older version of the app is flagged too
+        BuilderAppBuild::first()->update(['info' => ['shell' => 1] + BuilderAppBuild::first()->info]);
+        $this->assertContains('features', $this->api($token)->getJson('/builder/apps')->json('apps.0.out_of_date'));
+    }
+
     public function test_up_to_fifteen_pages_with_a_menu(): void
     {
         $token = $this->signIn();

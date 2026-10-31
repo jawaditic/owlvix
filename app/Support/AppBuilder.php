@@ -172,6 +172,55 @@ class AppBuilder
         return ['mode' => ($in['mode'] ?? '') === 'image' ? 'image' : 'letter', 'letter' => $letter, 'zoom' => $zoom === false ? 70 : $zoom, 'fill' => ! empty($in['fill'])];
     }
 
+    /**
+     * Version of the app in app-shell/: raise it when phones need a new build to show something new (2: ☰ menu, 15
+     * pages, slider/cards/reviews/FAQ/social/notice/space blocks, splash picture, intro). Apps built with an older
+     * one are flagged in the builder.
+     */
+    public const SHELL_VERSION = 2;
+
+    /** What a build is made from, besides the content (which reaches phones without a build). */
+    public static function buildInfo(BuilderApp $app): array
+    {
+        $disk = BuilderApp::disk();
+        $hash = fn (string $file) => $disk->exists($app->dir().'/'.$file) ? md5((string) $disk->get($app->dir().'/'.$file)) : null;
+        $s = $app->settings;
+
+        return [
+            'shell' => self::SHELL_VERSION,
+            'name' => $app->name,
+            'icon' => md5($hash('icon.png').$hash('foreground.png')),
+            'splash' => md5($hash('splash.png').'|'.($s['colors']['splash'] ?? '').'|'.($s['splash']['size'] ?? '')),
+            'intro' => match ($s['splash']['bg'] ?? 'color') { 'image' => $hash('splash-bg.jpg'), 'video' => $hash('splash-bg.mp4'), default => null },
+        ];
+    }
+
+    /**
+     * What changed since the newest finished build that phones only get from a new build.
+     *
+     * @return list<string> e.g. ['icon', 'splash'], empty when up to date or never built
+     */
+    public static function outOfDate(BuilderApp $app): array
+    {
+        $last = $app->builds()->where('status', 'done')->latest('id')->first();
+        if (! $last) {
+            return [];
+        }
+        $was = $last->info ?? [];
+        $now = self::buildInfo($app);
+        $changed = [];
+        if (($was['shell'] ?? 1) < $now['shell']) {
+            $changed[] = 'features';
+        }
+        foreach (['name', 'icon', 'splash', 'intro'] as $key) {
+            if (array_key_exists($key, $was) && $was[$key] !== $now[$key]) {
+                $changed[] = $key;
+            }
+        }
+
+        return $changed;
+    }
+
     /** Largest splash background video. */
     public const MAX_VIDEO_BYTES = 15 * 1048576;
 

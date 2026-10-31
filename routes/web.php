@@ -161,6 +161,9 @@ Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->con
     Route::get('{id}/keystore', 'keystore')->where('id', '[a-z0-9]{16}')->name('keystore');
     Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
 });
+// Reporting an app made with the mobile app builder (linked from the app's ☰ menu)
+Route::get('/app-report/{id}', [\App\Http\Controllers\AppBuilderController::class, 'reportForm'])->where('id', '[a-z0-9]{16}')->name('builder.apps.report');
+Route::post('/app-report/{id}', [\App\Http\Controllers\AppBuilderController::class, 'report'])->where('id', '[a-z0-9]{16}')->middleware('throttle:10,1,app-report')->name('builder.apps.report.send');
 // Finished app files (signed links from the builder page and the "your app is ready" email)
 Route::get('/app-builds/{build}/{kind}', [\App\Http\Controllers\AppBuilderController::class, 'download'])
     ->whereNumber('build')->whereIn('kind', ['apk', 'aab'])
@@ -218,6 +221,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('builder/sites/{site}/takedown', [\App\Http\Controllers\Admin\BuilderController::class, 'takedown'])->name('builder.takedown');
         Route::post('builder/sites/{site}/restore', [\App\Http\Controllers\Admin\BuilderController::class, 'restore'])->name('builder.restore');
         Route::post('builder/sites/{site}/dismiss', [\App\Http\Controllers\Admin\BuilderController::class, 'dismiss'])->name('builder.dismiss');
+        Route::post('builder/apps/{app}/takedown', [\App\Http\Controllers\Admin\BuilderController::class, 'takedownApp'])->name('builder.apps.takedown');
+        Route::post('builder/apps/{app}/restore', [\App\Http\Controllers\Admin\BuilderController::class, 'restoreApp'])->name('builder.apps.restore');
+        Route::post('builder/apps/{app}/dismiss', [\App\Http\Controllers\Admin\BuilderController::class, 'dismissApp'])->name('builder.apps.dismiss');
         Route::post('builder/forms/{form}/toggle', [\App\Http\Controllers\Admin\BuilderController::class, 'toggleForm'])->name('builder.forms.toggle');
 
         // Portfolio ("Our work")

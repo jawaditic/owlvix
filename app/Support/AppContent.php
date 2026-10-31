@@ -131,7 +131,7 @@ class AppContent
                 'image' => $this->image($b['image'] ?? null), 'button' => $this->button($b['button'] ?? null, $tabs)])) ? ['type' => $type] + $x : null,
             'heading' => ($t = $this->text($b['text'] ?? '', 120)) !== '' ? ['type' => $type, 'text' => $t, 'align' => ($b['align'] ?? '') === 'center' ? 'center' : 'left'] : null,
             'text' => ($t = $this->text($b['text'] ?? '', 3000, true)) !== '' ? ['type' => $type, 'text' => $t, 'align' => ($b['align'] ?? '') === 'center' ? 'center' : 'left'] : null,
-            'image' => ($img = $this->image($b['image'] ?? null)) ? array_filter(['type' => $type, 'image' => $img, 'caption' => $this->text($b['caption'] ?? '', 200),
+            'image' => ($img = $this->image($b['image'] ?? null)) ? array_filter(['type' => $type, 'image' => $img, 'caption' => $this->text($b['caption'] ?? '', 200), 'alt' => $this->text($b['alt'] ?? '', 150),
                 'action' => $this->action($b['action'] ?? null, $tabs), 'round' => ! empty($b['round'])]) : null,
             'button' => ($x = $this->button($b, $tabs)) ? ['type' => $type] + $x + ['style' => ($b['style'] ?? '') === 'outline' ? 'outline' : 'solid'] : null,
             'list' => $this->list($b, $tabs),
@@ -483,6 +483,13 @@ class AppContent
     public static function document(BuilderApp $app): array
     {
         $s = $app->settings;
+        if (! $app->isLive()) {
+            // Taken down: phones that have the app show this instead (it can't be changed until it's restored)
+            return ['v' => 1, 'rev' => (int) floor(microtime(true) * 1000), 'base' => self::baseUrl($app), 'colors' => ['primary' => '#64748b', 'bar' => '#ffffff'],
+                'statusBar' => 'dark', 'externalLinks' => 'browser', 'hosts' => [], 'offline' => $s['offline'], 'menu' => 'hide', 'report' => $app->reportUrl(),
+                'tabs' => [['label' => 'Unavailable', 'icon' => 'info', 'type' => 'screen', 'bar' => true, 'menu' => false,
+                    'blocks' => [['type' => 'notice', 'text' => 'This app is no longer available.', 'tone' => 'warning']]]]];
+        }
 
         return [
             'v' => 1,
@@ -492,6 +499,7 @@ class AppContent
             'statusBar' => $s['status_bar'],
             'externalLinks' => $s['external_links'],
             'menu' => ($s['menu'] ?? '') === 'hide' ? 'hide' : 'show',
+            'report' => $app->reportUrl(),
             'hosts' => $app->url ? [$app->host()] : [],
             'offline' => $s['offline'],
             'tabs' => $app->content['tabs'] ?? [],
@@ -530,6 +538,25 @@ class AppContent
                 File::delete($file->getPathname());
             }
         }
+    }
+
+    /**
+     * Takes an app's pictures and files offline (moved to private storage, so a restore can bring them back) and
+     * publishes the "unavailable" content; or, after a restore, the other way round.
+     */
+    public static function setLive(BuilderApp $app, bool $live): void
+    {
+        $public = self::dir($app);
+        $private = BuilderApp::disk()->path($app->dir().'/offline');
+        [$from, $to] = $live ? [$private, $public] : [$public, $private];
+        foreach (['img', 'builds'] as $folder) {
+            if (is_dir("$from/$folder")) {
+                File::ensureDirectoryExists($to);
+                File::deleteDirectory("$to/$folder");
+                File::moveDirectory("$from/$folder", "$to/$folder");
+            }
+        }
+        self::publish($app);
     }
 
     public static function remove(BuilderApp $app): void

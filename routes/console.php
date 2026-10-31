@@ -29,6 +29,15 @@ Artisan::command('indexnow:ping {url?*}', function (array $url) {
     '--model' => [\App\Models\BuilderStat::class, \App\Models\BuilderLead::class],
 ])->daily();
 
+// Mobile app builder: parts of uploads that never finished (an intro video left half-way, a build that stopped)
+\Illuminate\Support\Facades\Schedule::call(function () {
+    foreach (glob(storage_path('app/app-uploads/*')) ?: [] as $path) {
+        if (filemtime($path) < now()->subDay()->getTimestamp()) {
+            is_dir($path) ? \Illuminate\Support\Facades\File::deleteDirectory($path) : @unlink($path);
+        }
+    }
+})->daily()->name('app-builder-upload-cleanup');
+
 // Visitors' IP addresses are kept only to help block spam: forget them after 90 days (the enquiry itself stays).
 \Illuminate\Support\Facades\Schedule::call(fn () => \App\Models\ContactMessage::whereNotNull('ip')
     ->where('created_at', '<', now()->subDays(90))->update(['ip' => null]))->daily()->name('forget-enquiry-ips');

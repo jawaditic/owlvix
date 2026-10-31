@@ -21,13 +21,13 @@ class BuilderApp extends Model
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'name', 'package', 'url', 'settings', 'content', 'verify_code', 'verified_host', 'version_code', 'keystore', 'keystore_password'];
+    protected $fillable = ['id', 'name', 'package', 'url', 'settings', 'content', 'status', 'reported_at', 'reports', 'verify_code', 'verified_host', 'version_code', 'keystore', 'keystore_password'];
 
     protected $hidden = ['keystore', 'keystore_password', 'verify_code'];
 
     protected function casts(): array
     {
-        return ['settings' => 'array', 'content' => 'array', 'version_code' => 'integer', 'keystore' => 'encrypted', 'keystore_password' => 'encrypted'];
+        return ['settings' => 'array', 'content' => 'array', 'reported_at' => 'datetime', 'reports' => 'integer', 'version_code' => 'integer', 'keystore' => 'encrypted', 'keystore_password' => 'encrypted'];
     }
 
     public function account(): BelongsTo
@@ -57,6 +57,17 @@ class BuilderApp extends Model
     public function dir(): string
     {
         return 'apps/'.$this->id;
+    }
+
+    public function isLive(): bool
+    {
+        return ($this->status ?? 'live') === 'live';
+    }
+
+    /** Where people report an app (linked at the bottom of the app's ☰ menu). */
+    public function reportUrl(): string
+    {
+        return route('builder.apps.report', $this->id);
     }
 
     public function host(): string
@@ -100,6 +111,8 @@ class BuilderApp extends Model
             'version_code' => $this->version_code,
             'has_keystore' => $this->keystore !== null,
             'build' => $latest?->toApi(),
+            'out_of_date' => \App\Support\AppBuilder::outOfDate($this),
+            'removed' => ! $this->isLive(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }

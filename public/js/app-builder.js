@@ -26,7 +26,7 @@
         hero: { name: 'Banner', icon: 'image', make: () => ({ title: 'Welcome', text: 'Tell people what you do in a line or two.', image: null, button: { label: '', action: { kind: '', value: '' } } }) },
         heading: { name: 'Heading', icon: 'heading', make: () => ({ text: 'Heading', align: 'left' }) },
         text: { name: 'Text', icon: 'text', make: () => ({ text: '', align: 'left' }) },
-        image: { name: 'Picture', icon: 'image', make: () => ({ image: null, caption: '', round: true, action: { kind: '', value: '' } }) },
+        image: { name: 'Picture', icon: 'image', make: () => ({ image: null, caption: '', alt: '', round: true, action: { kind: '', value: '' } }) },
         button: { name: 'Button', icon: 'button', make: () => ({ label: 'Call us', style: 'solid', action: { kind: 'tel', value: '' } }) },
         list: { name: 'List / menu / prices', icon: 'list', make: () => ({ title: '', items: [{ title: 'Item', text: '', price: '', image: null, action: { kind: '', value: '' } }] }) },
         gallery: { name: 'Gallery', icon: 'gallery', make: () => ({ images: [], columns: 2 }) },
@@ -76,20 +76,37 @@
     });
     let D;
     try { D = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
-    if (!D?.app?.colors) D = fresh();
-    // Designs kept from the website-only builder: their tabs were website pages
-    D.app.tabs = (D.app.tabs || []).map((t, i) => ({ label: t.label || '', icon: t.icon || 'home', type: t.type || 'web', bar: t.bar ?? i < 5, path: t.path || '', blocks: Array.isArray(t.blocks) ? t.blocks : [] }));
-    if (!D.app.tabs.length) D.app.tabs = starter();
-    D.base ||= '';
-    D.splash = { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false, ...(D.splash || {}) };
+    /** Fills in what older saved designs don't have. */
+    const tidy = () => {
+        if (!D?.app?.colors) D = fresh();
+        // Designs kept from the website-only builder: their tabs were website pages
+        D.app.tabs = (D.app.tabs || []).map((t, i) => ({ label: t.label || '', icon: t.icon || 'home', type: t.type || 'web', bar: t.bar ?? i < 5, menu: t.menu, path: t.path || '', blocks: Array.isArray(t.blocks) ? t.blocks : [] }));
+        if (!D.app.tabs.length) D.app.tabs = starter();
+        D.base ||= '';
+        D.splash = { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false, ...(D.splash || {}) };
+    };
+    const inIdb = !!D?.idb; // the design was too big for localStorage (pictures): it's in IndexedDB, loaded below
+    tidy();
     const MAX_VIDEO = 15 * 1048576, VIDEO_SECONDS = 15;
     let bgVideo = null; // { file, url } — a video picked here and not uploaded yet (it's too big to keep in the browser)
     /** Splash picture width on the phone, in Android dp (app.config.js imageWidth); the preview phone is about 0.75 px per dp. */
     const SPLASH_DP = { small: 120, medium: 180, large: 260 };
     const A = () => D.app;
+    /* The design is kept in this browser until it's saved: in localStorage, or — when new pictures make it too big
+       for localStorage's ~5 MB — in IndexedDB, which can hold far more. If neither works, the owner is told. */
+    const idb = (mode, fn) => new Promise((res, rej) => {
+        const open = indexedDB.open('owlvix-app-builder', 1);
+        open.onupgradeneeded = () => open.result.createObjectStore('drafts');
+        open.onerror = () => rej(open.error);
+        open.onsuccess = () => { const tx = open.result.transaction('drafts', mode), r = fn(tx.objectStore('drafts')); tx.oncomplete = () => res(r?.result); tx.onerror = () => rej(tx.error); };
+    });
+    let draftAtRisk = false; // new pictures that this browser couldn't keep
     const save = () => {
-        try { localStorage.setItem(STORE, JSON.stringify(D)); }
-        catch { try { localStorage.setItem(STORE, JSON.stringify({ ...D, icon: { ...D.icon, image: null } })); } catch {} } // full (pictures): the design stays on this page until it's saved
+        try { localStorage.setItem(STORE, JSON.stringify(D)); draftAtRisk = false; return; } catch {}
+        const copy = JSON.parse(JSON.stringify(D));
+        idb('readwrite', st => st.put(copy, 'draft'))
+            .then(() => { try { localStorage.setItem(STORE, JSON.stringify({ idb: true, id: D.id })); } catch {} draftAtRisk = false; syncSave(); })
+            .catch(() => { draftAtRisk = true; syncSave(); });
     };
     let view = 'app', activeTab = 0, previewMenu = false, previewIntro = false;
     const openBlocks = new WeakSet(); // block cards shown open in the editor
@@ -234,7 +251,7 @@
             }
             case 'heading': return b.text?.trim() ? `<h4 class="ab-n-h" style="text-align:${b.align === 'center' ? 'center' : 'left'}">${esc(b.text)}</h4>` : '';
             case 'text': return b.text?.trim() ? `<p class="ab-n-p" style="text-align:${b.align === 'center' ? 'center' : 'left'}">${esc(b.text)}</p>` : '';
-            case 'image': return b.image ? `<div class="ab-n-pad">${pv.tap(b.action, `<img src="${esc(imgSrc(b.image))}" alt="" class="ab-n-img${b.round ? ' is-round' : ''}">`)}${b.caption ? `<p class="ab-n-cap">${esc(b.caption)}</p>` : ''}</div>` : '';
+            case 'image': return b.image ? `<div class="ab-n-pad">${pv.tap(b.action, `<img src="${esc(imgSrc(b.image))}" alt="${esc(b.alt || b.caption || '')}" class="ab-n-img${b.round ? ' is-round' : ''}">`)}${b.caption ? `<p class="ab-n-cap">${esc(b.caption)}</p>` : ''}</div>` : '';
             case 'button': return b.label?.trim() ? `<div class="ab-n-pad">${pv.tap(b.action, esc(b.label), 'ab-n-btn" style="' + (b.style === 'outline' ? `border:2px solid ${c.primary};color:${c.primary}` : `background:${c.primary};color:${on}`))}</div>` : '';
             case 'list': {
                 const items = (b.items || []).filter(i => i.title || i.text || i.price || i.image);
@@ -376,6 +393,7 @@
             case 'heading': return field('Heading', 'text', b.text, { max: 120 }) + align('align', b.align);
             case 'text': return field('Text', 'text', b.text, { max: 3000, area: true, rows: 5 }) + align('align', b.align);
             case 'image': return imageField('Picture', 'image', b.image) + field('Caption <small>— optional</small>', 'caption', b.caption, { max: 200 })
+                + field('Describe the picture <small>— read aloud to blind users</small>', 'alt', b.alt, { max: 150, ph: 'e.g. Our bakery counter with fresh bread' })
                 + `<label class="fb-check"><input type="checkbox" data-f="round" ${b.round ? 'checked' : ''}> Rounded corners</label>` + actionField('Tapping it', 'action', b.action);
             case 'button': return field('Label', 'label', b.label, { max: 40 }) + actionField('Tapping it', 'action', b.action)
                 + `<label>Style<select data-f="style"><option value="solid" ${b.style !== 'outline' ? 'selected' : ''}>Filled</option><option value="outline" ${b.style === 'outline' ? 'selected' : ''}>Outline</option></select></label>`;
@@ -776,6 +794,7 @@
         const b = $('[data-save]');
         b.textContent = D.id ? (D.dirty ? 'Save changes' : 'Saved ✓') : 'Save app';
         b.disabled = !!D.id && !D.dirty;
+        if (draftAtRisk && D.dirty) { $('[data-status]').textContent = '⚠️ This browser can’t keep your new pictures — save now so you don’t lose them.'; return; }
         $('[data-status]').textContent = D.id
             ? (D.dirty ? 'Unsaved changes — save to update the app on phones.' : current()?.version_code ? 'Saved — phones with your app show these screens within a minute.' : 'Saved to your account.')
             : 'Not saved yet — your work is kept in this browser.';
@@ -833,7 +852,9 @@
                 catch (ex) { D.dirty = true; save(); note(ex.message); return false; }
             }
             D.splash.hasVideo = D.splash.bg === 'video' && (current()?.settings?.splash?.bg === 'video' || D.splash.hasVideo); drawSettings();
-            note(first ? 'App saved! Now open “Build & download” to make your Android app.' : r.app.version_code ? 'Saved — phones with your app will show the changes within a minute. No new build needed.' : 'Changes saved.');
+            note(first ? 'App saved! Now open “Build & download” to make your Android app.'
+                : r.app.out_of_date?.length ? `Saved. Your screens update on phones within a minute — but ${outOfDate(r.app)}, which needs a new build.`
+                : r.app.version_code ? 'Saved — phones with your app will show the changes within a minute. No new build needed.' : 'Changes saved.');
             track(first ? 'app_builder_create' : 'app_builder_save', { tabs: A().tabs.length });
             return true;
         } catch (ex) { note(ex.message); if (ex.status === 401) signIn(saveApp); return false; }
@@ -885,6 +906,8 @@
 
     /* ------------------------------------------------ build & download */
     let poll = null;
+    const OUTDATED = { features: 'new app features (☰ menu, new blocks, intro)', name: 'the app name', icon: 'the icon', splash: 'the splash screen', intro: 'the intro picture or video' };
+    const outOfDate = x => (x.out_of_date || []).map(k => OUTDATED[k] || k).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' changed';
     const fmtMB = n => (n ? (n / 1048576).toFixed(1) + ' MB' : '');
     const drawBuild = () => {
         const box = $('[data-build]'), x = current();
@@ -895,6 +918,10 @@
         }
         if (!x) {
             box.innerHTML = `<div class="fb-empty"><b>Save your app first</b><p>Design your screens, name and icon in the Design tab, then save it to your account.</p><button type="button" class="btn btn--glow" data-act="save">Save app</button></div>`;
+            return;
+        }
+        if (x.removed) {
+            box.innerHTML = '<div class="fb-empty"><b>This app was taken down</b><p>It was reported and broke our rules, so it can’t be changed or built. If you think this is a mistake, reply to any email from us.</p></div>';
             return;
         }
         const b = x.build, running = b && ['queued', 'building'].includes(b.status);
@@ -911,6 +938,7 @@
         else if (running) buildBody = `<div class="ab-running"><span class="ab-spin" aria-hidden="true"></span><div><b>Building version ${esc(b.version_name)}…</b><p class="fb-hint">This usually takes 10–15 minutes. You can close this page — we’ll email you when it’s ready.</p></div></div>`;
         else buildBody = `${b?.status === 'failed' ? `<p class="ab-err">${esc(b.error || 'The last build didn’t finish.')}</p>` : ''}
             ${D.dirty ? '<p class="fb-hint">You have unsaved changes — they’ll be saved first.</p>' : ''}
+            ${x.out_of_date?.length ? `<p class="ab-warn">📱 Phones have an older version of your app: ${esc(outOfDate(x))}. Build again (and upload the new .aab to Google Play) to update it.</p>` : ''}
             ${x.version_code ? '<p class="fb-hint">Changes to your screens, tabs and colours reach phones when you save — build again only to change the name, icon or splash screen, or for a Google Play update.</p>' : ''}
             <p class="fb-hint">Version <b>${esc(A().version_name || '1.0.0')}</b> · build ${x.version_code + 1}${x.version_code ? ' — raise the version in “More settings” for each Google Play update.' : ''}</p>
             <button type="button" class="btn btn--glow" data-act="build" ${x.allowed ? '' : 'disabled'}>📦 Build Android app</button>`;
@@ -1018,6 +1046,8 @@
     $('[data-add-types]').innerHTML = Object.entries(BLOCKS).map(([k, v]) => `<button type="button" data-add-type="${k}">${svgIcon(v.icon, 'currentColor', 20)}<span>${v.name}</span></button>`).join('');
     drawTemplates();
     $('[data-tpl-wrap]').open = !D.id; // new apps start here; saved apps keep it folded
-    Promise.all([loadLogo(), loadSplashPic()]).then(() => { drawAll(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
+    (inIdb ? idb('readonly', st => st.get('draft')).then(d => { if (d?.app) { D = d; tidy(); $('[data-tpl-wrap]').open = !D.id; } }).catch(() => {}) : Promise.resolve())
+        .then(() => Promise.all([loadLogo(), loadSplashPic()]))
+        .then(() => { drawAll(); drawMine(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
     if (token) loadAccount().catch(() => {});
 })();

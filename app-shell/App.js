@@ -293,6 +293,11 @@ function Shell() {
                                 );
                             })}
                         </ScrollView>
+                        {/^https:\/\//.test(doc?.report || '') && (
+                            <Pressable onPress={() => { setMenu(false); openOutside(doc.report); }} accessibilityRole="link" style={styles.drawerFoot}>
+                                <Text style={styles.drawerFootText}>Made with Owlvix · Report this app</Text>
+                            </Pressable>
+                        )}
                     </View>
                     <Pressable style={styles.drawerShade} onPress={() => setMenu(false)} accessibilityRole="button" accessibilityLabel="Close menu" />
                 </View>
@@ -344,6 +349,8 @@ const styles = StyleSheet.create({
     drawerName: { fontSize: 20, fontWeight: '800', color: '#0f172a', marginHorizontal: 12, marginBottom: 14 },
     drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 13, borderRadius: 12 },
     drawerText: { flex: 1, fontSize: 16, fontWeight: '600', color: '#0f172a' },
+    drawerFoot: { paddingHorizontal: 12, paddingTop: 12 },
+    drawerFootText: { fontSize: 12, color: '#94a3b8' },
     bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(15,23,42,0.12)', paddingTop: 6 },
     tab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 2 },
     tabText: { fontSize: 11, fontWeight: '600' },

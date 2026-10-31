@@ -20,6 +20,8 @@ use Illuminate\Support\Str;
  */
 class AppBuilderController extends Controller
 {
+    private const REMOVED = 'This app was taken down because it was reported and broke our rules. If you think this is a mistake, reply to any email from us.';
+
     public function index(Request $request): JsonResponse
     {
         $account = $this->user($request);
@@ -39,6 +41,9 @@ class AppBuilderController extends Controller
             $app = $this->own($request, $request->input('id'));
             if (! $app) {
                 return $this->fail('App not found. It may have been deleted, or it belongs to another email address.', 404);
+            }
+            if (! $app->isLive()) {
+                return $this->fail(self::REMOVED, 403);
             }
         } elseif ($account->apps()->count() >= BuilderApp::MAX_PER_ACCOUNT) {
             return $this->fail('You can have up to '.BuilderApp::MAX_PER_ACCOUNT.' apps. Delete one you no longer need first.', 422);
@@ -156,6 +161,9 @@ class AppBuilderController extends Controller
         if (! $app) {
             return $this->fail('App not found.', 404);
         }
+        if (! $app->isLive()) {
+            return $this->fail(self::REMOVED, 403);
+        }
         if (! AppBuilder::enabled()) {
             return $this->fail('App builds are switched off right now. Please try again later, or ask us to build it for you.', 503);
         }
@@ -192,6 +200,7 @@ class AppBuilderController extends Controller
                 'version_name' => $app->settings['version_name'],
                 'token_hash' => hash('sha256', $token),
                 'job' => AppBuilder::job($app, $code),
+                'info' => AppBuilder::buildInfo($app),
             ]);
         });
         if (! $build) {
@@ -232,6 +241,9 @@ class AppBuilderController extends Controller
         $app = $this->own($request, $id);
         if (! $app) {
             return $this->fail('App not found.', 404);
+        }
+        if (! $app->isLive()) {
+            return $this->fail(self::REMOVED, 403);
         }
         $offset = filter_var($request->query('offset'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
         $total = filter_var($request->query('total'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1000, 'max_range' => AppBuilder::MAX_VIDEO_BYTES]]);
@@ -299,6 +311,44 @@ class AppBuilderController extends Controller
         abort_unless($file && is_file($file), 404);
 
         return redirect()->away($build->fileUrl($kind))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
+    }
+
+    /** Anyone can report an app (linked at the bottom of the app's ☰ menu); the admin is emailed. */
+    public function reportForm(string $id)
+    {
+        $app = BuilderApp::findOrFail($id);
+
+        return response()->view('builder.report-app', ['app' => $app])->header('X-Robots-Tag', 'noindex');
+    }
+
+    public function report(Request $request, string $id)
+    {
+        $app = BuilderApp::where('status', 'live')->findOrFail($id);
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:2000'],
+            'email' => ['nullable', 'email', 'max:150'],
+            'website' => ['nullable', 'max:0'], // honeypot
+        ], [
+            'reason.required' => 'Please tell us what’s wrong with this app.',
+            'reason.min' => 'Please tell us a little more.',
+            'email.email' => 'Please enter a valid email address.',
+            'website.max' => 'Something went wrong. Please try again.',
+        ]);
+        $key = 'app-report:'.$request->ip();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            return back()->withErrors(['reason' => 'Too many reports from here. Please try again later.'])->withInput();
+        }
+        RateLimiter::hit($key, 3600);
+        DB::table('builder_apps')->where('id', $app->id)->update(['reported_at' => now(), 'reports' => DB::raw('reports + 1')]);
+        try {
+            if ($owner = config('admin.email')) {
+                \Illuminate\Support\Facades\Mail::to($owner)->send(new \App\Mail\BuilderAppReported($app->fresh(), $data['reason'], $data['email'] ?? null));
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()->route('builder.apps.report', $app->id)->with('reported', true);
     }
 
     private function own(Request $request, mixed $id): ?BuilderApp

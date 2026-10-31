@@ -17,13 +17,13 @@ class BuilderAppBuild extends Model
 
     public const KINDS = ['apk', 'aab'];
 
-    protected $fillable = ['status', 'version_code', 'version_name', 'token_hash', 'job', 'files', 'error', 'started_at', 'finished_at'];
+    protected $fillable = ['status', 'version_code', 'version_name', 'token_hash', 'job', 'info', 'files', 'error', 'started_at', 'finished_at'];
 
     protected $hidden = ['token_hash', 'job'];
 
     protected function casts(): array
     {
-        return ['job' => 'encrypted:array', 'files' => 'array', 'started_at' => 'datetime', 'finished_at' => 'datetime', 'version_code' => 'integer'];
+        return ['job' => 'encrypted:array', 'info' => 'array', 'files' => 'array', 'started_at' => 'datetime', 'finished_at' => 'datetime', 'version_code' => 'integer'];
     }
 
     public function app(): BelongsTo

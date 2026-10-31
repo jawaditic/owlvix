@@ -72,6 +72,52 @@
         @endforelse
     </section>
 
+    <h2 style="margin-top: 28px;" id="apps">Mobile apps</h2>
+    <section class="panel list">
+        @forelse ($apps as $app)
+            <div @class(['row feedback-row', 'is-new' => $app->reported_at && $app->isLive()])>
+                <span class="dot" title="{{ $app->reported_at ? 'Reported' : '' }}"></span>
+                <span class="what">
+                    <span class="tags">
+                        @if ($app->isLive())<em class="src--contact">Live</em>@else<em>Taken down</em>@endif
+                        @if ($app->reported_at)<em class="src--popup">Reported {{ $app->reports }}× · {{ $app->reported_at->diffForHumans(short: true) }}</em>@endif
+                        <em>{{ count($app->content['tabs'] ?? []) }} {{ \Illuminate\Support\Str::plural('page', count($app->content['tabs'] ?? [])) }}</em>
+                        <em>{{ $app->builds_count }} {{ \Illuminate\Support\Str::plural('build', $app->builds_count) }}</em>
+                    </span>
+                    <span class="feedback-row__comment">
+                        <a class="link" href="{{ \App\Support\AppContent::baseUrl($app) }}content.json" target="_blank" rel="noopener">{{ $app->name }}</a> — {{ $app->package }}
+                    </span>
+                    <span class="feedback-row__email">By <a href="mailto:{{ $app->account->email }}" class="link">{{ $app->account->email }}</a></span>
+                </span>
+                <time datetime="{{ $app->updated_at->toIso8601String() }}" title="Updated {{ $app->updated_at->format('d M Y, H:i') }}">{{ $app->updated_at->diffForHumans(short: true) }}</time>
+                <span class="t-row__actions">
+                    @if ($app->isLive())
+                        @if ($app->reported_at)
+                            <form method="POST" action="{{ route('admin.builder.apps.dismiss', $app) }}">
+                                @csrf
+                                <button type="submit" class="btn btn--ghost btn--sm">Dismiss report</button>
+                            </form>
+                        @endif
+                        <form method="POST" action="{{ route('admin.builder.apps.takedown', $app) }}" data-confirm="Take down the app {{ $app->name }}?" data-confirm-text="Phones that have it show “no longer available”, and the owner can’t change or build it." data-confirm-ok="Take down" data-confirm-danger>
+                            @csrf
+                            <button type="submit" class="btn btn--danger btn--sm">Take down</button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('admin.builder.apps.restore', $app) }}">
+                            @csrf
+                            <button type="submit" class="btn btn--ghost btn--sm">Restore</button>
+                        </form>
+                    @endif
+                </span>
+            </div>
+        @empty
+            <div class="empty">
+                <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="48" height="48">
+                <p>No apps yet.</p>
+            </div>
+        @endforelse
+    </section>
+
     <h2 style="margin-top: 28px;">Forms</h2>
     <section class="panel list">
         @forelse ($forms as $form)
