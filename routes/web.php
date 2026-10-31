@@ -161,6 +161,8 @@ Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->con
     Route::get('{id}/keystore', 'keystore')->where('id', '[a-z0-9]{16}')->name('keystore');
     Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
 });
+// Privacy policy of an app made with the mobile app builder (for its Google Play listing)
+Route::get('/app-privacy/{id}', [\App\Http\Controllers\AppBuilderController::class, 'privacy'])->where('id', '[a-z0-9]{16}')->name('builder.apps.privacy');
 // Reporting an app made with the mobile app builder (linked from the app's ☰ menu)
 Route::get('/app-report/{id}', [\App\Http\Controllers\AppBuilderController::class, 'reportForm'])->where('id', '[a-z0-9]{16}')->name('builder.apps.report');
 Route::post('/app-report/{id}', [\App\Http\Controllers\AppBuilderController::class, 'report'])->where('id', '[a-z0-9]{16}')->middleware('throttle:10,1,app-report')->name('builder.apps.report.send');

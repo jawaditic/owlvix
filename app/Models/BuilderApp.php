@@ -70,6 +70,12 @@ class BuilderApp extends Model
         return route('builder.apps.report', $this->id);
     }
 
+    /** The app's privacy policy page (for its Google Play listing). */
+    public function privacyUrl(): string
+    {
+        return route('builder.apps.privacy', $this->id);
+    }
+
     public function host(): string
     {
         return strtolower((string) parse_url((string) $this->url, PHP_URL_HOST));
@@ -113,6 +119,8 @@ class BuilderApp extends Model
             'build' => $latest?->toApi(),
             'out_of_date' => \App\Support\AppBuilder::outOfDate($this),
             'removed' => ! $this->isLive(),
+            'privacy_url' => $this->privacyUrl(),
+            'data_use' => \App\Support\AppBuilder::dataUse($this),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }

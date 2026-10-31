@@ -163,6 +163,12 @@
                             <label>Offline title <small>— shown when a website tab can’t load</small><input data-o="title" maxlength="60" placeholder="You’re offline"></label>
                             <label>Offline message<input data-o="text" maxlength="200" placeholder="Check your internet connection and try again."></label>
                             <label>Offline button<input data-o="button" maxlength="30" placeholder="Try again"></label>
+                            <h3 class="ab-sub">Privacy policy <small>— Google Play asks every app for one; we host it for you</small></h3>
+                            <div class="fb-2">
+                                <label>Business or your name<input data-pv="owner" maxlength="100" placeholder="e.g. Joe’s Bakery Ltd"></label>
+                                <label>Contact email <small>— shown on the policy</small><input data-pv="email" type="email" maxlength="150" placeholder="hello@yourbusiness.com"></label>
+                            </div>
+                            <label>Anything else to say <small>— optional, e.g. if your website tab has a shop or bookings</small><textarea data-pv="extra" rows="3" maxlength="3000"></textarea></label>
                         </details>
                     </div>
                     <div data-panel="build" hidden><div class="ab-build" data-build></div></div>

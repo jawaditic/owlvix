@@ -432,6 +432,26 @@ class AppBuilderTest extends TestCase
         $this->assertContains('features', $this->api($token)->getJson('/builder/apps')->json('apps.0.out_of_date'));
     }
 
+    public function test_each_app_gets_a_privacy_policy_page(): void
+    {
+        $token = $this->signIn();
+        $r = $this->save($token, $this->app(['privacy' => ['owner' => 'Joe’s Bakery Ltd', 'email' => 'Privacy@Joes.Example', 'extra' => "We also take orders by phone.\nThanks!"]]))->assertOk()->json('app');
+        $this->assertSame(['owner' => 'Joe’s Bakery Ltd', 'email' => 'privacy@joes.example', 'extra' => "We also take orders by phone.\nThanks!"], $r['settings']['privacy']);
+        $this->assertSame(route('builder.apps.privacy', $r['id']), $r['privacy_url']);
+        // What the app does decides what the policy says
+        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false], $r['data_use']);
+
+        $page = $this->get($r['privacy_url'])->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
+        $page->assertSee('Privacy policy for Joe’s Bakery', false)->assertSee('provided by Joe’s Bakery Ltd', false)
+            ->assertSee('privacy@joes.example')->assertSee('We also take orders by phone.')->assertSee('YouTube')
+            ->assertDontSee('may use cookies'); // no website tab
+
+        $this->save($token, $this->app(['package' => 'com.joes.two', 'privacy' => ['email' => 'not-an-email']]))->assertStatus(422);
+        // A taken-down app has no policy page
+        BuilderApp::find($r['id'])->update(['status' => 'removed']);
+        $this->get($r['privacy_url'])->assertNotFound();
+    }
+
     public function test_up_to_fifteen_pages_with_a_menu(): void
     {
         $token = $this->signIn();

@@ -313,6 +313,15 @@ class AppBuilderController extends Controller
         return redirect()->away($build->fileUrl($kind))->header('X-Robots-Tag', 'noindex')->header('Cache-Control', 'no-store');
     }
 
+    /** The app's privacy policy, written from what the app does (Google Play asks every app for one). */
+    public function privacy(string $id)
+    {
+        $app = BuilderApp::where('status', 'live')->findOrFail($id);
+
+        return response()->view('builder.app-privacy', ['app' => $app, 'use' => AppBuilder::dataUse($app), 'p' => $app->settings['privacy'] ?? []])
+            ->header('X-Robots-Tag', 'noindex');
+    }
+
     /** Anyone can report an app (linked at the bottom of the app's ☰ menu); the admin is emailed. */
     public function reportForm(string $id)
     {

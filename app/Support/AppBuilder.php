@@ -113,6 +113,16 @@ class AppBuilder
             $offline[$key] = $v !== '' ? $v : $default;
         }
 
+        // For the app's privacy policy page (/app-privacy/{id}), which Google Play asks for
+        $privacy = ['owner' => $str($in['privacy']['owner'] ?? '', 100), 'email' => strtolower($str($in['privacy']['email'] ?? '', 150)),
+            'extra' => is_string($in['privacy']['extra'] ?? null) ? AppContent::str($in['privacy']['extra'], true) : ''];
+        if (mb_strlen($privacy['owner']) > 100 || mb_strlen($privacy['extra']) > 3000) {
+            return 'The privacy policy details are too long.';
+        }
+        if ($privacy['email'] !== '' && ! filter_var($privacy['email'], FILTER_VALIDATE_EMAIL)) {
+            return 'The privacy contact email doesn’t look right.';
+        }
+
         return [
             'name' => $name,
             'package' => $package,
@@ -127,7 +137,24 @@ class AppBuilder
                 // The ☰ menu at the top: shown (listing the pages ticked for it) or not at all
                 'menu' => ($in['menu'] ?? '') === 'hide' ? 'hide' : 'show',
                 'offline' => $offline,
+                'privacy' => $privacy,
             ],
+        ];
+    }
+
+    /** What the app does, for its privacy policy and Google Play's data safety answers. */
+    public static function dataUse(BuilderApp $app): array
+    {
+        $blocks = collect($app->content['tabs'] ?? [])->flatMap(fn ($t) => $t['blocks'] ?? []);
+        $actions = $blocks->flatMap(fn ($b) => array_filter([$b['action']['kind'] ?? null, $b['button']['action']['kind'] ?? null,
+            ...array_map(fn ($i) => $i['action']['kind'] ?? null, $b['items'] ?? [])]));
+
+        return [
+            'website' => self::needsWebsite($app) ? $app->host() : null,
+            'youtube' => $blocks->contains('type', 'video'),
+            'social' => $blocks->contains('type', 'social'),
+            'contact' => $blocks->contains('type', 'contact') || $actions->intersect(['tel', 'email', 'whatsapp', 'map'])->isNotEmpty(),
+            'links' => $actions->contains('url'),
         ];
     }
 

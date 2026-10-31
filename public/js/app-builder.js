@@ -68,7 +68,7 @@
 
     const fresh = () => ({
         id: null, dirty: true, iconDirty: true, base: '',
-        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', tabs: starter(),
+        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, tabs: starter(),
             colors: { primary: '#16a34a', bar: '#ffffff', icon: '#16a34a', splash: '#ffffff' },
             offline: { title: '', text: '', button: '' } },
         icon: { mode: 'letter', letter: '', image: null, zoom: 70, fill: false },
@@ -83,6 +83,7 @@
         D.app.tabs = (D.app.tabs || []).map((t, i) => ({ label: t.label || '', icon: t.icon || 'home', type: t.type || 'web', bar: t.bar ?? i < 5, menu: t.menu, path: t.path || '', blocks: Array.isArray(t.blocks) ? t.blocks : [] }));
         if (!D.app.tabs.length) D.app.tabs = starter();
         D.base ||= '';
+        D.app.privacy = { owner: '', email: '', extra: '', ...(D.app.privacy || {}) };
         D.splash = { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false, ...(D.splash || {}) };
     };
     const inIdb = !!D?.idb; // the design was too big for localStorage (pictures): it's in IndexedDB, loaded below
@@ -489,6 +490,7 @@
         drawMenuNote();
         $$('[data-c]').forEach(el => (el.value = a.colors[el.dataset.c]));
         $$('[data-o]').forEach(el => (el.value = a.offline[el.dataset.o] ?? ''));
+        $$('[data-pv]').forEach(el => (el.value = a.privacy[el.dataset.pv] ?? ''));
         $('[data-i="letter"]').value = D.icon.letter;
         $('[data-i="zoom"]').value = D.icon.zoom;
         $('[data-i="fill"]').checked = !!D.icon.fill;
@@ -527,6 +529,7 @@
             if (el.dataset.a === 'url') { drawTabs(); drawBlocks(); }
         } else if (el.dataset.c) { a.colors[el.dataset.c] = el.value; if (el.dataset.c === 'icon' || el.dataset.c === 'splash') D.iconDirty = true; if (el.dataset.c === 'splash' && view !== 'splash') showSplash(); }
         else if (el.dataset.o) a.offline[el.dataset.o] = el.value;
+        else if (el.dataset.pv) a.privacy[el.dataset.pv] = el.value;
         else if (el.dataset.t) { // (tab fields carry data-i too — their index — so they're matched first)
             const t = a.tabs[+el.dataset.i]; activeTab = +el.dataset.i;
             if (el.dataset.t === 'bar') {
@@ -813,7 +816,7 @@
     const payload = () => {
         const a = A();
         return {
-            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show',
+            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show', privacy: a.privacy,
             status_bar: isDark(a.colors.bar) ? 'light' : 'dark', colors: a.colors, offline: a.offline,
             tabs: a.tabs.map((t, i) => (t.type === 'web' ? { label: t.label.trim(), icon: t.icon, type: 'web', bar: inBar(t, i), menu: inMenu(t, i), url: tabUrl(t) } : { label: t.label.trim(), icon: t.icon, type: 'screen', bar: inBar(t, i), menu: inMenu(t, i), blocks: t.blocks.map(blockOut) })),
         };
@@ -878,7 +881,7 @@
             ? { label: t.label, icon: t.icon, type: 'web', bar: t.bar, menu: t.menu, blocks: [], path: t.url === x.url ? '' : base && t.url.startsWith(base + '/') ? t.url.slice(base.length + 1) : t.url }
             : { label: t.label, icon: t.icon, type: 'screen', bar: t.bar, menu: t.menu, path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
         D = { id: x.id, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
-            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
+            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
             icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
         activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(drawAll); drawMine();
         if (!same) api('GET', `/builder/apps/${x.id}/icon`).then(r => {
@@ -965,10 +968,162 @@
             ${x.needs_website ? step(n++, x.allowed, 'Show us the website is yours', verify) : ''}
             ${step(n++, b?.status === 'done', 'Build your Android app', buildBody)}
         </div>${files}
+        ${kitHtml(x)}
         <div class="ab-ios"><b>🍎 Want it on the iPhone App Store?</b><p class="fb-hint">Apple only takes apps from the owner’s own developer account. We publish iPhone apps for you, with logins, payments and push notifications if you need them.</p><a href="#contact" class="btn btn--sm btn--ghost" data-act="ios">Ask for a free quote</a></div>
         <button type="button" class="fb-danger" data-act="delete">Delete this app</button>`;
         $$('[data-qr-for]', box).forEach(el => withQR(() => (el.innerHTML = window.OwlQR.svg(el.dataset.qrFor, { color: '#0f172a' }))));
         if (running) poll = setTimeout(refresh, 20000);
+    };
+    /* ------------------------------------------------ Google Play listing kit */
+    const kitText = { short: '', full: '' };
+    let kitOpen = false;
+    root.addEventListener('toggle', e => { if (e.target.matches?.('.ab-kit')) kitOpen = e.target.open; }, true);
+    /** Suggested store texts, written from the app's own pages and blocks. */
+    const suggestTexts = () => {
+        const a = A(), blocks = a.tabs.flatMap(t => t.blocks || []), hero = blocks.find(b => b.type === 'hero');
+        const first = (hero?.text || blocks.find(b => b.type === 'text')?.text || '').trim();
+        const short = (first || `${a.name} — everything about us in one app.`).replace(/\s+/g, ' ');
+        const has = t => blocks.some(b => b.type === t);
+        const points = [
+            has('list') && 'See our menu, services and prices',
+            (has('contact') || blocks.some(b => ['tel', 'whatsapp'].includes(b.action?.kind || b.button?.action?.kind))) && 'Call, email or message us in one tap',
+            has('hours') && 'Check our opening hours',
+            (has('gallery') || has('slider')) && 'Browse our photos',
+            has('reviews') && 'Read what customers say',
+            has('faq') && 'Find answers to common questions',
+            has('video') && 'Watch our videos',
+            has('social') && 'Follow us on social media',
+        ].filter(Boolean);
+        const full = [`${a.name}${hero?.title ? ' — ' + hero.title : ''}`, first, points.length ? 'In the app:\n' + points.map(p => '• ' + p).join('\n') : '',
+            `Pages: ${a.tabs.map(t => t.label).filter(Boolean).join(', ')}.`, 'The app works offline and always shows our latest information.'].filter(Boolean).join('\n\n');
+        return { short: short.length > 80 ? short.slice(0, 79).replace(/\s+\S*$/, '') + '…' : short, full: full.slice(0, 4000) };
+    };
+    const kitHtml = x => {
+        if (!kitText.short) Object.assign(kitText, suggestTexts());
+        const use = x.data_use || {}, dirty = D.dirty ? '<p class="fb-hint">Save your app first so the privacy policy shows your latest details.</p>' : '';
+        const yes = use.website ? `Your app shows <b>${esc(use.website)}</b>: answer about what that website collects (forms, bookings, accounts); data is encrypted in transit: <b>Yes</b>.` : 'Your app collects no data: answer <b>No</b> to “Does your app collect or share any of the required user data types?”.';
+        return `<details class="fb-settings ab-kit" ${kitOpen ? 'open' : ''}><summary>📋 Google Play listing kit</summary>
+            <p class="fb-hint">Everything Google Play asks for in the store listing — made from your app.</p>
+            <h3 class="ab-sub">1. Graphics</h3>
+            <div class="ab-kit__btns">
+                <button type="button" class="btn btn--sm btn--ghost" data-act="kit-icon">⬇ App icon&nbsp;<small>512 × 512</small></button>
+                <button type="button" class="btn btn--sm btn--ghost" data-act="kit-feature">⬇ Feature graphic&nbsp;<small>1024 × 500</small></button>
+                <button type="button" class="btn btn--sm btn--glow" data-act="kit-shots">📸 Make phone screenshots</button>
+            </div>
+            <div class="ab-kit__shots" data-kit-shots></div>
+            <h3 class="ab-sub">2. Texts</h3>
+            <label>Short description <small data-kit-count="short">${kitText.short.length}/80</small><textarea data-kit="short" rows="2" maxlength="80">${esc(kitText.short)}</textarea></label>
+            <button type="button" class="btn btn--sm btn--ghost" data-copyfrom='[data-kit="short"]'>Copy</button>
+            <label>Full description <small data-kit-count="full">${kitText.full.length}/4000</small><textarea data-kit="full" rows="8" maxlength="4000">${esc(kitText.full)}</textarea></label>
+            <button type="button" class="btn btn--sm btn--ghost" data-copyfrom='[data-kit="full"]'>Copy</button>
+            <h3 class="ab-sub">3. Privacy policy</h3>
+            <p class="fb-hint">Paste this link in Play Console → App content → Privacy policy. Add your business name and email under Design → More settings.</p>
+            <div class="fb-copyrow"><input readonly value="${esc(x.privacy_url)}"><button type="button" class="btn btn--sm" data-copy="${esc(x.privacy_url)}">Copy</button></div>
+            <a class="ab-link" href="${esc(x.privacy_url)}" target="_blank" rel="noopener">Open the policy</a>${dirty}
+            <h3 class="ab-sub">4. App content answers</h3>
+            <ul class="ab-kit__answers">
+                <li><b>App access:</b> All functionality is available without special access.</li>
+                <li><b>Ads:</b> No, my app does not contain ads.</li>
+                <li><b>Data safety:</b> ${yes}</li>
+                <li><b>Content rating:</b> fill in the questionnaire — for a business app most answers are <b>No</b>.</li>
+                <li><b>Target audience:</b> choose <b>18 and over</b> unless your app is made for children (the review is quicker).</li>
+                <li><b>News app, government app, financial or health features:</b> No (unless yours is one).</li>
+                <li><b>App category:</b> pick the one that fits your business, e.g. Food &amp; Drink, Beauty, Health &amp; Fitness, Shopping or Business.</li>
+            </ul>
+        </details>`;
+    };
+    root.addEventListener('input', e => {
+        const k = e.target.dataset?.kit; if (!k) return;
+        kitText[k] = e.target.value; const c = $(`[data-kit-count="${k}"]`); if (c) c.textContent = `${e.target.value.length}/${k === 'short' ? 80 : 4000}`;
+    });
+    const download = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+    const toBlob = (c, type = 'image/jpeg') => new Promise(res => c.toBlob(res, type, 0.92));
+    const fileBase = () => slug(A().name) || 'app';
+    /** Wraps text into lines that fit `max` px; returns at most `rows` lines. */
+    const wrap = (x, text, max, rows) => {
+        const out = []; let line = '';
+        for (const w of String(text).split(/\s+/)) { const t = line ? line + ' ' + w : w; if (x.measureText(t).width > max && line) { out.push(line); line = w; } else line = t; }
+        if (line) out.push(line);
+        if (out.length > rows) { out.length = rows; out[rows - 1] = out[rows - 1].replace(/\s*\S*$/, '…'); }
+        return out;
+    };
+    /** Google Play's feature graphic: 1024 × 500, no see-through parts (JPEG). */
+    const featureGraphic = () => {
+        const c = document.createElement('canvas'); c.width = 1024; c.height = 500;
+        const x = c.getContext('2d'), col = A().colors.primary, on = ink(col);
+        x.fillStyle = col; x.fillRect(0, 0, 1024, 500);
+        const g = x.createLinearGradient(0, 0, 1024, 500); g.addColorStop(0, 'rgba(255,255,255,.14)'); g.addColorStop(1, 'rgba(0,0,0,.22)');
+        x.fillStyle = g; x.fillRect(0, 0, 1024, 500);
+        x.fillStyle = on === '#ffffff' ? 'rgba(255,255,255,.07)' : 'rgba(15,23,42,.06)';
+        [[930, 60, 220], [860, 470, 160], [60, 520, 140]].forEach(([cx, cy, r]) => { x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); });
+        x.save(); x.shadowColor = 'rgba(0,0,0,.28)'; x.shadowBlur = 30; x.shadowOffsetY = 12;
+        x.beginPath(); x.roundRect(90, 140, 220, 220, 48); x.fillStyle = A().colors.icon; x.fill(); x.restore();
+        x.save(); x.beginPath(); x.roundRect(90, 140, 220, 220, 48); x.clip(); x.drawImage(drawIcon(440), 90, 140, 220, 220); x.restore();
+        x.fillStyle = on; x.textBaseline = 'alphabetic';
+        let size = 64; x.font = `800 ${size}px Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif`;
+        while (x.measureText(A().name || 'My app').width > 600 && size > 36) { size -= 4; x.font = `800 ${size}px Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif`; }
+        x.fillText(A().name || 'My app', 360, 236);
+        x.globalAlpha = .9; x.font = `500 28px Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif`;
+        wrap(x, kitText.short || suggestTexts().short, 600, 2).forEach((l, i) => x.fillText(l, 362, 290 + i * 40));
+        x.globalAlpha = 1;
+        return c;
+    };
+    /** The CSS that draws the preview phone, for the screenshot (an SVG picture can't see the page's stylesheets). */
+    const previewCss = () => {
+        let css = '';
+        for (const sheet of document.styleSheets) {
+            let rules; try { rules = sheet.cssRules; } catch { continue; }
+            for (const r of rules || []) if (r.selectorText && /\.ab-(ph|n)-?_?/.test(r.selectorText)) css += r.cssText + '\n';
+        }
+        return css;
+    };
+    const asDataUrl = src => fetch(src, { mode: 'cors' }).then(r => (r.ok ? r.blob() : Promise.reject())).then(b => new Promise(res => { const f = new FileReader(); f.onload = () => res(f.result); f.readAsDataURL(b); })).catch(() => '');
+    /**
+     * A phone screenshot of one page, drawn from the live preview at 4× (1080 × 2160, the tallest Google Play takes).
+     * The preview is copied into an SVG picture with its pictures and styles inlined, then drawn on a canvas.
+     */
+    const screenshot = async (i, kind = 'app') => {
+        const keep = { view, activeTab, previewMenu, previewIntro };
+        view = kind; activeTab = i; previewMenu = false; previewIntro = false; drawPhone();
+        const screen = $('[data-phone] .ab-ph__screen').cloneNode(true);
+        const canvases = [...$('[data-phone]').querySelectorAll('canvas')].map(cv => cv.toDataURL());
+        ({ view, activeTab, previewMenu, previewIntro } = keep); drawPhone();
+        [...screen.querySelectorAll('canvas')].forEach((cv, n) => { const im = document.createElement('img'); im.src = canvases[n]; im.style.cssText = cv.style.cssText; im.width = cv.width; cv.replaceWith(im); });
+        for (const im of screen.querySelectorAll('img')) if (!im.src.startsWith('data:')) im.src = await asDataUrl(im.src) || 'data:,';
+        for (const el of screen.querySelectorAll('[style*="url("]')) {
+            const m = el.getAttribute('style').match(/url\(['"]?([^'")]+)['"]?\)/);
+            if (m && !m[1].startsWith('data:')) { const d = await asDataUrl(m[1]); el.style.backgroundImage = d ? `url("${d}")` : 'none'; }
+        }
+        screen.querySelectorAll('[data-pintro],.ab-ph__step').forEach(el => el.remove());
+        screen.style.cssText += ';height:540px;width:270px;border-radius:0;';
+        const html = new XMLSerializer().serializeToString(screen);
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="270" height="540"><foreignObject width="270" height="540"><div xmlns="http://www.w3.org/1999/xhtml" style="width:270px;height:540px;overflow:hidden"><style>${previewCss().replace(/</g, '\\3c ')}</style>${html}</div></foreignObject></svg>`;
+        const img = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+        const c = document.createElement('canvas'); c.width = 1080; c.height = 2160;
+        const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 1080, 2160); x.scale(4, 4); x.drawImage(img, 0, 0);
+        return c;
+    };
+    const kitAction = async t => {
+        t.disabled = true;
+        try {
+            if (t.dataset.act === 'kit-icon') download(await toBlob(drawIcon(512), 'image/png'), `${fileBase()}-icon-512.png`);
+            else if (t.dataset.act === 'kit-feature') download(await toBlob(featureGraphic()), `${fileBase()}-feature-graphic.jpg`);
+            else if (t.dataset.act === 'kit-shots') {
+                const box = $('[data-kit-shots]'); box.innerHTML = '<p class="fb-hint">Making screenshots…</p>';
+                const pages = A().tabs.map((tab, i) => [tab, i]).filter(([tab]) => tab.type !== 'web').slice(0, 6);
+                const shots = [];
+                for (const [tab, i] of pages) shots.push([tab.label || 'Page', await screenshot(i)]);
+                if (shots.length < 2) shots.push(['Splash', await screenshot(0, 'splash')]);
+                const items = [];
+                for (const [label, c] of shots) items.push([label, URL.createObjectURL(await toBlob(c))]);
+                box.innerHTML = `<p class="fb-hint">Tap a screenshot to download it (1080 × 2160). Google Play needs at least 2.</p><div class="ab-kit__grid">${items.map(([label, url], n) =>
+                    `<a href="${url}" download="${fileBase()}-screen-${n + 1}.jpg" data-dl="screenshot"><img src="${url}" alt="Screenshot: ${esc(label)}"><span>${esc(label)}</span></a>`).join('')}</div>`;
+                track('app_builder_play_kit', { shots: items.length });
+            }
+        } catch (ex) {
+            note(/security|tainted/i.test(String(ex)) ? 'Your browser didn’t allow making screenshots. Please try Chrome, Edge or Firefox — or take them on your phone.' : 'We couldn’t make that. Please try again.');
+            if (t.dataset.act === 'kit-shots') $('[data-kit-shots]').innerHTML = '';
+        } finally { t.disabled = false; }
     };
     const withQR = fn => {
         if (window.OwlQR) return fn();
@@ -983,7 +1138,10 @@
         drawBuild();
     };
     $('[data-build]').addEventListener('click', async e => {
-        const t = e.target.closest('[data-act],[data-copy],[data-dl]'); if (!t) return;
+        const t = e.target.closest('[data-act],[data-copy],[data-copyfrom],[data-dl]'); if (!t) return;
+        if (t.dataset.copyfrom) { const src = $(t.dataset.copyfrom); try { await navigator.clipboard.writeText(src.value); t.textContent = 'Copied ✓'; } catch { src.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
+        if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }
+        if (t.dataset.act?.startsWith('kit-')) { kitAction(t); return; }
         const x = current();
         if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copied ✓'; } catch { t.previousElementSibling?.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }

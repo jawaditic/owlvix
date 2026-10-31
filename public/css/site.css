@@ -2453,6 +2453,17 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-ph__skip { position: absolute; top: 34px; right: 14px; padding: 4px 11px; border-radius: 999px; background: rgba(0, 0, 0, .45); color: #fff; font-size: 11px; font-weight: 700; }
 .ab-ph__step { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 6px 12px; border: 0; border-radius: 999px; background: rgba(15, 23, 42, .7); color: #fff; font: 600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; white-space: nowrap; cursor: pointer; }
 .ab-warn { margin: 0; padding: 10px 12px; border-radius: 10px; background: rgba(245, 158, 11, .12); border: 1px solid rgba(245, 158, 11, .35); color: var(--text); font-size: .88rem; font-weight: 600; }
+/* Google Play listing kit */
+.ab-sub { margin: 14px 0 0; font-size: .95rem; }
+.ab-sub small { font-weight: 500; color: var(--muted); }
+.ab-kit__btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.ab-kit__btns small { opacity: .7; font-weight: 500; }
+.ab-kit__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.ab-kit__grid a { display: grid; gap: 4px; justify-items: center; color: var(--text); font-size: .78rem; text-decoration: none; }
+.ab-kit__grid img { width: 100%; border-radius: 10px; border: 1px solid var(--card-border); box-shadow: 0 6px 16px -10px rgba(0, 0, 0, .4); }
+.ab-kit__grid a:hover img { border-color: var(--green); }
+.ab-kit__answers { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: .9rem; color: var(--text-2); }
+.ab-kit textarea { width: 100%; }
 /* Templates */
 .ab-tpls { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
 .ab-tplc { display: grid; gap: 2px; justify-items: start; padding: 8px 8px 10px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--card); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s, box-shadow .15s; }
