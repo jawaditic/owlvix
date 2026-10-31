@@ -14,7 +14,10 @@ use Illuminate\Support\Str;
  */
 class AppContent
 {
-    public const MAX_TABS = 5;
+    /** Pages in an app; up to MAX_BAR of them sit in the bottom bar, and any of them can be in the ☰ menu too. */
+    public const MAX_TABS = 15;
+
+    public const MAX_BAR = 5;
 
     public const MAX_BLOCKS = 40;
 
@@ -26,7 +29,11 @@ class AppContent
     /** New pictures in one save, together. */
     public const MAX_NEW_BYTES = 12_000_000;
 
-    public const TYPES = ['hero', 'heading', 'text', 'image', 'button', 'list', 'gallery', 'contact', 'hours', 'video', 'divider'];
+    public const TYPES = ['hero', 'heading', 'text', 'image', 'button', 'list', 'gallery', 'contact', 'hours', 'video', 'divider',
+        'slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'spacer'];
+
+    /** Social networks the "social" block links to (each value is the page's https address). */
+    public const SOCIAL = ['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin', 'pinterest', 'snapchat'];
 
     public const ACTIONS = ['url', 'tel', 'email', 'whatsapp', 'map', 'tab'];
 
@@ -54,7 +61,7 @@ class AppContent
             return 'Your app needs at least one screen.';
         }
         if (count($tabs) > self::MAX_TABS) {
-            return 'An app can have up to '.self::MAX_TABS.' tabs.';
+            return 'An app can have up to '.self::MAX_TABS.' pages.';
         }
         $count = count($tabs);
         $out = [];
@@ -64,16 +71,20 @@ class AppContent
                     return 'Please check your tabs.';
                 }
                 $label = self::str($tab['label'] ?? '');
-                if ($label === '' || mb_strlen($label) > 16) {
-                    return 'Each tab needs a short name (up to 16 characters).';
+                if ($label === '' || mb_strlen($label) > 24) {
+                    return 'Each page needs a short name (up to 24 characters).';
                 }
                 $icon = array_key_exists($tab['icon'] ?? '', AppBuilder::icons()) ? $tab['icon'] : 'home';
+                // In the bottom bar (the first five, unless the builder says otherwise) and/or in the ☰ menu (by
+                // default the pages that aren't in the bar); a page in neither opens only from buttons on other pages
+                $bar = array_key_exists('bar', $tab) ? (bool) $tab['bar'] : $i < self::MAX_BAR;
+                $menu = array_key_exists('menu', $tab) ? (bool) $tab['menu'] : ! $bar;
                 if (($tab['type'] ?? 'screen') === 'web') {
                     $url = $webUrl(self::str($tab['url'] ?? ''));
                     if (! $url) {
                         return 'Tab “'.$label.'” must open a page on your own website — add your website address under “More settings”.';
                     }
-                    $out[] = ['label' => $label, 'icon' => $icon, 'type' => 'web', 'url' => $url];
+                    $out[] = ['label' => $label, 'icon' => $icon, 'type' => 'web', 'bar' => $bar, 'menu' => $menu, 'url' => $url];
 
                     continue;
                 }
@@ -92,10 +103,13 @@ class AppContent
                         $clean[] = $b;
                     }
                 }
-                $out[] = ['label' => $label, 'icon' => $icon, 'type' => 'screen', 'blocks' => $clean];
+                $out[] = ['label' => $label, 'icon' => $icon, 'type' => 'screen', 'bar' => $bar, 'menu' => $menu, 'blocks' => $clean];
             }
         } catch (AppContentError $e) {
             return $e->getMessage();
+        }
+        if (count(array_filter(array_column($out, 'bar'))) > self::MAX_BAR) {
+            return 'Up to '.self::MAX_BAR.' pages fit in the bottom bar — put the others in the ☰ menu only.';
         }
         if (count($this->used) > self::MAX_IMAGES) {
             return 'Your app has too many pictures (up to '.self::MAX_IMAGES.').';
@@ -126,6 +140,13 @@ class AppContent
             'hours' => $this->hours($b),
             'video' => $this->video($b),
             'divider' => ['type' => 'divider'],
+            'slider' => ($imgs = $this->images($b['images'] ?? null, 12, 'a slider')) ? ['type' => 'slider', 'images' => $imgs] : null,
+            'cards' => $this->cards($b, $tabs),
+            'reviews' => $this->reviews($b),
+            'faq' => $this->faq($b),
+            'social' => $this->social($b),
+            'notice' => ($t = $this->text($b['text'] ?? '', 300, true)) !== '' ? ['type' => 'notice', 'text' => $t, 'tone' => in_array($b['tone'] ?? '', ['info', 'success', 'warning'], true) ? $b['tone'] : 'info'] : null,
+            'spacer' => ['type' => 'spacer', 'size' => in_array($b['size'] ?? '', ['small', 'medium', 'large'], true) ? $b['size'] : 'medium'],
         };
     }
 
@@ -171,13 +192,94 @@ class AppContent
 
     private function gallery(array $b): ?array
     {
-        $images = is_array($b['images'] ?? null) ? array_values($b['images']) : [];
-        if (count($images) > 24) {
-            throw new AppContentError($this->where.'a gallery can have up to 24 pictures.');
-        }
-        $clean = array_values(array_filter(array_map(fn ($i) => $this->image($i), $images)));
+        $clean = $this->images($b['images'] ?? null, 24, 'a gallery');
 
         return $clean ? ['type' => 'gallery', 'images' => $clean, 'columns' => in_array((int) ($b['columns'] ?? 2), [2, 3], true) ? (int) $b['columns'] : 2] : null;
+    }
+
+    /** A list of pictures (gallery, slider), up to $max. */
+    private function images(mixed $images, int $max, string $what): array
+    {
+        $images = is_array($images) ? array_values($images) : [];
+        if (count($images) > $max) {
+            throw new AppContentError($this->where.$what.' can have up to '.$max.' pictures.');
+        }
+
+        return array_values(array_filter(array_map(fn ($i) => $this->image($i), $images)));
+    }
+
+    /** Small cards in a grid: an icon, a title and a line of text (features, services, reasons to choose you). */
+    private function cards(array $b, int $tabs): ?array
+    {
+        $items = is_array($b['items'] ?? null) ? array_values($b['items']) : [];
+        if (count($items) > 12) {
+            throw new AppContentError($this->where.'cards can have up to 12 items.');
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $x = array_filter(['title' => $this->text($item['title'] ?? '', 60), 'text' => $this->text($item['text'] ?? '', 200, true), 'action' => $this->action($item['action'] ?? null, $tabs)]);
+            if (isset($x['title']) || isset($x['text'])) {
+                $clean[] = ['icon' => array_key_exists($item['icon'] ?? '', AppBuilder::icons()) ? $item['icon'] : 'star'] + $x;
+            }
+        }
+
+        return $clean ? array_filter(['type' => 'cards', 'title' => $this->text($b['title'] ?? '', 80), 'columns' => (int) ($b['columns'] ?? 2) === 1 ? 1 : 2, 'items' => $clean]) : null;
+    }
+
+    private function reviews(array $b): ?array
+    {
+        $items = is_array($b['items'] ?? null) ? array_values($b['items']) : [];
+        if (count($items) > 20) {
+            throw new AppContentError($this->where.'reviews can have up to 20 items.');
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            if (is_array($item) && ($text = $this->text($item['text'] ?? '', 500, true)) !== '') {
+                $stars = filter_var($item['stars'] ?? 5, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 5]]);
+                $clean[] = ['text' => $text, 'name' => $this->text($item['name'] ?? '', 60), 'stars' => $stars === false ? 5 : $stars];
+            }
+        }
+
+        return $clean ? array_filter(['type' => 'reviews', 'title' => $this->text($b['title'] ?? '', 80), 'items' => $clean]) : null;
+    }
+
+    /** Questions that open to show their answer. */
+    private function faq(array $b): ?array
+    {
+        $items = is_array($b['items'] ?? null) ? array_values($b['items']) : [];
+        if (count($items) > 30) {
+            throw new AppContentError($this->where.'an FAQ can have up to 30 questions.');
+        }
+        $clean = [];
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $q = $this->text($item['q'] ?? '', 160);
+            $a = $this->text($item['a'] ?? '', 1500, true);
+            if ($q !== '' && $a !== '') {
+                $clean[] = ['q' => $q, 'a' => $a];
+            } elseif ($q !== '' || $a !== '') {
+                throw new AppContentError($this->where.'each question needs an answer.');
+            }
+        }
+
+        return $clean ? array_filter(['type' => 'faq', 'title' => $this->text($b['title'] ?? '', 80), 'items' => $clean]) : null;
+    }
+
+    private function social(array $b): ?array
+    {
+        $links = [];
+        foreach (self::SOCIAL as $key) {
+            if (($v = $this->text($b['links'][$key] ?? '', 300)) !== '') {
+                $links[$key] = AppBuilder::httpsUrl($v) ?? throw new AppContentError($this->where.'social links must be full addresses starting with https://');
+            }
+        }
+
+        return $links ? array_filter(['type' => 'social', 'title' => $this->text($b['title'] ?? '', 80), 'links' => $links]) : null;
     }
 
     private function contact(array $b): ?array
@@ -389,6 +491,7 @@ class AppContent
             'colors' => ['primary' => $s['colors']['primary'], 'bar' => $s['colors']['bar']],
             'statusBar' => $s['status_bar'],
             'externalLinks' => $s['external_links'],
+            'menu' => ($s['menu'] ?? '') === 'hide' ? 'hide' : 'show',
             'hosts' => $app->url ? [$app->host()] : [],
             'offline' => $s['offline'],
             'tabs' => $app->content['tabs'] ?? [],

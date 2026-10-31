@@ -267,7 +267,10 @@ class AppBuilderTest extends TestCase
         $app['tabs'][0]['blocks'] = array_fill(0, 41, ['type' => 'divider']);
         $this->save($token, $app)->assertStatus(422);
         $app = $this->app();
-        $app['tabs'] = array_fill(0, 6, ['label' => 'A', 'icon' => 'home', 'type' => 'screen', 'blocks' => []]);
+        $app['tabs'] = array_fill(0, 16, ['label' => 'A', 'icon' => 'home', 'type' => 'screen', 'blocks' => []]);
+        $this->save($token, $app)->assertStatus(422);
+        // Up to 5 pages in the bottom bar; the rest go in the ☰ menu
+        $app['tabs'] = array_fill(0, 6, ['label' => 'A', 'icon' => 'home', 'type' => 'screen', 'bar' => true, 'blocks' => []]);
         $this->save($token, $app)->assertStatus(422);
         $this->save($token, ['tabs' => []] + $this->app())->assertStatus(422);
         $this->assertSame(0, BuilderApp::count());
@@ -276,6 +279,140 @@ class AppBuilderTest extends TestCase
         $r = $this->save($token, $with(['type' => 'image', 'image' => ['src' => $this->jpeg()], 'action' => ['kind' => 'map', 'value' => '1 Bread St, Leeds'], 'round' => true]))->assertOk()->json('app');
         $this->assertSame(['kind' => 'map', 'value' => '1 Bread St, Leeds'], $r['tabs'][0]['blocks'][0]['action']);
         $this->assertTrue($r['tabs'][0]['blocks'][0]['round']);
+    }
+
+    public function test_more_blocks_slider_cards_reviews_faq_social_notice_spacer(): void
+    {
+        $token = $this->signIn();
+        $app = $this->app();
+        $app['tabs'][0]['blocks'] = [
+            ['type' => 'slider', 'images' => [['src' => $this->jpeg(320, 200)], ['src' => $this->jpeg(320, 200, 0x00ff00)]]],
+            ['type' => 'slider', 'images' => []], // empty: dropped
+            ['type' => 'cards', 'title' => 'Why us', 'columns' => 3, 'items' => [['icon' => 'heart', 'title' => 'Fresh', 'text' => 'Daily', 'action' => ['kind' => 'tab', 'value' => 1]], ['icon' => 'nope', 'title' => 'Fast'], ['title' => '', 'text' => '']]],
+            ['type' => 'reviews', 'title' => 'Love', 'items' => [['text' => 'Great!', 'name' => 'Ann', 'stars' => 9], ['text' => '', 'name' => 'Empty']]],
+            ['type' => 'faq', 'items' => [['q' => 'Open Sunday?', 'a' => 'Yes, 10–4.']]],
+            ['type' => 'social', 'title' => 'Follow', 'links' => ['instagram' => 'https://instagram.com/joes', 'myspace' => 'https://myspace.com/x', 'tiktok' => '']],
+            ['type' => 'notice', 'text' => 'Closed Monday', 'tone' => 'warning'],
+            ['type' => 'notice', 'text' => 'Hi', 'tone' => 'purple'],
+            ['type' => 'spacer', 'size' => 'huge'],
+        ];
+        $b = $this->save($token, $app)->assertOk()->json('app.tabs.0.blocks');
+        $this->assertSame(['slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'notice', 'spacer'], array_column($b, 'type'));
+        $this->assertCount(2, $b[0]['images']);
+        $this->assertSame(2, $b[1]['columns']); // only 1 or 2
+        $this->assertSame([['icon' => 'heart', 'title' => 'Fresh', 'text' => 'Daily', 'action' => ['kind' => 'tab', 'value' => 1]], ['icon' => 'star', 'title' => 'Fast']], $b[1]['items']);
+        $this->assertSame([['text' => 'Great!', 'name' => 'Ann', 'stars' => 5]], $b[2]['items']);
+        $this->assertSame([['q' => 'Open Sunday?', 'a' => 'Yes, 10–4.']], $b[3]['items']);
+        $this->assertSame(['instagram' => 'https://instagram.com/joes'], $b[4]['links']);
+        $this->assertSame('warning', $b[5]['tone']);
+        $this->assertSame('info', $b[6]['tone']);
+        $this->assertSame('medium', $b[7]['size']);
+
+        $with = function (array $block) {
+            $app = $this->app();
+            $app['tabs'][0]['blocks'] = [$block];
+
+            return $app;
+        };
+        $this->save($token, $with(['type' => 'faq', 'items' => [['q' => 'No answer?', 'a' => '']]]))->assertStatus(422);
+        $this->save($token, $with(['type' => 'social', 'links' => ['facebook' => 'http://facebook.com/x']]))->assertStatus(422);
+        $this->save($token, $with(['type' => 'slider', 'images' => array_fill(0, 13, ['src' => 'x'])]))->assertStatus(422);
+        $this->save($token, $with(['type' => 'cards', 'items' => array_fill(0, 13, ['title' => 'x'])]))->assertStatus(422);
+    }
+
+    public function test_intro_picture_or_video_after_the_splash(): void
+    {
+        Http::fake(['api.github.com/*' => Http::response('', 204)]);
+        $token = $this->signIn();
+        $photo = $this->jpeg(400, 800);
+        $r = $this->api($token)->postJson('/builder/apps', ['app' => $this->app(), 'icon' => $this->png(), 'foreground' => $this->png(), 'splash_bg_mode' => 'image', 'splash_bg' => $photo])->assertOk()->json('app');
+        $id = $r['id'];
+        $this->assertSame('image', $r['settings']['splash']['bg']);
+        $this->assertSame($photo, $this->api($token)->getJson("/builder/apps/{$id}/icon")->json('splash_bg'));
+        // Not a JPEG, or too small: refused
+        $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app(), 'splash_bg_mode' => 'image', 'splash_bg' => $this->jpeg(100, 100)])->assertStatus(422);
+        $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app(), 'splash_bg_mode' => 'image', 'splash_bg' => $this->png(400)])->assertStatus(422);
+
+        // The build server fetches it with the build's pass
+        $this->api($token)->postJson("/builder/apps/{$id}/build")->assertOk();
+        $runner = null;
+        Http::assertSent(function ($req) use (&$runner) {
+            $runner = $req['inputs']['token'];
+
+            return true;
+        });
+        $build = BuilderAppBuild::first();
+        $this->assertSame('image', $build->job['intro']);
+        $this->getJson("/api/app-builds/{$build->id}/asset")->assertStatus(403);
+        $this->assertSame(base64_decode(substr($photo, 23)), $this->withToken($runner)->get("/api/app-builds/{$build->id}/asset")->assertOk()->streamedContent());
+
+        // A video arrives in parts; it must be an MP4 and the parts must line up
+        $video = "\x00\x00\x00\x18ftypmp42".random_bytes(5000);
+        $send = fn ($offset, $part, $total) => $this->call('POST', "/builder/apps/{$id}/splash-video?offset=$offset&total=$total", [], [], [],
+            ['HTTP_X_BUILDER_TOKEN' => $token, 'HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/octet-stream'], $part);
+        $send(0, 'not a video at all', 5000)->assertStatus(422);
+        $send(0, substr($video, 0, 3000), strlen($video))->assertOk()->assertJsonPath('received', 3000);
+        $send(10, substr($video, 3000), strlen($video))->assertStatus(409);
+        $done = $send(3000, substr($video, 3000), strlen($video))->assertOk()->json('app');
+        $this->assertSame('video', $done['settings']['splash']['bg']);
+        Storage::disk('local')->assertExists("apps/{$id}/splash-bg.mp4");
+        Storage::disk('local')->assertMissing("apps/{$id}/splash-bg.jpg"); // the old picture is gone
+        // Someone else can't upload to this app
+        $other = $this->signIn('other@example.com');
+        $this->call('POST', "/builder/apps/{$id}/splash-video?offset=0&total=5000", [], [], [], ['HTTP_X_BUILDER_TOKEN' => $other, 'HTTP_ACCEPT' => 'application/json'], $video)->assertStatus(404);
+
+        // Back to no intro: the video is removed and builds have none
+        $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app(), 'splash_bg_mode' => 'color'])->assertOk()->assertJsonPath('app.settings.splash.bg', 'color');
+        Storage::disk('local')->assertMissing("apps/{$id}/splash-bg.mp4");
+    }
+
+    public function test_up_to_fifteen_pages_with_a_menu(): void
+    {
+        $token = $this->signIn();
+        $app = $this->app();
+        foreach (range(4, 12) as $n) {
+            $app['tabs'][] = ['label' => "Page $n", 'icon' => 'info', 'type' => 'screen', 'blocks' => [['type' => 'text', 'text' => "Page $n"]]];
+        }
+        $app['tabs'][1]['bar'] = false;
+        $tabs = $this->save($token, $app)->assertOk()->json('app.tabs');
+        $this->assertCount(12, $tabs);
+        // Without a choice, the first five are in the bar and the rest in the ☰ menu; here one was moved out of the bar
+        $this->assertSame([true, false, true, true, true, false, false], array_slice(array_column($tabs, 'bar'), 0, 7));
+        $this->assertSame([false, true, false, false, false, true, true], array_slice(array_column($tabs, 'menu'), 0, 7));
+        $this->assertSame($tabs, $this->contentFile($this->api($token)->getJson('/builder/apps')->json('apps.0.id'))['tabs']);
+        $id = $this->api($token)->getJson('/builder/apps')->json('apps.0.id');
+        $this->assertSame('show', $this->contentFile($id)['menu']);
+        // A page can be in both the bottom bar and the menu; the whole menu can be turned off
+        $app = $this->app(['menu' => 'hide']);
+        $app['tabs'][0]['menu'] = true;
+        $saved = $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $app])->assertOk()->assertJsonPath('app.settings.menu', 'hide')->json('app.tabs.0');
+        $this->assertTrue($saved['bar'] && $saved['menu']);
+        $this->assertSame('hide', $this->contentFile($id)['menu']);
+        $this->api($token)->postJson('/builder/apps', ['id' => $id, 'app' => $this->app(['menu' => 'sometimes'])])->assertOk();
+        $this->assertSame('show', $this->contentFile($id)['menu']);
+    }
+
+    public function test_splash_screen_picture_and_size_go_to_the_build(): void
+    {
+        Http::fake(['api.github.com/*' => Http::response('', 204)]);
+        $token = $this->signIn();
+        $r = $this->api($token)->postJson('/builder/apps', ['app' => $this->app(), 'icon' => $this->png(), 'foreground' => $this->png(),
+            'splash' => $this->png(), 'splash_design' => ['mode' => 'image', 'size' => 'large'], 'splash_image' => $this->png(300)])->assertOk()->json('app');
+        $this->assertSame(['mode' => 'image', 'size' => 'large', 'bg' => 'color'], $r['settings']['splash']);
+        $this->assertSame(['mode' => 'image', 'size' => 'large', 'bg' => 'color'], $this->api($token)->getJson("/builder/apps/{$r['id']}/icon")->json('splash_design'));
+        $this->assertNotNull($this->api($token)->getJson("/builder/apps/{$r['id']}/icon")->json('splash_image'));
+
+        $this->api($token)->postJson("/builder/apps/{$r['id']}/build")->assertOk();
+        $job = BuilderAppBuild::first()->job;
+        $this->assertSame(260, $job['splashWidth']);
+        $this->assertSame(base64_decode(substr($this->png(), 22)), base64_decode($job['splash']));
+
+        // Saving without a new icon keeps the splash; a bad splash picture is refused
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app()])->assertOk()->assertJsonPath('app.settings.splash.size', 'large');
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(), 'icon' => $this->png(), 'foreground' => $this->png(), 'splash' => $this->png(500)])->assertStatus(422);
+        // "Another picture" without the picture falls back to the icon; odd values fall back too
+        $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(), 'icon' => $this->png(), 'foreground' => $this->png(), 'splash_design' => ['mode' => 'image', 'size' => 'giant']])
+            ->assertOk()->assertJsonPath('app.settings.splash', ['mode' => 'icon', 'size' => 'medium', 'bg' => 'color']);
     }
 
     public function test_settings_are_checked(): void
@@ -311,7 +448,7 @@ class AppBuilderTest extends TestCase
         $this->assertTrue($r['allowed']);
         $this->assertTrue($r['own_site']);
         $this->assertSame(['sites.owlvix.test'], $this->contentFile($r['id'])['hosts']);
-        $this->assertSame(['label' => 'Menu', 'icon' => 'food', 'type' => 'web', 'url' => 'https://sites.owlvix.test/joes-bakery/menu'], $r['tabs'][1]);
+        $this->assertSame(['label' => 'Menu', 'icon' => 'food', 'type' => 'web', 'bar' => true, 'menu' => false, 'url' => 'https://sites.owlvix.test/joes-bakery/menu'], $r['tabs'][1]);
     }
 
     public function test_you_cant_wrap_someone_elses_builder_site_or_take_their_app_id(): void

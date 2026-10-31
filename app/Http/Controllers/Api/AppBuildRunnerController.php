@@ -34,6 +34,17 @@ class AppBuildRunnerController extends Controller
         return response()->json(['ok' => true, 'job' => $build->job]);
     }
 
+    /** The app's intro picture or video (too big to send inside the job). */
+    public function asset(Request $request, BuilderAppBuild $build)
+    {
+        $this->authorizeRunner($request, $build);
+        $file = ['image' => 'splash-bg.jpg', 'video' => 'splash-bg.mp4'][$build->job['intro'] ?? ''] ?? null;
+        $path = $file ? $build->app->dir().'/'.$file : null;
+        abort_unless($path && \App\Models\BuilderApp::disk()->exists($path), 404);
+
+        return \App\Models\BuilderApp::disk()->response($path);
+    }
+
     public function upload(Request $request, BuilderAppBuild $build): JsonResponse
     {
         $this->authorizeRunner($request, $build);

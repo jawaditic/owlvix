@@ -62,9 +62,37 @@ class AppBuilderController extends Controller
             $design = AppBuilder::iconDesign($request->input('design'));
             $logo = $design['mode'] === 'image' ? AppBuilder::logo($request->input('logo')) : null;
             $data['settings']['icon'] = $design;
+            // The splash picture (drawn by the builder like the icon); without one the build uses the icon's logo
+            $splash = $request->has('splash') ? AppBuilder::png($request->input('splash')) : null;
+            if ($request->has('splash') && ! $splash) {
+                return $this->fail('Please check your splash screen picture.', 422);
+            }
+            $splashDesign = AppBuilder::splashDesign($request->input('splash_design'));
+            $splashImage = $splashDesign['mode'] === 'image' ? AppBuilder::logo($request->input('splash_image')) : null;
+            if ($splashDesign['mode'] === 'image' && ! $splashImage) {
+                $splashDesign['mode'] = 'icon';
+            }
+            $data['settings']['splash'] = $splashDesign;
         } else {
             $data['settings']['icon'] = $app->settings['icon'] ?? AppBuilder::iconDesign(null);
+            $data['settings']['splash'] = $app->settings['splash'] ?? AppBuilder::splashDesign(null);
         }
+        // The intro after the splash: nothing (just the colour), a full-screen picture, or a video (uploaded on its own)
+        $prevBg = $app->settings['splash']['bg'] ?? 'color';
+        $bgMode = $request->input('splash_bg_mode');
+        $bgPhoto = null;
+        if ($bgMode === 'image' && $request->filled('splash_bg')) {
+            $bgPhoto = AppBuilder::photo($request->input('splash_bg'));
+            if (! $bgPhoto) {
+                return $this->fail('The splash background picture must be a JPG up to 4 MB, at least 300 pixels wide.', 422);
+            }
+        }
+        $data['settings']['splash']['bg'] = match ($bgMode) {
+            'color' => 'color',
+            'image' => $bgPhoto || ($app && BuilderApp::disk()->exists($app->dir().'/splash-bg.jpg')) ? 'image' : $prevBg,
+            'video' => $app && BuilderApp::disk()->exists($app->dir().'/splash-bg.mp4') ? 'video' : $prevBg,
+            default => $prevBg,
+        };
         if (! $app && RateLimiter::tooManyAttempts('app-new:'.$account->id, 10)) {
             return $this->fail('You have made a lot of apps today. Please try again tomorrow.', 429);
         }
@@ -87,7 +115,13 @@ class AppBuilderController extends Controller
             BuilderApp::disk()->put($app->dir().'/icon.png', $icon);
             BuilderApp::disk()->put($app->dir().'/foreground.png', $foreground);
             $logo ? BuilderApp::disk()->put($app->dir().'/logo.png', $logo) : BuilderApp::disk()->delete($app->dir().'/logo.png');
+            $splash ? BuilderApp::disk()->put($app->dir().'/splash.png', $splash) : BuilderApp::disk()->delete($app->dir().'/splash.png');
+            $splashImage ? BuilderApp::disk()->put($app->dir().'/splash-source.png', $splashImage) : BuilderApp::disk()->delete($app->dir().'/splash-source.png');
         }
+        if ($bgPhoto) {
+            BuilderApp::disk()->put($app->dir().'/splash-bg.jpg', $bgPhoto);
+        }
+        AppBuilder::tidySplashBackground($app);
         try {
             AppContent::publish($app, $images);
         } catch (\Throwable $e) {
@@ -172,7 +206,7 @@ class AppBuilderController extends Controller
         return response()->json(['ok' => true, 'app' => $app->fresh()->toApi()]);
     }
 
-    /** The icon's design and logo, to carry on editing on another device. */
+    /** The icon's and splash screen's design and pictures, to carry on editing on another device. */
     public function icon(Request $request, string $id): JsonResponse
     {
         $app = $this->own($request, $id);
@@ -180,8 +214,56 @@ class AppBuilderController extends Controller
             return $this->fail('App not found.', 404);
         }
         $logo = BuilderApp::disk()->get($app->dir().'/logo.png');
+        $splash = BuilderApp::disk()->get($app->dir().'/splash-source.png');
+        $bg = $app->settings['splash']['bg'] ?? 'color';
+        $bgPhoto = $bg === 'image' ? BuilderApp::disk()->get($app->dir().'/splash-bg.jpg') : null;
 
-        return response()->json(['ok' => true, 'design' => $app->settings['icon'] ?? AppBuilder::iconDesign(null), 'logo' => $logo ? 'data:image/png;base64,'.base64_encode($logo) : null]);
+        return response()->json(['ok' => true, 'design' => $app->settings['icon'] ?? AppBuilder::iconDesign(null), 'logo' => $logo ? 'data:image/png;base64,'.base64_encode($logo) : null,
+            'splash_design' => $app->settings['splash'] ?? AppBuilder::splashDesign(null), 'splash_image' => $splash ? 'data:image/png;base64,'.base64_encode($splash) : null,
+            'splash_bg' => $bgPhoto ? 'data:image/jpeg;base64,'.base64_encode($bgPhoto) : null]);
+    }
+
+    /**
+     * The splash background video, sent in parts (each under the usual 8 MB PHP post limit): ?offset= where this
+     * part starts and ?total= the whole size. When the last part arrives the video replaces the old one.
+     */
+    public function splashVideo(Request $request, string $id): JsonResponse
+    {
+        $app = $this->own($request, $id);
+        if (! $app) {
+            return $this->fail('App not found.', 404);
+        }
+        $offset = filter_var($request->query('offset'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+        $total = filter_var($request->query('total'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1000, 'max_range' => AppBuilder::MAX_VIDEO_BYTES]]);
+        $body = $request->getContent();
+        if ($offset === false || $total === false) {
+            return $this->fail('The video must be an MP4 up to '.(AppBuilder::MAX_VIDEO_BYTES / 1048576).' MB.', 422);
+        }
+        if ($body === '' || strlen($body) > 3 * 1048576 || $offset + strlen($body) > $total) {
+            return $this->fail('That part of the video didn’t arrive right. Please try again.', 422);
+        }
+        $tmp = storage_path('app/app-uploads/splash-'.$app->id.'.part');
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($tmp));
+        if ($offset === 0) {
+            if (strlen($body) < 12 || substr($body, 4, 4) !== 'ftyp') {
+                return $this->fail('Please pick an MP4 video.', 422);
+            }
+            file_put_contents($tmp, '');
+        } elseif (! is_file($tmp) || filesize($tmp) !== $offset) {
+            return $this->fail('That part of the video didn’t arrive right. Please try again.', 409);
+        }
+        file_put_contents($tmp, $body, FILE_APPEND | LOCK_EX);
+        if (filesize($tmp) < $total) {
+            return response()->json(['ok' => true, 'received' => filesize($tmp)]);
+        }
+        BuilderApp::disk()->put($app->dir().'/splash-bg.mp4', fopen($tmp, 'rb'));
+        @unlink($tmp);
+        $settings = $app->settings;
+        $settings['splash'] = ['bg' => 'video'] + ($settings['splash'] ?? AppBuilder::splashDesign(null));
+        $app->update(['settings' => $settings]);
+        AppBuilder::tidySplashBackground($app);
+
+        return response()->json(['ok' => true, 'app' => $app->fresh()->toApi()]);
     }
 
     /** The upload key and its password, so the owner can keep a copy (Google Play needs the same key for updates). */

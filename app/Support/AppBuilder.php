@@ -124,6 +124,8 @@ class AppBuilder
                 'colors' => $colors,
                 'status_bar' => ($in['status_bar'] ?? '') === 'light' ? 'light' : 'dark',
                 'external_links' => ($in['external_links'] ?? '') === 'app' ? 'app' : 'browser',
+                // The ☰ menu at the top: shown (listing the pages ticked for it) or not at all
+                'menu' => ($in['menu'] ?? '') === 'hide' ? 'hide' : 'show',
                 'offline' => $offline,
             ],
         ];
@@ -168,6 +170,45 @@ class AppBuilder
         $zoom = filter_var($in['zoom'] ?? 70, FILTER_VALIDATE_INT, ['options' => ['min_range' => 40, 'max_range' => 100]]);
 
         return ['mode' => ($in['mode'] ?? '') === 'image' ? 'image' : 'letter', 'letter' => $letter, 'zoom' => $zoom === false ? 70 : $zoom, 'fill' => ! empty($in['fill'])];
+    }
+
+    /** Largest splash background video. */
+    public const MAX_VIDEO_BYTES = 15 * 1048576;
+
+    /** A full-screen JPEG from the builder (splash background): the bytes, or null. */
+    public static function photo(mixed $dataUrl): ?string
+    {
+        if (! is_string($dataUrl) || ! str_starts_with($dataUrl, 'data:image/jpeg;base64,') || strlen($dataUrl) > 5_600_000) {
+            return null;
+        }
+        $bytes = base64_decode(substr($dataUrl, 23), true);
+        $size = $bytes !== false ? @getimagesizefromstring($bytes) : false;
+
+        return $size && $size[2] === IMAGETYPE_JPEG && min($size[0], $size[1]) >= 300 && max($size[0], $size[1]) <= 3000 ? $bytes : null;
+    }
+
+    /** Removes splash background files the app no longer uses. */
+    public static function tidySplashBackground(BuilderApp $app): void
+    {
+        $bg = $app->settings['splash']['bg'] ?? 'color';
+        foreach (['image' => 'splash-bg.jpg', 'video' => 'splash-bg.mp4'] as $kind => $file) {
+            if ($bg !== $kind) {
+                BuilderApp::disk()->delete($app->dir().'/'.$file);
+            }
+        }
+    }
+
+    /** Splash screen sizes: the picture's width on the phone in Android dp (app-shell/app.config.js imageWidth). */
+    public const SPLASH_SIZES = ['small' => 120, 'medium' => 180, 'large' => 260];
+
+    /** How the splash screen was made in the builder: the app icon, the logo alone or another picture, and its size. */
+    public static function splashDesign(mixed $in): array
+    {
+        $in = is_array($in) ? $in : [];
+
+        return ['mode' => in_array($in['mode'] ?? '', ['icon', 'logo', 'image'], true) ? $in['mode'] : 'icon',
+            'size' => array_key_exists($in['size'] ?? '', self::SPLASH_SIZES) ? $in['size'] : 'medium',
+            'bg' => in_array($in['bg'] ?? '', ['color', 'image', 'video'], true) ? $in['bg'] : 'color'];
     }
 
     /** https URL without user name, password or odd port; null when it isn't one. */
@@ -310,6 +351,14 @@ class AppBuilder
             'content' => AppContent::document($app),
             'icon' => base64_encode((string) $disk->get($app->dir().'/icon.png')),
             'foreground' => base64_encode((string) $disk->get($app->dir().'/foreground.png')),
+            'splash' => $disk->exists($app->dir().'/splash.png') ? base64_encode((string) $disk->get($app->dir().'/splash.png')) : null,
+            'splashWidth' => self::SPLASH_SIZES[$s['splash']['size'] ?? 'medium'] ?? 180,
+            // A full-screen picture or video shown after the splash; the build server downloads it (AppBuildRunnerController::asset)
+            'intro' => match ($s['splash']['bg'] ?? 'color') {
+                'image' => $disk->exists($app->dir().'/splash-bg.jpg') ? 'image' : null,
+                'video' => $disk->exists($app->dir().'/splash-bg.mp4') ? 'video' : null,
+                default => null,
+            },
             'keystore' => $app->keystore,
             'keystorePassword' => $app->keystore_password,
         ];

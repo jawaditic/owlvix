@@ -19,6 +19,7 @@ Route::post('contact', [SiteController::class, 'contact'])->middleware('throttle
 // Mobile app builder: the Android build workflow on GitHub Actions (App\Http\Controllers\Api\AppBuildRunnerController)
 Route::prefix('app-builds/{build}')->whereNumber('build')->middleware('throttle:300,1,app-runner')->controller(\App\Http\Controllers\Api\AppBuildRunnerController::class)->group(function () {
     Route::get('job', 'job');
+    Route::get('asset', 'asset');
     Route::post('upload', 'upload');
     Route::post('finish', 'finish');
 });

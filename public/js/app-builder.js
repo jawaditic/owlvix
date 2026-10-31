@@ -14,10 +14,12 @@
     const ICONS = JSON.parse(document.getElementById('ab-icons')?.textContent || '{}');
     const ICON_NAMES = { home: 'Home', grid: 'Menu', store: 'Shop', cart: 'Cart', tag: 'Offers', food: 'Food', calendar: 'Book', image: 'Gallery', play: 'Videos', book: 'Blog', search: 'Search', heart: 'Saved', star: 'Reviews', bell: 'News', chat: 'Chat', phone: 'Call', mail: 'Email', location: 'Find us', user: 'Account', info: 'About', globe: 'Website' };
     // Drawings for the block menu only (the tab icons come from app-shell/icons.json)
-    const BLOCK_ICONS = { heading: 'M6 4v16M18 4v16M6 12h12', text: 'M4 6h16M4 10h16M4 14h16M4 18h10', button: 'M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 15.5zM8 12h8', divider: 'M3 12h18M7 7h10M7 17h10', list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01', gallery: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' };
+    const BLOCK_ICONS = { heading: 'M6 4v16M18 4v16M6 12h12', text: 'M4 6h16M4 10h16M4 14h16M4 18h10', button: 'M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 15.5zM8 12h8', divider: 'M3 12h18M7 7h10M7 17h10', list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01', gallery: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+        slider: 'M6 6h12v10H6zM2.5 8v6M21.5 8v6M10 20h.01M12 20h.01M14 20h.01', cards: 'M3 5h8v6H3zM13 5h8v6h-8zM3 13h8v6H3zM13 13h8v6h-8z', faq: 'M9.1 9a3 3 0 1 1 4.2 2.7c-.8.4-1.3 1.2-1.3 2.1v.2M12 18h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z',
+        social: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4', notice: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', spacer: 'M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4' };
     const svgIcon = (name, color, size = 22) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[name] || BLOCK_ICONS[name] || ICONS.home}"/></svg>`;
     const STORE = 'owlvix-app-builder';
-    const MAX_TABS = 5, MAX_BLOCKS = 40, MAX_PENDING = 9e6; // MAX_PENDING: new pictures (as text) before a save is needed
+    const MAX_TABS = 15, MAX_BAR = 5, MAX_BLOCKS = 40, MAX_PENDING = 9e6; // MAX_PENDING: new pictures (as text) before a save is needed
 
     /* ------------------------------------------------ blocks: what the builder offers and their starting values */
     const BLOCKS = {
@@ -32,7 +34,25 @@
         hours: { name: 'Opening hours', icon: 'calendar', make: () => ({ title: 'Opening hours', rows: [{ day: 'Mon – Fri', time: '9:00 – 17:00' }, { day: 'Sat – Sun', time: 'Closed' }] }) },
         video: { name: 'YouTube video', icon: 'play', make: () => ({ url: '', title: '' }) },
         divider: { name: 'Divider', icon: 'divider', make: () => ({}) },
+        slider: { name: 'Picture slider', icon: 'slider', make: () => ({ images: [] }) },
+        cards: { name: 'Feature cards', icon: 'cards', make: () => ({ title: '', columns: 2, items: [newItem('cards'), { ...newItem('cards'), icon: 'heart', title: 'Made with care' }] }) },
+        reviews: { name: 'Reviews', icon: 'star', make: () => ({ title: 'What customers say', items: [newItem('reviews')] }) },
+        faq: { name: 'FAQ', icon: 'faq', make: () => ({ title: 'Questions', items: [newItem('faq')] }) },
+        social: { name: 'Social links', icon: 'social', make: () => ({ title: 'Follow us', links: {} }) },
+        notice: { name: 'Notice', icon: 'notice', make: () => ({ text: 'We’re open on bank holidays!', tone: 'info' }) },
+        spacer: { name: 'Space', icon: 'spacer', make: () => ({ size: 'medium' }) },
     };
+    /** A new row for blocks with items. */
+    const newItem = type => ({
+        list: { title: '', text: '', price: '', image: null, action: { kind: '', value: '' } },
+        cards: { icon: 'star', title: 'Great service', text: 'Say why people choose you.', action: { kind: '', value: '' } },
+        reviews: { name: 'Happy customer', text: 'Lovely place, friendly people — highly recommended!', stars: 5 },
+        faq: { q: 'Do I need to book?', a: 'Walk-ins are welcome, but booking means no waiting.' },
+    })[type];
+    const MAX_ITEMS = { list: 50, cards: 12, reviews: 20, faq: 30 };
+    const MAX_PICS = { gallery: 24, slider: 12 };
+    const SOCIAL = { instagram: ['Instagram', '#e1306c'], facebook: ['Facebook', '#1877f2'], tiktok: ['TikTok', '#111111'], youtube: ['YouTube', '#ff0000'], x: ['X', '#111111'], linkedin: ['LinkedIn', '#0a66c2'], pinterest: ['Pinterest', '#e60023'], snapchat: ['Snapchat', '#fffc00'] };
+    const TONES = { info: ['#eff6ff', '#1d4ed8', 'Blue'], success: ['#ecfdf5', '#047857', 'Green'], warning: ['#fffbeb', '#b45309', 'Amber'] };
     const ACTIONS = { '': 'Nothing', tab: 'Open a tab', url: 'Open a website', tel: 'Call', whatsapp: 'WhatsApp', email: 'Email', map: 'Show on a map' };
     const ACTION_HINT = { url: 'https://…', tel: '+1 555 123 4567', whatsapp: 'Full number, e.g. +44 7700 900123', email: 'you@example.com', map: 'Address or place name' };
     const block = type => ({ type, ...BLOCKS[type].make() });
@@ -48,24 +68,30 @@
 
     const fresh = () => ({
         id: null, dirty: true, iconDirty: true, base: '',
-        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', tabs: starter(),
+        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', tabs: starter(),
             colors: { primary: '#16a34a', bar: '#ffffff', icon: '#16a34a', splash: '#ffffff' },
             offline: { title: '', text: '', button: '' } },
         icon: { mode: 'letter', letter: '', image: null, zoom: 70, fill: false },
+        splash: { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false },
     });
     let D;
     try { D = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
     if (!D?.app?.colors) D = fresh();
     // Designs kept from the website-only builder: their tabs were website pages
-    D.app.tabs = (D.app.tabs || []).map(t => ({ label: t.label || '', icon: t.icon || 'home', type: t.type || 'web', path: t.path || '', blocks: Array.isArray(t.blocks) ? t.blocks : [] }));
+    D.app.tabs = (D.app.tabs || []).map((t, i) => ({ label: t.label || '', icon: t.icon || 'home', type: t.type || 'web', bar: t.bar ?? i < 5, path: t.path || '', blocks: Array.isArray(t.blocks) ? t.blocks : [] }));
     if (!D.app.tabs.length) D.app.tabs = starter();
     D.base ||= '';
+    D.splash = { mode: 'icon', size: 'medium', image: null, bg: 'color', bgImage: null, bgDirty: false, hasVideo: false, ...(D.splash || {}) };
+    const MAX_VIDEO = 15 * 1048576, VIDEO_SECONDS = 15;
+    let bgVideo = null; // { file, url } — a video picked here and not uploaded yet (it's too big to keep in the browser)
+    /** Splash picture width on the phone, in Android dp (app.config.js imageWidth); the preview phone is about 0.75 px per dp. */
+    const SPLASH_DP = { small: 120, medium: 180, large: 260 };
     const A = () => D.app;
     const save = () => {
         try { localStorage.setItem(STORE, JSON.stringify(D)); }
         catch { try { localStorage.setItem(STORE, JSON.stringify({ ...D, icon: { ...D.icon, image: null } })); } catch {} } // full (pictures): the design stays on this page until it's saved
     };
-    let view = 'app', activeTab = 0;
+    let view = 'app', activeTab = 0, previewMenu = false, previewIntro = false;
     const openBlocks = new WeakSet(); // block cards shown open in the editor
 
     /* ------------------------------------------------ helpers */
@@ -81,6 +107,11 @@
         const r = base.href.replace(/[?#].*$/, '').replace(/\/$/, '');
         return p ? r + '/' + p.replace(/^\/+/, '') : base.href;
     };
+    /** Pages shown in the bottom bar (the others are only in the ☰ menu). */
+    const inBar = (t, i) => (t.bar === undefined ? i < MAX_BAR : !!t.bar);
+    /** Pages listed in the ☰ menu (by default the ones not in the bottom bar). */
+    const inMenu = (t, i) => (t.menu === undefined ? !inBar(t, i) : !!t.menu);
+    const barCount = () => A().tabs.filter(inBar).length;
     const initials = () => (D.icon.letter || A().name.split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2) || 'A').toUpperCase();
     const imgSrc = img => (img?.src ? (img.src.startsWith('data:') ? img.src : D.base + img.src) : '');
     /** Reads "items.2.title" from an object. */
@@ -127,6 +158,33 @@
         x.clearRect(0, 0, n, n); x.save();
         x.beginPath(); x.roundRect(0, 0, n, n, n * radius); x.clip();
         x.drawImage(drawIcon(n * 2), 0, 0, n, n); x.restore();
+    };
+    let splashPic = null; // the splash's own picture as an Image
+    const loadSplashPic = () => new Promise(res => {
+        if (!D.splash.image) { splashPic = null; return res(); }
+        const img = new Image(); img.onload = () => { splashPic = img; res(); }; img.onerror = () => { splashPic = null; res(); }; img.src = D.splash.image;
+    });
+    /** Light colours far enough apart to read one on the other. */
+    const contrast = (a, b) => { const l = h => { const [r, g, bl] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return r * 0.299 + g * 0.587 + bl * 0.114; }; return Math.abs(l(a) - l(b)); };
+    /**
+     * The splash picture, n×n on see-through: the app icon as a rounded square, the logo (or letters) on its own, or
+     * another picture. Android shows it centred on the splash colour, SPLASH_DP wide.
+     */
+    const drawSplash = n => {
+        const c = document.createElement('canvas'); c.width = c.height = n;
+        const x = c.getContext('2d'), mode = D.splash.mode;
+        const fit = img => { const r = Math.min(n / img.width, n / img.height); x.drawImage(img, (n - img.width * r) / 2, (n - img.height * r) / 2, img.width * r, img.height * r); };
+        if (mode === 'image' && splashPic) fit(splashPic);
+        else if (mode === 'logo' && D.icon.mode === 'image' && logo) fit(logo);
+        else if (mode === 'logo') {
+            const t = initials(), bg = A().colors.splash, col = contrast(A().colors.icon, bg) > 60 ? A().colors.icon : ink(bg);
+            x.fillStyle = col; x.textAlign = 'center'; x.textBaseline = 'middle';
+            x.font = `800 ${Math.round(n * (t.length > 1 ? 0.5 : 0.62))}px Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif`;
+            x.fillText(t, n / 2, n / 2 + n * 0.04);
+        } else {
+            x.save(); x.beginPath(); x.roundRect(0, 0, n, n, n * 0.22); x.clip(); x.drawImage(drawIcon(n), 0, 0, n, n); x.restore();
+        }
+        return c;
     };
     /** Loads a picture file and shrinks it to at most `max` px a side. */
     const loadPicture = (file, min) => new Promise((res, rej) => {
@@ -195,6 +253,28 @@
             }
             case 'video': { const id = youtubeId(b.url); return id ? `<div class="ab-n-pad"><div class="ab-n-vid" style="background-image:url('https://i.ytimg.com/vi/${id}/hqdefault.jpg')"><span>▶</span></div>${b.title ? `<p class="ab-n-cap">${esc(b.title)}</p>` : ''}</div>` : ''; }
             case 'divider': return '<hr class="ab-n-hr">';
+            case 'slider': return b.images?.length ? `<div class="ab-n-pad"><div class="ab-n-slide"><img src="${esc(imgSrc(b.images[0]))}" alt=""></div>${b.images.length > 1 ? `<div class="ab-n-dots">${b.images.map((_, i) => `<i${i ? '' : ` style="background:${c.primary};width:14px"`}></i>`).join('')}</div>` : ''}</div>` : '';
+            case 'cards': {
+                const items = (b.items || []).filter(i => i.title || i.text);
+                return items.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct">${esc(b.title)}</h5>` : ''}<div class="ab-n-cards${b.columns === 1 ? ' is-one' : ''}">${items.map(i =>
+                    `<div><span style="background:${c.primary}1a">${svgIcon(i.icon, c.primary, 15)}</span>${i.title ? `<b>${esc(i.title)}</b>` : ''}${i.text ? `<small>${esc(i.text)}</small>` : ''}</div>`).join('')}</div></div>` : '';
+            }
+            case 'reviews': {
+                const items = (b.items || []).filter(i => i.text);
+                return items.length ? `<div class="ab-n-revs">${b.title ? `<h5 class="ab-n-ct">${esc(b.title)}</h5>` : ''}<div class="ab-n-revrow">${items.map(i =>
+                    `<div class="ab-n-rev"><span class="ab-n-stars">${'★'.repeat(i.stars || 5)}<u>${'★'.repeat(5 - (i.stars || 5))}</u></span><p>“${esc(i.text)}”</p>${i.name ? `<small>— ${esc(i.name)}</small>` : ''}</div>`).join('')}</div></div>` : '';
+            }
+            case 'faq': {
+                const items = (b.items || []).filter(i => i.q);
+                return items.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct">${esc(b.title)}</h5>` : ''}<div class="ab-n-card">${items.map((i, n) =>
+                    `<div class="ab-n-faq"><div class="ab-n-row"><span class="ab-n-rb"><b>${esc(i.q)}</b></span><em style="color:${c.primary}">${n ? '+' : '−'}</em></div>${n ? '' : `<small>${esc(i.a)}</small>`}</div>`).join('')}</div></div>` : '';
+            }
+            case 'social': {
+                const links = Object.entries(b.links || {}).filter(([k, v]) => SOCIAL[k] && v?.trim());
+                return links.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct" style="text-align:center">${esc(b.title)}</h5>` : ''}<div class="ab-n-social">${links.map(([k]) => `<span style="background:${SOCIAL[k][1]};color:${k === 'snapchat' ? '#111' : '#fff'}">${SOCIAL[k][0]}</span>`).join('')}</div></div>` : '';
+            }
+            case 'notice': { const [bg, fg] = TONES[b.tone] || TONES.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33">${esc(b.text)}</div>` : ''; }
+            case 'spacer': return `<div style="height:${{ small: 6, large: 30 }[b.size] ?? 15}px"></div>`;
             default: return '';
         }
     };
@@ -204,8 +284,17 @@
         const time = '9:41', barInk = ink(c.bar), muted = isDark(c.bar) ? 'rgba(255,255,255,.6)' : 'rgba(15,23,42,.5)';
         const status = `<div class="ab-ph__status" style="background:${c.bar};color:${barInk}"><span>${time}</span><span class="ab-ph__sys">▮▮▮ ◔ ▭</span></div>`;
         if (view === 'splash') {
-            phone.innerHTML = `<div class="ab-ph__screen ab-ph__splash" style="background:${c.splash}"><canvas width="84" height="84" data-splash-icon></canvas></div>`;
-            const cv = $('[data-splash-icon]', phone), x = cv.getContext('2d'); x.drawImage(drawIcon(256, true), -42, -42, 168, 168);
+            const intro = D.splash.bg === 'image' && D.splash.bgImage ? `<img src="${esc(D.splash.bgImage)}" alt="">`
+                : D.splash.bg === 'video' && bgVideo ? `<video src="${esc(bgVideo.url)}" autoplay muted loop playsinline></video>`
+                : D.splash.bg === 'video' && D.splash.hasVideo ? '<span class="ab-ph__vid">▶ Your video plays here</span>' : '';
+            if (intro && previewIntro) {
+                phone.innerHTML = `<div class="ab-ph__screen ab-ph__intro">${intro}<span class="ab-ph__skip">Skip</span><button type="button" class="ab-ph__step" data-pintro>← Splash</button></div>`;
+                paintIcon($('[data-icon-prev]'));
+                return;
+            }
+            const px = Math.round(SPLASH_DP[D.splash.size] * 0.75), dpr = Math.min(3, window.devicePixelRatio || 1);
+            phone.innerHTML = `<div class="ab-ph__screen ab-ph__splash" style="background:${c.splash}"><canvas width="${px * dpr}" height="${px * dpr}" style="width:${px}px;height:${px}px" data-splash-icon></canvas>${intro ? '<button type="button" class="ab-ph__step" data-pintro>Then: intro →</button>' : ''}</div>`;
+            $('[data-splash-icon]', phone).getContext('2d').drawImage(drawSplash(px * dpr), 0, 0);
         } else if (view === 'home') {
             const others = ['#60a5fa', '#f472b6', '#facc15', '#34d399', '#a78bfa', '#fb923c', '#f87171'];
             phone.innerHTML = `<div class="ab-ph__screen ab-ph__home"><div class="ab-ph__status" style="color:#fff;background:transparent"><span>${time}</span><span class="ab-ph__sys">▮▮▮ ◔ ▭</span></div>
@@ -223,11 +312,14 @@
                 const html = (t.blocks || []).map(b => blockHtml(b, c)).join('');
                 body = `<div class="ab-ph__native">${html || '<p class="ab-n-empty">Add blocks to this screen.</p>'}</div>`;
             }
-            phone.innerHTML = `<div class="ab-ph__screen">${status}${body}
-                ${tabs.length > 1 ? `<div class="ab-ph__tabs" style="background:${c.bar}">${tabs.map((x, i) => {
-                    const col = i === activeTab ? c.primary : muted;
+            const bar = tabs.map((x, i) => i).filter(i => inBar(tabs[i], i)).slice(0, MAX_BAR), menuPages = tabs.map((x, i) => i).filter(i => inMenu(tabs[i], i)), hasMenu = a.menu !== 'hide' && menuPages.length > 0;
+            const header = hasMenu ? `<div class="ab-ph__head" style="background:${c.bar};color:${barInk}"><button type="button" data-pmenu aria-label="Open menu"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><b>${esc(t.label || 'Page')}</b></div>` : '';
+            const drawer = hasMenu && previewMenu ? `<div class="ab-ph__drawer"><div><b>${esc(a.name || 'Your app')}</b>${menuPages.map(i => [tabs[i], i]).map(([x, i]) => `<button type="button" data-ptab="${i}" class="${i === activeTab ? 'is-on' : ''}" style="${i === activeTab ? `background:${c.primary}1a;color:${c.primary}` : ''}">${svgIcon(x.icon, i === activeTab ? c.primary : '#475569', 16)}<span>${esc(x.label || 'Page')}</span></button>`).join('')}</div><button type="button" class="ab-ph__shade" data-pmenu aria-label="Close menu"></button></div>` : '';
+            phone.innerHTML = `<div class="ab-ph__screen">${status}${header}${body}
+                ${bar.length > 1 ? `<div class="ab-ph__tabs" style="background:${c.bar}">${bar.map(i => {
+                    const x = tabs[i], col = i === activeTab ? c.primary : muted;
                     return `<button type="button" data-ptab="${i}" style="color:${col}">${svgIcon(x.icon, col)}<span>${esc(x.label || 'Tab')}</span></button>`;
-                }).join('')}</div>` : ''}</div>`;
+                }).join('')}</div>` : ''}${drawer}</div>`;
         }
         paintIcon($('[data-icon-prev]'));
     };
@@ -238,14 +330,18 @@
         $('[data-tabs]').innerHTML = tabs.map((t, i) => `<div class="ab-tab${i === activeTab ? ' is-on' : ''}" data-tabrow="${i}">
             <select data-t="icon" data-i="${i}" aria-label="Tab ${i + 1} icon">${Object.keys(ICONS).map(k => `<option value="${k}" ${t.icon === k ? 'selected' : ''}>${ICON_NAMES[k] || k}</option>`).join('')}</select>
             <span class="ab-tab__ic" aria-hidden="true">${svgIcon(t.icon, 'currentColor')}</span>
-            <input data-t="label" data-i="${i}" maxlength="16" value="${esc(t.label)}" placeholder="Name" aria-label="Tab ${i + 1} name">
+            <input data-t="label" data-i="${i}" maxlength="24" value="${esc(t.label)}" placeholder="Name" aria-label="Page ${i + 1} name">
             <span class="fb-q__tools"><button type="button" data-tmove="-1" data-i="${i}" title="Move left" ${i ? '' : 'disabled'}>↑</button><button type="button" data-tmove="1" data-i="${i}" title="Move right" ${i < tabs.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-tdel="${i}" title="Remove" class="fb-del" ${tabs.length > 1 ? '' : 'disabled'}>✕</button></span>
             <div class="ab-tab__kind">
-                <select data-t="type" data-i="${i}" aria-label="Tab ${i + 1} shows"><option value="screen" ${t.type !== 'web' ? 'selected' : ''}>App screen (native)</option><option value="web" ${t.type === 'web' ? 'selected' : ''}>A page of my website</option></select>
+                <div class="ab-tab__where"><span>Show in:</span>
+                    <label class="fb-check"><input type="checkbox" data-t="bar" data-i="${i}" ${inBar(t, i) ? 'checked' : ''}> Bottom bar</label>
+                    <label class="fb-check"><input type="checkbox" data-t="menu" data-i="${i}" ${inMenu(t, i) ? 'checked' : ''}> ☰ Menu</label></div>
+                <select data-t="type" data-i="${i}" aria-label="Page ${i + 1} shows"><option value="screen" ${t.type !== 'web' ? 'selected' : ''}>App screen (native)</option><option value="web" ${t.type === 'web' ? 'selected' : ''}>A page of my website</option></select>
                 ${t.type === 'web' ? `<div class="ab-tab__path"><span title="${esc(base)}">${esc(base.replace(/^https:\/\//, ''))}</span><input data-t="path" data-i="${i}" maxlength="200" value="${esc(t.path)}" placeholder="(home page)" aria-label="Tab ${i + 1} page" spellcheck="false" autocapitalize="off"></div>` : ''}
             </div>
         </div>`).join('');
         $('[data-add-tab]').disabled = tabs.length >= MAX_TABS;
+        drawMenuNote();
     };
 
     /* ------------------------------------------------ editor: the blocks of the open tab */
@@ -265,6 +361,14 @@
         return `<div class="ab-act"><span>${label}</span><div><select data-f="${path}.kind" data-redraw>${Object.entries(ACTIONS).map(([k, l]) => `<option value="${k}" ${a.kind === k ? 'selected' : ''}>${l}</option>`).join('')}</select>${value}</div></div>`;
     };
     const align = (path, v) => `<label>Align<select data-f="${path}"><option value="left" ${v !== 'center' ? 'selected' : ''}>Left</option><option value="center" ${v === 'center' ? 'selected' : ''}>Centre</option></select></label>`;
+    /** Rows of a block (list, cards, reviews, FAQ) with move/remove, and an "add" button. */
+    const items = (b, label, body) => {
+        const n = (b.items || []).length;
+        return `<div class="ab-items">${(b.items || []).map((it, i) => `<div class="ab-item"><div class="ab-item__head"><b>${label} ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-imove="1" data-ii="${i}" title="Move down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-idel="${i}" title="Remove" class="fb-del">✕</button></span></div>${body(it, i)}</div>`).join('')}</div>
+            <button type="button" class="btn btn--sm btn--ghost" data-iadd ${n >= MAX_ITEMS[b.type] ? 'disabled' : ''}>＋ Add ${label.toLowerCase()}</button>`;
+    };
+    const pics = (b, type) => `<div class="ab-gal">${(b.images || []).map((img, i) => `<span><img src="${esc(imgSrc(img))}" alt=""><button type="button" data-gdel="${i}" aria-label="Remove picture ${i + 1}">✕</button></span>`).join('')}</div>
+        <button type="button" class="btn btn--sm btn--ghost" data-pick="images" ${(b.images || []).length >= MAX_PICS[type] ? 'disabled' : ''}>＋ Add pictures</button>`;
     const blockFields = b => {
         switch (b.type) {
             case 'hero': return field('Title', 'title', b.title, { max: 80 }) + field('Text', 'text', b.text, { max: 300, area: true, rows: 2 }) + imageField('Background picture', 'image', b.image)
@@ -281,8 +385,7 @@
                     ${field('Description <small>— optional</small>', `items.${i}.text`, it.text, { max: 400, area: true, rows: 2 })}
                     ${imageField('Picture <small>— optional</small>', `items.${i}.image`, it.image)}${actionField('Tapping it', `items.${i}.action`, it.action)}</div>`).join('')}</div>
                 <button type="button" class="btn btn--sm btn--ghost" data-iadd ${(b.items || []).length >= 50 ? 'disabled' : ''}>＋ Add item</button>`;
-            case 'gallery': return `<div class="ab-gal">${(b.images || []).map((img, i) => `<span><img src="${esc(imgSrc(img))}" alt=""><button type="button" data-gdel="${i}" aria-label="Remove picture ${i + 1}">✕</button></span>`).join('')}</div>
-                <button type="button" class="btn btn--sm btn--ghost" data-pick="images" ${(b.images || []).length >= 24 ? 'disabled' : ''}>＋ Add pictures</button>
+            case 'gallery': return pics(b, 'gallery') + `
                 <label>Columns<select data-f="columns" data-num><option value="2" ${b.columns !== 3 ? 'selected' : ''}>2</option><option value="3" ${b.columns === 3 ? 'selected' : ''}>3</option></select></label>`;
             case 'contact': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + '<p class="fb-hint">Fill in what you want to show — each line opens the phone’s dialer, WhatsApp, email or maps.</p><div class="fb-2">'
                 + field('Phone', 'phone', b.phone, { max: 25, type: 'tel', ph: '+1 555 123 4567' }) + field('WhatsApp', 'whatsapp', b.whatsapp, { max: 25, type: 'tel', ph: '+44 7700 900123' })
@@ -294,6 +397,21 @@
                 <button type="button" class="btn btn--sm btn--ghost" data-hadd ${(b.rows || []).length >= 14 ? 'disabled' : ''}>＋ Add row</button>`;
             case 'video': return field('YouTube link', 'url', b.url, { max: 300, type: 'url', ph: 'https://www.youtube.com/watch?v=…' }) + field('Title <small>— optional</small>', 'title', b.title, { max: 120 });
             case 'divider': return '<p class="fb-hint">A thin line between blocks.</p>';
+            case 'slider': return `<p class="fb-hint">Pictures people swipe through — best when they're all the same shape.</p>` + pics(b, 'slider');
+            case 'cards': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
+                + `<label>Layout<select data-f="columns" data-num><option value="2" ${b.columns !== 1 ? 'selected' : ''}>Two side by side</option><option value="1" ${b.columns === 1 ? 'selected' : ''}>One per row</option></select></label>`
+                + items(b, 'Card', (it, i) => `<div class="ab-item__icon"><label>Icon<select data-f="items.${i}.icon" data-redraw>${Object.keys(ICONS).map(k => `<option value="${k}" ${it.icon === k ? 'selected' : ''}>${ICON_NAMES[k] || k}</option>`).join('')}</select></label>${field('Title', `items.${i}.title`, it.title, { max: 60 })}</div>`
+                    + field('Text <small>— optional</small>', `items.${i}.text`, it.text, { max: 200, area: true, rows: 2 }) + actionField('Tapping it', `items.${i}.action`, it.action));
+            case 'reviews': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
+                + items(b, 'Review', (it, i) => field('What they said', `items.${i}.text`, it.text, { max: 500, area: true, rows: 3 })
+                    + `<div class="fb-2">${field('Name <small>— optional</small>', `items.${i}.name`, it.name, { max: 60 })}<label>Stars<select data-f="items.${i}.stars" data-num>${[5, 4, 3, 2, 1].map(n => `<option value="${n}" ${+it.stars === n ? 'selected' : ''}>${'★'.repeat(n)}</option>`).join('')}</select></label></div>`);
+            case 'faq': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
+                + items(b, 'Question', (it, i) => field('Question', `items.${i}.q`, it.q, { max: 160 }) + field('Answer', `items.${i}.a`, it.a, { max: 1500, area: true, rows: 3 }));
+            case 'social': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + '<p class="fb-hint">Paste the full address of each page you have — leave the rest empty.</p><div class="fb-2">'
+                + Object.entries(SOCIAL).map(([k, [name]]) => field(name, `links.${k}`, b.links?.[k], { max: 300, type: 'url', ph: 'https://' })).join('') + '</div>';
+            case 'notice': return field('Text', 'text', b.text, { max: 300, area: true, rows: 2 })
+                + `<label>Colour<select data-f="tone">${Object.entries(TONES).map(([k, t]) => `<option value="${k}" ${b.tone === k ? 'selected' : ''}>${t[2]}</option>`).join('')}</select></label>`;
+            case 'spacer': return `<label>Height<select data-f="size">${['small', 'medium', 'large'].map(k => `<option value="${k}" ${b.size === k ? 'selected' : ''}>${k[0].toUpperCase() + k.slice(1)}</option>`).join('')}</select></label>`;
             default: return '';
         }
     };
@@ -317,9 +435,40 @@
             <div class="ab-blk__body">${blockFields(b)}</div></details>`).join('') : '<p class="fb-hint">This screen is empty. Add your first block below.</p>';
         $$('[data-add-type]').forEach(x => (x.disabled = blocks.length >= MAX_BLOCKS));
     };
+    const drawSplashSettings = () => {
+        $$('[data-splash-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.splashMode === D.splash.mode)));
+        $$('[data-splash-size]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.splashSize === D.splash.size)));
+        $('[data-splash-file-wrap]').hidden = D.splash.mode !== 'image';
+        $('[data-splash-file-title]').textContent = D.splash.image ? 'Change picture' : 'Upload a picture';
+        $('[data-splash-file-wrap]').classList.toggle('has-file', !!D.splash.image);
+        const n = $('[data-splash-note]');
+        n.hidden = !(D.splash.mode === 'logo' && D.icon.mode !== 'image');
+        n.textContent = 'No logo uploaded, so your letters are shown. Upload a logo under “Name & icon” to use it here.';
+        const bg = D.splash.bg;
+        $$('[data-bg-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bgMode === bg)));
+        $('[data-bg-file-wrap]').hidden = bg === 'color';
+        const f = $('[data-bg-file]');
+        f.accept = bg === 'video' ? 'video/mp4' : 'image/png,image/jpeg,image/webp';
+        const has = bg === 'image' ? !!D.splash.bgImage : !!(bgVideo || D.splash.hasVideo);
+        $('[data-bg-file-title]').textContent = has ? (bg === 'video' ? 'Change video' : 'Change picture') : bg === 'video' ? 'Upload a video' : 'Upload a picture';
+        $('[data-bg-file-hint]').textContent = bg === 'video' ? `MP4, up to ${VIDEO_SECONDS} seconds and ${MAX_VIDEO / 1048576} MB — plays without sound, with a Skip button` : 'A tall (portrait) picture works best — shown full screen for 2.5 seconds';
+        $('[data-bg-file-wrap]').classList.toggle('has-file', has);
+        const bn = $('[data-bg-note]');
+        bn.hidden = bg === 'color';
+        bn.textContent = bg === 'video' && bgVideo ? 'The video uploads when you save.' : 'Android first shows your colour and picture above for a moment, then this intro. It’s built into the app, so changing it needs a new build.';
+    };
+    /** Warns when pages would be hard to reach: not in the bottom bar and no ☰ menu. */
+    const drawMenuNote = () => {
+        const hidden = A().menu === 'hide', lost = A().tabs.filter((t, i) => !inBar(t, i) && (hidden || !inMenu(t, i))).map(t => t.label || 'Page');
+        const n = $('[data-menu-note]');
+        n.hidden = !lost.length;
+        n.textContent = `${lost.join(', ')} ${lost.length > 1 ? 'are' : 'is'} in neither the bottom bar nor the ☰ menu, so people can only open ${lost.length > 1 ? 'them' : 'it'} from a button on another page (Tapping it → Open a tab).`;
+    };
     const drawSettings = () => {
         const a = A();
         $$('[data-a]').forEach(el => (el.value = a[el.dataset.a] ?? ''));
+        $('[data-menu]').value = a.menu === 'hide' ? 'hide' : 'show';
+        drawMenuNote();
         $$('[data-c]').forEach(el => (el.value = a.colors[el.dataset.c]));
         $$('[data-o]').forEach(el => (el.value = a.offline[el.dataset.o] ?? ''));
         $('[data-i="letter"]').value = D.icon.letter;
@@ -332,6 +481,7 @@
         $('[data-icon-file-wrap]').classList.toggle('has-file', !!D.icon.image);
         if (D.icon.mode === 'image') $('[data-icon-zoom-wrap]').hidden = !!D.icon.fill;
         $('[data-a="package"]').readOnly = !!current()?.version_code;
+        drawSplashSettings();
         drawSitePick();
     };
     const drawAll = () => { drawSettings(); drawTabs(); drawBlocks(); drawPhone(); syncSave(); };
@@ -352,14 +502,22 @@
             else { const card = el.closest('[data-b]'); const sm = card?.querySelector('summary small'); if (sm) sm.textContent = blockSummary(b); }
             drawPhone(); markDirty(); return;
         }
+        if (el.matches('[data-menu]')) { a.menu = el.value; drawMenuNote(); previewMenu = false; view = 'app'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app'))); drawPhone(); markDirty(); return; }
         if (el.dataset.a) {
             a[el.dataset.a] = el.value;
             if (el.dataset.a === 'name') { if (!current()?.version_code && (!a.package || a.package === D.autoPackage)) { a.package = D.autoPackage = suggestPackage(); $('[data-a="package"]').value = a.package; } if (D.icon.mode === 'letter' && !D.icon.letter) D.iconDirty = true; }
             if (el.dataset.a === 'url') { drawTabs(); drawBlocks(); }
-        } else if (el.dataset.c) { a.colors[el.dataset.c] = el.value; if (el.dataset.c === 'icon') D.iconDirty = true; }
+        } else if (el.dataset.c) { a.colors[el.dataset.c] = el.value; if (el.dataset.c === 'icon' || el.dataset.c === 'splash') D.iconDirty = true; if (el.dataset.c === 'splash' && view !== 'splash') showSplash(); }
         else if (el.dataset.o) a.offline[el.dataset.o] = el.value;
         else if (el.dataset.t) { // (tab fields carry data-i too — their index — so they're matched first)
-            const t = a.tabs[+el.dataset.i]; t[el.dataset.t] = el.value; activeTab = +el.dataset.i;
+            const t = a.tabs[+el.dataset.i]; activeTab = +el.dataset.i;
+            if (el.dataset.t === 'bar') {
+                if (el.checked && barCount() >= MAX_BAR) { el.checked = false; note(`Up to ${MAX_BAR} pages fit in the bottom bar. Untick another page first — the rest stay in the ☰ menu.`); return; }
+                if (t.menu === undefined) t.menu = inMenu(t, +el.dataset.i); // keep the menu as it was
+                t.bar = el.checked; drawTabs(); drawPhone(); markDirty(); return;
+            }
+            if (el.dataset.t === 'menu') { if (t.bar === undefined) t.bar = inBar(t, +el.dataset.i); t.menu = el.checked; previewMenu = false; drawTabs(); drawPhone(); markDirty(); return; }
+            t[el.dataset.t] = el.value;
             if (el.dataset.t === 'icon') el.nextElementSibling.innerHTML = svgIcon(t.icon, 'currentColor');
             if (el.dataset.t === 'type') drawTabs();
             $$('.ab-tab').forEach((r, i) => r.classList.toggle('is-on', i === activeTab));
@@ -388,13 +546,65 @@
     ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('is-over'); }));
     ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove('is-over')));
     drop.addEventListener('drop', e => { e.preventDefault(); useLogo(e.dataTransfer?.files?.[0]); });
+    const useSplash = async file => {
+        if (!file) return;
+        try { D.splash.image = await readLogo(file); D.splash.mode = 'image'; await loadSplashPic(); showSplash(); markDirty(true); track('app_builder_splash'); }
+        catch (ex) { note(ex.message); }
+    };
+    const sdrop = $('[data-splash-file-wrap]');
+    ['dragenter', 'dragover'].forEach(ev => sdrop.addEventListener(ev, e => { e.preventDefault(); sdrop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach(ev => sdrop.addEventListener(ev, () => sdrop.classList.remove('is-over')));
+    sdrop.addEventListener('drop', e => { e.preventDefault(); useSplash(e.dataTransfer?.files?.[0]); });
+    const useBackground = async file => {
+        if (!file) return;
+        try {
+            if (D.splash.bg === 'video') {
+                if (file.type !== 'video/mp4') throw new Error('Please pick an MP4 video.');
+                if (file.size > MAX_VIDEO) throw new Error(`That video is too big. Please use one under ${MAX_VIDEO / 1048576} MB (shorter, or exported at 720p).`);
+                const url = URL.createObjectURL(file);
+                const secs = await new Promise(res => { const v = document.createElement('video'); v.preload = 'metadata'; v.onloadedmetadata = () => res(v.duration); v.onerror = () => res(NaN); v.src = url; });
+                if (!Number.isFinite(secs)) { URL.revokeObjectURL(url); throw new Error('We couldn’t play that video. Please export it as an H.264 MP4.'); }
+                if (secs > VIDEO_SECONDS + 0.5) note(`Your video is ${Math.round(secs)} seconds — the app shows the first ${VIDEO_SECONDS}.`);
+                if (bgVideo) URL.revokeObjectURL(bgVideo.url);
+                bgVideo = { file, url };
+            } else {
+                const img = await loadPicture(file, 300);
+                D.splash.bgImage = shrink(img, 1920, 'image/jpeg', 0.85).url; D.splash.bgDirty = true;
+            }
+            previewIntro = true; showSplash(); markDirty(); track('app_builder_intro', { kind: D.splash.bg });
+        } catch (ex) { note(ex.message); }
+    };
+    const bdrop = $('[data-bg-file-wrap]');
+    ['dragenter', 'dragover'].forEach(ev => bdrop.addEventListener(ev, e => { e.preventDefault(); bdrop.classList.add('is-over'); }));
+    ['dragleave', 'drop'].forEach(ev => bdrop.addEventListener(ev, () => bdrop.classList.remove('is-over')));
+    bdrop.addEventListener('drop', e => { e.preventDefault(); useBackground(e.dataTransfer?.files?.[0]); });
+    /** Sends the picked video to the server in 2 MB parts (under the server's upload limit). */
+    const uploadVideo = async () => {
+        if (!bgVideo || !D.id) return true;
+        const { file } = bgVideo, size = 2 * 1048576;
+        let r;
+        for (let offset = 0; offset < file.size; offset += size) {
+            $('[data-status]').textContent = `Uploading your intro video… ${Math.round(offset / file.size * 100)}%`;
+            const res = await fetch(`/builder/apps/${D.id}/splash-video?offset=${offset}&total=${file.size}`, { method: 'POST', body: file.slice(offset, offset + size),
+                headers: { Accept: 'application/json', 'Content-Type': 'application/octet-stream', 'X-CSRF-TOKEN': csrf, 'X-Builder-Token': token } });
+            r = await res.json().catch(() => ({}));
+            if (!res.ok || r.ok === false) throw new Error(r.error || 'The video didn’t upload. Please try again.');
+        }
+        URL.revokeObjectURL(bgVideo.url); bgVideo = null; D.splash.hasVideo = true;
+        if (r.app) apps = apps.map(y => (y.id === r.app.id ? r.app : y));
+        return true;
+    };
+    /** Show the splash in the preview phone (while its settings change). */
+    const showSplash = () => { view = 'splash'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'splash'))); drawSplashSettings(); drawPhone(); };
     root.addEventListener('change', async e => {
+        if (e.target.matches('[data-bg-file]')) { await useBackground(e.target.files?.[0]); e.target.value = ''; return; }
+        if (e.target.matches('[data-splash-file]')) { await useSplash(e.target.files?.[0]); e.target.value = ''; return; }
         if (e.target === photoInput) {
             const files = [...(photoInput.files || [])]; photoInput.value = '';
             if (!files.length || !picking) return;
             const { block: b, path } = picking; picking = null;
             try {
-                for (const file of path === 'images' ? files.slice(0, 24 - (b.images || []).length) : files.slice(0, 1)) {
+                for (const file of path === 'images' ? files.slice(0, (MAX_PICS[b.type] || 24) - (b.images || []).length) : files.slice(0, 1)) {
                     if (pendingBytes() > MAX_PENDING) { note('You’ve added a lot of new pictures. Save your app, then add more.'); break; }
                     const img = await readPhoto(file);
                     if (path === 'images') (b.images ||= []).push(img); else setPath(b, path, img);
@@ -422,17 +632,29 @@
         const b = blockOf(t), blocks = curBlocks();
         if (t.dataset.tab) showTab(t.dataset.tab);
         else if (t.dataset.view) { view = t.dataset.view; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === t))); drawPhone(); }
+        else if (t.dataset.splashMode) { D.splash.mode = t.dataset.splashMode; previewIntro = false; showSplash(); markDirty(true); if (D.splash.mode === 'image' && !D.splash.image) $('[data-splash-file]').click(); }
+        else if (t.dataset.bgMode) {
+            D.splash.bg = t.dataset.bgMode; previewIntro = D.splash.bg !== 'color'; showSplash(); markDirty();
+            const need = D.splash.bg === 'image' ? !D.splash.bgImage : D.splash.bg === 'video' ? !(bgVideo || D.splash.hasVideo) : false;
+            if (need) $('[data-bg-file]').click();
+        }
+        else if (t.matches('[data-pintro]')) { previewIntro = !previewIntro; drawPhone(); }
+        else if (t.dataset.splashSize) { D.splash.size = t.dataset.splashSize; previewIntro = false; showSplash(); markDirty(true); }
+        else if (t.matches('[data-view-splash]')) showSplash();
+        else if (t.dataset.tpl) useTemplate(t.dataset.tpl);
         else if (t.dataset.iconMode) {
             D.icon.mode = t.dataset.iconMode; drawSettings(); drawPhone(); markDirty(true);
             if (D.icon.mode === 'image' && !D.icon.image) $('[data-icon-file]').click();
-        } else if (t.dataset.ptab) selectTab(+t.dataset.ptab);
+        } else if (t.dataset.ptab) { previewMenu = false; selectTab(+t.dataset.ptab); }
+        else if (t.dataset.pmenu !== undefined) { previewMenu = !previewMenu; drawPhone(); }
         else if (t.dataset.pact) {
             const act = JSON.parse(t.dataset.pact);
             if (act.kind === 'tab' && tabs[+act.value]) { selectTab(+act.value); drawTabs(); }
         } else if (t.matches('[data-add-tab]')) {
             if (tabs.length >= MAX_TABS) return;
             const used = tabs.map(x => x.icon), icon = ['grid', 'info', 'chat', 'calendar', 'store', 'location'].find(k => !used.includes(k)) || 'star';
-            tabs.push({ label: ICON_NAMES[icon], icon, type: 'screen', path: '', blocks: [{ type: 'heading', text: ICON_NAMES[icon], align: 'left' }] });
+            tabs.push({ label: ICON_NAMES[icon], icon, type: 'screen', bar: barCount() < MAX_BAR, menu: barCount() >= MAX_BAR, path: '', blocks: [{ type: 'heading', text: ICON_NAMES[icon], align: 'left' }] });
+            if (!tabs[tabs.length - 1].bar) note('This page is in the ☰ menu — the bottom bar is full (5 pages).');
             activeTab = tabs.length - 1; drawTabs(); drawBlocks(); drawPhone(); markDirty();
             $(`[data-t="label"][data-i="${activeTab}"]`)?.focus();
         } else if (t.dataset.tmove) {
@@ -459,7 +681,7 @@
             else if (t.dataset.pick) { picking = { block: b, path: t.dataset.pick }; photoInput.multiple = t.dataset.pick === 'images'; photoInput.click(); return; }
             else if (t.dataset.unimg) setPath(b, t.dataset.unimg, null);
             else if (t.dataset.gdel) b.images.splice(+t.dataset.gdel, 1);
-            else if (t.dataset.iadd !== undefined) b.items.push({ title: '', text: '', price: '', image: null, action: { kind: '', value: '' } });
+            else if (t.dataset.iadd !== undefined) { if (b.items.length < MAX_ITEMS[b.type]) b.items.push(b.type === 'list' ? newItem('list') : { ...newItem(b.type), title: '', text: '', q: '', a: '', name: '' }); }
             else if (t.dataset.idel) b.items.splice(+t.dataset.idel, 1);
             else if (t.dataset.imove) { const k = +t.dataset.ii, j = k + +t.dataset.imove; [b.items[k], b.items[j]] = [b.items[j], b.items[k]]; }
             else if (t.dataset.hadd !== undefined) b.rows.push({ day: '', time: '' });
@@ -572,9 +794,9 @@
     const payload = () => {
         const a = A();
         return {
-            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links,
+            name: a.name.trim(), package: a.package.trim().toLowerCase(), url: a.url.trim(), version_name: a.version_name.trim() || '1.0.0', external_links: a.external_links, menu: a.menu === 'hide' ? 'hide' : 'show',
             status_bar: isDark(a.colors.bar) ? 'light' : 'dark', colors: a.colors, offline: a.offline,
-            tabs: a.tabs.map(t => (t.type === 'web' ? { label: t.label.trim(), icon: t.icon, type: 'web', url: tabUrl(t) } : { label: t.label.trim(), icon: t.icon, type: 'screen', blocks: t.blocks.map(blockOut) })),
+            tabs: a.tabs.map((t, i) => (t.type === 'web' ? { label: t.label.trim(), icon: t.icon, type: 'web', bar: inBar(t, i), menu: inMenu(t, i), url: tabUrl(t) } : { label: t.label.trim(), icon: t.icon, type: 'screen', bar: inBar(t, i), menu: inMenu(t, i), blocks: t.blocks.map(blockOut) })),
         };
     };
     const check = () => {
@@ -593,16 +815,24 @@
         try {
             const body = { id: D.id || undefined, app: payload() };
             const addIcon = () => Object.assign(body, { icon: drawIcon(1024).toDataURL('image/png'), foreground: drawIcon(1024, true).toDataURL('image/png'),
-                design: { mode: D.icon.mode, letter: D.icon.letter, zoom: D.icon.zoom, fill: D.icon.fill }, logo: D.icon.mode === 'image' ? D.icon.image : undefined });
+                design: { mode: D.icon.mode, letter: D.icon.letter, zoom: D.icon.zoom, fill: D.icon.fill }, logo: D.icon.mode === 'image' ? D.icon.image : undefined,
+                splash: drawSplash(1024).toDataURL('image/png'), splash_design: { mode: D.splash.mode === 'image' && !splashPic ? 'icon' : D.splash.mode, size: D.splash.size }, splash_image: D.splash.mode === 'image' && splashPic ? D.splash.image : undefined });
             if (D.iconDirty || !D.id) addIcon();
+            body.splash_bg_mode = D.splash.bg;
+            if (D.splash.bg === 'image' && D.splash.bgImage && (D.splash.bgDirty || !D.id)) body.splash_bg = D.splash.bgImage;
             let r;
             try { r = await api('POST', '/builder/apps', body); }
             catch (ex) { if (ex.status === 404 && D.id) { D.id = null; delete body.id; addIcon(); r = await api('POST', '/builder/apps', body); } else throw ex; }
-            const first = !D.id; D.id = r.app.id; D.dirty = false; D.iconDirty = false;
+            const first = !D.id; D.id = r.app.id; D.dirty = false; D.iconDirty = false; D.splash.bgDirty = false;
             D.base = r.app.content_url.replace(/content\.json$/, '');
             eachImage(img => { if (img.src?.startsWith('data:') && img.name) { img.src = img.name; delete img.name; } }); // now stored on the server
             save();
             apps = [...(apps || []).filter(x => x.id !== r.app.id), r.app]; drawMine(); drawSettings();
+            if (D.splash.bg === 'video' && bgVideo) {
+                try { await uploadVideo(); }
+                catch (ex) { D.dirty = true; save(); note(ex.message); return false; }
+            }
+            D.splash.hasVideo = D.splash.bg === 'video' && (current()?.settings?.splash?.bg === 'video' || D.splash.hasVideo); drawSettings();
             note(first ? 'App saved! Now open “Build & download” to make your Android app.' : r.app.version_code ? 'Saved — phones with your app will show the changes within a minute. No new build needed.' : 'Changes saved.');
             track(first ? 'app_builder_create' : 'app_builder_save', { tabs: A().tabs.length });
             return true;
@@ -612,7 +842,7 @@
     $('[data-save]').addEventListener('click', saveApp);
     $('[data-new]').addEventListener('click', async () => {
         if (D.dirty && !await ask('Start a new app?', 'Unsaved changes to this one will be lost.', 'Start new app')) return;
-        D = fresh(); logo = null; activeTab = 0; save(); drawAll(); drawMine(); showTab('design');
+        D = fresh(); logo = null; splashPic = null; activeTab = 0; save(); drawAll(); drawMine(); showTab('design'); $('[data-tpl-wrap]').open = true;
     });
     $('[data-mine]').addEventListener('change', async e => {
         const x = apps?.find(y => y.id === e.target.value); if (!x) return;
@@ -624,17 +854,19 @@
         const same = D.id === x.id, keepIcon = same ? D.icon : fresh().icon;
         const base = (x.url || '').replace(/[?#].*$/, '').replace(/\/$/, '');
         const tabs = (x.tabs || []).map(t => (t.type === 'web'
-            ? { label: t.label, icon: t.icon, type: 'web', blocks: [], path: t.url === x.url ? '' : base && t.url.startsWith(base + '/') ? t.url.slice(base.length + 1) : t.url }
-            : { label: t.label, icon: t.icon, type: 'screen', path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
+            ? { label: t.label, icon: t.icon, type: 'web', bar: t.bar, menu: t.menu, blocks: [], path: t.url === x.url ? '' : base && t.url.startsWith(base + '/') ? t.url.slice(base.length + 1) : t.url }
+            : { label: t.label, icon: t.icon, type: 'screen', bar: t.bar, menu: t.menu, path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
         D = { id: x.id, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
-            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
-            icon: keepIcon };
-        activeTab = 0; save(); loadLogo().then(drawAll); drawMine();
+            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
+            icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
+        activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(drawAll); drawMine();
         if (!same) api('GET', `/builder/apps/${x.id}/icon`).then(r => {
             if (D.id !== x.id) return;
             D.icon = { ...fresh().icon, ...r.design, image: r.logo || null };
             if (D.icon.mode === 'image' && !D.icon.image) D.icon.mode = 'letter';
-            save(); loadLogo().then(drawAll);
+            D.splash = { ...fresh().splash, ...(r.splash_design || {}), image: r.splash_image || null, bgImage: r.splash_bg || null, hasVideo: r.splash_design?.bg === 'video' };
+            if (D.splash.mode === 'image' && !D.splash.image) D.splash.mode = 'icon';
+            save(); Promise.all([loadLogo(), loadSplashPic()]).then(drawAll);
         }).catch(() => {});
     };
     /** A saved block has only the fields that were filled in: add the rest back for editing. */
@@ -646,6 +878,8 @@
         if (b.type === 'image') out.round = !!b.round;
         if (b.type === 'list') out.items = (b.items || []).map(i => ({ title: '', text: '', price: '', image: null, ...i, action: i.action || { kind: '', value: '' } }));
         if (b.type === 'video' && b.id) out.url = 'https://www.youtube.com/watch?v=' + b.id;
+        if (b.type === 'cards') out.items = (b.items || []).map(i => ({ icon: 'star', title: '', text: '', ...i, action: i.action || { kind: '', value: '' } }));
+        if (b.type === 'social') out.links = { ...(b.links || {}) };
         return out;
     };
 
@@ -753,8 +987,37 @@
         finally { t.disabled = false; drawBuild(); }
     });
 
+    /* ------------------------------------------------ templates (public/js/app-templates.js) */
+    const TEMPLATES = window.OwlAppTemplates || [];
+    const drawTemplates = () => {
+        $('[data-tpl-wrap]').hidden = !TEMPLATES.length;
+        $('[data-tpls]').innerHTML = TEMPLATES.map(t => {
+            const c = t.colors, on = ink(c.primary), muted = isDark(c.bar) ? 'rgba(255,255,255,.5)' : 'rgba(15,23,42,.35)';
+            return `<button type="button" class="ab-tplc" data-tpl="${t.id}" aria-label="Use the ${esc(t.name)} template">
+                <span class="ab-tplc__ph" style="background:${c.bar}"><span class="ab-tplc__hero" style="background:${c.primary};color:${on}"><b>${esc(t.sample)}</b><i style="background:${on}"></i></span>
+                    <span class="ab-tplc__body"><i></i><i class="s"></i><span><em></em><em></em></span></span>
+                    <span class="ab-tplc__tabs">${t.tabs.slice(0, 4).map((x, i) => `<span style="color:${i ? muted : c.primary}">${svgIcon(x.icon, 'currentColor', 11)}</span>`).join('')}</span></span>
+                <b>${esc(t.name)}</b><small>${esc(t.note)}</small></button>`;
+        }).join('');
+    };
+    const useTemplate = async id => {
+        const t = TEMPLATES.find(x => x.id === id); if (!t) return;
+        const has = A().tabs.some(x => (x.blocks || []).length > 0);
+        if (has && !await ask(`Use the ${t.name} template?`, 'Your tabs, screens and colours are replaced. Your app name, icon and settings stay.', 'Use template')) return;
+        const a = A();
+        a.colors = { ...t.colors };
+        a.tabs = JSON.parse(JSON.stringify(t.tabs));
+        if (!a.name.trim()) { a.name = t.sample; if (!current()?.version_code && (!a.package || a.package === D.autoPackage)) a.package = D.autoPackage = suggestPackage(); }
+        activeTab = 0; view = 'app'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app')));
+        drawAll(); markDirty(true); track('app_builder_template', { template: t.id });
+        note(`${t.name} template added — now change the words and add your pictures.`);
+        $('.ab-screen')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
     /* ------------------------------------------------ start */
     $('[data-add-types]').innerHTML = Object.entries(BLOCKS).map(([k, v]) => `<button type="button" data-add-type="${k}">${svgIcon(v.icon, 'currentColor', 20)}<span>${v.name}</span></button>`).join('');
-    loadLogo().then(() => { drawAll(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
+    drawTemplates();
+    $('[data-tpl-wrap]').open = !D.id; // new apps start here; saved apps keep it folded
+    Promise.all([loadLogo(), loadSplashPic()]).then(() => { drawAll(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
     if (token) loadAccount().catch(() => {});
 })();

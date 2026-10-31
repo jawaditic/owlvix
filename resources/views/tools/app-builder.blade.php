@@ -59,6 +59,11 @@
             <div class="fb-layout ab-layout">
                 <div class="fb-edit">
                     <div data-panel="design">
+                        <details class="fb-settings ab-tpl" data-tpl-wrap open><summary>Start from a template</summary>
+                            <p class="fb-hint">Pick a ready-made app, then change the words and add your own pictures. Your name, icon and settings stay.</p>
+                            <div class="ab-tpls" data-tpls></div>
+                        </details>
+
                         <details class="fb-settings" open><summary>1. Name &amp; icon</summary>
                             <label>App name <small>— shown under the icon on the phone</small><input data-a="name" maxlength="30" placeholder="My Bakery"></label>
                             <div class="ab-iconrow">
@@ -85,23 +90,69 @@
                                 <label>Main colour <small>— buttons, active tab</small><input type="color" data-c="primary"></label>
                                 <label>Top &amp; bottom bars<input type="color" data-c="bar"></label>
                                 <label>Icon background<input type="color" data-c="icon"></label>
-                                <label>Splash screen<input type="color" data-c="splash"></label>
                             </div>
                         </details>
 
-                        <details class="fb-settings" open><summary>3. Tabs</summary>
-                            <p class="fb-hint">Up to 5 tabs at the bottom of the app. Each is a native screen you build from blocks — or, if you like, a page of your website.</p>
-                            <div class="ab-tabs" data-tabs></div>
-                            <button type="button" class="btn btn--sm btn--ghost" data-add-tab>＋ Add tab</button>
+                        <details class="fb-settings ab-splash" open><summary>3. Splash screen</summary>
+                            <p class="fb-hint">What people see for a moment while your app opens. <button type="button" class="ab-link" data-view-splash>See it in the preview</button></p>
+                            <div class="fb-2">
+                                <label>Background colour<input type="color" data-c="splash"></label>
+                                <div class="ab-field"><span>Picture size</span>
+                                    <div class="ab-seg" role="group" aria-label="Splash picture size">
+                                        <button type="button" data-splash-size="small">Small</button>
+                                        <button type="button" data-splash-size="medium">Medium</button>
+                                        <button type="button" data-splash-size="large">Large</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ab-field"><span>Picture</span>
+                                <div class="ab-seg" role="group" aria-label="Splash picture">
+                                    <button type="button" data-splash-mode="icon">My app icon</button>
+                                    <button type="button" data-splash-mode="logo">Logo only</button>
+                                    <button type="button" data-splash-mode="image">Another picture</button>
+                                </div>
+                            </div>
+                            <label class="ab-drop" data-splash-file-wrap hidden>
+                                <input type="file" accept="image/png,image/jpeg,image/webp" data-splash-file class="sr-only">
+                                <span class="ab-drop__ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
+                                <span class="ab-drop__txt"><b data-splash-file-title>Upload a picture</b><small>A logo or wordmark — PNG with a see-through background looks best</small></span>
+                            </label>
+                            <p class="fb-hint" data-splash-note hidden></p>
+                            <div class="ab-field"><span>Full-screen intro <small>— after the splash, once each time the app opens</small></span>
+                                <div class="ab-seg" role="group" aria-label="Full-screen intro">
+                                    <button type="button" data-bg-mode="color">None</button>
+                                    <button type="button" data-bg-mode="image">Picture</button>
+                                    <button type="button" data-bg-mode="video">Video</button>
+                                </div>
+                            </div>
+                            <label class="ab-drop" data-bg-file-wrap hidden>
+                                <input type="file" data-bg-file class="sr-only">
+                                <span class="ab-drop__ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
+                                <span class="ab-drop__txt"><b data-bg-file-title>Upload</b><small data-bg-file-hint></small></span>
+                            </label>
+                            <p class="fb-hint" data-bg-note hidden></p>
                         </details>
 
-                        <details class="fb-settings ab-screen" open><summary>4. Screen: <span data-screen-name>Home</span></summary>
+                        <details class="fb-settings" open><summary>4. Pages &amp; menu</summary>
+                            <p class="fb-hint">Up to 15 pages, each a native screen you build from blocks (or a page of your website). For each page choose where its link goes: the bottom bar (up to 5), the ☰ menu at the top, or both.</p>
+                            <label>☰ Menu at the top
+                                <select data-menu>
+                                    <option value="show">Show it — with the pages ticked “☰ Menu” below</option>
+                                    <option value="hide">Don’t show it</option>
+                                </select>
+                            </label>
+                            <p class="ab-err" data-menu-note hidden></p>
+                            <div class="ab-tabs" data-tabs></div>
+                            <button type="button" class="btn btn--sm btn--ghost" data-add-tab>＋ Add page</button>
+                        </details>
+
+                        <details class="fb-settings ab-screen" open><summary>5. Screen: <span data-screen-name>Home</span></summary>
                             <div class="ab-blocks" data-blocks></div>
                             <details class="ab-add" data-add-block><summary class="btn btn--sm btn--glow">＋ Add block</summary><div class="ab-add__grid" data-add-types></div></details>
                             <input type="file" accept="image/png,image/jpeg,image/webp" data-photo-file hidden>
                         </details>
 
-                        <details class="fb-settings"><summary>5. More settings</summary>
+                        <details class="fb-settings"><summary>6. More settings</summary>
                             <label data-site-pick hidden>Pick one of your sites<select data-site></select></label>
                             <label>Your website <small>— only needed for tabs that show a page of it</small><input data-a="url" type="url" inputmode="url" placeholder="https://www.yourbusiness.com" maxlength="500" autocomplete="url"></label>
                             <label>Links to other websites <small>— on website tabs</small><select data-a="external_links"><option value="browser">Open in the phone’s browser (recommended)</option><option value="app">Open inside the app</option></select></label>
@@ -145,5 +196,6 @@
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'The mobile app builder, explained'])
 
 <script type="application/json" id="ab-icons">{!! json_encode(\App\Support\AppBuilder::icons(), JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+<script src="{{ \App\Support\Asset::url('js/app-templates.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/app-builder.js') }}" defer></script>
 @endsection

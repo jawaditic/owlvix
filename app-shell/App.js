@@ -3,13 +3,16 @@
 // into the app, kept up to date from the server, so the owner's changes show without a new build. The name, icon,
 // splash screen and colours of the system bars come from shell.json at build time (app.config.js).
 import Constants from 'expo-constants';
+import { useEventListener } from 'expo';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, BackHandler, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, AppState, BackHandler, Image, Linking, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { WebView } from 'react-native-webview';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import INTRO from './intro';
 import { Block, Empty, Icon, isDark } from './blocks';
 import { color, fetchContent, startContent, str } from './content';
 
@@ -28,6 +31,42 @@ const openOutside = url => {
     }
     Linking.openURL(url).catch(() => {});
 };
+
+const INTRO_PICTURE_MS = 2500;
+const INTRO_MAX_MS = 15000; // a video longer than this is cut short
+
+function IntroVideo({ source, onEnd }) {
+    const player = useVideoPlayer(source, p => { p.muted = true; p.loop = false; p.play(); });
+    useEventListener(player, 'playToEnd', onEnd);
+    useEventListener(player, 'statusChange', ({ status }) => { if (status === 'error') onEnd(); });
+    return <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} allowsFullscreen={false} allowsPictureInPicture={false} />;
+}
+
+/** The owner's full-screen picture or video, shown once when the app starts (after the splash). Tap Skip to go on. */
+function Intro({ onDone }) {
+    const fade = useRef(new Animated.Value(1)).current;
+    const done = useRef(false);
+    const insets = useSafeAreaInsets();
+    const finish = useCallback(() => {
+        if (done.current) return;
+        done.current = true;
+        Animated.timing(fade, { toValue: 0, duration: 350, useNativeDriver: true }).start(onDone);
+    }, [fade, onDone]);
+    useEffect(() => {
+        const t = setTimeout(finish, INTRO.type === 'image' ? INTRO_PICTURE_MS : INTRO_MAX_MS);
+        return () => clearTimeout(t);
+    }, [finish]);
+    return (
+        <Animated.View style={[StyleSheet.absoluteFill, styles.intro, { opacity: fade }]}>
+            {INTRO.type === 'video'
+                ? <IntroVideo source={INTRO.source} onEnd={finish} />
+                : <Image source={INTRO.source} style={StyleSheet.absoluteFill} resizeMode="cover" />}
+            <Pressable onPress={finish} style={[styles.skip, { top: insets.top + 12 }]} accessibilityRole="button" accessibilityLabel="Skip">
+                <Text style={styles.skipText}>Skip</Text>
+            </Pressable>
+        </Animated.View>
+    );
+}
 
 function Offline({ ctx, onRetry }) {
     return (
@@ -171,7 +210,7 @@ function Shell() {
 
     // A native first screen is ready at once; a website tab hides the splash when its page loads (or after 5 s)
     useEffect(() => {
-        if (tabs[0]?.type !== 'web') hideSplash();
+        if (tabs[0]?.type !== 'web' || INTRO?.source) hideSplash();
         const t = setTimeout(hideSplash, 5000);
         return () => clearTimeout(t);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -184,6 +223,14 @@ function Shell() {
         });
         return () => sub.remove();
     }, [refresh]);
+
+    // Pages in the bottom bar (up to 5) and pages in the ☰ menu (a page can be in both); the ☰ shows when the
+    // owner hasn't turned it off and at least one page is in it
+    const bar = tabs.map((t, i) => i).filter(i => (tabs[i].bar === undefined ? i < 5 : !!tabs[i].bar)).slice(0, 5);
+    const inMenu = tabs.map((t, i) => i).filter(i => (tabs[i].menu === undefined ? !bar.includes(i) : !!tabs[i].menu));
+    const hasMenu = doc?.menu !== 'hide' && inMenu.length > 0;
+    const [menu, setMenu] = useState(false);
+    const [intro, setIntro] = useState(!!INTRO?.source);
 
     // New content may have fewer tabs
     useEffect(() => {
@@ -200,16 +247,26 @@ function Shell() {
     }, [active]);
 
     const pick = i => {
+        setMenu(false);
         if (i === active) { pages.current[i]?.home(); return; } // tap the open tab again: back to its top
         if (!opened.includes(i)) setOpened([...opened, i]);
         setActive(i);
     };
+    const barInk = isDark(C.bar) ? '#ffffff' : '#0f172a';
 
     const muted = isDark(C.bar) ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.5)';
     return (
         <View style={[styles.root, { backgroundColor: C.bar }]}>
             <StatusBar style={isDark(C.bar) ? 'light' : 'dark'} />
             <View style={{ height: insets.top, backgroundColor: C.bar }} />
+            {hasMenu && (
+                <View style={[styles.header, { backgroundColor: C.bar }]}>
+                    <Pressable onPress={() => setMenu(true)} style={styles.burger} accessibilityRole="button" accessibilityLabel="Open menu" hitSlop={8}>
+                        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke={barInk} strokeWidth={2} strokeLinecap="round"><Path d="M4 7h16M4 12h16M4 17h16" /></Svg>
+                    </Pressable>
+                    <Text style={[styles.headerTitle, { color: barInk }]} numberOfLines={1} accessibilityRole="header">{str(tabs[active]?.label)}</Text>
+                </View>
+            )}
             <View style={styles.pages}>
                 {!tabs.length && <Offline ctx={ctx} onRetry={refresh} />}
                 {tabs.map((tab, i) => opened.includes(i) && (
@@ -220,10 +277,30 @@ function Shell() {
                     </View>
                 ))}
             </View>
-            {tabs.length > 1 ? (
+            <Modal visible={menu} transparent animationType="fade" onRequestClose={() => setMenu(false)} statusBarTranslucent>
+                <View style={styles.drawerWrap}>
+                    <View style={[styles.drawer, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
+                        <Text style={styles.drawerName} numberOfLines={2}>{str(shell.name)}</Text>
+                        <ScrollView>
+                            {inMenu.map(i => {
+                                const tab = tabs[i], on = i === active;
+                                return (
+                                    <Pressable key={i} onPress={() => pick(i)} accessibilityRole="menuitem" accessibilityState={{ selected: on }}
+                                        style={({ pressed }) => [styles.drawerItem, on && { backgroundColor: C.primary + '1a' }, pressed && { opacity: 0.7 }]}>
+                                        <Icon name={tab.icon} color={on ? C.primary : '#475569'} />
+                                        <Text style={[styles.drawerText, on && { color: C.primary }]} numberOfLines={1}>{str(tab.label)}</Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </ScrollView>
+                    </View>
+                    <Pressable style={styles.drawerShade} onPress={() => setMenu(false)} accessibilityRole="button" accessibilityLabel="Close menu" />
+                </View>
+            </Modal>
+            {bar.length > 1 ? (
                 <View style={[styles.bar, { backgroundColor: C.bar, paddingBottom: Math.max(insets.bottom, 6) }]} accessibilityRole="tablist">
-                    {tabs.map((tab, i) => {
-                        const col = i === active ? C.primary : muted;
+                    {bar.map(i => {
+                        const tab = tabs[i], col = i === active ? C.primary : muted;
                         return (
                             <Pressable key={i} onPress={() => pick(i)} style={styles.tab} accessibilityRole="tab" accessibilityState={{ selected: i === active }} accessibilityLabel={str(tab.label)}>
                                 <Icon name={tab.icon} color={col} />
@@ -235,6 +312,7 @@ function Shell() {
             ) : (
                 <View style={{ height: insets.bottom, backgroundColor: C.bar }} />
             )}
+            {intro && <Intro onDone={() => setIntro(false)} />}
         </View>
     );
 }
@@ -254,6 +332,18 @@ const styles = StyleSheet.create({
     screenInner: { paddingBottom: 28 },
     web: { flex: 1, backgroundColor: '#ffffff' },
     progress: { position: 'absolute', top: 0, left: 0, height: 3 },
+    intro: { backgroundColor: '#000', zIndex: 10, elevation: 10 },
+    skip: { position: 'absolute', right: 16, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.45)' },
+    skipText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    header: { flexDirection: 'row', alignItems: 'center', height: 52, paddingHorizontal: 8, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(15,23,42,0.12)' },
+    burger: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
+    headerTitle: { flex: 1, fontSize: 18, fontWeight: '700' },
+    drawerWrap: { flex: 1, flexDirection: 'row' },
+    drawer: { width: '80%', maxWidth: 320, backgroundColor: '#ffffff', paddingHorizontal: 12, elevation: 12 },
+    drawerShade: { flex: 1, backgroundColor: 'rgba(15,23,42,0.45)' },
+    drawerName: { fontSize: 20, fontWeight: '800', color: '#0f172a', marginHorizontal: 12, marginBottom: 14 },
+    drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 13, borderRadius: 12 },
+    drawerText: { flex: 1, fontSize: 16, fontWeight: '600', color: '#0f172a' },
     bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(15,23,42,0.12)', paddingTop: 6 },
     tab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 2 },
     tabText: { fontSize: 11, fontWeight: '600' },

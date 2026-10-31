@@ -157,6 +157,7 @@ Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->con
     Route::post('{id}/verify', 'verify')->where('id', '[a-z0-9]{16}')->name('verify');
     Route::post('{id}/build', 'build')->where('id', '[a-z0-9]{16}')->middleware('throttle:6,1,app-build')->name('build');
     Route::get('{id}/icon', 'icon')->where('id', '[a-z0-9]{16}')->name('icon');
+    Route::post('{id}/splash-video', 'splashVideo')->where('id', '[a-z0-9]{16}')->middleware('throttle:60,1,app-video')->name('splash-video');
     Route::get('{id}/keystore', 'keystore')->where('id', '[a-z0-9]{16}')->name('keystore');
     Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
 });

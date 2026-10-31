@@ -23,6 +23,7 @@ export const FILES = [
     'js/email-builder.js',
     'js/resume-builder.js',
     'js/app-builder.js',
+    'js/app-templates.js',
 ];
 
 for (const file of FILES) {

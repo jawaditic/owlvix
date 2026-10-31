@@ -10,7 +10,7 @@ const IMAGE = /^[a-f0-9]{20}\.(jpg|png|webp)$/;
 /** A content document we can show: anything else is ignored. */
 export const usable = doc => !!doc && typeof doc === 'object' && doc.v === 1 && Number.isFinite(doc.rev)
     && typeof doc.base === 'string' && /^https:\/\//.test(doc.base)
-    && Array.isArray(doc.tabs) && doc.tabs.length > 0 && doc.tabs.length <= 5
+    && Array.isArray(doc.tabs) && doc.tabs.length > 0 && doc.tabs.length <= 15
     && doc.tabs.every(t => t && typeof t.label === 'string' && (t.type === 'web' ? typeof t.url === 'string' : Array.isArray(t.blocks)));
 
 const cacheFile = () => new File(Paths.document, 'owlvix-content.json');

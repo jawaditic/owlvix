@@ -1,8 +1,9 @@
 // Native screens: each block made in the builder (banner, heading, text, picture, button, list, gallery, contact,
-// opening hours, video, divider) drawn with React Native components. Values are read through content.js, which
+// opening hours, video, divider, slider, cards, reviews, FAQ, social links, notice, spacer) drawn with React Native
+// components. Values are read through content.js, which
 // checks them, and unknown block types are skipped, so an app keeps working when the builder gains new blocks.
 import { useState } from 'react';
-import { FlatList, Image, ImageBackground, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FlatList, Image, ImageBackground, LayoutAnimation, Modal, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { action, image, str } from './content';
 import ICONS from './icons.json';
@@ -199,6 +200,120 @@ function Video({ b, ctx }) {
     );
 }
 
+/** Pictures to swipe through, with dots under them. */
+function Slider({ b, ctx }) {
+    const { width } = useWindowDimensions();
+    const [at, setAt] = useState(0);
+    const imgs = (Array.isArray(b.images) ? b.images : []).map(i => image(i, ctx.base)).filter(Boolean);
+    if (!imgs.length) return null;
+    const w = width - 32, h = w / Math.max(0.8, Math.min(imgs[0].ratio, 2.2));
+    return (
+        <View style={styles.pad}>
+            <FlatList data={imgs} horizontal pagingEnabled showsHorizontalScrollIndicator={false} keyExtractor={(_, i) => String(i)}
+                style={[styles.round, { width: w, height: h }]}
+                onMomentumScrollEnd={e => setAt(Math.round(e.nativeEvent.contentOffset.x / w))}
+                renderItem={({ item }) => <Image source={{ uri: item.uri }} style={{ width: w, height: h }} resizeMode="cover" />} />
+            {imgs.length > 1 && (
+                <View style={styles.dots}>{imgs.map((_, i) => <View key={i} style={[styles.dot, i === at && { backgroundColor: ctx.primary, width: 18 }]} />)}</View>
+            )}
+        </View>
+    );
+}
+
+/** Feature cards: an icon, a title and a line, in one or two columns. */
+function Cards({ b, ctx }) {
+    const items = Array.isArray(b.items) ? b.items : [];
+    const two = b.columns !== 1;
+    return (
+        <View style={styles.pad}>
+            {!!str(b.title) && <Text style={styles.cardTitle} accessibilityRole="header">{b.title}</Text>}
+            <View style={[styles.grid, { gap: 10 }]}>
+                {items.map((it, i) => (
+                    <Tap key={i} act={it?.action} ctx={ctx} label={str(it?.title)} style={[styles.feature, { width: two ? '48.4%' : '100%' }]}>
+                        <View style={[styles.featureIc, { backgroundColor: ctx.primary + '1a' }]}><Icon name={it?.icon} color={ctx.primary} size={22} /></View>
+                        {!!str(it?.title) && <Text style={styles.featureTitle}>{it.title}</Text>}
+                        {!!str(it?.text) && <Text style={styles.rowText}>{it.text}</Text>}
+                    </Tap>
+                ))}
+            </View>
+        </View>
+    );
+}
+
+const Stars = ({ n, color }) => (
+    <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={`${n} out of 5 stars`}>
+        {[1, 2, 3, 4, 5].map(i => (
+            <Svg key={i} width={15} height={15} viewBox="0 0 24 24"><Path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z" fill={i <= n ? color : '#e2e8f0'} /></Svg>
+        ))}
+    </View>
+);
+
+/** Reviews: cards to swipe sideways. */
+function Reviews({ b }) {
+    const { width } = useWindowDimensions();
+    const items = Array.isArray(b.items) ? b.items : [];
+    const w = items.length > 1 ? width * 0.78 : width - 32;
+    return (
+        <View style={{ marginTop: 14 }}>
+            {!!str(b.title) && <Text style={[styles.cardTitle, { marginHorizontal: 20 }]} accessibilityRole="header">{b.title}</Text>}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} snapToInterval={w + 10} decelerationRate="fast" contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}>
+                {items.map((r, i) => (
+                    <View key={i} style={[styles.card, styles.review, { width: w }]}>
+                        <Stars n={Number.isInteger(r?.stars) ? r.stars : 5} color="#f59e0b" />
+                        <Text style={styles.reviewText}>“{str(r?.text)}”</Text>
+                        {!!str(r?.name) && <Text style={styles.rowLabel}>— {r.name}</Text>}
+                    </View>
+                ))}
+            </ScrollView>
+        </View>
+    );
+}
+
+/** Questions that open to show the answer. */
+function Faq({ b, ctx }) {
+    const [open, setOpen] = useState(-1);
+    const items = Array.isArray(b.items) ? b.items : [];
+    const toggle = i => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setOpen(open === i ? -1 : i); };
+    return (
+        <View style={styles.pad}>
+            {!!str(b.title) && <Text style={styles.cardTitle} accessibilityRole="header">{b.title}</Text>}
+            <View style={styles.card}>
+                {items.map((it, i) => (
+                    <View key={i} style={i > 0 && styles.rowLine}>
+                        <Pressable onPress={() => toggle(i)} style={styles.row} accessibilityRole="button" accessibilityState={{ expanded: open === i }}>
+                            <Text style={[styles.rowTitle, styles.rowBody]}>{str(it?.q)}</Text>
+                            <Text style={[styles.faqSign, { color: ctx.primary }]}>{open === i ? '−' : '+'}</Text>
+                        </Pressable>
+                        {open === i && <Text style={[styles.rowText, styles.faqA]} selectable>{str(it?.a)}</Text>}
+                    </View>
+                ))}
+            </View>
+        </View>
+    );
+}
+
+const SOCIAL = { instagram: ['Instagram', '#e1306c'], facebook: ['Facebook', '#1877f2'], tiktok: ['TikTok', '#111111'], youtube: ['YouTube', '#ff0000'],
+    x: ['X', '#111111'], linkedin: ['LinkedIn', '#0a66c2'], pinterest: ['Pinterest', '#e60023'], snapchat: ['Snapchat', '#fffc00'] };
+
+function Social({ b, ctx }) {
+    const links = b.links && typeof b.links === 'object' ? Object.entries(b.links).filter(([k, v]) => SOCIAL[k] && /^https:\/\//.test(v || '')) : [];
+    return (
+        <View style={styles.pad}>
+            {!!str(b.title) && <Text style={[styles.cardTitle, styles.center]} accessibilityRole="header">{b.title}</Text>}
+            <View style={[styles.grid, { gap: 8, justifyContent: 'center' }]}>
+                {links.map(([k, url]) => (
+                    <Pressable key={k} onPress={() => ctx.openUrl(url)} accessibilityRole="link" accessibilityLabel={SOCIAL[k][0]}
+                        style={({ pressed }) => [styles.chip, { backgroundColor: SOCIAL[k][1] }, pressed && styles.pressed]}>
+                        <Text style={[styles.chipText, { color: k === 'snapchat' ? '#111' : '#fff' }]}>{SOCIAL[k][0]}</Text>
+                    </Pressable>
+                ))}
+            </View>
+        </View>
+    );
+}
+
+const TONES = { info: ['#eff6ff', '#1d4ed8'], success: ['#ecfdf5', '#047857'], warning: ['#fffbeb', '#b45309'] };
+
 export function Block({ b, ctx }) {
     if (!b || typeof b !== 'object') return null;
     switch (b.type) {
@@ -213,6 +328,13 @@ export function Block({ b, ctx }) {
         case 'hours': return <Hours b={b} />;
         case 'video': return <Video b={b} ctx={ctx} />;
         case 'divider': return <View style={styles.divider} />;
+        case 'slider': return <Slider b={b} ctx={ctx} />;
+        case 'cards': return <Cards b={b} ctx={ctx} />;
+        case 'reviews': return <Reviews b={b} />;
+        case 'faq': return <Faq b={b} ctx={ctx} />;
+        case 'social': return <Social b={b} ctx={ctx} />;
+        case 'notice': { const [bg, fg] = TONES[b.tone] || TONES.info; return <View style={[styles.pad, styles.notice, { backgroundColor: bg, borderColor: fg + '33' }]}><Text style={[styles.noticeText, { color: fg }]}>{str(b.text)}</Text></View>; }
+        case 'spacer': return <View style={{ height: { small: 8, large: 44 }[b.size] ?? 22 }} />;
         default: return null;
     }
 }
@@ -256,5 +378,18 @@ const styles = StyleSheet.create({
     closeText: { color: '#fff', fontSize: 20, fontWeight: '700' },
     video: { width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', borderRadius: 14 },
     play: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', paddingLeft: 4 },
+    dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 },
+    dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#cbd5e1' },
+    feature: { backgroundColor: '#fff', borderRadius: 16, padding: 14, gap: 6, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(15,23,42,0.12)' },
+    featureIc: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+    featureTitle: { fontSize: 15, fontWeight: '700', color: INK },
+    review: { padding: 16, gap: 10 },
+    reviewText: { fontSize: 15, lineHeight: 22, color: '#334155' },
+    faqSign: { fontSize: 22, fontWeight: '600', width: 22, textAlign: 'center' },
+    faqA: { paddingHorizontal: 14, paddingBottom: 14, marginTop: -4 },
+    chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999 },
+    chipText: { fontSize: 14, fontWeight: '700' },
+    notice: { borderRadius: 14, padding: 14, borderWidth: 1 },
+    noticeText: { fontSize: 15, lineHeight: 22, fontWeight: '600' },
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(15,23,42,0.15)', marginHorizontal: 16, marginTop: 20, marginBottom: 6 },
 });

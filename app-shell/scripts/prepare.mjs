@@ -40,7 +40,7 @@ if (!Number.isInteger(job.versionCode) || job.versionCode < 1 || job.versionCode
 // The content (tabs and blocks) is checked by the server and again by the app each time it's shown, since newer
 // copies come from the server later; here it only has to be the right kind of document.
 const content = job.content;
-if (!content || content.v !== 1 || !Array.isArray(content.tabs) || content.tabs.length < 1 || content.tabs.length > 5) fail('bad content');
+if (!content || content.v !== 1 || !Array.isArray(content.tabs) || content.tabs.length < 1 || content.tabs.length > 15) fail('bad content');
 if (!/^https:\/\//.test(content.base || '')) fail('bad content base');
 if (JSON.stringify(content).length > 2_000_000) fail('content too big');
 
@@ -52,6 +52,7 @@ const shell = {
     contentUrl: https(job.contentUrl),
     colors: Object.fromEntries(['primary', 'bar', 'splash', 'icon'].map(k => [k, hex(job.colors?.[k])])),
     statusBar: job.statusBar === 'light' ? 'light' : 'dark',
+    splashWidth: Number.isInteger(job.splashWidth) && job.splashWidth >= 80 && job.splashWidth <= 300 ? job.splashWidth : 180,
     content,
 };
 writeFileSync(join(root, 'shell.json'), JSON.stringify(shell, null, 4));
@@ -78,7 +79,23 @@ const square = (color, size = 1024, transparent = false) => {
 mkdirSync(join(root, 'assets'), { recursive: true });
 writeFileSync(join(root, 'assets/icon.png'), job.icon ? png(job.icon, 'icon') : square(shell.colors.icon));
 writeFileSync(join(root, 'assets/adaptive.png'), job.foreground ? png(job.foreground, 'foreground') : square(shell.colors.icon, 1024, true));
-writeFileSync(join(root, 'assets/splash.png'), job.foreground ? png(job.foreground, 'splash') : square(shell.colors.icon, 1024, true));
+writeFileSync(join(root, 'assets/splash.png'), job.splash ? png(job.splash, 'splash') : job.foreground ? png(job.foreground, 'splash') : square(shell.colors.icon, 1024, true));
+
+/* ---------- intro (full-screen picture or video after the splash) ---------- */
+// Fetched on its own (too big for the job). intro.js tells the app which file to bundle, or that there's none.
+let intro = null;
+if (job.intro === 'image' || job.intro === 'video') {
+    if (!process.env.OWLVIX_JOB_URL) fail('an intro needs the server');
+    const res = await fetch(process.env.OWLVIX_JOB_URL.replace(/\/job$/, '/asset'), { headers: { Authorization: `Bearer ${process.env.OWLVIX_JOB_TOKEN}` } });
+    if (!res.ok) fail(`the server answered ${res.status} for the intro`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    const ok = job.intro === 'image' ? buf.subarray(0, 3).toString('hex') === 'ffd8ff' && buf.length <= 6_000_000 : buf.subarray(4, 8).toString() === 'ftyp' && buf.length <= 16_000_000;
+    if (!ok) fail(`the intro ${job.intro} isn't what it should be`);
+    intro = job.intro === 'image' ? 'intro.jpg' : 'intro.mp4';
+    writeFileSync(join(root, 'assets', intro), buf);
+}
+writeFileSync(join(root, 'intro.js'), '// Written by scripts/prepare.mjs for this build.\n'
+    + (intro ? `export default { type: '${job.intro}', source: require('./assets/${intro}') };\n` : 'export default null;\n'));
 
 /* ---------- signing key ---------- */
 // The same key must sign every version of an app, or Google Play refuses the update. The server keeps it and
