@@ -209,6 +209,23 @@
                                 <label>Currency symbol<input data-shop="currency" maxlength="6" placeholder="$"></label>
                                 <label>Note on the order screen <small>— optional</small><input data-shop="note" maxlength="200" placeholder="Pay when you collect. Ready in 20 minutes."></label>
                             </div>
+                            <h3 class="ab-sub">Payments <small>— how customers can pay for an order; turn each way on or off</small></h3>
+                            <div class="ab-pay">
+                                <label class="fb-check"><input type="checkbox" data-pay="cash"> Cash on delivery or collection</label>
+                                <label class="fb-check"><input type="checkbox" data-pay="card"> Card on delivery or collection</label>
+                                <label class="fb-check"><input type="checkbox" data-pay="bank"> Bank transfer</label>
+                                <label data-pay-bank hidden>Your bank details <small>— shown to the customer</small><textarea data-pay="bank_details" rows="3" maxlength="300" placeholder="Account name, IBAN or account number, bank"></textarea></label>
+                                <div data-pay-online-wrap hidden>
+                                    <label class="fb-check"><input type="checkbox" data-pay="online"> Pay now by card online <small>— cards and Google Pay through your own Stripe account; the money goes straight to you</small></label>
+                                    <div class="ab-pay__online" data-pay-online hidden>
+                                        <div class="fb-2">
+                                            <label>Mode<select data-pay="mode"><option value="test">Test — sandbox, test cards only</option><option value="live">Live — real payments</option></select></label>
+                                            <label>Currency<select data-pay="currency" data-pay-currencies></select></label>
+                                        </div>
+                                        <div data-stripe></div>
+                                    </div>
+                                </div>
+                            </div>
                             <h3 class="ab-sub">Privacy policy <small>— Google Play asks every app for one; we host it for you</small></h3>
                             <div class="fb-2">
                                 <label>Business or your name<input data-pv="owner" maxlength="100" placeholder="e.g. Joe’s Bakery Ltd"></label>

@@ -158,6 +158,18 @@ class AppBuilder
         if ($shop['email'] !== '' && ! filter_var($shop['email'], FILTER_VALIDATE_EMAIL)) {
             return 'The email address for orders doesn’t look right.';
         }
+        // How customers can pay: each way on or off; "online" is a card payment on the owner's Stripe account
+        $pay = is_array($in['shop']['pay'] ?? null) ? $in['shop']['pay'] : [];
+        $shop['pay'] = ['cash' => (bool) ($pay['cash'] ?? false), 'card' => (bool) ($pay['card'] ?? false), 'bank' => (bool) ($pay['bank'] ?? false),
+            'bank_details' => $str($pay['bank_details'] ?? '', 300), 'online' => (bool) ($pay['online'] ?? false),
+            'mode' => ($pay['mode'] ?? '') === 'live' ? 'live' : 'test',
+            'currency' => in_array($pay['currency'] ?? '', Stripe::CURRENCIES, true) ? $pay['currency'] : 'usd'];
+        if (mb_strlen($shop['pay']['bank_details']) > 300) {
+            return 'The bank details are too long (300 characters at most).';
+        }
+        if ($shop['pay']['bank'] && $shop['pay']['bank_details'] === '') {
+            return 'Add your bank details for “Bank transfer” under “More settings → Orders & bookings”, or turn it off.';
+        }
         $types = collect($content['tabs'])->flatMap(fn ($t) => $t['blocks'] ?? [])->pluck('type');
         if (($types->contains('products') || $types->contains('booking')) && $shop['whatsapp'] === '' && $shop['email'] === '') {
             return 'Your app takes '.($types->contains('products') ? 'orders' : 'bookings').': add a WhatsApp number or email for them under “More settings”.';
@@ -218,6 +230,7 @@ class AppBuilder
             'links' => $actions->contains('url'),
             'push' => Firebase::enabled(),
             'orders' => $blocks->contains('type', 'products'),
+            'card_payments' => $blocks->contains('type', 'products') && ! empty($app->settings['shop']['pay']['online']),
             'bookings' => $blocks->contains('type', 'booking'),
             'loyalty' => $blocks->contains('type', 'loyalty'),
         ];
@@ -271,7 +284,7 @@ class AppBuilder
      */
     // 3: push notifications, 4: usage statistics, 5: products and orders, 6: bookings, 7: dark mode, corners, fonts,
     // 8: loyalty card, 9: languages
-    public const SHELL_VERSION = 10;
+    public const SHELL_VERSION = 11;
 
     /**
      * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when

@@ -27,6 +27,7 @@ const W = {
         loyalty_card: 'Loyalty card', stamps_for: '{n} stamps = {reward}', reward_ready: '🎉 Your reward is ready: {reward}! Show this to staff.',
         get_reward: 'Get my reward', add_stamp: 'Add a stamp', rewards_so_far: 'Rewards so far: {n}', give_reward: 'Give the reward',
         hand_phone: 'Please hand your phone to a member of staff.', staff_pin: 'Staff PIN', too_many: 'Too many wrong PINs. Please try again in a few minutes.', wrong_pin: 'That PIN isn’t right.', pin_offline: 'No internet: connect to check the PIN.',
+        pay_how: 'How will you pay?', pay_cash: 'Cash on delivery', pay_card: 'Card on delivery', pay_bank: 'Bank transfer', pay_online: 'Pay now by card', pay_now: 'Pay {total} now', pay_wait: 'Waiting for your payment…', pay_check: 'I’ve paid — check', paid_ok: 'Paid ✓ Now send your order.', pay_failed: 'The payment didn’t go through. Try again or choose another way to pay.', pay_test: 'Test payments — no real money is taken.', pay_priced_only: 'Items priced on request can’t be paid online.', pay_error: 'We couldn’t start the payment. Check your internet and try again.', m_pay: 'Payment', m_paid_online: 'Paid online by card', m_test: '(test payment)',
         // in orders and booking requests (main language)
         m_order: 'Hello! I’d like to order:', m_book: 'Hello! I’d like to book an appointment:', m_total: 'Total', m_name: 'Name', m_note: 'Note', m_phone: 'Phone',
         m_service: 'Service', m_when: 'When', m_sent_from: '(Sent from the {app} app)', m_order_subject: 'Order from the {app} app', m_book_subject: 'Booking request from the {app} app',
@@ -49,6 +50,7 @@ const W = {
         loyalty_card: 'بطاقة الولاء', stamps_for: '{n} أختام = {reward}', reward_ready: '🎉 مكافأتك جاهزة: {reward}! اعرض هذا على الموظف.',
         get_reward: 'احصل على مكافأتي', add_stamp: 'أضف ختمًا', rewards_so_far: 'المكافآت حتى الآن: {n}', give_reward: 'منح المكافأة',
         hand_phone: 'من فضلك سلّم هاتفك لأحد الموظفين.', staff_pin: 'رمز الموظف', too_many: 'محاولات خاطئة كثيرة. حاول بعد بضع دقائق.', wrong_pin: 'الرمز غير صحيح.', pin_offline: 'لا يوجد إنترنت: اتصل للتحقق من الرمز.',
+        pay_how: 'كيف ستدفع؟', pay_cash: 'الدفع نقدًا عند الاستلام', pay_card: 'البطاقة عند الاستلام', pay_bank: 'تحويل بنكي', pay_online: 'ادفع الآن بالبطاقة', pay_now: 'ادفع {total} الآن', pay_wait: 'بانتظار دفعتك…', pay_check: 'دفعت — تحقّق', paid_ok: 'تم الدفع ✓ أرسل طلبك الآن.', pay_failed: 'لم تتم عملية الدفع. حاول مرة أخرى أو اختر طريقة أخرى.', pay_test: 'دفعات تجريبية — لا تُؤخذ أموال حقيقية.', pay_priced_only: 'لا يمكن دفع العناصر ذات السعر عند الطلب عبر الإنترنت.', pay_error: 'تعذّر بدء الدفع. تحقّق من الإنترنت وحاول مجددًا.', m_pay: 'الدفع', m_paid_online: 'مدفوع عبر الإنترنت بالبطاقة', m_test: '(دفعة تجريبية)',
     },
     ur: {
         no_app_title: 'نہیں کھل سکا', no_app: 'اس فون پر {via} نہیں کھل سکا۔ براہ کرم {to} پر ہم سے رابطہ کریں۔',
@@ -68,6 +70,7 @@ const W = {
         loyalty_card: 'لائلٹی کارڈ', stamps_for: '{n} اسٹیمپ = {reward}', reward_ready: '🎉 آپ کا انعام تیار ہے: {reward}! یہ عملے کو دکھائیں۔',
         get_reward: 'میرا انعام لیں', add_stamp: 'اسٹیمپ لگوائیں', rewards_so_far: 'اب تک کے انعامات: {n}', give_reward: 'انعام دیں',
         hand_phone: 'براہ کرم اپنا فون عملے کے کسی رکن کو دیں۔', staff_pin: 'عملے کا PIN', too_many: 'بہت زیادہ غلط PIN۔ چند منٹ بعد کوشش کریں۔', wrong_pin: 'یہ PIN درست نہیں۔', pin_offline: 'انٹرنیٹ نہیں: PIN چیک کرنے کے لیے کنیکٹ کریں۔',
+        pay_how: 'آپ کیسے ادائیگی کریں گے؟', pay_cash: 'ڈیلیوری پر نقد', pay_card: 'ڈیلیوری پر کارڈ', pay_bank: 'بینک ٹرانسفر', pay_online: 'ابھی کارڈ سے ادائیگی کریں', pay_now: 'ابھی {total} ادا کریں', pay_wait: 'آپ کی ادائیگی کا انتظار ہے…', pay_check: 'میں نے ادائیگی کر دی — چیک کریں', paid_ok: 'ادائیگی ہو گئی ✓ اب اپنا آرڈر بھیجیں۔', pay_failed: 'ادائیگی نہیں ہو سکی۔ دوبارہ کوشش کریں یا کوئی اور طریقہ چنیں۔', pay_test: 'آزمائشی ادائیگیاں — کوئی اصل رقم نہیں لی جاتی۔', pay_priced_only: 'جن چیزوں کی قیمت پوچھ کر بتائی جاتی ہے ان کی آن لائن ادائیگی نہیں ہو سکتی۔', pay_error: 'ادائیگی شروع نہیں ہو سکی۔ انٹرنیٹ چیک کر کے دوبارہ کوشش کریں۔', m_pay: 'ادائیگی', m_paid_online: 'آن لائن کارڈ سے ادا شدہ', m_test: '(آزمائشی ادائیگی)',
     },
     hi: {
         no_app_title: 'खुल नहीं सका', no_app: 'इस फ़ोन पर {via} नहीं खुल सका। कृपया {to} पर हमसे संपर्क करें।',
@@ -87,6 +90,7 @@ const W = {
         loyalty_card: 'लॉयल्टी कार्ड', stamps_for: '{n} स्टैम्प = {reward}', reward_ready: '🎉 आपका इनाम तैयार है: {reward}! यह स्टाफ़ को दिखाएँ।',
         get_reward: 'मेरा इनाम लें', add_stamp: 'स्टैम्प लगवाएँ', rewards_so_far: 'अब तक के इनाम: {n}', give_reward: 'इनाम दें',
         hand_phone: 'कृपया अपना फ़ोन स्टाफ़ को दें।', staff_pin: 'स्टाफ़ PIN', too_many: 'बहुत सारे गलत PIN। कुछ मिनट बाद कोशिश करें।', wrong_pin: 'यह PIN सही नहीं है।', pin_offline: 'इंटरनेट नहीं: PIN जाँचने के लिए कनेक्ट करें।',
+        pay_how: 'आप कैसे भुगतान करेंगे?', pay_cash: 'डिलीवरी पर नकद', pay_card: 'डिलीवरी पर कार्ड', pay_bank: 'बैंक ट्रांसफ़र', pay_online: 'अभी कार्ड से भुगतान करें', pay_now: 'अभी {total} चुकाएँ', pay_wait: 'आपके भुगतान का इंतज़ार…', pay_check: 'मैंने भुगतान कर दिया — जाँचें', paid_ok: 'भुगतान हो गया ✓ अब अपना ऑर्डर भेजें।', pay_failed: 'भुगतान नहीं हो पाया। फिर कोशिश करें या भुगतान का दूसरा तरीका चुनें।', pay_test: 'टेस्ट भुगतान — कोई असली पैसा नहीं लिया जाता।', pay_priced_only: 'जिन चीज़ों की कीमत पूछने पर बताई जाती है, उनका ऑनलाइन भुगतान नहीं हो सकता।', pay_error: 'भुगतान शुरू नहीं हो सका। इंटरनेट जाँचें और फिर कोशिश करें।', m_pay: 'भुगतान', m_paid_online: 'ऑनलाइन कार्ड से भुगतान किया', m_test: '(टेस्ट भुगतान)',
     },
     es: {
         no_app_title: 'No se pudo abrir', no_app: 'No pudimos abrir {via} en este teléfono. Escríbenos a {to}.',
@@ -106,6 +110,7 @@ const W = {
         loyalty_card: 'Tarjeta de fidelidad', stamps_for: '{n} sellos = {reward}', reward_ready: '🎉 ¡Tu premio está listo: {reward}! Enséñaselo al personal.',
         get_reward: 'Canjear mi premio', add_stamp: 'Añadir sello', rewards_so_far: 'Premios conseguidos: {n}', give_reward: 'Entregar el premio',
         hand_phone: 'Entrega tu teléfono a un miembro del personal.', staff_pin: 'PIN del personal', too_many: 'Demasiados PIN incorrectos. Inténtalo en unos minutos.', wrong_pin: 'Ese PIN no es correcto.', pin_offline: 'Sin internet: conéctate para comprobar el PIN.',
+        pay_how: '¿Cómo vas a pagar?', pay_cash: 'Efectivo a la entrega', pay_card: 'Tarjeta a la entrega', pay_bank: 'Transferencia bancaria', pay_online: 'Pagar ahora con tarjeta', pay_now: 'Pagar {total} ahora', pay_wait: 'Esperando tu pago…', pay_check: 'Ya he pagado — comprobar', paid_ok: 'Pagado ✓ Ahora envía tu pedido.', pay_failed: 'El pago no se completó. Inténtalo de nuevo o elige otra forma de pago.', pay_test: 'Pagos de prueba: no se cobra dinero real.', pay_priced_only: 'Los productos con precio a consultar no se pueden pagar en línea.', pay_error: 'No pudimos iniciar el pago. Revisa tu conexión e inténtalo de nuevo.', m_pay: 'Pago', m_paid_online: 'Pagado en línea con tarjeta', m_test: '(pago de prueba)',
     },
     fr: {
         no_app_title: 'Impossible d’ouvrir', no_app: "Impossible d’ouvrir {via} sur ce téléphone. Contactez-nous à {to}.",
@@ -125,6 +130,7 @@ const W = {
         loyalty_card: 'Carte de fidélité', stamps_for: '{n} tampons = {reward}', reward_ready: '🎉 Votre récompense est prête : {reward} ! Montrez ceci au personnel.',
         get_reward: 'Obtenir ma récompense', add_stamp: 'Ajouter un tampon', rewards_so_far: 'Récompenses obtenues : {n}', give_reward: 'Donner la récompense',
         hand_phone: 'Veuillez tendre votre téléphone à un membre du personnel.', staff_pin: 'Code du personnel', too_many: 'Trop de codes erronés. Réessayez dans quelques minutes.', wrong_pin: 'Ce code est incorrect.', pin_offline: 'Pas d’internet : connectez-vous pour vérifier le code.',
+        pay_how: 'Comment voulez-vous payer ?', pay_cash: 'Espèces à la livraison', pay_card: 'Carte à la livraison', pay_bank: 'Virement bancaire', pay_online: 'Payer maintenant par carte', pay_now: 'Payer {total} maintenant', pay_wait: 'En attente de votre paiement…', pay_check: 'J’ai payé — vérifier', paid_ok: 'Payé ✓ Envoyez maintenant votre commande.', pay_failed: 'Le paiement n’a pas abouti. Réessayez ou choisissez un autre moyen de paiement.', pay_test: 'Paiements de test : aucun argent réel n’est prélevé.', pay_priced_only: 'Les articles au prix sur demande ne peuvent pas être payés en ligne.', pay_error: 'Impossible de lancer le paiement. Vérifiez votre connexion et réessayez.', m_pay: 'Paiement', m_paid_online: 'Payé en ligne par carte', m_test: '(paiement de test)',
     },
     de: {
         no_app_title: 'Konnte nicht geöffnet werden', no_app: '{via} lässt sich auf diesem Handy nicht öffnen. Bitte schreib uns an {to}.',
@@ -144,6 +150,7 @@ const W = {
         loyalty_card: 'Treuekarte', stamps_for: '{n} Stempel = {reward}', reward_ready: '🎉 Deine Prämie ist bereit: {reward}! Zeig das dem Personal.',
         get_reward: 'Prämie einlösen', add_stamp: 'Stempel hinzufügen', rewards_so_far: 'Bisherige Prämien: {n}', give_reward: 'Prämie ausgeben',
         hand_phone: 'Bitte gib dein Handy einem Mitarbeiter.', staff_pin: 'Mitarbeiter-PIN', too_many: 'Zu viele falsche PINs. Bitte in ein paar Minuten erneut versuchen.', wrong_pin: 'Diese PIN ist falsch.', pin_offline: 'Kein Internet: zum Prüfen der PIN bitte verbinden.',
+        pay_how: 'Wie möchten Sie bezahlen?', pay_cash: 'Barzahlung bei Lieferung', pay_card: 'Kartenzahlung bei Lieferung', pay_bank: 'Banküberweisung', pay_online: 'Jetzt mit Karte bezahlen', pay_now: 'Jetzt {total} bezahlen', pay_wait: 'Warten auf Ihre Zahlung…', pay_check: 'Ich habe bezahlt — prüfen', paid_ok: 'Bezahlt ✓ Senden Sie jetzt Ihre Bestellung.', pay_failed: 'Die Zahlung hat nicht geklappt. Versuchen Sie es erneut oder wählen Sie eine andere Zahlungsart.', pay_test: 'Testzahlungen — es wird kein echtes Geld abgebucht.', pay_priced_only: 'Artikel mit Preis auf Anfrage können nicht online bezahlt werden.', pay_error: 'Die Zahlung konnte nicht gestartet werden. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.', m_pay: 'Zahlung', m_paid_online: 'Online mit Karte bezahlt', m_test: '(Testzahlung)',
     },
     pt: {
         no_app_title: 'Não foi possível abrir', no_app: 'Não foi possível abrir o {via} neste telemóvel. Contacte-nos em {to}.',
@@ -163,6 +170,7 @@ const W = {
         loyalty_card: 'Cartão de fidelidade', stamps_for: '{n} carimbos = {reward}', reward_ready: '🎉 O seu prémio está pronto: {reward}! Mostre isto ao funcionário.',
         get_reward: 'Receber o meu prémio', add_stamp: 'Adicionar carimbo', rewards_so_far: 'Prémios até agora: {n}', give_reward: 'Entregar o prémio',
         hand_phone: 'Entregue o telemóvel a um funcionário.', staff_pin: 'PIN do funcionário', too_many: 'Demasiados PIN errados. Tente daqui a alguns minutos.', wrong_pin: 'Esse PIN não está correto.', pin_offline: 'Sem internet: conecte-se para verificar o PIN.',
+        pay_how: 'Como vai pagar?', pay_cash: 'Dinheiro na entrega', pay_card: 'Cartão na entrega', pay_bank: 'Transferência bancária', pay_online: 'Pagar agora com cartão', pay_now: 'Pagar {total} agora', pay_wait: 'Aguardando o seu pagamento…', pay_check: 'Já paguei — verificar', paid_ok: 'Pago ✓ Agora envie o seu pedido.', pay_failed: 'O pagamento não foi concluído. Tente novamente ou escolha outra forma de pagamento.', pay_test: 'Pagamentos de teste — nenhum dinheiro real é cobrado.', pay_priced_only: 'Itens com preço sob consulta não podem ser pagos online.', pay_error: 'Não foi possível iniciar o pagamento. Verifique a sua internet e tente novamente.', m_pay: 'Pagamento', m_paid_online: 'Pago online com cartão', m_test: '(pagamento de teste)',
     },
     tr: {
         no_app_title: 'Açılamadı', no_app: 'Bu telefonda {via} açılamadı. Lütfen {to} üzerinden bize ulaşın.',
@@ -182,6 +190,7 @@ const W = {
         loyalty_card: 'Sadakat kartı', stamps_for: '{n} damga = {reward}', reward_ready: '🎉 Ödülünüz hazır: {reward}! Bunu personele gösterin.',
         get_reward: 'Ödülümü al', add_stamp: 'Damga ekle', rewards_so_far: 'Şimdiye kadarki ödüller: {n}', give_reward: 'Ödülü ver',
         hand_phone: 'Lütfen telefonunuzu bir personele verin.', staff_pin: 'Personel PIN', too_many: 'Çok fazla yanlış PIN. Birkaç dakika sonra tekrar deneyin.', wrong_pin: 'Bu PIN doğru değil.', pin_offline: 'İnternet yok: PIN’i doğrulamak için bağlanın.',
+        pay_how: 'Nasıl ödeyeceksiniz?', pay_cash: 'Kapıda nakit', pay_card: 'Kapıda kartla', pay_bank: 'Banka havalesi', pay_online: 'Şimdi kartla öde', pay_now: 'Şimdi {total} öde', pay_wait: 'Ödemeniz bekleniyor…', pay_check: 'Ödedim — kontrol et', paid_ok: 'Ödendi ✓ Şimdi siparişinizi gönderin.', pay_failed: 'Ödeme gerçekleşmedi. Tekrar deneyin veya başka bir ödeme yolu seçin.', pay_test: 'Test ödemeleri — gerçek para çekilmez.', pay_priced_only: 'Fiyatı sorulan ürünler online ödenemez.', pay_error: 'Ödeme başlatılamadı. İnternetinizi kontrol edip tekrar deneyin.', m_pay: 'Ödeme', m_paid_online: 'Online kartla ödendi', m_test: '(test ödemesi)',
     },
     id: {
         no_app_title: 'Tidak bisa dibuka', no_app: '{via} tidak bisa dibuka di ponsel ini. Silakan hubungi kami di {to}.',
@@ -201,6 +210,7 @@ const W = {
         loyalty_card: 'Kartu loyalitas', stamps_for: '{n} stempel = {reward}', reward_ready: '🎉 Hadiah Anda siap: {reward}! Tunjukkan ini ke staf.',
         get_reward: 'Ambil hadiah saya', add_stamp: 'Tambah stempel', rewards_so_far: 'Hadiah sejauh ini: {n}', give_reward: 'Berikan hadiah',
         hand_phone: 'Silakan berikan ponsel Anda ke staf.', staff_pin: 'PIN staf', too_many: 'Terlalu banyak PIN salah. Coba lagi beberapa menit lagi.', wrong_pin: 'PIN itu salah.', pin_offline: 'Tidak ada internet: sambungkan untuk memeriksa PIN.',
+        pay_how: 'Bagaimana Anda akan membayar?', pay_cash: 'Bayar tunai saat diterima', pay_card: 'Kartu saat diterima', pay_bank: 'Transfer bank', pay_online: 'Bayar sekarang dengan kartu', pay_now: 'Bayar {total} sekarang', pay_wait: 'Menunggu pembayaran Anda…', pay_check: 'Saya sudah bayar — periksa', paid_ok: 'Lunas ✓ Sekarang kirim pesanan Anda.', pay_failed: 'Pembayaran tidak berhasil. Coba lagi atau pilih cara bayar lain.', pay_test: 'Pembayaran uji coba — tidak ada uang sungguhan yang ditarik.', pay_priced_only: 'Barang dengan harga sesuai permintaan tidak dapat dibayar online.', pay_error: 'Pembayaran tidak dapat dimulai. Periksa internet Anda dan coba lagi.', m_pay: 'Pembayaran', m_paid_online: 'Dibayar online dengan kartu', m_test: '(pembayaran uji coba)',
     },
     ru: {
         no_app_title: 'Не удалось открыть', no_app: 'Не удалось открыть {via} на этом телефоне. Свяжитесь с нами: {to}.',
@@ -220,6 +230,7 @@ const W = {
         loyalty_card: 'Карта лояльности', stamps_for: '{n} штампов = {reward}', reward_ready: '🎉 Ваш подарок готов: {reward}! Покажите это сотруднику.',
         get_reward: 'Получить подарок', add_stamp: 'Добавить штамп', rewards_so_far: 'Получено подарков: {n}', give_reward: 'Выдать подарок',
         hand_phone: 'Передайте телефон сотруднику.', staff_pin: 'PIN сотрудника', too_many: 'Слишком много неверных PIN. Попробуйте через несколько минут.', wrong_pin: 'Неверный PIN.', pin_offline: 'Нет интернета: подключитесь, чтобы проверить PIN.',
+        pay_how: 'Как вы будете платить?', pay_cash: 'Наличными при получении', pay_card: 'Картой при получении', pay_bank: 'Банковский перевод', pay_online: 'Оплатить картой сейчас', pay_now: 'Оплатить {total} сейчас', pay_wait: 'Ожидаем вашу оплату…', pay_check: 'Я оплатил — проверить', paid_ok: 'Оплачено ✓ Теперь отправьте заказ.', pay_failed: 'Оплата не прошла. Попробуйте ещё раз или выберите другой способ.', pay_test: 'Тестовые платежи — настоящие деньги не списываются.', pay_priced_only: 'Товары с ценой по запросу нельзя оплатить онлайн.', pay_error: 'Не удалось начать оплату. Проверьте интернет и попробуйте снова.', m_pay: 'Оплата', m_paid_online: 'Оплачено онлайн картой', m_test: '(тестовый платёж)',
     },
     zh: {
         no_app_title: '无法打开', no_app: '无法在此手机上打开{via}。请通过 {to} 联系我们。',
@@ -239,6 +250,7 @@ const W = {
         loyalty_card: '会员卡', stamps_for: '{n} 个印章 = {reward}', reward_ready: '🎉 您的奖励已就绪：{reward}！请向店员出示。',
         get_reward: '领取奖励', add_stamp: '盖章', rewards_so_far: '已获奖励：{n}', give_reward: '发放奖励',
         hand_phone: '请将手机交给店员。', staff_pin: '店员 PIN', too_many: 'PIN 错误次数过多，请几分钟后再试。', wrong_pin: 'PIN 不正确。', pin_offline: '没有网络：请联网以验证 PIN。',
+        pay_how: '您想怎么付款？', pay_cash: '货到付现金', pay_card: '货到刷卡', pay_bank: '银行转账', pay_online: '立即刷卡付款', pay_now: '立即支付 {total}', pay_wait: '正在等待您的付款…', pay_check: '我已付款 — 查看', paid_ok: '已付款 ✓ 现在发送您的订单。', pay_failed: '付款未成功。请重试或选择其他付款方式。', pay_test: '测试付款 — 不会扣取真实资金。', pay_priced_only: '需询价的商品无法在线付款。', pay_error: '无法开始付款。请检查网络后重试。', m_pay: '付款', m_paid_online: '已在线刷卡付款', m_test: '（测试付款）',
     },
 };
 

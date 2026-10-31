@@ -6,6 +6,9 @@
    (logo only, smaller) for Android's round/squircle icons and the splash. */
 (() => {
     const root = document.querySelector('[data-ab]');
+    // How customers can pay (shop.pay): each way on or off; "online" = card payment on the owner's own Stripe account
+    const PAY = { cash: false, card: false, bank: false, bank_details: '', online: false, mode: 'test', currency: 'usd' };
+    const CURRENCIES = ['usd', 'eur', 'gbp', 'cad', 'aud', 'nzd', 'chf', 'sek', 'nok', 'dkk', 'pln', 'czk', 'huf', 'ron', 'try', 'aed', 'sar', 'qar', 'inr', 'pkr', 'bdt', 'lkr', 'myr', 'sgd', 'hkd', 'idr', 'php', 'thb', 'jpy', 'krw', 'cny', 'brl', 'mxn', 'zar', 'ngn', 'kes', 'egp'];
     if (!root) return;
     const $ = (s, el = root) => el.querySelector(s), $$ = (s, el = root) => [...el.querySelectorAll(s)];
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -75,7 +78,7 @@
 
     const fresh = () => ({
         id: null, dirty: true, iconDirty: true, base: '', editLang: 'en', mainTabs: null,
-        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on' }, lang: 'en', translations: {}, tabs: starter(),
+        app: { name: '', package: '', url: '', version_name: '1.0.0', external_links: 'browser', menu: 'show', privacy: { owner: '', email: '', extra: '' }, shop: { currency: '$', whatsapp: '', email: '', note: '', pay: { ...PAY } }, style: { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on' }, lang: 'en', translations: {}, tabs: starter(),
             colors: { primary: '#16a34a', bar: '#ffffff', icon: '#16a34a', splash: '#ffffff' },
             offline: { title: '', text: '', button: '' } },
         icon: { mode: 'letter', letter: '', image: null, zoom: 70, fill: false },
@@ -92,6 +95,7 @@
         D.base ||= '';
         D.app.privacy = { owner: '', email: '', extra: '', ...(D.app.privacy || {}) };
         D.app.shop = { currency: '$', whatsapp: '', email: '', note: '', ...(D.app.shop || {}) };
+        D.app.shop.pay = { ...PAY, ...(D.app.shop.pay || {}) };
         D.app.style = { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on', ...(D.app.style || {}) };
         D.app.lang ||= 'en';
         D.app.translations ||= {};
@@ -602,6 +606,8 @@
         $$('[data-o]').forEach(el => (el.value = a.offline[el.dataset.o] ?? ''));
         $$('[data-pv]').forEach(el => (el.value = a.privacy[el.dataset.pv] ?? ''));
         $$('[data-shop]').forEach(el => (el.value = a.shop[el.dataset.shop] ?? ''));
+        $$('[data-pay]').forEach(el => { const v = a.shop.pay[el.dataset.pay]; if (el.type === 'checkbox') el.checked = !!v; else el.value = v ?? ''; });
+        drawPay();
         $$('[data-style]').forEach(b => { const [k, v] = b.dataset.style.split(':'); b.setAttribute('aria-pressed', String(a.style[k] === v)); });
         $('[data-i="letter"]').value = D.icon.letter;
         $('[data-i="zoom"]').value = D.icon.zoom;
@@ -649,6 +655,7 @@
         else if (el.dataset.o) a.offline[el.dataset.o] = el.value;
         else if (el.dataset.pv) a.privacy[el.dataset.pv] = el.value;
         else if (el.dataset.shop) { a.shop[el.dataset.shop] = el.value; if (el.dataset.shop === 'currency') drawBlocks(); }
+        else if (el.dataset.pay) { a.shop.pay[el.dataset.pay] = el.type === 'checkbox' ? el.checked : el.value; drawPay(); }
         else if (el.dataset.t) { // (tab fields carry data-i too — their index — so they're matched first)
             const t = a.tabs[+el.dataset.i]; activeTab = +el.dataset.i;
             if (el.dataset.t === 'bar') {
@@ -880,7 +887,7 @@
     /* ------------------------------------------------ account (same sign-in as the page builder) */
     let csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
     let token = ''; try { token = localStorage.getItem('owlvix-builder-token') || ''; } catch {}
-    let apps = null, sites = [], enabled = true;
+    let apps = null, sites = [], enabled = true, stripeOn = {};
     const current = () => apps?.find(x => x.id === D.id) || null;
     const api = async (method, url, body, retried) => {
         const res = await fetch(url, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Builder-Token': token }, body: body ? JSON.stringify(body) : undefined });
@@ -920,11 +927,46 @@
     });
     const loadAccount = async () => {
         const [acc, list] = await Promise.all([api('GET', '/builder/account'), api('GET', '/builder/apps')]);
-        sites = (acc.sites || []).filter(s => s.status === 'live'); apps = list.apps; enabled = list.enabled;
-        drawMine(); drawSitePick(); syncSave();
+        sites = (acc.sites || []).filter(s => s.status === 'live'); apps = list.apps; enabled = list.enabled; stripeOn = list.stripe || {};
+        drawMine(); drawSitePick(); syncSave(); drawPay();
         if (!$('[data-panel="build"]').hidden) drawBuild();
         return apps;
     };
+    /** The payment settings: bank details, and the Stripe connection for the chosen mode. */
+    const drawPay = () => {
+        const p = A().shop.pay, x = current(), mode = p.mode === 'live' ? 'live' : 'test';
+        $('[data-pay-bank]').hidden = !p.bank;
+        $('[data-pay-online-wrap]').hidden = !(stripeOn.test || stripeOn.live || p.online);
+        $('[data-pay-online]').hidden = !p.online;
+        const cur = $('[data-pay-currencies]');
+        if (!cur.options.length) { cur.innerHTML = CURRENCIES.map(c => `<option value="${c}">${c.toUpperCase()}</option>`).join(''); cur.value = p.currency; }
+        const connected = !!x?.stripe?.[mode]?.connected;
+        $('[data-stripe]').innerHTML = !stripeOn[mode]
+            ? `<p class="fb-hint">${mode === 'live' ? 'Real card payments aren’t available yet — use Test mode to try it.' : 'Test payments aren’t available right now.'}</p>`
+            : !x ? '<p class="fb-hint">Save your app first, then connect your Stripe account here.</p>'
+            : connected
+                ? `<p class="fb-hint ab-pay__ok">✓ Your Stripe ${mode === 'live' ? 'live' : 'test'} account is connected. <button type="button" class="ab-link" data-stripe-off="${mode}">Disconnect</button></p>`
+                  + (mode === 'test' ? '<p class="fb-hint">Test it in the app with the card <b>4242 4242 4242 4242</b>, any future date and any CVC. No real money moves.</p>' : '<p class="fb-hint">Customers pay you for real. Refunds and disputes are handled in your Stripe dashboard.</p>')
+                : `<p><button type="button" class="btn btn--sm" data-stripe-connect="${mode}">Connect Stripe (${mode})</button></p><p class="fb-hint">You sign in to Stripe (or open a free account) and come back here. We never see your keys or your customers’ cards; payments go straight to your Stripe account and you’re the seller.</p>`;
+        if (p.online && stripeOn[mode] && x && !connected) $('[data-stripe]').insertAdjacentHTML('beforeend', '<p class="fb-hint">Until it’s connected, the app doesn’t show “Pay now”.</p>');
+    };
+    root.addEventListener('click', async e => {
+        const on = e.target.closest('[data-stripe-connect]'), off = e.target.closest('[data-stripe-off]');
+        if (!on && !off) return;
+        const btn = on || off, mode = (on ? on.dataset.stripeConnect : off.dataset.stripeOff) === 'live' ? 'live' : 'test';
+        try {
+            btn.disabled = true;
+            if (on) {
+                if (D.dirty && !await saveApp()) return; // (the settings must be saved before leaving for Stripe)
+                const r = await api('POST', `/builder/apps/${D.id}/stripe/connect`, { mode });
+                location.href = r.url;
+            } else {
+                if (!await ask('Disconnect Stripe?', 'The app stops offering “Pay now”. Payments already made stay in your Stripe account.', 'Disconnect', true)) return;
+                const r = await api('POST', `/builder/apps/${D.id}/stripe/disconnect`, { mode });
+                apps = apps.map(y => (y.id === r.app.id ? r.app : y)); drawPay(); note('Stripe disconnected.');
+            }
+        } catch (ex) { note(ex.message); if (ex.status === 401) signIn(drawPay); } finally { btn.disabled = false; }
+    });
     const drawMine = () => {
         const sel = $('[data-mine]');
         sel.hidden = !apps?.length;
@@ -1058,7 +1100,7 @@
             : { label: t.label, icon: t.icon, type: 'screen', bar: t.bar, menu: t.menu, path: '', blocks: JSON.parse(JSON.stringify(t.blocks || [])).map(fillBlock) }));
         const tabs = toEdit(x.tabs);
         D = { id: x.id, editLang: x.settings.lang || 'en', mainTabs: null, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
-            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '' }, style: { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on', ...(x.settings.style || {}) }, lang: x.settings.lang || 'en', translations: Object.fromEntries(Object.entries(x.translations || {}).map(([c, v]) => [c, toEdit(v.tabs)])), tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
+            app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, shop: { currency: '$', whatsapp: '', email: '', note: '', ...(x.settings.shop || {}), whatsapp: x.settings.shop?.whatsapp ? '+' + x.settings.shop.whatsapp : '', pay: { ...PAY, ...(x.settings.shop?.pay || {}) } }, style: { theme: 'light', corners: 'rounded', font: 'modern', nav: 'floating', motion: 'on', ...(x.settings.style || {}) }, lang: x.settings.lang || 'en', translations: Object.fromEntries(Object.entries(x.translations || {}).map(([c, v]) => [c, toEdit(v.tabs)])), tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
             icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
         activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(() => { drawAll(); drawLangs(); }); drawMine();
         if (!same) { iconLoading = true; syncSave(); }
@@ -1486,4 +1528,12 @@
         .then(() => Promise.all([loadLogo(), loadSplashPic()]))
         .then(() => { drawAll(); drawMine(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
     if (token) loadAccount().catch(() => {});
+    // back from Stripe's page
+    const stripeBack = new URLSearchParams(location.search).get('stripe');
+    if (stripeBack) {
+        history.replaceState(null, '', location.pathname);
+        const said = { 'connected-test': 'Stripe test account connected — the app now shows “Pay now” (test cards only).', 'connected-live': 'Stripe connected — the app now takes real card payments.',
+            cancelled: 'Stripe wasn’t connected (you went back without allowing it).', failed: 'Stripe didn’t connect. Please try again.', expired: 'That Stripe link expired. Please click “Connect Stripe” again.' }[stripeBack];
+        if (said) setTimeout(() => { note(said); $('[data-pay-online]')?.scrollIntoView({ block: 'center' }); }, 600);
+    }
 })();

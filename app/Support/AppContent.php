@@ -608,7 +608,7 @@ class AppContent
             'externalLinks' => $s['external_links'],
             'menu' => ($s['menu'] ?? '') === 'hide' ? 'hide' : 'show',
             'report' => $app->reportUrl(),
-            'shop' => $s['shop'] ?? null,
+            'shop' => self::shopForPhones($app),
             'style' => ($s['style'] ?? []) + ['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern', 'nav' => 'floating', 'motion' => 'on'],
             'hosts' => $app->url && $webOk ? [$app->host()] : [],
             'offline' => $s['offline'],
@@ -616,6 +616,26 @@ class AppContent
             'lang' => $s['lang'] ?? 'en',
             'translations' => (object) array_map(fn ($tr) => ['tabs' => $tabs($tr['tabs'] ?? [])] + $tr, $app->content['translations'] ?? []),
         ];
+    }
+
+    /**
+     * The order settings phones get: where orders go, and the ways to pay. Online card payment is there only when
+     * owlvix offers that mode (Stripe::available) and the owner has connected a Stripe account for it.
+     */
+    private static function shopForPhones(BuilderApp $app): ?array
+    {
+        $shop = $app->settings['shop'] ?? null;
+        if (! is_array($shop)) {
+            return null;
+        }
+        $pay = $shop['pay'] ?? [];
+        $mode = ($pay['mode'] ?? 'test') === 'live' ? 'live' : 'test';
+        $online = ! empty($pay['online']) && Stripe::available($mode) && Stripe::account($app, $mode);
+        $shop['pay'] = ['cash' => ! empty($pay['cash']), 'card' => ! empty($pay['card']), 'bank' => ! empty($pay['bank']),
+            'bank_details' => ! empty($pay['bank']) ? (string) ($pay['bank_details'] ?? '') : '',
+            'online' => $online ? ['test' => $mode === 'test', 'url' => rtrim(config('builder.apps.callback_url') ?: config('app.url'), '/').'/api/app-pay/'.$app->id] : null];
+
+        return $shop;
     }
 
     /**
@@ -672,6 +692,16 @@ class AppContent
                 File::moveDirectory("$from/$folder", "$to/$folder");
             }
         }
+        self::publish($app);
+    }
+
+    /** Publishes the app again with a newer rev (phones take it), e.g. after settings outside the editor changed. */
+    public static function republish(BuilderApp $app): void
+    {
+        if (! $app->isLive()) {
+            return;
+        }
+        $app->forceFill(['content' => ['rev' => max((int) floor(microtime(true) * 1000), (int) ($app->content['rev'] ?? 0) + 1)] + ($app->content ?? [])])->save();
         self::publish($app);
     }
 

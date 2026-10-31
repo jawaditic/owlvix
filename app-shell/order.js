@@ -1,8 +1,12 @@
-// Ordering from the products block: a product's details, the order basket and sending it. There's no payment: the
-// order is written out and opened in WhatsApp or the email app, so the customer sees it and sends it themselves to
-// the owner (shop settings in the content: currency, WhatsApp number, email, a note such as "Pay on collection").
-import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+// Ordering from the products block: a product's details, the order basket and sending it. The order is written out
+// and opened in WhatsApp or the email app, so the customer sees it and sends it themselves to the owner (shop
+// settings in the content: currency, WhatsApp number, email, a note such as "Pay on collection").
+// Paying (shop.pay): the owner turns on the ways they take — cash or card on delivery, bank transfer (their details
+// are shown), and "Pay now by card" (shop.pay.online), which opens Stripe's checkout page in the browser on the
+// owner's own Stripe account; the website works out the price from the app's products, and once it says the
+// payment went through, the order is sent marked as paid.
+import { useEffect, useRef, useState } from 'react';
+import { Alert, AppState, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { t, tIn } from './i18n';
 import { onLook } from './theme';
 import { Icon, money } from './blocks';
@@ -82,16 +86,56 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
     const [note, setNote] = useState('');
     const [sent, setSent] = useState(false);
     const shop = ctx.shop || {};
+    const pay = shop.pay || {};
+    const ways = [pay.cash && 'cash', pay.card && 'card', pay.bank && 'bank', pay.online?.url && 'online'].filter(Boolean);
+    const [way, setWay] = useState(null);
+    const [paying, setPaying] = useState(null); // { session } while the customer pays in the browser
+    const [paid, setPaid] = useState(null); // the Stripe session once it's paid
+    const [payMsg, setPayMsg] = useState('');
     const ml = ctx.mainLang || 'en'; // the owner reads orders in the app's main language
     const total = cart.reduce((n, l) => n + (typeof l.price === 'number' ? l.price * l.qty : 0), 0);
     const ask = cart.some(l => typeof l.price !== 'number');
-    const setQty = (i, q) => setCart(c => (q < 1 ? c.filter((_, j) => j !== i) : c.map((l, j) => (j === i ? { ...l, qty: Math.min(99, q) } : l))));
+    const setQty = (i, q) => !paid && setCart(c => (q < 1 ? c.filter((_, j) => j !== i) : c.map((l, j) => (j === i ? { ...l, qty: Math.min(99, q) } : l))));
+    const online = way === 'online';
+    const canPayOnline = !ask && total > 0;
+    /** Asks the website whether the payment went through (when the customer comes back from the browser). */
+    const checkPaid = async () => {
+        if (!paying) return;
+        try {
+            const res = await fetch(`${pay.online.url}/${paying.session}`, { headers: { Accept: 'application/json' } });
+            const r = await res.json();
+            if (r.paid) { setPaid(paying.session); setPaying(null); setPayMsg(''); } else setPayMsg(t('pay_failed'));
+        } catch { setPayMsg(t('pay_error')); }
+    };
+    const checkRef = useRef(checkPaid); checkRef.current = checkPaid;
+    useEffect(() => {
+        if (!paying) return undefined;
+        const sub = AppState.addEventListener('change', st => { if (st === 'active') setTimeout(() => checkRef.current(), 600); });
+        return () => sub.remove();
+    }, [paying]);
+    const payNow = async () => {
+        setPayMsg('');
+        try {
+            const res = await fetch(pay.online.url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ items: cart.map(l => ({ name: l.name, qty: l.qty })) }) });
+            const r = await res.json();
+            if (!r.ok || !/^https:\/\/checkout\.stripe\.com\//.test(r.url || '')) { setPayMsg(r.error === 'items' ? t('pay_priced_only') : t('pay_error')); return; }
+            setPaying({ session: r.session });
+            await Linking.openURL(r.url);
+        } catch { setPayMsg(t('pay_error')); }
+    };
+    const payLine = () => {
+        if (!way) return '';
+        if (way === 'online') return paid ? `${tIn(ml, 'm_pay')}: ${tIn(ml, 'm_paid_online')} (${paid.slice(-10)})${pay.online.test ? ' ' + tIn(ml, 'm_test') : ''}` : '';
+        return `${tIn(ml, 'm_pay')}: ${tIn(ml, 'pay_' + way)}`;
+    };
     const message = () => [
         tIn(ml, 'm_order'),
         ...cart.map(l => `${l.qty} × ${l.name}${typeof l.price === 'number' ? ' — ' + money(l.price * l.qty, shop) : ''}`),
         total ? `${tIn(ml, 'm_total')}: ${money(total, shop)}${ask ? ' (' + tIn(ml, 'plus_on_request') + ')' : ''}` : '',
         name.trim() ? `${tIn(ml, 'm_name')}: ${name.trim()}` : '',
         note.trim() ? `${tIn(ml, 'm_note')}: ${note.trim()}` : '',
+        payLine(),
         tIn(ml, 'm_sent_from', { app: appName }),
     ].filter(Boolean).join('\n');
     const send = how => {
@@ -102,13 +146,16 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
         Linking.openURL(url).then(() => setSent(true)).catch(() => Alert.alert(t('no_app_title'), t('no_app', { via: how === 'whatsapp' ? t('whatsapp_app') : t('email_app'), to: how === 'whatsapp' ? '+' + shop.whatsapp : shop.email })));
     };
     const close = () => { setSent(false); onClose(); };
+    const fresh = () => { setCart([]); setNote(''); setWay(null); setPaid(null); setPaying(null); setPayMsg(''); close(); };
+    // the order can be sent once a way to pay is picked (when the owner offers some), and paid if it's "Pay now"
+    const ready = !ways.length || (way && (!online || paid));
     return (
         <Sheet visible={visible} onClose={close} insets={insets}>
             <Text style={styles.title}>{t('your_order')}</Text>
             {sent ? (
                 <View style={{ gap: 12, paddingVertical: 8 }}>
                     <Text style={styles.text}>{t('order_ready', { via: shop.whatsapp ? t('whatsapp_app') : t('email_app'), app: appName })}</Text>
-                    <Pressable onPress={() => { setCart([]); setNote(''); close(); }} style={[styles.btn, { backgroundColor: ctx.primary }]} accessibilityRole="button">
+                    <Pressable onPress={fresh} style={[styles.btn, { backgroundColor: ctx.primary }]} accessibilityRole="button">
                         <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{t('done_new_order')}</Text>
                     </Pressable>
                     <Pressable onPress={() => setSent(false)} style={styles.link} accessibilityRole="button"><Text style={[styles.linkText, { color: ctx.primary }]}>{t('back_to_order')}</Text></Pressable>
@@ -128,12 +175,40 @@ export function OrderSheet({ visible, cart, setCart, ctx, insets, appName, onClo
                     {!!str(shop.note) && <Text style={styles.lineMuted}>{shop.note}</Text>}
                     <TextInput value={name} onChangeText={setName} placeholder={t('your_name')} style={styles.input} maxLength={60} placeholderTextColor="#94a3b8" />
                     <TextInput value={note} onChangeText={setNote} placeholder={t('order_note')} style={[styles.input, { minHeight: 70 }]} maxLength={400} multiline placeholderTextColor="#94a3b8" />
-                    {!!shop.whatsapp && (
+                    {ways.length > 0 && (
+                        <View style={{ gap: 8 }} accessibilityRole="radiogroup" accessibilityLabel={t('pay_how')}>
+                            <Text style={styles.lineName}>{t('pay_how')}</Text>
+                            {ways.map(w => {
+                                const on = way === w, off = w === 'online' && !canPayOnline;
+                                return (
+                                    <Pressable key={w} disabled={off || !!paid} onPress={() => { setWay(w); setPayMsg(''); }} accessibilityRole="radio" accessibilityState={{ checked: on, disabled: off }}
+                                        style={[styles.payWay, on && { borderColor: ctx.primary, backgroundColor: ctx.primary + '14' }, off && { opacity: 0.5 }]}>
+                                        <View style={[styles.radio, { borderColor: on ? ctx.primary : T.border }]}>{on && <View style={[styles.radioDot, { backgroundColor: ctx.primary }]} />}</View>
+                                        <Text style={[styles.lineName, { flex: 1 }]}>{t('pay_' + w)}</Text>
+                                    </Pressable>
+                                );
+                            })}
+                            {ways.includes('online') && !canPayOnline && <Text style={styles.lineMuted}>{t('pay_priced_only')}</Text>}
+                            {way === 'bank' && !!pay.bank_details && <Text style={[styles.text, styles.bankBox]} selectable>{pay.bank_details}</Text>}
+                            {online && pay.online.test && <Text style={styles.testBadge}>{t('pay_test')}</Text>}
+                            {online && !paid && (
+                                <Pressable onPress={payNow} style={[styles.btn, { backgroundColor: ctx.primary }]} accessibilityRole="button">
+                                    <Text style={[styles.btnText, { color: ctx.onPrimary }]}>{t('pay_now', { total: money(total, shop) })}</Text>
+                                </Pressable>
+                            )}
+                            {online && paying && !paid && (
+                                <Pressable onPress={checkPaid} style={styles.link} accessibilityRole="button"><Text style={[styles.linkText, { color: ctx.primary }]}>{t('pay_check')}</Text></Pressable>
+                            )}
+                            {online && paid && <Text style={[styles.lineName, { color: ctx.primary }]}>{t('paid_ok')}</Text>}
+                            {!!payMsg && <Text style={styles.error} accessibilityLiveRegion="polite">{payMsg}</Text>}
+                        </View>
+                    )}
+                    {ready && !!shop.whatsapp && (
                         <Pressable onPress={() => send('whatsapp')} style={[styles.btn, { backgroundColor: '#25d366' }]} accessibilityRole="button">
                             <Text style={[styles.btnText, { color: '#05341b' }]}>{t('send_order_whatsapp')}</Text>
                         </Pressable>
                     )}
-                    {!!shop.email && (
+                    {ready && !!shop.email && (
                         <Pressable onPress={() => send('email')} style={[styles.btn, shop.whatsapp ? styles.btnOutline : { backgroundColor: ctx.primary }, shop.whatsapp && { borderColor: ctx.primary }]} accessibilityRole="button">
                             <Text style={[styles.btnText, { color: shop.whatsapp ? ctx.primary : ctx.onPrimary }]}>{t('send_order_email')}</Text>
                         </Pressable>
@@ -172,6 +247,12 @@ const makeStyles = (t, r, f, h) => StyleSheet.create({
     lineName: { fontFamily: f, fontSize: 16, fontWeight: '600', color: t.ink },
     lineMuted: { fontFamily: f, fontSize: 14, color: t.muted },
     total: { fontFamily: f, fontSize: 17, fontWeight: '800', color: t.ink, textAlign: 'right' },
+    payWay: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, paddingHorizontal: 14, borderRadius: r(14), borderWidth: 1.5, borderColor: t.border },
+    radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+    radioDot: { width: 10, height: 10, borderRadius: 5 },
+    bankBox: { padding: 12, borderRadius: r(12), backgroundColor: t.soft },
+    testBadge: { fontFamily: f, alignSelf: 'flex-start', fontSize: 13, fontWeight: '700', color: '#92400e', backgroundColor: '#fef3c7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: r(8), overflow: 'hidden' },
+    error: { fontFamily: f, fontSize: 14, color: '#dc2626' },
     input: { fontFamily: f, borderWidth: 1, borderColor: t.border, borderRadius: r(14), paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: t.ink, textAlignVertical: 'top' },
 });
 onLook(({ t, r, f, h }) => { T = t; styles = makeStyles(t, r, f, h); });

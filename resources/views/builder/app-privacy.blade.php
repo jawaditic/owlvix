@@ -70,6 +70,9 @@
             @endif
             @if ($use['orders'] ?? false)
                 <li>When you send an order, the app opens WhatsApp or your email app with the order written out; you see it and send it yourself. The app doesn’t keep or send your order anywhere else.</li>
+                @if ($use['card_payments'] ?? false)
+                    <li>If you pay by card in the app, you pay on Stripe’s secure checkout page. Your card details go to Stripe, which handles the payment for us — not to us or to the app — and <a href="https://stripe.com/privacy" rel="noopener">Stripe’s privacy policy</a> applies. To start the payment, the app sends the names and quantities in your basket to owlvix.com.</li>
+                @endif
             @endif
             @if ($use['contact'])
                 <li>Buttons to call, email, message on WhatsApp or find us on a map open the matching app on your phone. Anything you send that way goes directly to us through that app.</li>

@@ -163,7 +163,13 @@ Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->con
     Route::post('{id}/splash-video', 'splashVideo')->where('id', '[a-z0-9]{16}')->middleware('throttle:60,1,app-video')->name('splash-video');
     Route::get('{id}/keystore', 'keystore')->where('id', '[a-z0-9]{16}')->name('keystore');
     Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
+    Route::post('{id}/stripe/connect', 'stripeConnect')->where('id', '[a-z0-9]{16}')->middleware('throttle:10,1,app-stripe')->name('stripe.connect');
+    Route::post('{id}/stripe/disconnect', 'stripeDisconnect')->where('id', '[a-z0-9]{16}')->name('stripe.disconnect');
 });
+// Stripe sends the owner back here after they connect their account (see App\Support\Stripe)
+Route::get('/builder/stripe/callback', [\App\Http\Controllers\AppBuilderController::class, 'stripeCallback'])->middleware('throttle:20,1,app-stripe-back')->name('builder.stripe.callback');
+// Where a customer lands after paying in the browser (then goes back to the app)
+Route::get('/app-paid/{id}', [\App\Http\Controllers\AppBuilderController::class, 'paid'])->where('id', '[a-z0-9]{16}')->name('builder.apps.paid');
 // Privacy policy of an app made with the mobile app builder (for its Google Play listing)
 Route::get('/app-privacy/{id}', [\App\Http\Controllers\AppBuilderController::class, 'privacy'])->where('id', '[a-z0-9]{16}')->name('builder.apps.privacy');
 // Reporting an app made with the mobile app builder (linked from the app's ☰ menu)
@@ -229,6 +235,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('builder/apps/{app}/takedown', [\App\Http\Controllers\Admin\BuilderController::class, 'takedownApp'])->name('builder.apps.takedown');
         Route::post('builder/apps/{app}/restore', [\App\Http\Controllers\Admin\BuilderController::class, 'restoreApp'])->name('builder.apps.restore');
         Route::post('builder/apps/{app}/dismiss', [\App\Http\Controllers\Admin\BuilderController::class, 'dismissApp'])->name('builder.apps.dismiss');
+        // App payments: owlvix's Stripe platform keys (test and live), kept encrypted
+        Route::get('payments', [\App\Http\Controllers\Admin\PaymentsController::class, 'index'])->name('payments.index');
+        Route::post('payments', [\App\Http\Controllers\Admin\PaymentsController::class, 'save'])->name('payments.save');
         Route::post('builder/forms/{form}/toggle', [\App\Http\Controllers\Admin\BuilderController::class, 'toggleForm'])->name('builder.forms.toggle');
 
         // Portfolio ("Our work")

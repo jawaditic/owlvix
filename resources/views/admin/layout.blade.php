@@ -35,6 +35,7 @@
                 ['admin.testimonials', 'Reviews', 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z', null],
                 ['admin.feedback', 'Feedback', 'M4 5h16v11H9l-5 4z M8 9h8 M8 12h5', $newFeedback],
                 ['admin.builder', 'Page builder', 'M4 4h16v16H4z M4 9h16 M9 9v11', $reportedSites],
+                ['admin.payments', 'Payments', 'M3 6h18v12H3z M3 10h18 M7 15h4', null],
             ];
         @endphp
         <div class="shell">

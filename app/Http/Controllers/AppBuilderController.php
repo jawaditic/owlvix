@@ -7,6 +7,7 @@ use App\Models\BuilderApp;
 use App\Models\BuilderAppBuild;
 use App\Support\AppBuilder;
 use App\Support\AppContent;
+use App\Support\Stripe;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -32,6 +33,7 @@ class AppBuilderController extends Controller
             'ok' => true,
             'apps' => $account->apps()->oldest()->get()->map->toApi()->values(),
             'enabled' => AppBuilder::enabled(),
+            'stripe' => ['test' => Stripe::available('test'), 'live' => Stripe::available('live')], // card payments on offer
         ]);
     }
 
@@ -486,6 +488,76 @@ class AppBuilderController extends Controller
     private function user(Request $request): BuilderAccount
     {
         return $request->attributes->get('builder_account');
+    }
+
+    /** Stripe's page where the owner connects their own Stripe account, for test or real payments. */
+    public function stripeConnect(Request $request, string $id): JsonResponse
+    {
+        $app = $this->own($request, $id);
+        if (! $app) {
+            return $this->fail('App not found.', 404);
+        }
+        $mode = $request->input('mode') === 'live' ? 'live' : 'test';
+        if (! Stripe::available($mode)) {
+            return $this->fail($mode === 'live' ? 'Real card payments aren’t available yet.' : 'Test payments aren’t available yet.', 503);
+        }
+        $state = Str::random(40);
+        Cache::put('app-stripe-state:'.$state, ['app' => $app->id, 'mode' => $mode], now()->addMinutes(30));
+
+        return response()->json(['ok' => true, 'url' => Stripe::connectUrl($mode, $state)]);
+    }
+
+    /** Stripe sends the owner back here; the account's id is kept (encrypted) and phones get the "Pay now" button. */
+    public function stripeCallback(Request $request)
+    {
+        $back = fn (string $result) => redirect('/mobile-app-builder?stripe='.$result);
+        $state = Cache::pull('app-stripe-state:'.(string) $request->query('state'));
+        if (! is_array($state) || ! ($app = BuilderApp::find($state['app']))) {
+            return $back('expired');
+        }
+        if ($request->query('error') || ! is_string($request->query('code'))) {
+            return $back('cancelled');
+        }
+        try {
+            $account = Stripe::exchange($state['mode'], $request->query('code'));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return $back('failed');
+        }
+        $app->forceFill([$state['mode'] === 'live' ? 'stripe_live_account' : 'stripe_test_account' => $account])->save();
+        AppContent::republish($app);
+
+        return $back('connected-'.$state['mode']);
+    }
+
+    public function stripeDisconnect(Request $request, string $id): JsonResponse
+    {
+        $app = $this->own($request, $id);
+        if (! $app) {
+            return $this->fail('App not found.', 404);
+        }
+        $mode = $request->input('mode') === 'live' ? 'live' : 'test';
+        $column = $mode === 'live' ? 'stripe_live_account' : 'stripe_test_account';
+        if ($account = $app->{$column}) {
+            try {
+                Stripe::disconnect($mode, $account);
+            } catch (\Throwable $e) {
+                report($e); // it's forgotten here either way; the owner can also remove owlvix in their Stripe dashboard
+            }
+        }
+        $app->forceFill([$column => null])->save();
+        AppContent::republish($app);
+
+        return response()->json(['ok' => true, 'app' => $app->fresh()->toApi()]);
+    }
+
+    /** The page a customer sees in the browser after paying (or giving up): go back to the app. */
+    public function paid(Request $request, string $id)
+    {
+        $app = BuilderApp::where('status', 'live')->findOrFail($id);
+
+        return view('builder.app-paid', ['app' => $app, 'ok' => $request->query('r') === 'ok']);
     }
 
     private function oneAtATime(Request $request, string $what, \Closure $fn): JsonResponse

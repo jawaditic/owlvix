@@ -36,4 +36,17 @@ return [
         'firebase' => env('APP_BUILDER_FIREBASE') ?: storage_path('app/firebase.json'),
         'pushes_per_day' => (int) env('APP_BUILDER_PUSHES_PER_DAY', 3),
     ],
+
+    // Online card payments in apps through Stripe Connect (App\Support\Stripe): owners connect their own Stripe
+    // account, owlvix keeps only its id. Two sets of owlvix's platform keys: test (sandbox, test cards) and live.
+    // APP_BUILDER_PAYMENTS=false switches online payments off for every app (cash, card on pickup… still work).
+    // Stripe dashboard → Connect: add the redirect URI https://owlvix.com/builder/stripe/callback.
+    'payments' => [
+        'enabled' => (bool) env('APP_BUILDER_PAYMENTS', true),
+        'stripe' => [
+            'test' => ['secret' => env('STRIPE_TEST_SECRET'), 'client_id' => env('STRIPE_TEST_CLIENT_ID')],
+            'live' => ['secret' => env('STRIPE_LIVE_SECRET'), 'client_id' => env('STRIPE_LIVE_CLIENT_ID')],
+            'fee_percent' => (float) env('APP_BUILDER_STRIPE_FEE', 0), // owlvix's share of each payment, 0 = none
+        ],
+    ],
 ];

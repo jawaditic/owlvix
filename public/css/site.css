@@ -2734,3 +2734,10 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .rb-tips b { color: #b45309; }
 .rb-tips ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text-2); }
 @media (max-width: 900px) { .rb-layout { grid-template-columns: 1fr; } }
+
+/* Mobile app builder: payment settings (cash, card, bank, card online through Stripe) */
+.ab-pay { display: grid; gap: 10px; }
+.ab-pay label small { font-weight: 400; color: var(--muted); }
+.ab-pay__online { display: grid; gap: 8px; margin: 6px 0 0 26px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; }
+.ab-pay__online p { margin: 0; }
+.ab-pay__ok { color: var(--green-ink, var(--green)); }

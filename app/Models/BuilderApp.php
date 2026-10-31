@@ -23,11 +23,12 @@ class BuilderApp extends Model
 
     protected $fillable = ['id', 'name', 'package', 'url', 'settings', 'content', 'status', 'reported_at', 'reports', 'verify_code', 'verified_host', 'version_code', 'keystore', 'keystore_password'];
 
-    protected $hidden = ['keystore', 'keystore_password', 'verify_code'];
+    protected $hidden = ['keystore', 'keystore_password', 'verify_code', 'stripe_test_account', 'stripe_live_account'];
 
     protected function casts(): array
     {
-        return ['settings' => 'array', 'content' => 'array', 'reported_at' => 'datetime', 'reports' => 'integer', 'version_code' => 'integer', 'keystore' => 'encrypted', 'keystore_password' => 'encrypted'];
+        return ['settings' => 'array', 'content' => 'array', 'reported_at' => 'datetime', 'reports' => 'integer', 'version_code' => 'integer', 'keystore' => 'encrypted', 'keystore_password' => 'encrypted',
+            'stripe_test_account' => 'encrypted', 'stripe_live_account' => 'encrypted'];
     }
 
     public function account(): BelongsTo
@@ -130,6 +131,9 @@ class BuilderApp extends Model
             'push' => ['available' => \App\Support\Firebase::enabled(), 'ready' => (bool) ($latest?->status === 'done' ? ($latest->info['push'] ?? false) : ($this->builds()->where('status', 'done')->latest('id')->first()?->info['push'] ?? false))],
             'has_notification_icon' => self::disk()->exists($this->dir().'/notification.png'),
             'data_use' => \App\Support\AppBuilder::dataUse($this),
+            // Online payments: which modes owlvix offers, and which the owner has connected a Stripe account for
+            'stripe' => ['test' => ['available' => \App\Support\Stripe::available('test'), 'connected' => $this->stripe_test_account !== null],
+                'live' => ['available' => \App\Support\Stripe::available('live'), 'connected' => $this->stripe_live_account !== null]],
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }

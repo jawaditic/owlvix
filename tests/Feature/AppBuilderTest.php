@@ -443,7 +443,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame(['owner' => 'Joe’s Bakery Ltd', 'email' => 'privacy@joes.example', 'extra' => "We also take orders by phone.\nThanks!"], $r['settings']['privacy']);
         $this->assertSame(route('builder.apps.privacy', $r['id']), $r['privacy_url']);
         // What the app does decides what the policy says
-        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false, 'orders' => false, 'bookings' => false, 'loyalty' => false], $r['data_use']);
+        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false, 'orders' => false, 'card_payments' => false, 'bookings' => false, 'loyalty' => false], $r['data_use']);
 
         $page = $this->get($r['privacy_url'])->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
         $page->assertSee('Privacy policy for Joe’s Bakery', false)->assertSee('provided by Joe’s Bakery Ltd', false)
@@ -622,8 +622,10 @@ class AppBuilderTest extends TestCase
         $this->assertCount(2, $items);
         $this->assertSame(['name' => 'Latte', 'text' => 'Oat or dairy', 'category' => 'Coffee', 'price' => 4.5], array_diff_key($items[0], ['image' => 1]));
         $this->assertArrayNotHasKey('price', $items[1]); // "Ask us"
-        $this->assertSame(['currency' => '£', 'whatsapp' => '447700900123', 'email' => '', 'note' => 'Pay on collection'], $r['settings']['shop']);
-        $this->assertSame($r['settings']['shop'], $this->contentFile($r['id'])['shop']);
+        $this->assertSame(['currency' => '£', 'whatsapp' => '447700900123', 'email' => '', 'note' => 'Pay on collection'], array_diff_key($r['settings']['shop'], ['pay' => 1]));
+        $phones = $this->contentFile($r['id'])['shop'];
+        $this->assertSame(array_diff_key($r['settings']['shop'], ['pay' => 1]), array_diff_key($phones, ['pay' => 1]));
+        $this->assertSame(['cash' => false, 'card' => false, 'bank' => false, 'bank_details' => '', 'online' => null], $phones['pay']); // nothing ticked, no Stripe
         $this->assertTrue($r['data_use']['orders']);
         $this->get($r['privacy_url'])->assertSee('When you send an order');
 
