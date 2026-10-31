@@ -44,8 +44,13 @@
     <ul>
         <li>It shows information from {{ $owner }} (pages, pictures, prices, opening hours and so on). To keep this up to date it downloads it over the internet from owlvix.com, the service the app was made with, and keeps a copy on your phone so it also works offline.</li>
         <li>Like any website, the server that sends this information keeps standard technical logs (such as your IP address and the time of the request) for a short time, for security and to keep the service running. They aren’t used to identify you or for advertising.</li>
-        <li>The app only needs internet access. It doesn’t ask for permission to use your camera, microphone, location, contacts or files.</li>
+        <li>The app only needs internet access{{ $use['push'] ? ' (and, if you allow it, permission to show notifications)' : '' }}. It doesn’t ask for permission to use your camera, microphone, location, contacts or files.</li>
     </ul>
+
+    @if ($use['push'])
+        <h2>Notifications</h2>
+        <p>{{ $owner }} can send news and offers as notifications. To receive them, the app uses Google’s Firebase Cloud Messaging, which gives this installation of the app a random ID so Google can deliver messages to it. That ID isn’t linked to your name or account, and we don’t store it. You can turn notifications off at any time in your phone’s settings for this app.</p>
+    @endif
 
     @if ($use['website'] || $use['youtube'] || $use['social'] || $use['contact'] || $use['links'])
         <h2>Other apps and websites</h2>

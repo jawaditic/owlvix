@@ -170,6 +170,33 @@
         }
         return c;
     };
+    /**
+     * The status-bar icon for push notifications: Android draws it as a white silhouette, so it's the logo's shape in
+     * white (when the logo has see-through parts) or the letters, on transparent, 96 × 96.
+     */
+    const drawNotificationIcon = () => {
+        const n = 96, c = document.createElement('canvas'); c.width = c.height = n;
+        const x = c.getContext('2d');
+        let shaped = false;
+        if (D.icon.mode === 'image' && logo) {
+            const t = document.createElement('canvas'); t.width = t.height = 32;
+            const tx = t.getContext('2d'); tx.drawImage(logo, 0, 0, 32, 32);
+            const px = tx.getImageData(0, 0, 32, 32).data;
+            shaped = [0, 31, 32 * 31, 32 * 32 - 1].some(i => px[i * 4 + 3] < 200); // see-through corners: the logo has a shape
+            if (shaped) {
+                const r = Math.min(n * 0.86 / logo.width, n * 0.86 / logo.height);
+                x.drawImage(logo, (n - logo.width * r) / 2, (n - logo.height * r) / 2, logo.width * r, logo.height * r);
+                x.globalCompositeOperation = 'source-in'; x.fillStyle = '#ffffff'; x.fillRect(0, 0, n, n);
+            }
+        }
+        if (!shaped) {
+            const t = initials();
+            x.fillStyle = '#ffffff'; x.textAlign = 'center'; x.textBaseline = 'middle';
+            x.font = `800 ${t.length > 1 ? 50 : 64}px Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif`;
+            x.fillText(t, n / 2, n / 2 + 4);
+        }
+        return c;
+    };
     /** Rounded preview of the icon on a small canvas. */
     const paintIcon = (canvas, radius = 0.22) => {
         const n = canvas.width, x = canvas.getContext('2d');
@@ -838,6 +865,7 @@
             const body = { id: D.id || undefined, app: payload() };
             const addIcon = () => Object.assign(body, { icon: drawIcon(1024).toDataURL('image/png'), foreground: drawIcon(1024, true).toDataURL('image/png'),
                 design: { mode: D.icon.mode, letter: D.icon.letter, zoom: D.icon.zoom, fill: D.icon.fill }, logo: D.icon.mode === 'image' ? D.icon.image : undefined,
+                notification_icon: drawNotificationIcon().toDataURL('image/png'),
                 splash: drawSplash(1024).toDataURL('image/png'), splash_design: { mode: D.splash.mode === 'image' && !splashPic ? 'icon' : D.splash.mode, size: D.splash.size }, splash_image: D.splash.mode === 'image' && splashPic ? D.splash.image : undefined });
             if (D.iconDirty || !D.id) addIcon();
             body.splash_bg_mode = D.splash.bg;
@@ -856,7 +884,7 @@
             }
             D.splash.hasVideo = D.splash.bg === 'video' && (current()?.settings?.splash?.bg === 'video' || D.splash.hasVideo); drawSettings();
             note(first ? 'App saved! Now open “Build & download” to make your Android app.'
-                : r.app.out_of_date?.length ? `Saved. Your screens update on phones within a minute — but ${outOfDate(r.app)}, which needs a new build.`
+                : r.app.out_of_date?.length ? `Saved. Your screens update on phones within a minute — for the rest, build again (${outOfDate(r.app)}).`
                 : r.app.version_code ? 'Saved — phones with your app will show the changes within a minute. No new build needed.' : 'Changes saved.');
             track(first ? 'app_builder_create' : 'app_builder_save', { tabs: A().tabs.length });
             return true;
@@ -883,6 +911,7 @@
         D = { id: x.id, dirty: false, iconDirty: false, autoPackage: null, base: x.content_url.replace(/content\.json$/, ''),
             app: { name: x.name, package: x.package, url: x.url || '', version_name: x.settings.version_name, external_links: x.settings.external_links, menu: x.settings.menu === 'hide' ? 'hide' : 'show', privacy: { owner: '', email: '', extra: '', ...(x.settings.privacy || {}) }, tabs: tabs.length ? tabs : starter(), colors: { ...x.settings.colors }, offline: { ...x.settings.offline } },
             icon: keepIcon, splash: same ? D.splash : { ...fresh().splash, ...(x.settings.splash || {}) } };
+        if (!x.has_notification_icon) D.iconDirty = true; // apps saved before notifications: send the icon on the next save
         activeTab = 0; save(); Promise.all([loadLogo(), loadSplashPic()]).then(drawAll); drawMine();
         if (!same) api('GET', `/builder/apps/${x.id}/icon`).then(r => {
             if (D.id !== x.id) return;
@@ -909,8 +938,9 @@
 
     /* ------------------------------------------------ build & download */
     let poll = null;
-    const OUTDATED = { features: 'new app features (☰ menu, new blocks, intro)', name: 'the app name', icon: 'the icon', splash: 'the splash screen', intro: 'the intro picture or video' };
-    const outOfDate = x => (x.out_of_date || []).map(k => OUTDATED[k] || k).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' changed';
+    const OUTDATED = { features: 'it doesn’t have the newest features (push notifications, ☰ menu, new blocks)', push: 'it can’t receive notifications yet',
+        name: 'the name changed', icon: 'the icon changed', splash: 'the splash screen changed', intro: 'the intro changed' };
+    const outOfDate = x => (x.out_of_date || []).map(k => OUTDATED[k] || k).join('; ');
     const fmtMB = n => (n ? (n / 1048576).toFixed(1) + ' MB' : '');
     const drawBuild = () => {
         const box = $('[data-build]'), x = current();
@@ -941,7 +971,7 @@
         else if (running) buildBody = `<div class="ab-running"><span class="ab-spin" aria-hidden="true"></span><div><b>Building version ${esc(b.version_name)}…</b><p class="fb-hint">This usually takes 10–15 minutes. You can close this page — we’ll email you when it’s ready.</p></div></div>`;
         else buildBody = `${b?.status === 'failed' ? `<p class="ab-err">${esc(b.error || 'The last build didn’t finish.')}</p>` : ''}
             ${D.dirty ? '<p class="fb-hint">You have unsaved changes — they’ll be saved first.</p>' : ''}
-            ${x.out_of_date?.length ? `<p class="ab-warn">📱 Phones have an older version of your app: ${esc(outOfDate(x))}. Build again (and upload the new .aab to Google Play) to update it.</p>` : ''}
+            ${x.out_of_date?.length ? `<p class="ab-warn">📱 Phones have an older version of your app — ${esc(outOfDate(x))}. Build again (and upload the new .aab to Google Play) to update it.</p>` : ''}
             ${x.version_code ? '<p class="fb-hint">Changes to your screens, tabs and colours reach phones when you save — build again only to change the name, icon or splash screen, or for a Google Play update.</p>' : ''}
             <p class="fb-hint">Version <b>${esc(A().version_name || '1.0.0')}</b> · build ${x.version_code + 1}${x.version_code ? ' — raise the version in “More settings” for each Google Play update.' : ''}</p>
             <button type="button" class="btn btn--glow" data-act="build" ${x.allowed ? '' : 'disabled'}>📦 Build Android app</button>`;
@@ -968,12 +998,50 @@
             ${x.needs_website ? step(n++, x.allowed, 'Show us the website is yours', verify) : ''}
             ${step(n++, b?.status === 'done', 'Build your Android app', buildBody)}
         </div>${files}
+        ${pushHtml(x)}
         ${kitHtml(x)}
         <div class="ab-ios"><b>🍎 Want it on the iPhone App Store?</b><p class="fb-hint">Apple only takes apps from the owner’s own developer account. We publish iPhone apps for you, with logins, payments and push notifications if you need them.</p><a href="#contact" class="btn btn--sm btn--ghost" data-act="ios">Ask for a free quote</a></div>
         <button type="button" class="fb-danger" data-act="delete">Delete this app</button>`;
         $$('[data-qr-for]', box).forEach(el => withQR(() => (el.innerHTML = window.OwlQR.svg(el.dataset.qrFor, { color: '#0f172a' }))));
         if (running) poll = setTimeout(refresh, 20000);
     };
+    /* ------------------------------------------------ push notifications */
+    const pushes = {}; // app id → sent notifications (newest first)
+    const pushDraft = { title: '', body: '', tab: '' };
+    const pushHtml = x => {
+        if (!x.push?.available) return '';
+        if (!x.push.ready) {
+            return `<div class="ab-push"><b>🔔 Push notifications</b><p class="fb-hint">${x.version_code ? 'Build your app again (and upload the new .aab to Google Play) — the version on phones can’t receive notifications yet.' : 'After your first build you can send a message to everyone who has your app — offers, news, reminders.'}</p></div>`;
+        }
+        if (!pushes[x.id]) api('GET', `/builder/apps/${x.id}/pushes`).then(r => { pushes[x.id] = r.pushes; if (current()?.id === x.id && !$('[data-panel="build"]').hidden) drawPushList(); }).catch(() => {});
+        const tabs = A().tabs;
+        return `<div class="ab-push"><b>🔔 Send a notification</b>
+            <p class="fb-hint">It pops up on the phone of everyone who has your app and allowed notifications. Up to 3 a day — keep them useful.</p>
+            <label>Title <small data-push-count="title">${pushDraft.title.length}/65</small><input data-push="title" maxlength="65" value="${esc(pushDraft.title)}" placeholder="Weekend offer 🎉"></label>
+            <label>Message <small data-push-count="body">${pushDraft.body.length}/240</small><textarea data-push="body" rows="3" maxlength="240" placeholder="20% off all cakes this Saturday and Sunday.">${esc(pushDraft.body)}</textarea></label>
+            <label>When tapped, open<select data-push="tab"><option value="">The app</option>${tabs.map((t, i) => `<option value="${i}" ${pushDraft.tab === String(i) ? 'selected' : ''}>${esc(t.label || 'Page ' + (i + 1))}</option>`).join('')}</select></label>
+            <button type="button" class="btn btn--glow btn--sm" data-act="push-send">Send to everyone</button>
+            <div class="ab-push__list" data-push-list>${pushListHtml(x.id)}</div></div>`;
+    };
+    const pushListHtml = id => {
+        const list = pushes[id];
+        if (!list) return '';
+        if (!list.length) return '<p class="fb-hint">No notifications sent yet.</p>';
+        return `<p class="ab-sub">Sent</p><ul>${list.map(p => `<li class="${p.status === 'failed' ? 'is-failed' : ''}"><b>${esc(p.title)}</b><span>${esc(p.body)}</span><small>${p.status === 'failed' ? 'Not sent · ' : ''}${esc(new Date(p.sent_at).toLocaleString())}</small></li>`).join('')}</ul>`;
+    };
+    const drawPushList = () => { const el = $('[data-push-list]'); if (el && current()) el.innerHTML = pushListHtml(current().id); };
+    root.addEventListener('input', e => {
+        const k = e.target.dataset?.push; if (!k) return;
+        pushDraft[k] = e.target.value; const c = $(`[data-push-count="${k}"]`); if (c) c.textContent = `${e.target.value.length}/${k === 'title' ? 65 : 240}`;
+    });
+    const sendPush = async x => {
+        if (!pushDraft.title.trim() || !pushDraft.body.trim()) { note('Please write a title and a message.'); return; }
+        if (!await ask('Send this notification?', `“${pushDraft.title.trim()}” goes to everyone with ${x.name}. It can’t be taken back.`, 'Send')) return;
+        const r = await api('POST', `/builder/apps/${x.id}/push`, { title: pushDraft.title.trim(), body: pushDraft.body.trim(), tab: pushDraft.tab });
+        pushes[x.id] = r.pushes; Object.assign(pushDraft, { title: '', body: '', tab: '' });
+        note('🔔 Sent! Phones get it within a few seconds.'); track('app_builder_push');
+    };
+
     /* ------------------------------------------------ Google Play listing kit */
     const kitText = { short: '', full: '' };
     let kitOpen = false;
@@ -1001,7 +1069,7 @@
     const kitHtml = x => {
         if (!kitText.short) Object.assign(kitText, suggestTexts());
         const use = x.data_use || {}, dirty = D.dirty ? '<p class="fb-hint">Save your app first so the privacy policy shows your latest details.</p>' : '';
-        const yes = use.website ? `Your app shows <b>${esc(use.website)}</b>: answer about what that website collects (forms, bookings, accounts); data is encrypted in transit: <b>Yes</b>.` : 'Your app collects no data: answer <b>No</b> to “Does your app collect or share any of the required user data types?”.';
+        const yes = use.push ? `Answer <b>Yes</b> to collecting data, then tick only <b>Device or other IDs</b> (push notifications use Firebase Cloud Messaging) — collected, not shared, used for <b>App functionality</b>, processed ephemerally: <b>No</b>, required: <b>No</b> (people can turn notifications off). Data is encrypted in transit: <b>Yes</b>.${use.website ? ` Also answer for what <b>${esc(use.website)}</b> collects.` : ''}` : use.website ? `Your app shows <b>${esc(use.website)}</b>: answer about what that website collects (forms, bookings, accounts); data is encrypted in transit: <b>Yes</b>.` : 'Your app collects no data: answer <b>No</b> to “Does your app collect or share any of the required user data types?”.';
         return `<details class="fb-settings ab-kit" ${kitOpen ? 'open' : ''}><summary>📋 Google Play listing kit</summary>
             <p class="fb-hint">Everything Google Play asks for in the store listing — made from your app.</p>
             <h3 class="ab-sub">1. Graphics</h3>
@@ -1142,6 +1210,7 @@
         if (t.dataset.copyfrom) { const src = $(t.dataset.copyfrom); try { await navigator.clipboard.writeText(src.value); t.textContent = 'Copied ✓'; } catch { src.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }
         if (t.dataset.act?.startsWith('kit-')) { kitAction(t); return; }
+        if (t.dataset.act === 'push-send') { t.disabled = true; try { await sendPush(current()); } catch (ex) { note(ex.message); } finally { t.disabled = false; drawBuild(); } return; }
         const x = current();
         if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copied ✓'; } catch { t.previousElementSibling?.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }

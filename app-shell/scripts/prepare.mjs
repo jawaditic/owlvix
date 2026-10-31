@@ -52,9 +52,24 @@ const shell = {
     contentUrl: https(job.contentUrl),
     colors: Object.fromEntries(['primary', 'bar', 'splash', 'icon'].map(k => [k, hex(job.colors?.[k])])),
     statusBar: job.statusBar === 'light' ? 'light' : 'dark',
+    push: null, // set below when this build has push notifications
     splashWidth: Number.isInteger(job.splashWidth) && job.splashWidth >= 80 && job.splashWidth <= 300 ? job.splashWidth : 180,
     content,
 };
+/* ---------- push notifications (the app's Firebase config and its white status-bar icon) ---------- */
+rmSync(join(root, 'google-services.json'), { force: true });
+rmSync(join(root, 'assets/notification.png'), { force: true });
+if (job.googleServices && job.notificationIcon && /^app_[a-z0-9]{16}$/.test(job.pushTopic || '')) {
+    const gs = Buffer.from(job.googleServices, 'base64').toString('utf8');
+    let parsed; try { parsed = JSON.parse(gs); } catch { fail('bad google-services.json'); }
+    if (!(parsed.client || []).some(c => c.client_info?.android_client_info?.package_name === job.package)) fail('google-services.json is for another app');
+    const icon = Buffer.from(job.notificationIcon, 'base64');
+    if (icon.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a' || icon.readUInt32BE(16) !== 96 || icon.readUInt32BE(20) !== 96) fail('the notification icon must be a 96×96 PNG');
+    mkdirSync(join(root, 'assets'), { recursive: true });
+    writeFileSync(join(root, 'google-services.json'), gs);
+    writeFileSync(join(root, 'assets/notification.png'), icon);
+    shell.push = { topic: job.pushTopic };
+}
 writeFileSync(join(root, 'shell.json'), JSON.stringify(shell, null, 4));
 
 /* ---------- images ---------- */

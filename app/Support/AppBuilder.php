@@ -155,6 +155,7 @@ class AppBuilder
             'social' => $blocks->contains('type', 'social'),
             'contact' => $blocks->contains('type', 'contact') || $actions->intersect(['tel', 'email', 'whatsapp', 'map'])->isNotEmpty(),
             'links' => $actions->contains('url'),
+            'push' => Firebase::enabled(),
         ];
     }
 
@@ -204,7 +205,45 @@ class AppBuilder
      * pages, slider/cards/reviews/FAQ/social/notice/space blocks, splash picture, intro). Apps built with an older
      * one are flagged in the builder.
      */
-    public const SHELL_VERSION = 2;
+    public const SHELL_VERSION = 3; // 3: push notifications
+
+    /**
+     * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when
+     * notifications are off or the app has no notification icon yet. Kept with the app, so later builds don't ask again.
+     */
+    public static function pushConfig(BuilderApp $app): ?string
+    {
+        $disk = BuilderApp::disk();
+        if (! Firebase::enabled() || ! $disk->exists($app->dir().'/notification.png')) {
+            return null;
+        }
+        $file = $app->dir().'/google-services.json';
+        if ($disk->exists($file) && str_contains((string) $disk->get($file), '"'.$app->package.'"')) {
+            return (string) $disk->get($file);
+        }
+        try {
+            $json = Firebase::androidConfig($app->package, $app->name);
+            $disk->put($file, $json);
+
+            return $json;
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    /** A PNG data: URL of exactly $size × $size pixels: the bytes, or null. */
+    public static function pngOfSize(mixed $dataUrl, int $size): ?string
+    {
+        if (! is_string($dataUrl) || ! str_starts_with($dataUrl, 'data:image/png;base64,') || strlen($dataUrl) > 200_000) {
+            return null;
+        }
+        $bytes = base64_decode(substr($dataUrl, 22), true);
+        $info = $bytes !== false ? @getimagesizefromstring($bytes) : false;
+
+        return $info && $info[2] === IMAGETYPE_PNG && $info[0] === $size && $info[1] === $size ? $bytes : null;
+    }
 
     /** What a build is made from, besides the content (which reaches phones without a build). */
     public static function buildInfo(BuilderApp $app): array
@@ -238,6 +277,8 @@ class AppBuilder
         $changed = [];
         if (($was['shell'] ?? 1) < $now['shell']) {
             $changed[] = 'features';
+        } elseif (Firebase::enabled() && empty($was['push'])) {
+            $changed[] = 'push'; // built before notifications were switched on
         }
         foreach (['name', 'icon', 'splash', 'intro'] as $key) {
             if (array_key_exists($key, $was) && $was[$key] !== $now[$key]) {
@@ -411,7 +452,7 @@ class AppBuilder
     }
 
     /** What the build server needs to make the app: the build-time settings, and the content at build time (so the app works offline from the start). */
-    public static function job(BuilderApp $app, int $versionCode): array
+    public static function job(BuilderApp $app, int $versionCode, ?string $push = null): array
     {
         $s = $app->settings;
         $disk = BuilderApp::disk();
@@ -435,6 +476,10 @@ class AppBuilder
                 'video' => $disk->exists($app->dir().'/splash-bg.mp4') ? 'video' : null,
                 default => null,
             },
+            // Push notifications (only when the app is registered in Firebase): its config, status-bar icon and topic
+            'googleServices' => $push ? base64_encode($push) : null,
+            'notificationIcon' => $push ? base64_encode((string) $disk->get($app->dir().'/notification.png')) : null,
+            'pushTopic' => $push ? Firebase::topic($app->id) : null,
             'keystore' => $app->keystore,
             'keystorePassword' => $app->keystore_password,
         ];

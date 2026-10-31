@@ -68,6 +68,7 @@ class AppBuilderController extends Controller
             $logo = $design['mode'] === 'image' ? AppBuilder::logo($request->input('logo')) : null;
             $data['settings']['icon'] = $design;
             // The splash picture (drawn by the builder like the icon); without one the build uses the icon's logo
+            $notification = $request->has('notification_icon') ? AppBuilder::pngOfSize($request->input('notification_icon'), 96) : null;
             $splash = $request->has('splash') ? AppBuilder::png($request->input('splash')) : null;
             if ($request->has('splash') && ! $splash) {
                 return $this->fail('Please check your splash screen picture.', 422);
@@ -121,6 +122,9 @@ class AppBuilderController extends Controller
             BuilderApp::disk()->put($app->dir().'/foreground.png', $foreground);
             $logo ? BuilderApp::disk()->put($app->dir().'/logo.png', $logo) : BuilderApp::disk()->delete($app->dir().'/logo.png');
             $splash ? BuilderApp::disk()->put($app->dir().'/splash.png', $splash) : BuilderApp::disk()->delete($app->dir().'/splash.png');
+            if ($notification) {
+                BuilderApp::disk()->put($app->dir().'/notification.png', $notification);
+            }
             $splashImage ? BuilderApp::disk()->put($app->dir().'/splash-source.png', $splashImage) : BuilderApp::disk()->delete($app->dir().'/splash-source.png');
         }
         if ($bgPhoto) {
@@ -187,7 +191,8 @@ class AppBuilderController extends Controller
         }
 
         $token = Str::random(64);
-        $build = DB::transaction(function () use ($app, $token) {
+        $push = AppBuilder::pushConfig($app); // (asks Firebase the first time, so not inside the transaction)
+        $build = DB::transaction(function () use ($app, $token, $push) {
             $app = BuilderApp::whereKey($app->id)->lockForUpdate()->first();
             if ($app->builds()->whereIn('status', ['queued', 'building'])->exists()) {
                 return null; // another tab started one a moment ago
@@ -199,8 +204,8 @@ class AppBuilderController extends Controller
                 'version_code' => $code,
                 'version_name' => $app->settings['version_name'],
                 'token_hash' => hash('sha256', $token),
-                'job' => AppBuilder::job($app, $code),
-                'info' => AppBuilder::buildInfo($app),
+                'job' => AppBuilder::job($app, $code, $push),
+                'info' => AppBuilder::buildInfo($app) + ['push' => $push !== null],
             ]);
         });
         if (! $build) {
@@ -213,6 +218,61 @@ class AppBuilderController extends Controller
         }
 
         return response()->json(['ok' => true, 'app' => $app->fresh()->toApi()]);
+    }
+
+    /** Sends a push notification to everyone with the app (Firebase Cloud Messaging, the app's topic). */
+    public function push(Request $request, string $id): JsonResponse
+    {
+        $app = $this->own($request, $id);
+        if (! $app) {
+            return $this->fail('App not found.', 404);
+        }
+        if (! $app->isLive()) {
+            return $this->fail(self::REMOVED, 403);
+        }
+        if (! \App\Support\Firebase::enabled()) {
+            return $this->fail('Notifications are switched off right now. Please try again later.', 503);
+        }
+        $last = $app->builds()->where('status', 'done')->latest('id')->first();
+        if (empty($last?->info['push'])) {
+            return $this->fail('Build your app again first — the version on phones can’t receive notifications yet. Then upload the new .aab to Google Play.', 422);
+        }
+        $title = AppContent::str($request->input('title'));
+        $body = AppContent::str($request->input('body'));
+        $tab = $request->input('tab');
+        $tabs = count($app->content['tabs'] ?? []);
+        if ($title === '' || mb_strlen($title) > 65 || $body === '' || mb_strlen($body) > 240) {
+            return $this->fail('Please write a title (up to 65 characters) and a message (up to 240).', 422);
+        }
+        $tab = $tab === null || $tab === '' ? null : filter_var($tab, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => max(0, $tabs - 1)]]);
+        if ($tab === false) {
+            return $this->fail('That page isn’t in your app any more.', 422);
+        }
+        $limit = (int) config('builder.apps.pushes_per_day');
+        if (\App\Models\BuilderAppPush::where('builder_app_id', $app->id)->where('status', 'sent')->where('created_at', '>=', now()->subDay())->count() >= $limit) {
+            return $this->fail("You can send up to {$limit} notifications a day — people turn notifications off when they get too many.", 429);
+        }
+        try {
+            \App\Support\Firebase::send(\App\Support\Firebase::topic($app->id), $title, $body, $tab === null ? [] : ['tab' => (string) $tab]);
+            $sent = $app->pushes()->create(['title' => $title, 'body' => $body, 'tab' => $tab, 'status' => 'sent']);
+        } catch (\Throwable $e) {
+            report($e);
+            $app->pushes()->create(['title' => $title, 'body' => $body, 'tab' => $tab, 'status' => 'failed', 'error' => Str::limit($e->getMessage(), 290)]);
+
+            return $this->fail('We couldn’t send it right now. Please try again in a few minutes.', 502);
+        }
+
+        return response()->json(['ok' => true, 'push' => $sent->toApi(), 'pushes' => $app->pushes()->latest('id')->take(20)->get()->map->toApi()]);
+    }
+
+    public function pushes(Request $request, string $id): JsonResponse
+    {
+        $app = $this->own($request, $id);
+        if (! $app) {
+            return $this->fail('App not found.', 404);
+        }
+
+        return response()->json(['ok' => true, 'pushes' => $app->pushes()->latest('id')->take(20)->get()->map->toApi()]);
     }
 
     /** The icon's and splash screen's design and pictures, to carry on editing on another device. */

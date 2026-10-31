@@ -35,6 +35,11 @@ class BuilderApp extends Model
         return $this->belongsTo(BuilderAccount::class, 'builder_account_id');
     }
 
+    public function pushes(): HasMany
+    {
+        return $this->hasMany(BuilderAppPush::class);
+    }
+
     public function builds(): HasMany
     {
         return $this->hasMany(BuilderAppBuild::class);
@@ -120,6 +125,9 @@ class BuilderApp extends Model
             'out_of_date' => \App\Support\AppBuilder::outOfDate($this),
             'removed' => ! $this->isLive(),
             'privacy_url' => $this->privacyUrl(),
+            // Push notifications: switched on for the builder, and the app on phones can receive them
+            'push' => ['available' => \App\Support\Firebase::enabled(), 'ready' => (bool) ($latest?->status === 'done' ? ($latest->info['push'] ?? false) : ($this->builds()->where('status', 'done')->latest('id')->first()?->info['push'] ?? false))],
+            'has_notification_icon' => self::disk()->exists($this->dir().'/notification.png'),
             'data_use' => \App\Support\AppBuilder::dataUse($this),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

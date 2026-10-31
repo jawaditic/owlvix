@@ -2453,6 +2453,16 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-ph__skip { position: absolute; top: 34px; right: 14px; padding: 4px 11px; border-radius: 999px; background: rgba(0, 0, 0, .45); color: #fff; font-size: 11px; font-weight: 700; }
 .ab-ph__step { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 6px 12px; border: 0; border-radius: 999px; background: rgba(15, 23, 42, .7); color: #fff; font: 600 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; white-space: nowrap; cursor: pointer; }
 .ab-warn { margin: 0; padding: 10px 12px; border-radius: 10px; background: rgba(245, 158, 11, .12); border: 1px solid rgba(245, 158, 11, .35); color: var(--text); font-size: .88rem; font-weight: 600; }
+/* Push notifications */
+.ab-push { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--card-border); border-radius: 14px; }
+.ab-push > p { margin: 0; }
+.ab-push > label { display: grid; gap: 4px; }
+.ab-push > .btn { justify-self: start; }
+.ab-push__list ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.ab-push__list li { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--field); font-size: .88rem; }
+.ab-push__list li span { color: var(--text-2); }
+.ab-push__list li small { color: var(--muted); }
+.ab-push__list li.is-failed { opacity: .7; }
 /* Google Play listing kit */
 .ab-sub { margin: 14px 0 0; font-size: .95rem; }
 .ab-sub small { font-weight: 500; color: var(--muted); }

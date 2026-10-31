@@ -30,6 +30,7 @@ class AppBuilderTest extends TestCase
         $this->public = storage_path('framework/testing/app-data-'.bin2hex(random_bytes(4)));
         config([
             'builder.apps.public_dir' => $this->public,
+            'builder.apps.firebase' => '', // push notifications off unless a test switches them on
             'app.url' => 'https://owlvix.test',
             'builder.domain' => 'sites.owlvix.test',
             'builder.apps.github_repo' => 'owlvix/owlvix',
@@ -439,7 +440,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame(['owner' => 'Joe’s Bakery Ltd', 'email' => 'privacy@joes.example', 'extra' => "We also take orders by phone.\nThanks!"], $r['settings']['privacy']);
         $this->assertSame(route('builder.apps.privacy', $r['id']), $r['privacy_url']);
         // What the app does decides what the policy says
-        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false], $r['data_use']);
+        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false], $r['data_use']);
 
         $page = $this->get($r['privacy_url'])->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
         $page->assertSee('Privacy policy for Joe’s Bakery', false)->assertSee('provided by Joe’s Bakery Ltd', false)
@@ -450,6 +451,86 @@ class AppBuilderTest extends TestCase
         // A taken-down app has no policy page
         BuilderApp::find($r['id'])->update(['status' => 'removed']);
         $this->get($r['privacy_url'])->assertNotFound();
+    }
+
+    /** Push notifications on, with a throwaway service account key and Google's servers faked. */
+    private function fakeFirebase(): array
+    {
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        openssl_pkey_export($key, $pem);
+        $file = $this->public.'-firebase.json';
+        File::put($file, json_encode(['type' => 'service_account', 'project_id' => 'owlvix-test', 'private_key' => $pem,
+            'client_email' => 'sa@owlvix-test.iam.gserviceaccount.com', 'token_uri' => 'https://oauth2.googleapis.com/token']));
+        config(['builder.apps.firebase' => $file]);
+        $sent = [];
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response(['access_token' => 'g-token', 'expires_in' => 3600]),
+            'firebase.googleapis.com/v1beta1/projects/owlvix-test/androidApps?*' => Http::response(['apps' => []]),
+            'firebase.googleapis.com/v1beta1/projects/owlvix-test/androidApps' => Http::response(['name' => 'operations/op1', 'done' => false]),
+            'firebase.googleapis.com/v1beta1/operations/op1' => Http::response(['name' => 'operations/op1', 'done' => true, 'response' => ['appId' => '1:99:android:abc']]),
+            'firebase.googleapis.com/v1beta1/projects/owlvix-test/androidApps/1:99:android:abc/config' => Http::response(['configFileContents' => base64_encode(json_encode(['client' => [['client_info' => ['android_client_info' => ['package_name' => 'com.joesbakery.app']]]]]))]),
+            'fcm.googleapis.com/*' => function ($req) use (&$sent) {
+                $sent[] = $req->data();
+
+                return Http::response(['name' => 'projects/owlvix-test/messages/1']);
+            },
+            'api.github.com/*' => Http::response('', 204),
+        ]);
+
+        return [&$sent, $file];
+    }
+
+    public function test_push_notifications(): void
+    {
+        $token = $this->signIn();
+        $icon96 = imagecreatetruecolor(96, 96);
+        ob_start();
+        imagepng($icon96);
+        $notif = 'data:image/png;base64,'.base64_encode(ob_get_clean());
+        $id = $this->api($token)->postJson('/builder/apps', ['app' => $this->app(), 'icon' => $this->png(), 'foreground' => $this->png(), 'notification_icon' => $notif])
+            ->assertOk()->assertJsonPath('app.push.available', false)->json('app.id');
+
+        // Switched off: nothing to send
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Hi', 'body' => 'Hello'])->assertStatus(503);
+
+        [, $file] = $this->fakeFirebase();
+        $r = $this->api($token)->getJson('/builder/apps')->json('apps.0');
+        $this->assertTrue($r['push']['available']);
+        $this->assertFalse($r['push']['ready']);
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Hi', 'body' => 'Hello'])->assertStatus(422); // not built yet
+
+        // The build registers the app in Firebase and carries its config, icon and topic
+        $this->api($token)->postJson("/builder/apps/{$id}/build")->assertOk();
+        $build = BuilderAppBuild::first();
+        $this->assertSame('app_'.$id, $build->job['pushTopic']);
+        $this->assertStringContainsString('com.joesbakery.app', base64_decode($build->job['googleServices']));
+        $this->assertSame(base64_decode(substr($notif, 22)), base64_decode($build->job['notificationIcon']));
+        $this->assertTrue($build->info['push']);
+        Storage::disk('local')->assertExists("apps/{$id}/google-services.json");
+        Http::assertSent(fn ($req) => $req->url() === 'https://firebase.googleapis.com/v1beta1/projects/owlvix-test/androidApps' && $req['packageName'] === 'com.joesbakery.app');
+        $build->update(['status' => 'done']);
+        $this->assertTrue($this->api($token)->getJson('/builder/apps')->json('apps.0.push.ready'));
+
+        // Sending goes to the app's topic, with the page to open
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => '', 'body' => 'x'])->assertStatus(422);
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Hi', 'body' => 'x', 'tab' => 9])->assertStatus(422);
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Weekend offer', 'body' => '20% off cakes', 'tab' => 1])
+            ->assertOk()->assertJsonPath('pushes.0.title', 'Weekend offer');
+        Http::assertSent(fn ($req) => str_starts_with($req->url(), 'https://fcm.googleapis.com/v1/projects/owlvix-test/messages:send')
+            && ($m = json_decode($req->body(), true)['message'])['topic'] === 'app_'.$id && $m['notification']['title'] === 'Weekend offer' && $m['data']['tab'] === '1'
+            && $req->hasHeader('Authorization', 'Bearer g-token'));
+        // Up to 3 a day
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Two', 'body' => 'x'])->assertOk();
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Three', 'body' => 'x'])->assertOk();
+        $this->api($token)->postJson("/builder/apps/{$id}/push", ['title' => 'Four', 'body' => 'x'])->assertStatus(429);
+        $this->assertCount(3, $this->api($token)->getJson("/builder/apps/{$id}/pushes")->json('pushes'));
+        // Someone else can't send to it
+        $other = $this->signIn('other@example.com');
+        $this->api($other)->postJson("/builder/apps/{$id}/push", ['title' => 'x', 'body' => 'x'])->assertStatus(404);
+
+        // The privacy page and data-safety answers mention notifications
+        $this->get(route('builder.apps.privacy', $id))->assertSee('Firebase Cloud Messaging');
+        File::delete($file);
     }
 
     public function test_up_to_fifteen_pages_with_a_menu(): void

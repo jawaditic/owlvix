@@ -215,6 +215,27 @@ function Shell() {
         return () => clearTimeout(t);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Push notifications: tapping one opens the page the owner chose; one arriving while the app is open shows a banner
+    const openTabRef = useRef(null);
+    openTabRef.current = ctx.openTab;
+    useEffect(() => {
+        if (!shell.push?.topic) return undefined;
+        let stop = null;
+        const t = setTimeout(() => {
+            try {
+                stop = require('./push').startPush(shell.push.topic,
+                    data => { if (/^\d+$/.test(data.tab || '')) openTabRef.current(+data.tab); refresh(); },
+                    msg => { setBanner({ title: str(msg.notification?.title), body: str(msg.notification?.body), tab: msg.data?.tab }); refresh(); });
+            } catch {}
+        }, INTRO?.source ? 3500 : 1500); // ask for permission once the app is showing, not over the splash
+        return () => { clearTimeout(t); stop?.(); };
+    }, [refresh]);
+    useEffect(() => {
+        if (!banner) return undefined;
+        const t = setTimeout(() => setBanner(null), 7000);
+        return () => clearTimeout(t);
+    }, [banner]);
+
     // Check for changes on start, and when the app comes back to the front
     useEffect(() => {
         refresh();
@@ -231,6 +252,7 @@ function Shell() {
     const hasMenu = doc?.menu !== 'hide' && inMenu.length > 0;
     const [menu, setMenu] = useState(false);
     const [intro, setIntro] = useState(!!INTRO?.source);
+    const [banner, setBanner] = useState(null); // a notification that arrived while the app was open
 
     // New content may have fewer tabs
     useEffect(() => {
@@ -317,6 +339,16 @@ function Shell() {
             ) : (
                 <View style={{ height: insets.bottom, backgroundColor: C.bar }} />
             )}
+            {banner && (
+                <Pressable onPress={() => { if (/^\d+$/.test(banner.tab || '')) ctx.openTab(+banner.tab); setBanner(null); }} accessibilityRole="button"
+                    style={[styles.banner, { top: insets.top + 8 }]}>
+                    <Icon name="bell" color={C.primary} size={22} />
+                    <View style={{ flex: 1 }}>
+                        {!!banner.title && <Text style={styles.bannerTitle} numberOfLines={1}>{banner.title}</Text>}
+                        {!!banner.body && <Text style={styles.bannerBody} numberOfLines={3}>{banner.body}</Text>}
+                    </View>
+                </Pressable>
+            )}
             {intro && <Intro onDone={() => setIntro(false)} />}
         </View>
     );
@@ -338,6 +370,10 @@ const styles = StyleSheet.create({
     web: { flex: 1, backgroundColor: '#ffffff' },
     progress: { position: 'absolute', top: 0, left: 0, height: 3 },
     intro: { backgroundColor: '#000', zIndex: 10, elevation: 10 },
+    banner: { position: 'absolute', left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: '#ffffff', elevation: 8, zIndex: 9,
+        shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
+    bannerTitle: { fontSize: 15, fontWeight: '700', color: '#0f172a' },
+    bannerBody: { fontSize: 14, color: '#475569', marginTop: 2 },
     skip: { position: 'absolute', right: 16, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.45)' },
     skipText: { color: '#fff', fontSize: 14, fontWeight: '700' },
     header: { flexDirection: 'row', alignItems: 'center', height: 52, paddingHorizontal: 8, gap: 6, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(15,23,42,0.12)' },
