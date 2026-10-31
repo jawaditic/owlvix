@@ -51,7 +51,8 @@
             tabs: [
                 screen('Home', 'home', [
                     hero('Good coffee, slow mornings', 'Small-batch roasts and fresh bakes, every day from 7am.', 'Order ahead', tab(1)),
-                    cards('', [['heart', 'Loyalty card', '10th coffee free.'], ['location', 'Two spots', 'Old Town & Riverside.']]),
+                    { type: 'loyalty', card: '', title: 'Coffee card', reward: 'Free coffee', text: 'A stamp with every coffee — the 10th is on us.', stamps: 10, pin: '' },
+                    cards('', [['location', 'Two spots', 'Old Town & Riverside.'], ['heart', 'Bring your cup', '20% off.']]),
                     para('We roast our beans in-house every week and bake everything on site. Bring your own cup for 20% off.'),
                     reviews('', [['Perfect flat white and the cinnamon buns are unreal.', 'Maya']]),
                 ]),

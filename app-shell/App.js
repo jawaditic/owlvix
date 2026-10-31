@@ -215,10 +215,11 @@ function Shell() {
             shop: doc?.shop && typeof doc.shop === 'object' ? doc.shop : null,
             openProduct: p => setProduct(p),
             openBooking: b => setBooking(b),
+            insets,
             openTab: i => { if (i >= 0 && i < tabs.length) { setOpened(o => (o.includes(i) ? o : [...o, i])); setActive(i); } },
             refresh,
         };
-    }, [doc, C.primary, C.bar, refresh]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [doc, C.primary, C.bar, refresh, insets]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // A native first screen is ready at once; a website tab hides the splash when its page loads (or after 5 s)
     useEffect(() => {

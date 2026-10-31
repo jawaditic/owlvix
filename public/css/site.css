@@ -2472,6 +2472,9 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .ab-n-book .ab-n-row { width: 100%; padding: 4px 0; min-height: 0; border-bottom: 1px solid var(--n-line); }
 .ab-n-book > em { justify-self: stretch; text-align: center; font-style: normal; font-weight: 700; font-size: 12px; padding: 9px; border-radius: calc(9px * var(--n-k)); margin-top: 4px; }
 .ab-days { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.ab-n-mut { font-size: 10.5px; color: var(--n-muted); }
+.ab-n-stamps { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: 100%; margin: 4px 0; }
+.ab-n-stamps i { width: 24px; height: 24px; border-radius: 50%; border: 1.5px dashed var(--n-border); display: grid; place-items: center; font-style: normal; font-size: 9px; color: var(--n-muted); }
 /* Statistics */
 .ab-stats { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--card-border); border-radius: 14px; }
 .ab-stats > b small { font-weight: 500; color: var(--muted); }

@@ -30,7 +30,7 @@ class AppContent
     public const MAX_NEW_BYTES = 12_000_000;
 
     public const TYPES = ['hero', 'heading', 'text', 'image', 'button', 'list', 'gallery', 'contact', 'hours', 'video', 'divider',
-        'slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'spacer', 'products', 'booking'];
+        'slider', 'cards', 'reviews', 'faq', 'social', 'notice', 'spacer', 'products', 'booking', 'loyalty'];
 
     /** Social networks the "social" block links to (each value is the page's https address). */
     public const SOCIAL = ['instagram', 'facebook', 'tiktok', 'youtube', 'x', 'linkedin', 'pinterest', 'snapchat'];
@@ -148,6 +148,7 @@ class AppContent
             'notice' => ($t = $this->text($b['text'] ?? '', 300, true)) !== '' ? ['type' => 'notice', 'text' => $t, 'tone' => in_array($b['tone'] ?? '', ['info', 'success', 'warning'], true) ? $b['tone'] : 'info'] : null,
             'products' => $this->products($b),
             'booking' => $this->booking($b),
+            'loyalty' => $this->loyalty($b),
             'spacer' => ['type' => 'spacer', 'size' => in_array($b['size'] ?? '', ['small', 'medium', 'large'], true) ? $b['size'] : 'medium'],
         };
     }
@@ -231,6 +232,35 @@ class AppContent
         }
 
         return $clean ? array_filter(['type' => 'products', 'title' => $this->text($b['title'] ?? '', 80), 'items' => $clean]) : null;
+    }
+
+    /**
+     * A loyalty card kept on the customer's phone: staff type a PIN on it to add a stamp or give the reward. Only a
+     * hash of the PIN is published (salted with the card's id), never the PIN itself.
+     */
+    private function loyalty(array $b): array
+    {
+        $card = is_string($b['card'] ?? null) && preg_match('/^[a-z0-9]{8,16}$/', $b['card']) ? $b['card'] : throw new AppContentError($this->where.'please add the loyalty card again.');
+        $pin = is_scalar($b['pin'] ?? null) ? trim((string) $b['pin']) : '';
+        if ($pin !== '') {
+            if (! preg_match('/^\d{4,8}$/', $pin)) {
+                throw new AppContentError($this->where.'the staff PIN must be 4 to 8 digits.');
+            }
+            $hash = hash('sha256', $card.':'.$pin);
+        } else {
+            $hash = is_string($b['pinHash'] ?? null) && preg_match('/^[a-f0-9]{64}$/', $b['pinHash']) ? $b['pinHash'] : throw new AppContentError($this->where.'please set a staff PIN for the loyalty card.');
+        }
+        $stamps = (int) ($b['stamps'] ?? 10);
+        if ($stamps < 4 || $stamps > 12) {
+            throw new AppContentError($this->where.'a loyalty card needs 4 to 12 stamps.');
+        }
+        $reward = $this->text($b['reward'] ?? '', 60);
+        if ($reward === '') {
+            throw new AppContentError($this->where.'say what the reward is, e.g. “Free coffee”.');
+        }
+
+        return array_filter(['type' => 'loyalty', 'card' => $card, 'title' => $this->text($b['title'] ?? '', 80), 'reward' => $reward,
+            'text' => $this->text($b['text'] ?? '', 200), 'stamps' => $stamps, 'pinHash' => $hash], fn ($v) => $v !== '');
     }
 
     /**

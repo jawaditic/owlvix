@@ -440,7 +440,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame(['owner' => 'Joe’s Bakery Ltd', 'email' => 'privacy@joes.example', 'extra' => "We also take orders by phone.\nThanks!"], $r['settings']['privacy']);
         $this->assertSame(route('builder.apps.privacy', $r['id']), $r['privacy_url']);
         // What the app does decides what the policy says
-        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false, 'orders' => false, 'bookings' => false], $r['data_use']);
+        $this->assertSame(['website' => null, 'youtube' => true, 'social' => false, 'contact' => true, 'links' => false, 'push' => false, 'orders' => false, 'bookings' => false, 'loyalty' => false], $r['data_use']);
 
         $page = $this->get($r['privacy_url'])->assertOk()->assertHeader('X-Robots-Tag', 'noindex');
         $page->assertSee('Privacy policy for Joe’s Bakery', false)->assertSee('provided by Joe’s Bakery Ltd', false)
@@ -631,6 +631,36 @@ class AppBuilderTest extends TestCase
         // Unknown values fall back
         $r = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $this->app(['style' => ['theme' => 'neon', 'corners' => 'x', 'font' => 'comic']])])->assertOk()->json('app');
         $this->assertSame(['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern'], $r['settings']['style']);
+    }
+
+    public function test_loyalty_card_publishes_only_a_hash_of_the_pin(): void
+    {
+        $token = $this->signIn();
+        $card = ['type' => 'loyalty', 'card' => 'abcd1234efgh', 'title' => 'Coffee card', 'reward' => 'Free coffee', 'stamps' => 10, 'pin' => '4821'];
+        $with = function (array $block) {
+            $app = $this->app();
+            $app['tabs'][0]['blocks'] = [$block];
+
+            return $app;
+        };
+        $this->save($token, $with(['pin' => ''] + $card))->assertStatus(422); // no PIN yet
+        $this->save($token, $with(['pin' => '12'] + $card))->assertStatus(422);
+        $this->save($token, $with(['stamps' => 30] + $card))->assertStatus(422);
+        $this->save($token, $with(['reward' => ''] + $card))->assertStatus(422);
+        $this->save($token, $with(['card' => '../x'] + $card))->assertStatus(422);
+
+        $r = $this->save($token, $with($card))->assertOk()->json('app');
+        $b = $r['tabs'][0]['blocks'][0];
+        $this->assertSame(hash('sha256', 'abcd1234efgh:4821'), $b['pinHash']);
+        $this->assertArrayNotHasKey('pin', $b);
+        $this->assertStringNotContainsString('4821', File::get($this->public."/{$r['id']}/content.json"));
+
+        // Saving again with only the hash keeps the PIN; a new PIN replaces it
+        $again = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $with(['pin' => '', 'pinHash' => $b['pinHash']] + $card)])->assertOk()->json('app.tabs.0.blocks.0');
+        $this->assertSame($b['pinHash'], $again['pinHash']);
+        $new = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $with(['pin' => '9999'] + $card)])->assertOk()->json('app.tabs.0.blocks.0');
+        $this->assertSame(hash('sha256', 'abcd1234efgh:9999'), $new['pinHash']);
+        $this->get(route('builder.apps.privacy', $r['id']))->assertSee('loyalty card stamps are kept only on your phone');
     }
 
     public function test_up_to_fifteen_pages_with_a_menu(): void

@@ -9,6 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { action, image, str } from './content';
 import ICONS from './icons.json';
 import { BookingBlock } from './booking';
+import { LoyaltyBlock } from './loyalty';
 
 
 /** Light text on dark colours, dark text on light ones. */
@@ -374,6 +375,7 @@ export function Block({ b, ctx }) {
         case 'notice': { const tones = T.dark ? DARK_TONES : TONES, [bg, fg] = tones[b.tone] || tones.info; return <View style={[styles.pad, styles.notice, { backgroundColor: bg, borderColor: fg + '33' }]}><Text style={[styles.noticeText, { color: fg }]}>{str(b.text)}</Text></View>; }
         case 'products': return <Products b={b} ctx={ctx} />;
         case 'booking': return <BookingBlock b={b} ctx={ctx} />;
+        case 'loyalty': return <LoyaltyBlock b={b} ctx={ctx} />;
         case 'spacer': return <View style={{ height: { small: 8, large: 44 }[b.size] ?? 22 }} />;
         default: return null;
     }

@@ -184,6 +184,7 @@ class AppBuilder
             'push' => Firebase::enabled(),
             'orders' => $blocks->contains('type', 'products'),
             'bookings' => $blocks->contains('type', 'booking'),
+            'loyalty' => $blocks->contains('type', 'loyalty'),
         ];
     }
 
@@ -233,7 +234,7 @@ class AppBuilder
      * pages, slider/cards/reviews/FAQ/social/notice/space blocks, splash picture, intro). Apps built with an older
      * one are flagged in the builder.
      */
-    public const SHELL_VERSION = 7; // 3: push notifications, 4: usage statistics, 5: products and orders, 6: bookings, 7: dark mode, corners, fonts
+    public const SHELL_VERSION = 8; // 3: push notifications, 4: usage statistics, 5: products and orders, 6: bookings, 7: dark mode, corners, fonts, 8: loyalty card
 
     /**
      * The app's google-services.json for push notifications (registering it in Firebase the first time), or null when

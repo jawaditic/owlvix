@@ -53,7 +53,7 @@
         <p>{{ $owner }} can send news and offers as notifications. To receive them, the app uses Google’s Firebase Cloud Messaging, which gives this installation of the app a random ID so Google can deliver messages to it. That ID isn’t linked to your name or account, and we don’t store it. You can turn notifications off at any time in your phone’s settings for this app.</p>
     @endif
 
-    @if ($use['website'] || $use['youtube'] || $use['social'] || $use['contact'] || $use['links'] || ($use['orders'] ?? false) || ($use['bookings'] ?? false))
+    @if ($use['website'] || $use['youtube'] || $use['social'] || $use['contact'] || $use['links'] || ($use['orders'] ?? false) || ($use['bookings'] ?? false) || ($use['loyalty'] ?? false))
         <h2>Other apps and websites</h2>
         <ul>
             @if ($use['website'])
@@ -61,6 +61,9 @@
             @endif
             @if ($use['youtube'])
                 <li>Videos are shown with their picture from YouTube, and tapping one opens it in YouTube. Loading the picture and watching the video are covered by Google’s privacy policy.</li>
+            @endif
+            @if ($use['loyalty'] ?? false)
+                <li>Your loyalty card stamps are kept only on your phone; nobody else can see them. Uninstalling the app removes them.</li>
             @endif
             @if ($use['bookings'] ?? false)
                 <li>When you ask for an appointment, the app opens WhatsApp or your email app with your request written out (the time, your name and phone number); you see it and send it yourself. The app doesn’t keep or send it anywhere else.</li>

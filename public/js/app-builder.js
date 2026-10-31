@@ -41,9 +41,12 @@
         social: { name: 'Social links', icon: 'social', make: () => ({ title: 'Follow us', links: {} }) },
         notice: { name: 'Notice', icon: 'notice', make: () => ({ text: 'We’re open on bank holidays!', tone: 'info' }) },
         spacer: { name: 'Space', icon: 'spacer', make: () => ({ size: 'medium' }) },
+        loyalty: { name: 'Loyalty card', icon: 'star', make: () => ({ card: cardId(), title: 'Loyalty card', reward: 'Free coffee', text: 'Get a stamp with every coffee.', stamps: 10, pin: '' }) },
         booking: { name: 'Bookings', icon: 'calendar', make: () => ({ title: 'Book an appointment', text: 'Pick a time — we’ll confirm on WhatsApp.', services: [{ name: 'Haircut', info: '30 min · $25' }, { name: 'Colour', info: '90 min · from $70' }], days: [1, 2, 3, 4, 5, 6], from: '09:00', to: '17:00', slot: 30, ahead: 30 }) },
         products: { name: 'Products & orders', icon: 'cart', make: () => ({ title: '', items: [newItem('products'), { ...newItem('products'), name: 'Second product', price: '12' }] }) },
     };
+    /** A loyalty card's id: stamps on phones belong to it, and it salts the PIN's hash. */
+    const cardId = () => Array.from(crypto.getRandomValues(new Uint8Array(12)), n => 'abcdefghijklmnopqrstuvwxyz0123456789'[n % 36]).join('');
     /** A new row for blocks with items. */
     const newItem = type => ({
         list: { title: '', text: '', price: '', image: null, action: { kind: '', value: '' } },
@@ -326,6 +329,12 @@
             }
             case 'notice': { const st = A().style || {}, dk = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches), tones = dk ? DARK_TONES : TONES, [bg, fg] = tones[b.tone] || tones.info; return b.text?.trim() ? `<div class="ab-n-pad ab-n-note" style="background:${bg};color:${fg};border-color:${fg}33">${esc(b.text)}</div>` : ''; }
             case 'spacer': return `<div style="height:${{ small: 6, large: 30 }[b.size] ?? 15}px"></div>`;
+            case 'loyalty': {
+                const n = Math.max(4, Math.min(12, +b.stamps || 10));
+                return `<div class="ab-n-pad"><div class="ab-n-book"><span style="background:${c.primary}1f">${svgIcon('star', c.primary, 16)}</span><b>${esc(b.title || 'Loyalty card')}</b><small class="ab-n-mut">${n} stamps = ${esc(b.reward || '')}</small>${b.text ? `<p>${esc(b.text)}</p>` : ''}
+                    <div class="ab-n-stamps">${Array.from({ length: n }, (_, i) => `<i style="${i < 3 ? `background:${c.primary};border-color:${c.primary}` : ''}">${i < 3 ? svgIcon('star', ink(c.primary), 11) : i + 1}</i>`).join('')}</div>
+                    <em style="background:${c.primary};color:${ink(c.primary)}">Add a stamp</em></div></div>`;
+            }
             case 'booking': return `<div class="ab-n-pad"><div class="ab-n-book"><span style="background:${c.primary}1f">${svgIcon('calendar', c.primary, 16)}</span><b>${esc(b.title || 'Book an appointment')}</b>${b.text ? `<p>${esc(b.text)}</p>` : ''}
                 ${(b.services || []).filter(s => s.name?.trim()).map(s => `<div class="ab-n-row"><span class="ab-n-rb"><b>${esc(s.name)}</b></span><small>${esc(s.info || '')}</small></div>`).join('')}
                 <em style="background:${c.primary};color:${ink(c.primary)}">Book an appointment</em></div></div>`;
@@ -474,6 +483,11 @@
                 + Object.entries(SOCIAL).map(([k, [name]]) => field(name, `links.${k}`, b.links?.[k], { max: 300, type: 'url', ph: 'https://' })).join('') + '</div>';
             case 'notice': return field('Text', 'text', b.text, { max: 300, area: true, rows: 2 })
                 + `<label>Colour<select data-f="tone">${Object.entries(TONES).map(([k, t]) => `<option value="${k}" ${b.tone === k ? 'selected' : ''}>${t[2]}</option>`).join('')}</select></label>`;
+            case 'loyalty': return field('Title', 'title', b.title, { max: 80 })
+                + `<div class="fb-2">${field('Reward', 'reward', b.reward, { max: 60, ph: 'Free coffee' })}<label>Stamps needed<select data-f="stamps" data-num>${[4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<option value="${n}" ${+b.stamps === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>`
+                + field('Text <small>— optional</small>', 'text', b.text, { max: 200, ph: 'Get a stamp with every coffee.' })
+                + `<label>Staff PIN <small>— 4 to 8 digits; staff type it on the customer’s phone to add a stamp or give the reward</small><input data-f="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" value="${esc(b.pin || '')}" placeholder="${b.pinHash ? 'Set ✓ — type a new PIN to change it' : 'e.g. 4821'}"></label>
+                    <p class="fb-hint">Stamps are kept on each customer’s phone. Keep the PIN to your team; change it any time (it takes effect when you save).</p>`;
             case 'booking': {
                 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], order = [1, 2, 3, 4, 5, 6, 0];
                 return field('Title', 'title', b.title, { max: 80 }) + field('Text <small>— optional</small>', 'text', b.text, { max: 300, area: true, rows: 2 })
@@ -773,7 +787,7 @@
             const i = blocks.indexOf(b);
             if (t.dataset.bmove !== undefined) { const j = i + +t.dataset.bmove; [blocks[i], blocks[j]] = [blocks[j], blocks[i]]; }
             else if (t.dataset.bdel !== undefined) blocks.splice(i, 1);
-            else if (t.dataset.bcopy !== undefined) { const c = JSON.parse(JSON.stringify(b)); openBlocks.add(c); blocks.splice(i + 1, 0, c); }
+            else if (t.dataset.bcopy !== undefined) { const c = JSON.parse(JSON.stringify(b)); if (c.type === 'loyalty') { c.card = cardId(); delete c.pinHash; c.pin = ''; } openBlocks.add(c); blocks.splice(i + 1, 0, c); }
             else if (t.dataset.pick) { picking = { block: b, path: t.dataset.pick }; photoInput.multiple = t.dataset.pick === 'images'; photoInput.click(); return; }
             else if (t.dataset.unimg) setPath(b, t.dataset.unimg, null);
             else if (t.dataset.gdel) b.images.splice(+t.dataset.gdel, 1);
@@ -904,6 +918,7 @@
         if (D.icon.mode === 'image' && !logo) return 'Please add your logo, or switch the icon to letters.';
         if (a.tabs.some(t => !t.label.trim())) return 'Please give each tab a name.';
         if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'booking' || (b.type === 'products' && (b.items || []).some(i => i.name?.trim())))) && !a.shop.whatsapp.trim() && !a.shop.email.trim()) return 'Your app takes orders or bookings: add a WhatsApp number or email for them under “More settings → Orders & bookings”.';
+        if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'loyalty' && !b.pinHash && !/^\d{4,8}$/.test(b.pin || '')))) return 'Please set a staff PIN (4 to 8 digits) for your loyalty card.';
         if (a.tabs.some(t => t.type === 'web') && !siteUrl()) return 'You have a tab that shows your website: add your website address (starting with https://) under “More settings”.';
         return null;
     };
@@ -927,6 +942,8 @@
             const first = !D.id; D.id = r.app.id; D.dirty = false; D.iconDirty = false; D.splash.bgDirty = false;
             D.base = r.app.content_url.replace(/content\.json$/, '');
             eachImage(img => { if (img.src?.startsWith('data:') && img.name) { img.src = img.name; delete img.name; } }); // now stored on the server
+            const hashes = Object.fromEntries((r.app.tabs || []).flatMap(t => t.blocks || []).filter(b => b.type === 'loyalty').map(b => [b.card, b.pinHash]));
+            A().tabs.forEach(t => (t.blocks || []).forEach(b => { if (b.type === 'loyalty' && hashes[b.card]) { b.pinHash = hashes[b.card]; b.pin = ''; } })); // the PIN isn't kept in the browser
             save();
             apps = [...(apps || []).filter(x => x.id !== r.app.id), r.app]; drawMine(); drawSettings();
             if (D.splash.bg === 'video' && bgVideo) {
@@ -984,6 +1001,7 @@
         if (b.type === 'video' && b.id) out.url = 'https://www.youtube.com/watch?v=' + b.id;
         if (b.type === 'cards') out.items = (b.items || []).map(i => ({ icon: 'star', title: '', text: '', ...i, action: i.action || { kind: '', value: '' } }));
         if (b.type === 'social') out.links = { ...(b.links || {}) };
+        if (b.type === 'loyalty') out.pin = '';
         if (b.type === 'booking') { out.services = (b.services || []).map(s => ({ name: '', info: '', ...s })); out.days = b.days || []; }
         if (b.type === 'products') out.items = (b.items || []).map(i => ({ name: '', price: '', category: '', text: '', image: null, ...i, price: i.price ?? '' }));
         return out;
@@ -1364,10 +1382,11 @@
         a.colors = { ...t.colors };
         if (t.shop && !a.shop.whatsapp.trim() && !a.shop.email.trim()) a.shop = { ...a.shop, ...t.shop };
         a.tabs = JSON.parse(JSON.stringify(t.tabs));
+        a.tabs.forEach(tab => (tab.blocks || []).forEach(b => { if (b.type === 'loyalty') b.card = cardId(); })); // each app its own card
         if (!a.name.trim()) { a.name = t.sample; if (!current()?.version_code && (!a.package || a.package === D.autoPackage)) a.package = D.autoPackage = suggestPackage(); }
         activeTab = 0; view = 'app'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app')));
         drawAll(); markDirty(true); track('app_builder_template', { template: t.id });
-        note(`${t.name} template added — now change the words and add your pictures.`);
+        note(`${t.name} template added — now change the words and add your pictures.${a.tabs.some(x => (x.blocks || []).some(b => b.type === 'loyalty')) ? ' Set a staff PIN for the loyalty card before saving.' : ''}`);
         $('.ab-screen')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
 
