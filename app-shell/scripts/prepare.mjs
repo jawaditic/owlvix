@@ -97,6 +97,34 @@ writeFileSync(join(root, 'assets/icon.png'), job.icon ? png(job.icon, 'icon') : 
 writeFileSync(join(root, 'assets/adaptive.png'), job.foreground ? png(job.foreground, 'foreground') : square(shell.colors.icon, 1024, true));
 writeFileSync(join(root, 'assets/splash.png'), job.splash ? png(job.splash, 'splash') : job.foreground ? png(job.foreground, 'splash') : square(shell.colors.icon, 1024, true));
 
+/* ---------- the app's pictures, packed into the build ---------- */
+// Every picture the content uses (in every language) is downloaded and shipped inside the app, so even the first
+// launch works offline. plugins/with-bundled-images.js puts them in the Android assets; content.js uses them when a
+// picture's name is in shell.bundled, and downloads anything added later as before.
+const BUNDLE_LIMIT = 30_000_000; // bytes, so a picture-heavy app stays a reasonable download
+const bundleDir = join(root, 'bundled-img');
+rmSync(bundleDir, { recursive: true, force: true });
+const names = new Set();
+JSON.stringify(content, (k, v) => { if (k === 'src' && typeof v === 'string' && /^[a-f0-9]{20}\.(jpg|png|webp)$/.test(v)) names.add(v); return v; });
+shell.bundled = [];
+let packed = 0;
+for (const name of names) {
+    try {
+        const res = await fetch(content.base + name);
+        if (!res.ok) continue;
+        const buf = Buffer.from(await res.arrayBuffer());
+        const magic = buf.subarray(0, 12).toString('hex');
+        const ok = magic.startsWith('ffd8ff') || magic.startsWith('89504e47') || (magic.startsWith('52494646') && buf.subarray(8, 12).toString() === 'WEBP');
+        if (!ok || packed + buf.length > BUNDLE_LIMIT) continue;
+        mkdirSync(bundleDir, { recursive: true });
+        writeFileSync(join(bundleDir, name), buf);
+        packed += buf.length;
+        shell.bundled.push(name);
+    } catch {} // a picture that can't be fetched now is simply downloaded by the app later
+}
+writeFileSync(join(root, 'shell.json'), JSON.stringify(shell, null, 4));
+console.log(`prepare: packed ${shell.bundled.length} of ${names.size} pictures (${Math.round(packed / 1024)} KB)`);
+
 /* ---------- intro (full-screen picture or video after the splash) ---------- */
 // Fetched on its own (too big for the job). intro.js tells the app which file to bundle, or that there's none.
 let intro = null;

@@ -51,7 +51,12 @@ export const str = v => (typeof v === 'string' ? v : '');
 export const color = (v, fallback) => (HEX.test(v || '') ? v : fallback);
 
 /** A picture's address and shape, or null. */
-export const image = (img, base) => (img && IMAGE.test(img.src || '') ? { uri: base + img.src, ratio: img.w > 0 && img.h > 0 ? img.w / img.h : 1.5 } : null);
+/** Pictures packed into this build (scripts/prepare.mjs): shown from the app itself, so they work offline at once. */
+let bundled = new Set();
+export const setBundled = list => { bundled = new Set(Array.isArray(list) ? list : []); };
+export const image = (img, base) => (img && IMAGE.test(img.src || '')
+    ? { uri: bundled.has(img.src) ? `asset:/owlvix-img/${img.src}` : base + img.src, ratio: img.w > 0 && img.h > 0 ? img.w / img.h : 1.5 }
+    : null);
 
 /** Where tapping goes: a URL to open, { tab } to switch tabs, or null. */
 export function action(a) {

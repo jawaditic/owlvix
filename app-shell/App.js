@@ -17,7 +17,7 @@ import { WebView } from 'react-native-webview';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import INTRO from './intro';
 import { Block, Empty, Icon, isDark } from './blocks';
-import { color, fetchContent, startContent, str } from './content';
+import { color, fetchContent, setBundled, startContent, str } from './content';
 import { countOpen, countPage, sendStats } from './stats';
 import { OrderButton, OrderSheet, ProductSheet } from './order';
 import { BookingSheet } from './booking';
@@ -26,6 +26,7 @@ const shell = Constants.expoConfig?.extra?.shell ?? {};
 const CHECK_EVERY = 60 * 1000; // ask the server for changes at most once a minute when the app comes back
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+setBundled(shell.bundled); // pictures packed into this build
 
 /** Opens a link outside the app: the browser, phone, email, WhatsApp, maps… */
 const openOutside = url => {

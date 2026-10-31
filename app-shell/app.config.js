@@ -36,6 +36,7 @@ module.exports = {
         ['expo-splash-screen', { image: './assets/splash.png', imageWidth: shell.splashWidth || 180, resizeMode: 'contain', backgroundColor: shell.colors.splash }],
         ['expo-build-properties', { android: { usesCleartextTraffic: false, enableMinifyInReleaseBuilds: true, enableShrinkResourcesInReleaseBuilds: true } }],
         './plugins/with-release-signing',
+        './plugins/with-bundled-images',
         ...(push ? [
             '@react-native-firebase/app',
             ['@react-native-firebase/messaging', { android: { notificationIcon: './assets/notification.png', notificationColor: shell.colors.primary } }],
