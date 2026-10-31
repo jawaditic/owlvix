@@ -1502,10 +1502,10 @@
                 <b>${esc(t.name)}</b><small>${esc(t.note)}</small></button>`;
         }).join('');
     };
-    const useTemplate = async id => {
+    const useTemplate = async (id, quiet = false) => {
         const t = TEMPLATES.find(x => x.id === id); if (!t) return;
         const has = allTabs().some(x => (x.blocks || []).length > 0), langs = Object.keys(A().translations).length;
-        if (has && !await ask(`Use the ${t.name} template?`, `Your tabs, screens and colours are replaced${langs ? ' in every language (each one starts from the template, to translate again)' : ''}. Your app name, icon and settings stay.`, 'Use template')) return;
+        if (!quiet && has && !await ask(`Use the ${t.name} template?`, `Your tabs, screens and colours are replaced${langs ? ' in every language (each one starts from the template, to translate again)' : ''}. Your app name, icon and settings stay.`, 'Use template')) return;
         switchLang(A().lang);
         const a = A();
         a.colors = { ...t.colors };
@@ -1516,9 +1516,30 @@
         if (!a.name.trim()) { a.name = t.sample; if (!current()?.version_code && (!a.package || a.package === D.autoPackage)) a.package = D.autoPackage = suggestPackage(); }
         activeTab = 0; view = 'app'; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app')));
         drawAll(); markDirty(true); track('app_builder_template', { template: t.id });
+        if (quiet) return;
         note(`${t.name} template added — now change the words and add your pictures.${a.tabs.some(x => (x.blocks || []).some(b => b.type === 'loyalty')) ? ' Set a staff PIN for the loyalty card before saving.' : ''}`);
         $('.ab-screen')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
+
+    /* ------------------------------------------------ hooks for the quick setup wizard (public/js/app-wizard.js) */
+    const showApp = () => { view = 'app'; enterNext = true; showLoader = true; previewMenu = false; $$('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.view === 'app'))); drawPhone(); };
+    window.OwlAppBuilder = {
+        app: () => A(), state: () => D, current: () => current(), templates: TEMPLATES, icons: ICON_NAMES, svgIcon,
+        hasContent: () => allTabs().some(x => (x.blocks || []).length > 0),
+        useTemplate: id => useTemplate(id, true),
+        setLogo: file => useLogo(file),
+        paintIcon: canvas => paintIcon(canvas),
+        /** Removes pages (by index) in every language, keeping buttons pointing at the right pages. */
+        removePages: list => {
+            [...new Set(list)].sort((a, b) => b - a).forEach(i => eachLangTabs(ts => { if (ts.length > i && ts.length > 1) { ts.splice(i, 1); fixTabLinks(k => (k === i ? 0 : k > i ? k - 1 : k), ts); } }));
+            activeTab = 0;
+        },
+        changed: (icon = false) => { drawAll(); markDirty(icon); },
+        showApp, showSplash,
+        save: () => saveApp(),
+        toBuild: () => showTab('build'),
+    };
+    document.dispatchEvent(new Event('owl-app-builder-ready'));
 
     /* ------------------------------------------------ start */
     $('[data-add-types]').innerHTML = Object.entries(BLOCKS).map(([k, v]) => `<button type="button" data-add-type="${k}">${svgIcon(v.icon, 'currentColor', 20)}<span>${v.name}</span></button>`).join('');

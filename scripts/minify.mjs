@@ -24,6 +24,7 @@ export const FILES = [
     'js/resume-builder.js',
     'js/app-builder.js',
     'js/app-templates.js',
+    'js/app-wizard.js',
 ];
 
 for (const file of FILES) {

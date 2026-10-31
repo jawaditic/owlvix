@@ -267,4 +267,5 @@
 <script type="application/json" id="ab-icons">{!! json_encode(\App\Support\AppBuilder::icons(), JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
 <script src="{{ \App\Support\Asset::url('js/app-templates.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/app-builder.js') }}" defer></script>
+<script src="{{ \App\Support\Asset::url('js/app-wizard.js') }}" defer></script>
 @endsection
