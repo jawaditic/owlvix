@@ -17,8 +17,6 @@
             <button type="button" class="lpb-tb" data-act="undo" title="Undo (Ctrl/Cmd+Z)">↩<span class="lpb-tb__t"> Undo</span></button>
             <button type="button" class="lpb-tb" data-act="redo" title="Redo (Ctrl/Cmd+Shift+Z)">↪<span class="lpb-tb__t"> Redo</span></button>
             <button type="button" class="lpb-tb" data-act="preview" title="Open a preview in a new tab">👁<span class="lpb-tb__t"> Preview</span></button>
-            <button type="button" class="lpb-tb" data-act="open" title="Open a project file from this device">📂<span class="lpb-tb__t"> Open file</span></button>
-            <button type="button" class="lpb-tb" data-act="save" title="Download a project file to this device">💾<span class="lpb-tb__t"> Save file</span></button>
         </div>
         {{-- saved to the account, like the app builder: "My sites" and Save --}}
         <div class="lpb-top__group lpb-cloud">
@@ -72,7 +70,6 @@
     </div>
 
     <input type="file" accept="image/*" data-pick-image hidden>
-    <input type="file" accept=".json,application/json" data-open-file hidden>
     <div class="lpb-toast" data-toast role="status" hidden></div>
 
     <dialog class="lpb-dialog" data-builder-dialog aria-label="Builder account">

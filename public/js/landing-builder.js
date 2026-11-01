@@ -76,7 +76,7 @@
         saveTimer = setTimeout(() => {
             cloudStatus();
             try { localStorage.setItem(STORE, JSON.stringify(P)); $('[data-autosave]').textContent = 'Saved on this device'; }
-            catch { $('[data-autosave]').textContent = 'Too big to auto-save — use “Save project”'; }
+            catch { $('[data-autosave]').textContent = 'Too big to keep in this browser — save it to your account (☁️ Save)'; }
         }, 400);
     };
     const commit = () => {
@@ -494,6 +494,23 @@
         try { localStorage.setItem('owlvix-builder-tpl', JSON.stringify(list.slice(0, 30))); toast('Saved to My templates (Add tab)'); drawAdd(); }
         catch { toast('No space left to save templates in this browser — remove photos or old templates.'); }
     };
+    /* Whole pages saved as my templates: every section of a page, reused later as a new page. (In this browser.) */
+    const PAGE_TPL = 'owlvix-builder-pagetpl';
+    const myPageTemplates = () => { try { return JSON.parse(localStorage.getItem(PAGE_TPL) || '[]'); } catch { return []; } };
+    const myPageSections = i => {
+        const secs = (myPageTemplates()[i]?.secs || []).map(x => B.normalizeSection(x)).filter(Boolean).map(x => B.reId(x)); // checked like any project data
+        if (!secs.length) throw new Error('That page template could not be read.');
+        return secs;
+    };
+    const savePageTemplate = async () => {
+        const pg = page();
+        if (!pg.sections.length) return toast('This page is empty — add some sections first.', 'error');
+        const name = await sweet({ icon: 'question', title: 'Save page as my template', text: `Saves all ${pg.sections.length} sections of “${pg.title}” with your words, pictures and styles. Reuse it any time as a new page. Saved in this browser.`, input: { value: pg.title, max: 40 }, confirm: 'Save page template' });
+        if (!name) return;
+        const list = myPageTemplates(); list.unshift({ name, secs: clone(pg.sections) });
+        try { localStorage.setItem(PAGE_TPL, JSON.stringify(list.slice(0, 20))); toast('Page saved to My templates (Add tab → My templates)', 'success'); drawAdd(); }
+        catch { toast('No space left to save templates in this browser — remove photos or old templates.', 'error'); }
+    };
     const tile = (drag, icon, label) => `<button type="button" class="lpb-add" draggable="true" data-drag="${drag}"><span>${icon}</span>${esc(label)}</button>`;
     const drawAdd = () => {
         const q = ($('[data-add-search]')?.value || '').toLowerCase().trim();
@@ -501,20 +518,110 @@
         const group = (title, inner) => (inner ? `<h2 class="lpb-ph">${title}</h2><div class="lpb-add-grid">${inner}</div>` : '');
         const widgets = gr => Object.values(W).filter(d => d.group === gr && match(d.label)).map(d => tile(`new:${d.type}`, `<b class="lpb-glyph">${esc(d.icon)}</b>`, d.label)).join('');
         const layouts = Object.entries(B.LAYOUTS).filter(([, v]) => match(v[2] + ' columns layout')).map(([k, v]) => tile(`layout:${k}`, `<i class="lpb-lay" style="grid-template-columns:${v[0]}">${'<i></i>'.repeat(v[1])}</i>`, v[2])).join('');
-        const secT = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0])).map(([k, v]) => `<button type="button" class="lpb-tpl-row" draggable="true" data-drag="tpl:${k}">${esc(v[0])}<span>＋</span></button>`).join('');
-        const pageT = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0] + ' page')).map(([k, v]) => `<button type="button" class="lpb-tpl-row" data-page-tpl="${k}">📄 ${esc(v[0])}<span>＋ New page</span></button>`).join('');
-        const mine = myTemplates().map((t, i) => (match(t.name) ? `<div class="lpb-tpl-row lpb-tpl-mine" draggable="true" data-drag="tpl:my-${i}">⭐ ${esc(t.name)}<button type="button" data-tpl-del="${i}" title="Remove">✕</button></div>` : '')).join('');
+        const thumb = key => `<span class="lpb-tthumb" data-thumb="${key}" aria-hidden="true"></span>`;
+        const SHOW = q ? Infinity : 6; // the side panel shows a few; "View all" opens every one
+        const secT = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0])).slice(0, SHOW).map(([k, v]) => `<button type="button" class="lpb-tpl-row lpb-tpl-card" draggable="true" data-drag="tpl:${k}">${thumb('sec:' + k)}<span class="lpb-tpl-name">${esc(v[0])}<span>＋</span></span></button>`).join('');
+        const pageT = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0] + ' page')).slice(0, q ? Infinity : 4).map(([k, v]) => `<button type="button" class="lpb-tpl-row lpb-tpl-card" data-page-tpl="${k}">${thumb('page:' + k)}<span class="lpb-tpl-name">📄 ${esc(v[0])}<span>＋ New page</span></span></button>`).join('');
+        const mine = myTemplates().map((t, i) => (match(t.name) ? `<div class="lpb-tpl-row lpb-tpl-card lpb-tpl-mine" draggable="true" data-drag="tpl:my-${i}">${thumb('sec:my-' + i)}<span class="lpb-tpl-name">⭐ ${esc(t.name)}<button type="button" data-tpl-del="${i}" title="Remove this template">✕</button></span></div>` : '')).join('');
+        const minePages = FUNNEL ? '' : myPageTemplates().map((t, i) => (match(t.name + ' page') ? `<div class="lpb-tpl-row lpb-tpl-card lpb-tpl-mine" role="button" tabindex="0" data-my-page="${i}">${thumb('mypage:' + i)}<span class="lpb-tpl-name">📄 ${esc(t.name)} <small>${t.secs?.length || 0} sections</small><button type="button" data-pagetpl-del="${i}" title="Remove this page template">✕</button></span></div>` : '')).join('');
+        // after the last card too, so people who scrolled through the list don't have to go back up
+        const more = (kind, label) => { const n = Object.keys(kind === 'sec' ? B.TEMPLATES.sections : B.TEMPLATES.pages).length; return q ? '' : `<button type="button" class="lpb-viewall lpb-viewall--end" data-tpl-all="${kind}">View all ${n} ${label} →</button>`; };
         const html = (FUNNEL ? group('Funnel widgets', widgets('funnel')) : '') + group('Layout — columns', layouts) + group('Basic widgets', widgets('basic')) + group('Pro widgets', widgets('pro')) + group('Ready sections', widgets('section'))
-            + (secT ? `<h2 class="lpb-ph">Section templates</h2><div class="lpb-tpl-list">${secT}</div>` : '') + (pageT ? `<h2 class="lpb-ph">Page templates</h2><div class="lpb-tpl-list">${pageT}</div>` : '')
-            + (!q || mine ? `<h2 class="lpb-ph">My templates</h2><div class="lpb-tpl-list">${mine || '<p class="lpb-hint">Select a section and press ★ on its toolbar to save it here.</p>'}</div>` : '');
+            + (secT ? `<h2 class="lpb-ph lpb-ph--row">Section templates <button type="button" class="lpb-viewall" data-tpl-all="sec">View all (${Object.keys(B.TEMPLATES.sections).length})</button></h2><div class="lpb-tpl-list">${secT}</div>${more('sec', 'section templates')}` : '')
+            + (pageT ? `<h2 class="lpb-ph lpb-ph--row">Page templates <button type="button" class="lpb-viewall" data-tpl-all="page">View all (${Object.keys(B.TEMPLATES.pages).length})</button></h2><div class="lpb-tpl-list">${pageT}</div>${more('page', 'page templates')}` : '')
+            + (!q || mine || minePages ? `<h2 class="lpb-ph">My templates</h2><div class="lpb-tpl-list">${mine + minePages || `<p class="lpb-hint">Select a section and press ★ on its toolbar to save it here${FUNNEL ? '' : ' — or save a whole page from the Page tab'}.</p>`}</div>` : '');
         $('[data-add-list]').innerHTML = html || '<p class="lpb-hint">Nothing matches your search.</p>';
+        $$('[data-thumb]', $('[data-add-list]')).forEach(el => thumbs.observe(el));
     };
+
+    /* All templates in a popup: bigger thumbnails, tabs for sections / pages / my templates, and a search. A click
+       adds the section after the selected element (or the page), then the popup closes. */
+    let gal = null, galTab = 'sec', galCat = '';
+    const drawGallery = () => {
+        const q = gal.querySelector('[data-gal-q]').value.toLowerCase().trim(), match = l => !q || l.toLowerCase().includes(q);
+        gal.querySelectorAll('[data-gal-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.galTab === galTab)));
+        // groups (Heroes, Features, Pricing…) for sections and pages
+        const src = galTab === 'sec' ? B.TEMPLATES.sections : galTab === 'page' ? B.TEMPLATES.pages : null;
+        const cats = src ? [...new Set(Object.values(src).map(v => v[2]).filter(Boolean))] : [];
+        if (!cats.includes(galCat)) galCat = '';
+        gal.querySelector('[data-gal-cats]').innerHTML = cats.length ? ['', ...cats].map(c => `<button type="button" data-gal-cat="${esc(c)}" aria-pressed="${c === galCat}">${esc(c || 'All')}</button>`).join('') : '';
+        const inCat = v => !galCat || v[2] === galCat;
+        const card = (key, label, act, extra = '') => `<button type="button" class="lpb-gal-card" ${act}><span class="lpb-tthumb lpb-tthumb--big" data-thumb="${key}" aria-hidden="true"></span><span class="lpb-gal-name">${esc(label)}${extra}</span></button>`;
+        let cards = '';
+        if (galTab === 'sec') cards = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0]) && inCat(v)).map(([k, v]) => card('sec:' + k, v[0], `data-gal-add="tpl:${k}"`, '<i>＋ Add</i>')).join('');
+        else if (galTab === 'page') cards = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0]) && inCat(v)).map(([k, v]) => card('page:' + k, v[0], `data-gal-page="${k}"`, '<i>＋ New page</i>')).join('');
+        else cards = myTemplates().map((t, i) => (match(t.name) ? card('sec:my-' + i, t.name, `data-gal-add="tpl:my-${i}"`, '<i>＋ Add</i>') : '')).join('')
+            + (FUNNEL ? '' : myPageTemplates().map((t, i) => (match(t.name) ? card('mypage:' + i, '📄 ' + t.name, `data-gal-mypage="${i}"`, '<i>＋ New page</i>') : '')).join(''));
+        const empty = galTab === 'mine' && !q ? `No saved templates yet — select a section on your page and press ★ on its toolbar${FUNNEL ? '' : ', or save a whole page from the Page tab'}.` : 'Nothing matches your search.';
+        gal.querySelector('[data-gal-grid]').innerHTML = cards || `<p class="lpb-hint">${empty}</p>`;
+        gal.querySelectorAll('[data-thumb]').forEach(el => thumbs.observe(el));
+    };
+    const openGallery = tab => {
+        if (!gal) {
+            gal = document.createElement('dialog');
+            gal.className = 'lpb-gallery';
+            gal.setAttribute('aria-label', 'All templates');
+            gal.innerHTML = `<div class="lpb-gal-head"><h2>Templates</h2>
+                    <div class="lpb-gal-tabs" role="tablist"><button type="button" role="tab" data-gal-tab="sec">Sections</button><button type="button" role="tab" data-gal-tab="page">Pages</button><button type="button" role="tab" data-gal-tab="mine">My templates</button></div>
+                    <input type="search" data-gal-q placeholder="Search templates…" aria-label="Search templates">
+                    <button type="button" class="lpb-gal-x" data-gal-close aria-label="Close">✕</button></div>
+                <div class="lpb-gal-cats" data-gal-cats></div>
+                <div class="lpb-gal-grid" data-gal-grid></div>`;
+            (root.closest('.lpb-app.is-full') ? root : document.body).appendChild(gal);
+            gal.addEventListener('click', async e => {
+                const r = gal.getBoundingClientRect(), outside = e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+                if ((e.target === gal && outside) || e.target.closest('[data-gal-close]')) return gal.close();
+                const tb = e.target.closest('[data-gal-tab]'); if (tb) { galTab = tb.dataset.galTab; galCat = ''; return drawGallery(); }
+                const ct = e.target.closest('[data-gal-cat]'); if (ct) { galCat = ct.dataset.galCat; return drawGallery(); }
+                const add = e.target.closest('[data-gal-add]'); if (add) { gal.close(); clickAdd(add.dataset.galAdd); return toast('Section added', 'success'); }
+                const pg = e.target.closest('[data-gal-page]'); if (pg) { gal.close(); return addPage(pageName(pg.dataset.galPage), pg.dataset.galPage); }
+                const mp = e.target.closest('[data-gal-mypage]'); if (mp) { gal.close(); return addPage(myPageTemplates()[+mp.dataset.galMypage]?.name || 'New page', 'mypage-' + mp.dataset.galMypage); }
+            });
+            gal.querySelector('[data-gal-q]').addEventListener('input', drawGallery);
+        }
+        galTab = tab || 'sec'; galCat = '';
+        gal.querySelector('[data-gal-q]').value = '';
+        gal.showModal(); drawGallery();
+        gal.querySelector('[data-gal-tab][aria-selected="true"]')?.focus();
+    };
+    /* Template thumbnails: each template drawn small with this site's colours and fonts (an iframe, drawn once it
+       scrolls into view; cached until the site's look changes). */
+    const THUMB_CSS = '<style>html,body{overflow:hidden!important;pointer-events:none}body{min-height:100vh;display:grid;align-content:center}main{width:100%}header.nav,.ob-bar,footer.foot,.popup,[data-popup]{display:none!important}[data-anim]{opacity:1!important;transform:none!important;transition:none!important}*{animation:none!important}</style>';
+    const thumbCache = new Map();
+    const thumbHtml = key => {
+        const look = JSON.stringify([P.site.colors, P.site.fonts, P.site.theme, P.site.radius, P.site.buttons]);
+        const id = key + '|' + look;
+        if (thumbCache.has(id)) return thumbCache.get(id);
+        let sections;
+        try { sections = key.startsWith('mypage:') ? myPageSections(+key.slice(7)) : key.startsWith('page:') ? B.TEMPLATES.pages[key.slice(5)][1]() : [templateSection(key.slice(4))]; } catch { return ''; }
+        const pg = { ...P.pages[0], id: 'thumb', sections, popup: {} };
+        let html = '';
+        // (with the runtime: sliders and flip boxes need it to draw)
+        try { html = B.render({ ...P, site: { ...P.site, announce: { on: false } } }, pg, 'download', { runtime: RUNTIME, extraHead: THUMB_CSS }); } catch { html = ''; }
+        thumbCache.set(id, html);
+        return html;
+    };
+    const thumbs = new IntersectionObserver(entries => entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        const el = en.target; thumbs.unobserve(el);
+        const html = thumbHtml(el.dataset.thumb); if (!html) return;
+        const f = document.createElement('iframe');
+        f.setAttribute('tabindex', '-1'); f.setAttribute('aria-hidden', 'true'); f.title = '';
+        const k = (el.clientWidth || 290) / 1200; // drawn 1200px wide, shrunk to the card
+        f.style.transform = `scale(${k})`; f.style.height = Math.ceil(el.clientHeight / k) + 'px';
+        f.srcdoc = html; f.onload = () => el.classList.add('is-ready');
+        el.appendChild(f);
+    }), { root: null, rootMargin: '200px 0px' });
     $('[data-add-search]').addEventListener('input', drawAdd);
     $('[data-add-list]').addEventListener('click', e => {
         const del = e.target.closest('[data-tpl-del]');
         if (del) { e.stopPropagation(); const list = myTemplates(); list.splice(+del.dataset.tplDel, 1); try { localStorage.setItem('owlvix-builder-tpl', JSON.stringify(list)); } catch {} return drawAdd(); }
+        const pdel = e.target.closest('[data-pagetpl-del]');
+        if (pdel) { e.stopPropagation(); const list = myPageTemplates(); list.splice(+pdel.dataset.pagetplDel, 1); try { localStorage.setItem(PAGE_TPL, JSON.stringify(list)); } catch {} return drawAdd(); }
+        const myp = e.target.closest('[data-my-page]'); if (myp) return addPage(myPageTemplates()[+myp.dataset.myPage]?.name || 'New page', 'mypage-' + myp.dataset.myPage);
+        const all = e.target.closest('[data-tpl-all]'); if (all) return openGallery(all.dataset.tplAll);
         const pt = e.target.closest('[data-page-tpl]');
-        if (pt) return addPage(B.TEMPLATES.pages[pt.dataset.pageTpl][0], pt.dataset.pageTpl);
+        if (pt) return addPage(pageName(pt.dataset.pageTpl), pt.dataset.pageTpl);
         const t = e.target.closest('[data-drag]'); if (t) clickAdd(t.dataset.drag);
     });
     // Click instead of drag: put it after the selected element
@@ -782,6 +889,7 @@
         if (mv) { const [i, d] = mv.dataset.navMv.split('|').map(Number), s = page().sections; [s[i], s[i + d]] = [s[i + d], s[i]]; commit(); refreshMain(); drawNavigator(); return; }
         if (e.target.closest('[data-popup-img]')) { picking = 'popup|image'; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-popup-img-clear]')) { page().popup.image = ''; commit(); return drawPage(); }
+        if (e.target.closest('[data-page-savetpl]')) return savePageTemplate();
         if (e.target.closest('[data-page-del]')) {
             sweet({ icon: 'warning', title: `Delete the page “${page().title}”?`, text: 'All its sections go too. You can bring it back with Undo.', confirm: 'Yes, delete page', danger: true })
                 .then(ok => { if (ok) { P.pages.splice(pageIdx, 1); pageIdx = 0; sel = null; commit(); renderAll(); toast('Page deleted'); } });
@@ -791,7 +899,7 @@
         const pg = page(), pop = pg.popup ||= B.defaultsPopup();
         const keep = {}; $$('[data-page-panel] .lpb-acc').forEach(d => (keep[d.querySelector('summary').textContent] = d.open));
         const funnelHtml = FUNNEL ? funnelPanel(pg) : '';
-        $('[data-page-panel]').innerHTML = funnelHtml + `
+        $('[data-page-panel]').innerHTML = funnelHtml + (FUNNEL ? '' : `<button type="button" class="btn btn--sm btn--ghost lpb-savepage" data-page-savetpl>⭐ Save this page as my template</button>`) + `
             <details class="lpb-acc" ${FUNNEL ? '' : 'open'}><summary>Navigator</summary><ol class="lpb-nav" data-navigator></ol></details>
             <details class="lpb-acc"><summary>Page settings</summary>
             <label>Page name (in the menu)<input data-pg="title" value="${esc(pg.title)}" maxlength="40"></label>
@@ -979,12 +1087,15 @@
         P.pages.push(pg); commit(); switchPage(P.pages.length - 1); showTab('page');
         track('funnel_add_step', { type });
     };
+    /** The name suggested for a page made from a template: "Pricing"; for "Home — gym / fitness" the kind ("Gym"), not a second "Home". */
+    const pageName = key => { const l = B.TEMPLATES.pages[key][0], [a, b] = l.split(' — '); if (a !== 'Home' || !b) return a; const n = b.split(' /')[0]; return n[0].toUpperCase() + n.slice(1); };
     const addPage = async (preset, tpl) => {
         if (FUNNEL) return addStep();
         if (P.pages.length >= 10) return sweet({ icon: 'info', title: 'You have 10 pages', text: 'That is the most one site can have. Delete a page to add another.', cancel: false, confirm: 'Got it' });
         const title = await sweet({ icon: 'question', title: 'Add a new page', text: 'What should the page be called? It appears in your menu.', input: { value: preset || 'About', placeholder: 'About, Services, Contact…', max: 40 }, confirm: 'Add page' });
         if (!title) return;
-        const pg = B.newPage(title.slice(0, 40), P.pages.length, tpl);
+        const pg = B.newPage(title.slice(0, 40), P.pages.length, tpl?.startsWith('mypage-') ? '' : tpl);
+        if (tpl?.startsWith('mypage-')) { try { pg.sections = myPageSections(+tpl.slice(7)); } catch (ex) { return toast(ex.message, 'error'); } }
         while (P.pages.some(p => p.slug === pg.slug)) pg.slug += '-2';
         if (P.site.bare) { P.site.bare = false; toast('Header menu turned on so visitors can reach the new page'); } // a simple page has no menu
         P.pages.push(pg); commit(); switchPage(P.pages.length - 1); showTab('page');
@@ -1020,6 +1131,46 @@
     };
     fullBtn.addEventListener('click', () => setFull(!root.classList.contains('is-full')));
     document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && root.classList.contains('is-full')) setFull(false); });
+
+    // Phones: the toolbar is one row (page · Save · Publish · ☰). The other tools move into the ☰ menu, and back to
+    // their places on wider screens. Moving keeps each button's own click handler.
+    (() => {
+        const bar = root.querySelector('.lpb-top'), last = bar?.querySelector('.lpb-top__group:last-of-type');
+        if (!bar || !last) return;
+        last.insertAdjacentHTML('beforeend', '<button type="button" class="lpb-tb lpb-more-btn" data-more aria-expanded="false" aria-controls="lpb-more-menu" aria-label="More tools" title="More tools"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>');
+        bar.insertAdjacentHTML('beforeend', '<div class="lpb-more" id="lpb-more-menu" data-more-menu hidden></div>');
+        const btn = bar.querySelector('[data-more]'), menu = bar.querySelector('[data-more-menu]');
+        const mq = window.matchMedia('(max-width: 760px)');
+        // in menu order; [data-cloud-list]/[data-cloud-signin] are "My sites"/"My funnels", .wz-open is Quick setup
+        const EXTRA = ['[data-variant-badge]', '.wz-open', '[data-cloud-list]', '[data-cloud-signin]', '[data-act="add-page"]', '[data-act="undo"]', '[data-act="redo"]', '[data-act="preview"]', '[data-act="fullscreen"]', '[data-act="download"]'];
+        const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+        const sync = () => {
+            if (mq.matches) {
+                for (const sel of EXTRA) {
+                    const el = bar.querySelector(`.lpb-top__group ${sel}`);
+                    if (!el) continue;
+                    const ph = document.createElement('span'); ph.hidden = true; ph.dataset.morePh = '';
+                    el.before(ph); el._morePh = ph; menu.append(el);
+                }
+                // keep the menu in the order above, whatever order the buttons arrived in
+                EXTRA.forEach(sel => { const el = menu.querySelector(`:scope > ${sel}`); if (el) menu.append(el); });
+            } else {
+                [...menu.children].forEach(el => { if (el._morePh?.isConnected) el._morePh.replaceWith(el); });
+                close();
+            }
+        };
+        btn.addEventListener('click', e => {
+            e.stopPropagation(); sync(); // Quick setup and My sites can arrive after the page loads
+            const open = menu.hidden; menu.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+        });
+        // pick something in the menu (a button, or a saved site from the list): the menu closes
+        menu.addEventListener('click', e => { if (e.target.closest('button') && !e.target.closest('[data-act="undo"],[data-act="redo"]')) close(); });
+        menu.addEventListener('change', close);
+        document.addEventListener('click', e => { if (!menu.hidden && !menu.contains(e.target) && e.target !== btn) close(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { close(); btn.focus(); } });
+        mq.addEventListener('change', sync);
+        sync(); setTimeout(sync, 0);
+    })();
 
     // Save / open project
     const save = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); };
@@ -1070,21 +1221,6 @@
         else printCards(url);
         track('builder_qr', { kind: b.dataset.qrDl });
     });
-    $('[data-act=save]').addEventListener('click', () => { save(new Blob([JSON.stringify(P)], { type: 'application/json' }), baseName() + '.owlvix.json'); toast('Project saved — open it any time to keep editing'); track('builder_save'); });
-    $('[data-act=open]').addEventListener('click', () => $('[data-open-file]').click());
-    $('[data-open-file]').addEventListener('change', async e => {
-        const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-        try {
-            if (f.size > 40e6) throw new Error();
-            const data = B.migrate(JSON.parse(await f.text())); // checks and cleans every value
-            if ((data.kind === 'funnel') !== FUNNEL) throw new Error(); // funnels open only in the funnel builder
-            if (KIT) data.kind = KIT; // any other site opens in any builder and becomes this builder's project
-            data.pages.forEach(pg => B.render(data, pg, 'edit')); // must draw without errors before it replaces anything
-            undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null; setCloud({}); persist(); renderAll(); syncHistory();
-            toast('Project opened');
-        } catch { toast(FUNNEL ? 'That file is not an Owlvix funnel project.' : 'That file is not an Owlvix website project.'); }
-    });
-
     // Download: one page → HTML, several → ZIP
     const crcTable = (() => { const tb = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; tb[n] = c >>> 0; } return tb; })();
     const crc32 = bytes => { let c = 0xffffffff; for (let i = 0; i < bytes.length; i++) c = crcTable[(c ^ bytes[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
@@ -1347,7 +1483,7 @@
     /* =========================================================== saved to the account ("My sites", Save) */
     // Like the app builder: the whole editable project is saved to the visitor's builder account
     // (BuilderProjectController), listed under "My sites" and opened again on any device. The browser copy
-    // (localStorage) and project files keep working as before.
+    // (localStorage) keeps working as before.
     const KIND = FUNNEL ? 'funnel' : KIT || 'landing';
     const NOUN = FUNNEL ? 'funnel' : KIT === 'links' ? 'page' : KIT === 'soon' ? 'page' : KIT === 'menu' ? 'menu' : 'site';
     const CLOUD_KEY = STORE + '-cloud';

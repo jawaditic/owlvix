@@ -819,7 +819,9 @@
         const tip = document.createElement('div');
         tip.className = 'ow-tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
         let on = null;
-        const wordless = el => { let t = el.textContent; el.querySelectorAll('.sr-only').forEach(x => { t = t.replace(x.textContent, ''); }); return !t.replace(/[^\p{L}\p{N}]/gu, ''); };
+        // words people can't see (screen-reader-only, or squeezed to 1px like the builders' "Undo") don't count
+        const hidden = x => x.matches('.sr-only') || (x.offsetWidth <= 1 && x.offsetHeight <= 1);
+        const wordless = el => { let t = el.textContent; el.querySelectorAll('*').forEach(x => { if (x.textContent && hidden(x)) t = t.replace(x.textContent, ''); }); return !t.replace(/[^\p{L}\p{N}]/gu, ''); };
         const hide = () => { tip.hidden = true; tip.classList.remove('is-on'); on = null; };
         const show = el => {
             if (!el.dataset.tip && !wordless(el)) return;
@@ -828,7 +830,7 @@
                 if (!el.hasAttribute('aria-label')) el.setAttribute('aria-label', el.title);
                 el.removeAttribute('title');
             }
-            const text = el.dataset.tip || el.getAttribute('aria-label'); if (!text || el.disabled) return;
+            const text = el.dataset.tip || el.getAttribute('aria-label'); if (!text) return; // greyed-out buttons too: they say what they would do
             const host = document.fullscreenElement && document.fullscreenElement !== document.documentElement ? document.fullscreenElement : document.body;
             if (tip.parentNode !== host) host.append(tip);
             on = el; tip.textContent = text; tip.hidden = false; tip.classList.remove('is-on', 'is-below');
@@ -856,7 +858,8 @@
     // itself (errors stay longer), waits while the pointer is on it, and has a ✕. Screen readers hear it.
     (() => {
         let wrap = null;
-        const ICON = { error: '!', success: '✓', info: 'i' };
+        const svg = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
+        const ICON = { error: svg('M12 5.5v8M12 18.2v.1'), success: svg('M5 12.5l4.5 4.5L19 7.5'), info: svg('M12 10.5v8M12 5.8v.1') };
         const guess = m => /^(✓|✅|🎉|🔔)|\b(added|saved|copied|sent|deleted|disconnected|checked|downloaded|published|connected)\b/i.test(m) && !/couldn|can.?t|failed|error/i.test(m) ? 'success'
             : /^please\b|couldn|could not|can.?t|cannot|failed|error|blocked|too many|too big|too large|not allowed|invalid|wrong|missing|needs?\b|up to \d|^the pin|full\b|try again|isn.?t|doesn.?t|didn.?t|no longer/i.test(m) ? 'error' : 'info';
         window.owlToast = (message, kind) => {
@@ -869,7 +872,7 @@
             const t = document.createElement('div');
             t.className = `ow-toast ow-toast--${kind}`; t.dataset.text = text;
             t.setAttribute('role', kind === 'error' ? 'alert' : 'status');
-            t.innerHTML = `<span class="ow-toast__icon" aria-hidden="true">${ICON[kind]}</span><p></p><button type="button" class="ow-toast__x" aria-label="Close message">✕</button><i class="ow-toast__bar" aria-hidden="true"></i>`;
+            t.innerHTML = `<span class="ow-toast__icon" aria-hidden="true">${ICON[kind]}</span><p></p><button type="button" class="ow-toast__x" aria-label="Close message"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><i class="ow-toast__bar" aria-hidden="true"></i>`;
             t.querySelector('p').textContent = text;
             const ms = kind === 'error' ? 9000 : 5500;
             let timer, left = ms, started;

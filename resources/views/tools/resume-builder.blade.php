@@ -55,7 +55,7 @@
             </div>
             <div class="rb-filebar">
                 <span class="fb-hint" data-saved>Saved on this device</span>
-                <span><button type="button" class="rb-link" data-save-file>Save file</button> · <button type="button" class="rb-link" data-open-file>Open file</button> · <button type="button" class="rb-link" data-reset>Start over</button></span>
+                <span><button type="button" class="rb-link" data-reset>Start over</button></span>
             </div>
 
             <div class="fb-layout rb-layout">
@@ -66,7 +66,6 @@
                 </div>
             </div>
             <input type="file" accept="image/jpeg,image/png,image/webp" data-photo-file hidden>
-            <input type="file" accept=".json,application/json" data-open-input hidden>
         </div>
 
         <div class="lp-cta__box card speed-cta">

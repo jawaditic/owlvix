@@ -61,7 +61,7 @@
         };
     };
     let R; try { R = clean(JSON.parse(localStorage.getItem(STORE) || 'null')); } catch { R = sample(); }
-    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(R)); $('[data-saved]').textContent = 'Saved on this device'; } catch { $('[data-saved]').textContent = 'Too big to save here — remove the photo or use “Save file”'; } };
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(R)); $('[data-saved]').textContent = 'Saved on this device'; } catch { $('[data-saved]').textContent = 'Too big to save here — try a smaller photo'; } };
 
     /* ------------------------------------------------ the CV page (A4, 210 × 297 mm) */
     const lines = t => String(t || '').split('\n').map(s => s.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
@@ -239,22 +239,8 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
         w.document.write(page(true)); w.document.close();
         track('resume_pdf', { design: R.design });
     });
-    $('[data-save-file]').addEventListener('click', () => {
-        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(R)], { type: 'application/json' }));
-        a.download = ((R.person.name || 'my').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'my') + '-cv.owlvix-cv.json';
-        document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-    });
-    $('[data-open-file]').addEventListener('click', () => $('[data-open-input]').click());
-    $('[data-open-input]').addEventListener('change', async e => {
-        const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-        try {
-            if (f.size > 2e6) throw new Error();
-            const d = JSON.parse(await f.text()); if (!d.person) throw new Error();
-            R = clean(d); draw(); drawLook(); changed();
-        } catch { ask({ icon: 'info', title: 'That isn’t a saved CV', text: 'Choose a file saved with “Save file” in this builder.', cancel: false, confirm: 'OK' }); }
-    });
     $('[data-reset]').addEventListener('click', async () => {
-        const choice = await ask({ icon: 'warning', title: 'Start over?', text: 'Clear everything and start from a blank CV? Save a file first if you may need it again.', confirm: 'Clear my CV', cancel: 'Cancel', danger: true });
+        const choice = await ask({ icon: 'warning', title: 'Start over?', text: 'Clear everything and start from a blank CV? This can’t be undone.', confirm: 'Clear my CV', cancel: 'Cancel', danger: true });
         if (!choice) return;
         R = clean({ design: R.design, color: R.color, font: R.font, person: {}, jobs: [job()], schools: [school()], languages: [], extras: [] }); draw(); drawLook(); changed();
     });

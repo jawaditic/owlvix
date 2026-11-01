@@ -48,7 +48,7 @@ class BuilderProjectController extends Controller
         ]);
         $json = json_encode($v['data'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false || strlen($json) > BuilderProject::MAX_BYTES) {
-            return $this->fail('This project is too big to save (most often: very large pictures). Use smaller pictures, or “Save file” to keep it on this device.', 413);
+            return $this->fail('This project is too big to save (most often: very large pictures). Use smaller pictures and try again.', 413);
         }
         $account = $this->account($request);
         $name = Str::limit(trim(strip_tags($v['name'] ?? '')) ?: 'Untitled', 80, '');
