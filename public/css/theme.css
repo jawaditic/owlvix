@@ -1,3 +1,20 @@
+/* Fonts, served from owlvix.com (public/fonts) instead of Google Fonts: Inter (one variable file) and Poppins 500–800 */
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(../fonts/inter-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 100 900; font-display: swap; src: url(../fonts/inter-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 500; font-display: swap; src: url(../fonts/poppins-500-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 500; font-display: swap; src: url(../fonts/poppins-500-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 600; font-display: swap; src: url(../fonts/poppins-600-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 600; font-display: swap; src: url(../fonts/poppins-600-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 700; font-display: swap; src: url(../fonts/poppins-700-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 700; font-display: swap; src: url(../fonts/poppins-700-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 800; font-display: swap; src: url(../fonts/poppins-800-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 800; font-display: swap; src: url(../fonts/poppins-800-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+/* While the real fonts load, Arial stands in, resized to take the same space, so text doesn't jump when they arrive
+   (measured against our own font files; Poppins headings use Arial Bold) */
+@font-face { font-family: 'Poppins Fallback'; font-weight: 100 600; src: local('Arial'), local('ArialMT'), local('Liberation Sans'); size-adjust: 112.8%; ascent-override: 93.1%; descent-override: 31%; line-gap-override: 0%; }
+@font-face { font-family: 'Poppins Fallback'; font-weight: 700 900; src: local('Arial Bold'), local('Arial-BoldMT'), local('Liberation Sans Bold'); size-adjust: 106.9%; ascent-override: 98.2%; descent-override: 32.7%; line-gap-override: 0%; }
+@font-face { font-family: 'Inter Fallback'; src: local('Arial'), local('ArialMT'), local('Liberation Sans'); size-adjust: 107%; ascent-override: 90.7%; descent-override: 22.4%; line-gap-override: 0%; }
+
 /* Owlvix colour themes, shared by the website and the admin dashboard.
    Dark is the brand look; light is chosen with the sun/moon switch (or the device setting).
    The page sets <html data-theme="dark|light"> before it paints (see the small script in <head>). */
@@ -82,13 +99,13 @@ select option { background: var(--field, #fff); color: var(--text, #0f172a); }
 .sweet--warning .sweet__icon { --c: #f59e0b; }
 .sweet--success .sweet__icon { --c: #16a34a; }
 .sweet__icon svg { width: 38px; height: 38px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.sweet__title { margin: 0; font: 700 1.3rem/1.3 Poppins, sans-serif; }
+.sweet__title { margin: 0; font: 700 1.3rem/1.3 Poppins, 'Poppins Fallback', sans-serif; }
 .sweet__text { margin: 0; color: var(--text-2); font-size: .95rem; }
-.sweet__input { width: 100%; margin-top: 6px; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--card-border); background: var(--field); color: var(--text); font: 500 1rem Inter, sans-serif; text-align: center; }
+.sweet__input { width: 100%; margin-top: 6px; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--card-border); background: var(--field); color: var(--text); font: 500 1rem Inter, 'Inter Fallback', sans-serif; text-align: center; }
 .sweet__input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(30, 199, 115, .2); }
 .sweet__input.is-shake { border-color: var(--danger-ink); animation: sweet-shake .35s; }
 .sweet__actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; width: 100%; }
-.sweet__btn { flex: 1; max-width: 180px; padding: 12px 18px; border-radius: 999px; border: 0; background: var(--green); color: #fff; font: 700 .95rem Inter, sans-serif; cursor: pointer; transition: transform .15s, filter .15s; }
+.sweet__btn { flex: 1; max-width: 180px; padding: 12px 18px; border-radius: 999px; border: 0; background: var(--green); color: #fff; font: 700 .95rem Inter, 'Inter Fallback', sans-serif; cursor: pointer; transition: transform .15s, filter .15s; }
 .sweet__btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
 .sweet__btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--green) 40%, transparent); outline-offset: 2px; }
 .sweet__btn--danger { background: #dc2626; }

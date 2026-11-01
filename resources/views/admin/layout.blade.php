@@ -6,9 +6,6 @@
     <meta name="robots" content="noindex, nofollow">
     <title>@yield('title', 'Dashboard') · Owlvix Admin</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     {{-- Theme: saved choice, else the device setting. Runs before paint so there's no flash. --}}
     <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
     <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/theme.css') }}">
