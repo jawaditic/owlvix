@@ -2,23 +2,51 @@
 
 namespace Tests\Feature;
 
+use App\Support\Guides;
 use Tests\TestCase;
 
-/** Guides: "How to start selling online for free" (links to the online store builder). */
+/** Step-by-step guides (App\Support\Guides): each page, its structured data, and the links to and from its builder. */
 class GuidePagesTest extends TestCase
 {
+    public function test_every_guide_page(): void
+    {
+        $sitemap = $this->get('/sitemap.xml')->assertOk();
+        $llms = file_get_contents(public_path('llms.txt'));
+
+        foreach (Guides::ALL as $route => [$path, , $short, $builder, $ask]) {
+            $url = route($route);
+            $html = $this->get($path)->assertOk()
+                ->assertSee('rel="canonical" href="'.$url.'"', false)
+                ->assertSee(route($builder), false)
+                ->getContent();
+
+            preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
+            $types = array_column(json_decode($m[1], true)['@graph'], null, '@type');
+            $this->assertGreaterThanOrEqual(5, count($types['HowTo']['step']), $route);
+            $this->assertSame(substr_count($html, 'class="guide__n"'), count($types['HowTo']['step']), $route);
+            $this->assertGreaterThanOrEqual(5, count($types['FAQPage']['mainEntity']), $route);
+
+            foreach (Guides::ALL as $other => $o) { // "More free guides" links every other guide
+                if ($other !== $route) {
+                    $this->assertStringContainsString('href="'.route($other).'"', $html, $route);
+                }
+            }
+
+            $this->get(route($builder))->assertSee(e($ask), false)->assertSee($url, false); // linked from its builder
+            $sitemap->assertSee($url, false);
+            $this->assertStringContainsString('https://owlvix.com'.$path, $llms, $route);
+        }
+    }
+
     public function test_the_selling_online_guide(): void
     {
-        $html = $this->get('/how-to-sell-online')->assertOk()
+        $this->get('/how-to-sell-online')->assertOk()
             ->assertSee('<title>How to Start Selling Online for Free', false)
-            ->assertSee('rel="canonical" href="'.route('guide.sell-online').'"', false)
-            ->assertSee(route('store-builder'), false)->getContent();
-        preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $html, $m);
-        $types = array_column(json_decode($m[1], true)['@graph'], null, '@type');
-        $this->assertCount(8, $types['HowTo']['step']);
-        $this->assertCount(6, $types['FAQPage']['mainEntity']);
-        $this->get(route('store-builder'))->assertSee(route('guide.sell-online'), false); // linked from the builder
-        $this->get('/sitemap.xml')->assertSee(route('guide.sell-online'), false);
-        $this->assertStringContainsString('https://owlvix.com/how-to-sell-online', file_get_contents(public_path('llms.txt')));
+            ->assertSee(route('service.shopify-development'), false);
+    }
+
+    public function test_builders_without_a_guide_have_no_guide_link(): void
+    {
+        $this->get(route('website-builder'))->assertOk()->assertDontSee('lpb-guide-link', false);
     }
 }

@@ -31,6 +31,7 @@
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · Your details stay on your device</span>
         <h1>A <span class="accent">professional CV</span> in minutes — free PDF</h1>
         <p class="lead">Fill in your details, pick a design and download a clean, recruiter-friendly CV as PDF. No sign-up, no watermark, nothing uploaded.</p>
+        @include('guides.partials.link')
     </div>
 </section>
 

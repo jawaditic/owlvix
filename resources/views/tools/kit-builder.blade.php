@@ -28,7 +28,7 @@
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>{!! $k['h1'] !!}</h1>
         <p class="lead">{{ $k['lead'] }}</p>
-        @if (! empty($k['guide']))<p class="lpb-guide-link">New to selling online? <a href="{{ route($k['guide']) }}">Read our free step-by-step guide →</a></p>@endif
+        @include('guides.partials.link')
     </div>
 </section>
 
