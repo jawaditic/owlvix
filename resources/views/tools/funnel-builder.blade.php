@@ -32,6 +32,7 @@
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>Build a <span class="accent">sales funnel</span> that converts</h1>
         <p class="lead">Opt-in, sales, upsell and thank-you pages linked step by step — collect leads, take payments with your own Stripe or PayPal link, and A/B test what works. Free.</p>
+        @include('guides.partials.link')
     </div>
 </section>
 

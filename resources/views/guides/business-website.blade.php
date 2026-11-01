@@ -1,0 +1,55 @@
+{{-- Guide: how to make a website for your small business, with the website builder. Page: guides/partials/guide. --}}
+@extends('layouts.page')
+
+@include('guides.partials.guide', ['g' => [
+    'route' => 'guide.business-website',
+    'date' => '2026-11-01',
+    'time' => 'PT3H',
+    'title' => 'How to Make a Website for Your Small Business (Free) — Step by Step',
+    'description' => 'Make a website for your small business in 8 steps: the pages you need, what to write, photos, a working contact form, publishing, your own domain and getting found on Google.',
+    'crumb' => 'Website builder',
+    'alt' => 'Owlvix owl building a business website',
+    'h1' => 'How to make a website for your small business',
+    'meta' => 'an afternoon, free',
+    'intro' => '<p>Most customers look you up online before they call, book or visit. A simple website that says what you do, where you are and how to reach you wins those customers — and you don’t need a developer or a monthly plan to make one. This guide walks you through it page by page, using the free <a href="'.e(route('website-builder')).'">Owlvix website builder</a>.</p>',
+    'cta' => [
+        ['Want to follow along?', 'Open the website builder in another tab — no sign-up to start.', 'Open the website builder'],
+        ['Ready to build your website?', 'Free to build and publish. Up to 10 pages, no watermark.', 'Build my free website'],
+    ],
+    'before' => [
+        '<strong>What you sell</strong> — your main services or products and roughly what they cost.',
+        '<strong>Your contact details</strong>: phone, email, WhatsApp, address and opening hours.',
+        '<strong>A few real photos</strong> of you, your team, your place or your work.',
+        '<strong>Your logo</strong>, if you have one. Your business name in a nice font works too.',
+    ],
+    'steps' => [
+        ['Decide what your website must do', 'Pick one main goal: get calls, get bookings, get enquiries or bring people to your shop. Every page should point visitors to that one action.',
+            'write the goal down — for example “Get 5 enquiries a week” — and put that button on every page.'],
+        ['Plan your pages', 'Most small businesses need four or five: Home, About, Services (or Menu or Pricing), Contact, and maybe Reviews. In the builder, use “＋ Page” to add ready-made pages — they appear in your menu automatically.'],
+        ['Pick a ready-made design', 'Open the free website builder and choose the design closest to your business — consultant, clinic, restaurant, home services or real estate. Then change the colours and fonts to match your logo.',
+            'pick by layout, not colour. Every colour, font and photo can be changed.'],
+        ['Write a clear home page', 'In the first line, say what you do and where: “Family dentist in Leeds — new patients welcome.” Below it, list your main services, a few reviews and one big button for your main goal.',
+            'write the way your customers talk. “Leaking tap? We can come today” beats “Comprehensive plumbing solutions”.'],
+        ['Add real photos', 'Swap the sample photos for your own — your team, your place, your work. Real photos build trust faster than stock photos. The builder shrinks them so your site stays fast.'],
+        ['Switch on your contact form', 'Select the contact form and switch it on with your email (free). Every message a visitor sends is emailed to you. Add your phone, WhatsApp and a map on the Contact page too.'],
+        ['Publish and connect your domain', 'Press Publish to put your site on sites.owlvix.com for free. To use your own domain, download the site and upload it to your hosting, or ask us to set it up for you.'],
+        ['Help people find you on Google', 'Create or update your free Google Business profile and add your website. Use the same name, address and phone everywhere, and ask happy customers for Google reviews.',
+            'add your town or area to your page titles and headings — people search “plumber near me” or “plumber in Leeds”.'],
+    ],
+    'mistakes' => [
+        ['No clear next step.', 'Every page should end with a button: call, book or send a message.'],
+        ['Too much text.', 'Visitors skim. Short lines, headings and lists beat long paragraphs.'],
+        ['Hidden contact details.', 'Put your phone or WhatsApp at the top and bottom of every page.'],
+        ['Never updating it.', 'Old prices or hours lose customers. Check your site once a month.'],
+    ],
+    'more' => '<p>Want a custom website with booking, payments and SEO? <a href="'.e(route('service.wordpress-development')).'" data-quote>Talk to us about a website built for you</a>.</p>',
+    'faqTitle' => 'Business websites, explained',
+    'faq' => [
+        ['How much does a small business website cost?', 'With the Owlvix website builder you can build and publish one for free. A domain name usually costs about $10–20 a year if you want your own. A custom-designed site from an agency usually costs more, depending on what it needs to do.'],
+        ['How many pages does a small business website need?', 'Usually four or five: Home, About, Services, Contact and perhaps Reviews or Pricing. You can add up to 10 pages in the free builder.'],
+        ['Do I need my own domain?', 'Not to start. Your site works on a free sites.owlvix.com address. A domain like yourbusiness.com looks more professional and is easy to add later.'],
+        ['Will my website work on phones?', 'Yes. Every design fits phones, tablets and computers. Check it on your own phone before you share it.'],
+        ['How do I get my website on Google?', 'Add it to your Google Business profile, share the link, and get listed on local directories. It can take a few weeks for Google to show a new site.'],
+        ['Can I change my website later?', 'Yes. Save it to your free account and open it from “My sites” on any device. Change anything and publish again — the address stays the same.'],
+    ],
+]])

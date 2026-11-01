@@ -35,6 +35,7 @@
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · Native Android app</span>
         <h1>Make your own <span class="accent">mobile app</span></h1>
         <p class="lead">Build your screens from native blocks — banner, menu and prices, gallery, contact buttons, opening hours — and we build a real Android app for you, ready for your phone and Google Play. Change it any time: phones update without a new build.</p>
+        @include('guides.partials.link')
     </div>
 </section>
 

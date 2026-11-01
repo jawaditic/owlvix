@@ -33,6 +33,7 @@
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>Design <span class="accent">newsletters &amp; emails</span> that look great everywhere</h1>
         <p class="lead">Start from a template, change the words, pictures and colours, then copy the HTML into Mailchimp, Brevo or Klaviyo. Works in Outlook, Gmail and on phones.</p>
+        @include('guides.partials.link')
     </div>
 </section>
 

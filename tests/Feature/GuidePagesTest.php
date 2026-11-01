@@ -45,8 +45,18 @@ class GuidePagesTest extends TestCase
             ->assertSee(route('service.shopify-development'), false);
     }
 
+    public function test_the_guides_page_lists_every_guide(): void
+    {
+        $html = $this->get('/guides')->assertOk()->assertSee('<title>Free Step-by-Step Guides', false)->getContent();
+        foreach (Guides::ALL as $route => $g) {
+            $this->assertStringContainsString('href="'.route($route).'"', $html);
+        }
+        $this->get('/sitemap.xml')->assertSee(route('guides'), false);
+        $this->get(route('home'))->assertSee('href="'.route('guides').'"', false); // in the menu and footer
+    }
+
     public function test_builders_without_a_guide_have_no_guide_link(): void
     {
-        $this->get(route('website-builder'))->assertOk()->assertDontSee('lpb-guide-link', false);
+        $this->get(route('landing-builder'))->assertOk()->assertDontSee('lpb-guide-link', false);
     }
 }
