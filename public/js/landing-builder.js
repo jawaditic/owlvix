@@ -1451,7 +1451,7 @@
                 token = r.token; try { localStorage.setItem('owlvix-builder-token', token); } catch {}
                 await loadAccount(); redrawSiteQr(); track('builder_sign_in');
                 afterSignIn?.();
-            } else if (f.matches('[data-publish]')) await publish(f.slug.value);
+            } else if (f.matches('[data-publish]')) await publish(f.slug.value, f.showcase?.checked);
         } catch (ex) { err.textContent = ex.message; err.hidden = false; }
         finally { btnEl.disabled = false; }
     });
@@ -1523,12 +1523,14 @@
         const mine = account?.sites || [], slug = P.site.publishSlug || slugify(P.site.name) || 'my-site';
         openDialog(`<h3>Publish your site</h3><p>Your ${P.pages.length > 1 ? P.pages.length + ' pages go' : 'page goes'} live at a free web address you can share. Signed in as <b>${esc(account?.email || '')}</b>.</p>
             <form data-publish><label>Web address<span class="lpb-slug lpb-slug--url"><i>${esc(SITE_HOST)}</i><input name="slug" value="${esc(slug)}" required minlength="3" maxlength="40"></span></label>
-            <p class="lpb-hint">Lowercase letters, numbers and dashes. Published pages are hidden from Google search — for your own domain and Google ranking, download the page or let us set it up.</p><p class="lpb-err" hidden></p>
+            <p class="lpb-hint">Lowercase letters, numbers and dashes. Published pages are hidden from Google search — for your own domain and Google ranking, download the page or let us set it up.</p>
+            ${(() => { const was = mine.find(s => s.slug === slug)?.showcase; return was === 'no' ? '' : `<label class="lpb-check lpb-showcase"><input type="checkbox" name="showcase" ${was === 'asked' || was === 'yes' ? 'checked' : ''}><span>${was === 'yes' ? 'Featured in the Owlvix gallery — untick to remove it' : 'Feature my site in the Owlvix gallery'}<small>We look at every site first. A free link to your site from owlvix.com.</small></span></label>`; })()}
+            <p class="lpb-err" hidden></p>
             <button class="btn btn--glow btn--block" type="submit">${mine.some(s => s.slug === slug) ? 'Update my published site' : 'Publish now'}</button></form>
             ${mine.length ? `<h4>Your published sites</h4><ul class="lpb-sites">${mine.map(s => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\//, ''))}</a> <small>${s.status === 'live' ? 'Live' : 'Taken down'}</small>${s.status === 'live' ? ` <button type="button" class="lpb-link-btn" data-unpublish="${esc(s.slug)}">Unpublish</button>` : ''}</li>`).join('')}</ul>` : ''}`);
         dlgBody.querySelector('[name=slug]').addEventListener('input', e => (e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')));
     };
-    const publish = async slugIn => {
+    const publish = async (slugIn, showcase) => {
         const slug = slugify(slugIn);
         if (slug.length < 3) throw new Error('Please use at least 3 letters or numbers.');
         await syncRsvp(); // errors show in the publish dialog
@@ -1537,7 +1539,7 @@
         P.site.publishSlug = slug;
         const pages = P.pages.map(p => ({ slug: p.slug, title: p.title, html: exportHtml(p, 'publish') }));
         let r;
-        try { r = await api('POST', '/builder/publish', { slug, name: P.site.name || 'My website', pages }); }
+        try { r = await api('POST', '/builder/publish', { slug, name: P.site.name || 'My website', pages, kind: KIND, ...(showcase === undefined ? {} : { showcase: !!showcase }) }); }
         catch (ex) { P.site.publishSlug = previous; throw ex; }
         commit(); await loadAccount().catch(() => {});
         openDialog(`<h3>🎉 Your site is live</h3><p><a class="lpb-live" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//, ''))}</a></p>

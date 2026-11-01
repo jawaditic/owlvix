@@ -15,7 +15,7 @@ class BuilderController extends Controller
     public function index()
     {
         return view('admin.builder', [
-            'sites' => BuilderSite::with('account')->orderByRaw('reported_at is null')->orderByDesc('reported_at')->orderByDesc('updated_at')->get(),
+            'sites' => BuilderSite::with('account')->orderByRaw("showcase = 'asked' desc")->orderByRaw('reported_at is null')->orderByDesc('reported_at')->orderByDesc('updated_at')->get(),
             'apps' => BuilderApp::with('account')->withCount(['builds' => fn ($q) => $q->where('status', 'done')])->orderByRaw('reported_at is null')->orderByDesc('reported_at')->orderByDesc('updated_at')->get(),
             'stores' => BuilderStore::with('account')->orderByDesc('updated_at')->get(),
             'forms' => BuilderForm::with('account')->withCount('leads')->orderByDesc('last_submission_at')->orderByDesc('created_at')->get(),
@@ -23,10 +23,22 @@ class BuilderController extends Controller
                 'accounts' => BuilderAccount::count(),
                 'live' => BuilderSite::where('status', 'live')->count(),
                 'reported' => BuilderSite::where('status', 'live')->whereNotNull('reported_at')->count(),
+                'showcase' => BuilderSite::where('status', 'live')->where('showcase', 'asked')->count(),
                 'messages' => (int) BuilderForm::where('kind', 'contact')->sum('submissions'),
                 'leads' => \App\Models\BuilderLead::count(),
             ],
         ]);
+    }
+
+    /** "Made with Owlvix": approve, decline or remove a site from the showcase on /examples. */
+    public function showcase(\Illuminate\Http\Request $request, BuilderSite $site)
+    {
+        $act = $request->validate(['act' => ['required', 'in:approve,decline,remove']])['act'];
+        $site->showcase = $act === 'approve' ? 'yes' : 'no';
+        $site->showcase_at = now();
+        $site->save();
+
+        return back()->with('status', $site->displayUrl().($act === 'approve' ? ' is now featured on the example designs page.' : ' won’t be featured.'));
     }
 
     public function takedown(BuilderSite $site)

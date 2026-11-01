@@ -11,6 +11,10 @@ class BuilderSite extends Model
 {
     public const MAX_PER_ACCOUNT = 3;
 
+    /** What each builder makes, for the "Made with Owlvix" cards. */
+    public const KINDS = ['landing' => 'Landing page', 'funnel' => 'Sales funnel', 'website' => 'Website', 'portfolio' => 'Portfolio',
+        'links' => 'Link in bio', 'soon' => 'Coming soon page', 'event' => 'Event website', 'menu' => 'Restaurant menu', 'store' => 'Online store'];
+
     // Addresses nobody can publish at
     public const RESERVED = ['admin', 'administrator', 'api', 'app', 'assets', 'auth', 'billing', 'blog', 'builder', 'cdn',
         'contact', 'dashboard', 'docs', 'f', 'ftp', 'help', 'login', 'logout', 'mail', 'news', 'owlvix', 'p', 'pay',
@@ -21,7 +25,7 @@ class BuilderSite extends Model
 
     protected function casts(): array
     {
-        return ['pages' => 'array', 'reported_at' => 'datetime', 'views' => 'integer', 'reports' => 'integer'];
+        return ['pages' => 'array', 'reported_at' => 'datetime', 'showcase_at' => 'datetime', 'views' => 'integer', 'reports' => 'integer'];
     }
 
     public function account(): BelongsTo
@@ -167,7 +171,19 @@ class BuilderSite extends Model
             'url' => $this->url(),
             'pages' => array_map(fn ($p) => ['slug' => $p['slug'], 'title' => $p['title']], $this->pages ?? []),
             'status' => $this->isLive() ? 'live' : 'removed',
+            'showcase' => $this->showcase, // asked, yes (featured), no (not this time) or null
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /** Featured on /examples: approved by the admin and still live. */
+    public function scopeFeatured($query)
+    {
+        return $query->where('showcase', 'yes')->where('status', 'live');
+    }
+
+    public function kindLabel(): string
+    {
+        return self::KINDS[$this->kind] ?? 'Website';
     }
 }

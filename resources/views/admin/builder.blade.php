@@ -13,6 +13,7 @@
         <div class="panel stat"><span>Builder users</span><strong>{{ $stats['accounts'] }}</strong></div>
         <div class="panel stat"><span>Live sites</span><strong>{{ $stats['live'] }}</strong></div>
         <div @class(['panel stat', 'stat--accent' => $stats['reported']])><span>Reported, live</span><strong>{{ $stats['reported'] }}</strong></div>
+        <div @class(['panel stat', 'stat--accent' => $stats['showcase']])><span>Want to be featured</span><strong>{{ $stats['showcase'] }}</strong></div>
         <div class="panel stat"><span>Form messages sent</span><strong>{{ $stats['messages'] }}</strong></div>
         <div class="panel stat"><span>Funnel leads</span><strong>{{ $stats['leads'] }}</strong></div>
     </section>
@@ -32,6 +33,8 @@
                         @if ($site->reported_at)<em class="src--popup">Reported {{ $site->reports }}× · {{ $site->reported_at->diffForHumans(short: true) }}</em>@endif
                         <em>{{ count($site->pages ?? []) }} {{ \Illuminate\Support\Str::plural('page', count($site->pages ?? [])) }}</em>
                         <em>{{ number_format($site->views) }} views</em>
+                        @if ($site->kind)<em>{{ $site->kindLabel() }}</em>@endif
+                        @if ($site->showcase === 'asked' && $site->isLive())<em class="src--popup">Wants to be featured</em>@elseif ($site->showcase === 'yes')<em class="src--contact">Featured on /examples</em>@endif
                     </span>
                     <span class="feedback-row__comment">
                         @if ($site->isLive())
@@ -45,6 +48,17 @@
                 </span>
                 <time datetime="{{ $site->updated_at->toIso8601String() }}" title="Updated {{ $site->updated_at->format('d M Y, H:i') }}">{{ $site->updated_at->diffForHumans(short: true) }}</time>
                 <span class="t-row__actions">
+                    @if ($site->isLive() && in_array($site->showcase, ['asked', 'yes'], true))
+                        <form method="POST" action="{{ route('admin.builder.showcase', $site) }}">
+                            @csrf
+                            @if ($site->showcase === 'asked')
+                                <button type="submit" name="act" value="approve" class="btn btn--sm">Feature it</button>
+                                <button type="submit" name="act" value="decline" class="btn btn--ghost btn--sm">Not this one</button>
+                            @else
+                                <button type="submit" name="act" value="remove" class="btn btn--ghost btn--sm">Stop featuring</button>
+                            @endif
+                        </form>
+                    @endif
                     @if ($site->isLive())
                         @if ($site->reported_at)
                             <form method="POST" action="{{ route('admin.builder.dismiss', $site) }}">

@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Support\Guides;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /** Step-by-step guides (App\Support\Guides): each page, its structured data, and the links to and from its builder. */
 class GuidePagesTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_every_guide_page(): void
     {
         $sitemap = $this->get('/sitemap.xml')->assertOk();

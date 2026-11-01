@@ -1967,6 +1967,9 @@ form[data-live] input.is-valid:not([type=radio]) { background-image: url("data:i
 .lpb-hint { margin: 0 0 12px; font-size: .82rem; color: var(--muted); }
 .lpb-check { display: flex !important; align-items: center; gap: 8px !important; }
 .lpb-check input { width: 18px; height: 18px; accent-color: var(--green); }
+.lpb-showcase { align-items: flex-start !important; margin: 4px 0 12px; font-weight: 600; }
+.lpb-showcase input { flex: none; margin-top: 2px; }
+.lpb-showcase small { display: block; margin-top: 2px; font-weight: 400; color: var(--muted); }
 .lpb-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .lpb-add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .lpb-add { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: 12px; border: 1px solid var(--card-border); background: var(--card); color: var(--text); font: 600 .82rem Inter, sans-serif; cursor: pointer; transition: border-color .15s, transform .15s; }
@@ -3686,4 +3689,11 @@ h2.fb-sub { text-align: left; margin-bottom: 0; font-family: Inter, sans-serif; 
 .ex-dlg__frame { flex: 1; display: flex; justify-content: center; background: var(--field); min-height: 0; }
 .ex-dlg__frame iframe { width: 100%; height: 100%; border: 0; background: #fff; transition: width .25s; }
 .ex-dlg__frame.is-mobile iframe { width: 390px; max-width: 100%; }
+.ex-made { padding-top: 0; }
+.ex-made__card { display: flex; flex-direction: column; padding: 0; overflow: hidden; color: inherit; text-decoration: none; transition: transform .2s, box-shadow .2s; }
+.ex-made__card:hover { transform: translateY(-3px); }
+.ex-made__top { display: grid; place-items: center; aspect-ratio: 16 / 7; background: linear-gradient(135deg, var(--site), color-mix(in srgb, var(--site) 55%, #fff)); }
+.ex-made__top span { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; background: rgba(255, 255, 255, .2); color: #fff; font: 800 1.6rem Poppins, sans-serif; }
+.ex-made__go { margin-top: 10px; color: var(--green); font-weight: 600; font-size: .9rem; }
+.ex-made__card small { overflow-wrap: anywhere; }
 @media (max-width: 600px) { .ex-dlg__devices { display: none; } .ex-group__head h2 { font-size: 1.3rem; } }

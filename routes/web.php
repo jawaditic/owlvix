@@ -290,6 +290,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('builder', [\App\Http\Controllers\Admin\BuilderController::class, 'index'])->name('builder.index');
         Route::post('builder/sites/{site}/takedown', [\App\Http\Controllers\Admin\BuilderController::class, 'takedown'])->name('builder.takedown');
         Route::post('builder/sites/{site}/restore', [\App\Http\Controllers\Admin\BuilderController::class, 'restore'])->name('builder.restore');
+        Route::post('builder/sites/{site}/showcase', [\App\Http\Controllers\Admin\BuilderController::class, 'showcase'])->name('builder.showcase');
         Route::post('builder/sites/{site}/dismiss', [\App\Http\Controllers\Admin\BuilderController::class, 'dismiss'])->name('builder.dismiss');
         Route::post('builder/apps/{app}/takedown', [\App\Http\Controllers\Admin\BuilderController::class, 'takedownApp'])->name('builder.apps.takedown');
         Route::post('builder/apps/{app}/restore', [\App\Http\Controllers\Admin\BuilderController::class, 'restoreApp'])->name('builder.apps.restore');

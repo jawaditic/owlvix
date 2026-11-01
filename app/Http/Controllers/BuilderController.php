@@ -175,6 +175,8 @@ class BuilderController extends Controller
             'pages.*.slug' => ['required', 'string', 'distinct', 'regex:/^[a-z0-9-]{1,40}$/', 'not_in:report'],
             'pages.*.title' => ['required', 'string', 'max:80'],
             'pages.*.html' => ['required', 'string'],
+            'kind' => ['nullable', 'string', 'in:'.implode(',', array_keys(BuilderSite::KINDS))],
+            'showcase' => ['sometimes', 'boolean'],
         ], [
             'slug.required' => 'Please choose an address for your site.',
             'slug.regex' => 'The address can use 3–40 lowercase letters, numbers and dashes, and can’t start or end with a dash.',
@@ -230,6 +232,21 @@ class BuilderController extends Controller
             $site->builder_account_id = $account->id;
             $site->fill(['name' => trim($data['name']), 'pages' => $pages, 'status' => 'live', 'removed_by' => null]);
             $site->updated_at = now(); // republishing the same pages still counts as an update
+            $site->kind = $data['kind'] ?? $site->kind;
+            $home = collect($data['pages'])->firstWhere('slug', 'index') ?? $data['pages'][0];
+            if (preg_match('/--primary:\s*(#[0-9a-fA-F]{6})\b/', $home['html'], $m)) {
+                $site->color = strtolower($m[1]);
+            }
+            // "Feature my site": asking puts it in the admin's queue; unticking takes it out of the showcase. A site the
+            // admin said no to stays that way (no asking again on every publish).
+            if (array_key_exists('showcase', $data)) {
+                if (! $data['showcase']) {
+                    $site->showcase = $site->showcase === 'no' ? 'no' : null;
+                } elseif (! in_array($site->showcase, ['yes', 'no'], true)) {
+                    $site->showcase = 'asked';
+                    $site->showcase_at = now();
+                }
+            }
             $site->save();
 
             return $site;

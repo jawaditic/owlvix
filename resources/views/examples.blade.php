@@ -15,6 +15,7 @@
         'landing' => ['Landing pages', 'Landing pages', 'One page that turns visitors into calls, bookings or sign-ups.', 'landing-builder', 'Landing page builder'],
         'funnel' => ['Funnels', 'Sales funnels', 'Opt-in, sales, upsell and thank-you steps, with leads, payments and A/B tests.', 'funnel-builder', 'Funnel builder'],
     ];
+    $featured = \App\Models\BuilderSite::featured()->latest('showcase_at')->limit(12)->get();
     $faq = [
         ['Are these designs free to use?', 'Yes. Every design is free to use, change and publish — on sites.owlvix.com or your own domain. No payment and no watermark on your content.'],
         ['Can I change the colours, photos and words?', 'Yes. Press “Use this design” and the builder opens with it. Click any text or photo to change it, and set your colours and fonts in the Site tab.'],
@@ -65,6 +66,28 @@
         @endforeach
     </div>
 </section>
+
+@if ($featured->isNotEmpty())
+<section class="ex ex-made" id="made-with-owlvix">
+    <div class="container">
+        <div class="ex-group__head">
+            <div><h2>Made with Owlvix</h2><p>Real sites built by small businesses and creators with our free builders.</p></div>
+        </div>
+        <div class="ex-grid">
+            @foreach ($featured as $site)
+                <a class="ex-made__card card" href="{{ $site->url() }}" target="_blank" rel="noopener" style="--site: {{ $site->color ?: '#16a34a' }}">
+                    <span class="ex-made__top" aria-hidden="true"><span>{{ mb_strtoupper(mb_substr($site->name, 0, 1)) }}</span></span>
+                    <span class="ex-card__body">
+                        <strong>{{ $site->name }}</strong><small>{{ $site->kindLabel() }} · {{ $site->displayUrl() }}</small>
+                        <span class="ex-made__go">Visit site →</span>
+                    </span>
+                </a>
+            @endforeach
+        </div>
+        <p class="guides-hub__more">Published a site with a free builder? Tick “Feature my site” when you publish.</p>
+    </div>
+</section>
+@endif
 
 <dialog class="ex-dlg" data-ex-dlg aria-labelledby="ex-dlg-name">
     <div class="ex-dlg__bar">
