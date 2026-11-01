@@ -327,10 +327,12 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
                 title: 'Your CV is ready',
                 sub: 'Download it as a PDF, or keep editing to add more jobs, languages and certificates. It stays saved on this device.',
                 actions: [
-                    { label: '📄 Download PDF', cls: 'btn btn--glow', act: close => { close(); setTimeout(() => root.querySelector('[data-pdf]')?.click(), 350); } },
+                    { label: '📄 Download PDF', cls: 'btn btn--glow', then: 'pdf', act: close => { close(); setTimeout(() => root.querySelector('[data-pdf]')?.click(), 350); } },
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
             },
+            editorUrl: root.dataset.editorUrl || '',
+            beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(R)); return true; } catch { return false; } },
         });
     }
 

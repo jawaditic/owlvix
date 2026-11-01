@@ -195,8 +195,18 @@
             requestAnimationFrame(() => box.classList.add('is-in'));
             draw(1);
         };
-        const close = () => {
+        // On the builder's main page, finishing opens its editor page (routes/web.php) with the app kept in this browser;
+        // "Save my app" pressed here runs there (#then=save). If the draft can't be kept, they stay on this page.
+        const editorUrl = root.dataset.editorUrl || '';
+        const leave = async then => {
+            if (!editorUrl || !(await B.keepDraft().catch(() => false))) return false;
+            $('[data-wz-step]', box)?.insertAdjacentHTML('beforeend', '<p class="wz-leaving" role="status">Opening the editor…</p>');
+            location.assign(editorUrl + (then ? '#then=' + then : ''));
+            return true;
+        };
+        const close = async () => {
             if (!box) return;
+            if (finished && await leave()) return;
             home.insertBefore(prev, prevNext);
             B.changed();
             const b = box; box = null;
@@ -301,7 +311,7 @@
                 B.changed(); B.showPage(+i); bump();
                 const sc = $('[data-wz-step]', box).scrollTop; draw(0); $('[data-wz-step]', box).scrollTop = sc;
             }
-            else if (t.matches('[data-wz-save]')) { t.disabled = true; try { if (await B.save()) { close(); } } finally { t.disabled = false; } }
+            else if (t.matches('[data-wz-save]')) { t.disabled = true; try { if (await leave('save')) return; if (await B.save()) { close(); } } finally { t.disabled = false; } }
             else if (t.matches('[data-wz-edit]')) close();
             else if (t.matches('[data-wz-again]')) { box.classList.remove('is-done'); $('.wz__nav', box).hidden = false; step = 0; kind = 'keep'; draw(-1); }
         });
@@ -394,6 +404,10 @@
             }, 4200);
         }
         // the banner shows while no saved app is open, until the visitor says no thanks
+        if (location.hash === '#then=save') { // "Save my app" pressed on the main page: do it here
+            try { history.replaceState(history.state, '', location.pathname + location.search); } catch {}
+            setTimeout(() => B.save(), 600);
+        }
         let off = false; try { off = !!localStorage.getItem(OFF); } catch {}
         if (banner && !off && !B.state().id) showBanner();
     };

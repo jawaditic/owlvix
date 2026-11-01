@@ -74,6 +74,26 @@ foreach (\App\Support\Guides::ALL as $name => [$path, $view]) {
     Route::view($path, 'guides.'.$view)->name($name);
 }
 Route::view('/mobile-app-builder', 'tools.app-builder')->name('app-builder');
+
+// Each builder's own editor page: the same builder filling the window, with nothing else on the page. The quick setup
+// sends people here when they finish. Hidden from search engines (the builder's main page is the one to find).
+foreach ([
+    'landing-builder' => ['/landing-page-builder', 'tools.landing-builder', []],
+    'funnel-builder' => ['/funnel-builder', 'tools.funnel-builder', []],
+    'website-builder' => ['/website-builder', 'tools.kit-builder', ['kit' => 'website']],
+    'portfolio-builder' => ['/portfolio-builder', 'tools.kit-builder', ['kit' => 'portfolio']],
+    'link-in-bio-builder' => ['/link-in-bio-builder', 'tools.kit-builder', ['kit' => 'links']],
+    'coming-soon-builder' => ['/coming-soon-page-builder', 'tools.kit-builder', ['kit' => 'soon']],
+    'event-website-builder' => ['/event-website-builder', 'tools.kit-builder', ['kit' => 'event']],
+    'menu-builder' => ['/restaurant-menu-builder', 'tools.kit-builder', ['kit' => 'menu']],
+    'store-builder' => ['/online-store-builder', 'tools.kit-builder', ['kit' => 'store']],
+    'form-builder' => ['/form-builder', 'tools.form-builder', []],
+    'email-builder' => ['/email-template-builder', 'tools.email-builder', []],
+    'resume-builder' => ['/resume-builder', 'tools.resume-builder', []],
+    'app-builder' => ['/mobile-app-builder', 'tools.app-builder', []],
+] as $name => [$path, $view, $data]) {
+    Route::view($path.'/editor', $view, $data + ['editor' => true])->name($name.'.editor');
+}
 Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
 Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');
 Route::post('/meta-tag-preview', [\App\Http\Controllers\FreeToolsController::class, 'meta'])->middleware('throttle:8,1,tool-meta')->name('meta-preview.run');

@@ -1841,6 +1841,11 @@
         },
         showApp, showSplash,
         save: () => saveApp(),
+        /** Keeps the draft in this browser right now (localStorage, or IndexedDB when it's too big); false if it can't. */
+        keepDraft: async () => {
+            try { localStorage.setItem(STORE, JSON.stringify(D)); return true; } catch {}
+            try { await idb('readwrite', st => st.put(JSON.parse(JSON.stringify(D)), 'draft')); localStorage.setItem(STORE, JSON.stringify({ idb: true, id: D.id })); return true; } catch { return false; }
+        },
         toBuild: () => showTab('build'),
     };
     document.dispatchEvent(new Event('owl-app-builder-ready'));

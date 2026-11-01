@@ -24,6 +24,7 @@
 @endsection
 
 @section('content')
+@unless ($editor ?? false)
 <section class="hero speed-hero lpb-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -35,9 +36,11 @@
         <p class="lead">Drag in 45+ widgets, style every element for desktop, tablet and mobile, add animations, popups and a working contact form — then download it or publish it free.</p>
     </div>
 </section>
+@endunless
 
 @include('tools.partials.builder-app')
 
+<div class="editor-hidden" @if (! empty($editor)) hidden @endif>
 <section class="lpb-below">
     <div class="container">
         <div class="lpb-after card" data-lpb-after hidden>
@@ -61,8 +64,11 @@
         </div>
     </div>
 </section>
+</div>
 
+@unless ($editor ?? false)
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'The page builder, explained'])
+@endunless
 
 <script src="{{ \App\Support\Asset::url('js/builder-engine.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>

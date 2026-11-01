@@ -36,10 +36,12 @@
             if (here) setTimeout(() => { here.classList.add('is-open'); here.querySelector('button').setAttribute('aria-expanded', true); });
         }
     };
-    toggle.addEventListener('click', () => setMenu(!links.classList.contains('is-open')));
-    links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)));
-    document.addEventListener('keydown', e => { if (e.key === 'Escape' && links.classList.contains('is-open')) { setMenu(false); toggle.focus(); } });
-    matchMedia('(min-width: 761px)').addEventListener?.('change', e => { if (e.matches) setMenu(false); });
+    if (toggle && links) { // (a builder's editor page has its own slim bar instead of the menu)
+        toggle.addEventListener('click', () => setMenu(!links.classList.contains('is-open')));
+        links.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)));
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && links.classList.contains('is-open')) { setMenu(false); toggle.focus(); } });
+        matchMedia('(min-width: 761px)').addEventListener?.('change', e => { if (e.matches) setMenu(false); });
+    }
 
     /* ---------- "Free tools" dropdown in the menu (also opens on hover/focus via CSS) ---------- */
     document.querySelectorAll('[data-nav-drop]').forEach(drop => {

@@ -7,7 +7,11 @@
     <title>@yield('title') | Owlvix</title>
     @hasSection('description')<meta name="description" content="@yield('description')">@endif
     @hasSection('canonical')<link rel="canonical" href="@yield('canonical')">@endif
-    <meta name="robots" content="@yield('robots', 'index, follow')">
+    {{-- a builder's own editor page (routes/web.php, "editor"): just the builder --}}
+    @php
+        $isEditor = ! empty($editor);
+    @endphp
+    <meta name="robots" content="{{ $isEditor ? 'noindex, follow' : trim($__env->yieldContent('robots', 'index, follow')) }}">
     {{-- How the page looks when shared (WhatsApp, Facebook, LinkedIn, X): its own picture from images/og/{route}.jpg
          when there is one (guides, builders, the gallery), else the site's main picture. --}}
     @php
@@ -36,20 +40,26 @@
     <meta name="twitter:image" content="{{ $shareImage }}">
     <meta name="theme-color" content="#070b14" media="(prefers-color-scheme: dark)">
     <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
-    @if (in_array(Route::currentRouteName(), \App\Support\FreeTools::builderRoutes(), true))<meta name="owl-builder" content="{{ Route::currentRouteName() }}">@endif
+    @if ($builderName = \App\Support\FreeTools::builderOf(Route::currentRouteName()))<meta name="owl-builder" content="{{ $builderName }}">@endif
     @include('partials.head-assets')
     @yield('head')
 </head>
-<body data-no-popup="{{ session('sent') ? '1' : '0' }}" @hasSection('no-auto-quote') data-auto-quote="off" @endif>
+<body data-no-popup="{{ session('sent') ? '1' : '0' }}" @hasSection('no-auto-quote') data-auto-quote="off" @endif @class(['is-editor' => $isEditor])>
     <div class="bg-grid" aria-hidden="true"></div>
 
-    @include('partials.site-nav')
+    @if ($isEditor)
+        @include('partials.editor-bar', ['builder' => $builderName])
+    @else
+        @include('partials.site-nav')
+    @endif
 
     <main>
         @yield('content')
     </main>
 
-    @include('partials.footer', ['top' => route('home')])
+    @unless ($isEditor)
+        @include('partials.footer', ['top' => route('home')])
+    @endunless
     @include('partials.page-scripts')
 </body>
 </html>

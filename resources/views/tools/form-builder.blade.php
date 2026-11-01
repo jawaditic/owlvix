@@ -24,6 +24,7 @@
 @endsection
 
 @section('content')
+@unless ($editor ?? false)
 <section class="hero speed-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -35,9 +36,11 @@
         <p class="lead">Contact forms, feedback surveys, RSVPs, job applications and order forms. Share the link or put it on your website — every answer is emailed to you.</p>
     </div>
 </section>
+@endunless
 
 <section class="calc-wrap">
     <div class="container">
+        @unless ($editor ?? false)
         @include('partials.wizard-banner', [
             'say' => 'Hoo! Need a form? I’ll set it up with you — it takes about 2 minutes.',
             'title' => 'Let’s make <span class="accent">your form</span> together',
@@ -45,7 +48,8 @@
             'steps' => [['Pick what', 'it’s for'], ['Questions', '& colours'], ['Preview, then', 'publish it']],
             'go' => '🚀 Start my form',
         ])
-        <div class="fb card" data-fb>
+        @endunless
+        <div class="fb card" data-fb @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif>
             <div class="fb-top">
                 <div class="fb-tabs" role="tablist">
                     <button type="button" role="tab" data-tab="build" aria-selected="true">✏️ Build</button>
@@ -95,15 +99,19 @@
             </dialog>
         </div>
 
+        <div class="editor-hidden" @if (! empty($editor)) hidden @endif>
         <div class="lp-cta__box card speed-cta">
             <div class="lp-cta__owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl'])</div>
             <div><h2>Need more than a form?</h2><p>We build booking systems, customer portals and apps — with payments, logins and dashboards. Start free: we plan the first version at no cost.</p></div>
             <a href="{{ route('service.landing-page-design') }}#contact" class="btn btn--glow" data-quote>Talk to us <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
+        </div>
     </div>
 </section>
 
+@unless ($editor ?? false)
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'The form builder, explained'])
+@endunless
 
 <script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/form-builder.js') }}" defer></script>

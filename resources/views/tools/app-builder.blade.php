@@ -26,6 +26,7 @@
 @endsection
 
 @section('content')
+@unless ($editor ?? false)
 <section class="hero speed-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -38,10 +39,12 @@
         @include('guides.partials.link')
     </div>
 </section>
+@endunless
 
 <section class="calc-wrap">
     <div class="container">
         {{-- The way into the quick setup wizard (public/js/app-wizard.js): shown until the visitor starts or says no --}}
+        @unless ($editor ?? false)
         <div class="wzb" data-wz-banner hidden>
             <div class="wzb__sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
             <div class="wzb__owl">
@@ -73,7 +76,8 @@
                 </div>
             </div>
         </div>
-        <div class="fb ab card" data-ab data-qr="{{ \App\Support\Asset::url('js/qr.js') }}" data-site-builder="{{ route('website-builder') }}">
+        @endunless
+        <div class="fb ab card" data-ab @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif data-qr="{{ \App\Support\Asset::url('js/qr.js') }}" data-site-builder="{{ route('website-builder') }}">
             <div class="fb-top ab-top">
                 <div class="fb-tabs" role="tablist">
                     <button type="button" role="tab" data-tab="design" aria-selected="true">✏️ Design</button>
@@ -307,15 +311,19 @@
             </dialog>
         </div>
 
+        <div class="editor-hidden" @if (! empty($editor)) hidden @endif>
         <div class="lp-cta__box card speed-cta ab-iphone-cta">
             <div class="lp-cta__owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl'])</div>
             <div><h2>Want it on the iPhone App Store too?</h2><p>We build and publish apps for iPhone and Android — with logins, payments, push notifications and the native features Apple asks for. Start free: we plan the first version at no cost.</p></div>
             <a href="{{ route('service.mobile-app-development') }}#contact" class="btn btn--glow" data-quote>Get a free quote <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
+        </div>
     </div>
 </section>
 
+@unless ($editor ?? false)
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'The mobile app builder, explained'])
+@endunless
 
 <script type="application/json" id="ab-icons">{!! json_encode(\App\Support\AppBuilder::icons(), JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
 <script src="{{ \App\Support\Asset::url('js/app-templates.js') }}" defer></script>

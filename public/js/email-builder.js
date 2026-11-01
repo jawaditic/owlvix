@@ -457,11 +457,13 @@ ${rows}
                 title: 'Your email is ready',
                 sub: 'Scroll the preview to see it. Save it to your account, then copy the HTML into your email platform — and fine-tune any block in the editor.',
                 actions: [
-                    { label: '☁️ Save to my account', cls: 'btn btn--glow', act: close => { close(); saveCloud(); } },
-                    { label: '📋 Copy HTML', act: close => { close(); root.querySelector('[data-copy]').click(); } },
+                    { label: '☁️ Save to my account', cls: 'btn btn--glow', then: 'save', act: close => { close(); saveCloud(); } },
+                    { label: '📋 Copy HTML', then: 'copy', act: close => { close(); root.querySelector('[data-copy]').click(); } },
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
             },
+            editorUrl: root.dataset.editorUrl || '',
+            beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(E)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } },
         });
     }
 

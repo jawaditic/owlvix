@@ -23,6 +23,7 @@
 @endsection
 
 @section('content')
+@unless ($editor ?? false)
 <section class="hero speed-hero lpb-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -35,9 +36,12 @@
         @include('guides.partials.link')
     </div>
 </section>
+@endunless
 
+@unless ($editor ?? false)
 @include('tools.partials.page-wizard-banner', ['mode' => 'funnel'])
-<section class="lpb-app" data-lpb data-mode="funnel" data-stats-url="{{ url('/fs') }}" data-runtime="{{ \App\Support\BuilderHtml::runtimeUrl() }}" data-site-base="{{ \App\Models\BuilderSite::base() }}" data-qr="{{ \App\Support\Asset::url('js/qr.js') }}">
+@endunless
+<section class="lpb-app" data-lpb @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif data-mode="funnel" data-stats-url="{{ url('/fs') }}" data-runtime="{{ \App\Support\BuilderHtml::runtimeUrl() }}" data-site-base="{{ \App\Models\BuilderSite::base() }}" data-qr="{{ \App\Support\Asset::url('js/qr.js') }}">
     <div class="lpb-top">
         <div class="lpb-top__group">
             <label class="sr-only" for="lpb-pages">Funnel step</label>
@@ -117,6 +121,7 @@
     </dialog>
 </section>
 
+<div class="editor-hidden" @if (! empty($editor)) hidden @endif>
 <section class="lpb-below">
     <div class="container">
         <div class="lpb-after card" data-lpb-after hidden>
@@ -140,8 +145,11 @@
         </div>
     </div>
 </section>
+</div>
 
+@unless ($editor ?? false)
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'Sales funnels, explained'])
+@endunless
 
 <script src="{{ \App\Support\Asset::url('js/builder-engine.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>

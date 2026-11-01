@@ -24,6 +24,7 @@
 @endsection
 
 @section('content')
+@unless ($editor ?? false)
 <section class="hero speed-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -36,9 +37,11 @@
         @include('guides.partials.link')
     </div>
 </section>
+@endunless
 
 <section class="calc-wrap">
     <div class="container">
+        @unless ($editor ?? false)
         @include('partials.wizard-banner', [
             'say' => 'Hoo! Need an email for your customers? I’ll set it up with you — it takes about 2 minutes.',
             'title' => 'Let’s write <span class="accent">your email</span> together',
@@ -46,7 +49,8 @@
             'steps' => [['Pick what', 'it’s for'], ['Brand, words', '& colours'], ['Preview, then', 'save it']],
             'go' => '🚀 Start my email',
         ])
-        <div class="fb eb card" data-eb>
+        @endunless
+        <div class="fb eb card" data-eb @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif>
             <div class="fb-top">
                 <div class="fb-tpls"><span>Start from:</span><div data-templates></div></div>
                 <div class="fb-top__actions">
@@ -109,15 +113,19 @@
             <ol data-how-panel="other" hidden><li>Most email tools (MailerLite, ConvertKit, HubSpot, ActiveCampaign) have an <b>HTML / code</b> editor — paste it there.</li><li>Gmail and Outlook can’t send designed emails to a list: use an email platform for newsletters.</li><li>Choose <b>My own link</b> for unsubscribe if your tool isn’t listed, and paste your tool’s unsubscribe address.</li></ol>
         </div>
 
+        <div class="editor-hidden" @if (! empty($editor)) hidden @endif>
         <div class="lp-cta__box card speed-cta">
             <div class="lp-cta__owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl'])</div>
             <div><h2>Want email marketing that sells?</h2><p>We set up your email platform, welcome series and automations — and design templates that match your brand.</p></div>
             <a href="{{ route('service.landing-page-design') }}#contact" class="btn btn--glow" data-quote>Talk to us <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
+        </div>
     </div>
 </section>
 
+@unless ($editor ?? false)
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'Email templates, explained'])
+@endunless
 
 <script src="{{ \App\Support\Asset::url('js/builder-account.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>

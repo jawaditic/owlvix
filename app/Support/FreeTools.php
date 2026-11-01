@@ -71,4 +71,18 @@ class FreeTools
     {
         return array_column(self::builders(), 'route');
     }
+
+    /** The builder this page belongs to (its main route name), on the builder's page or its editor page; else null. */
+    public static function builderOf(?string $route): ?string
+    {
+        $base = $route ? preg_replace('/\.editor$/', '', $route) : null;
+
+        return $base && in_array($base, self::builderRoutes(), true) ? $base : null;
+    }
+
+    /** On a builder's main page: the address of its editor page (where the quick setup sends people). */
+    public static function editorUrl(?string $route): ?string
+    {
+        return $route && in_array($route, self::builderRoutes(), true) && \Illuminate\Support\Facades\Route::has($route.'.editor') ? route($route.'.editor') : null;
+    }
 }

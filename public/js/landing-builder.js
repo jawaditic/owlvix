@@ -2179,9 +2179,15 @@
                 title: `Your ${WHAT} is ready`,
                 sub: `Scroll the preview to see it. Save it to your account to open it anywhere, then publish it or download it when you’re happy — everything can still be changed in the editor.`,
                 actions: [
-                    { label: '☁️ Save to my account', cls: 'btn btn--glow', act: close => { close(); needAccount(async () => { if (dlg.open) dlg.close(); await saveCloud(); }); } },
+                    { label: '☁️ Save to my account', cls: 'btn btn--glow', then: 'save', act: close => { close(); needAccount(async () => { if (dlg.open) dlg.close(); await saveCloud(); }); } },
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
+            },
+            // On the builder's main page, finishing opens its editor page (same project, kept in this browser)
+            editorUrl: root.dataset.editorUrl || '',
+            beforeLeave: () => {
+                flush(); clearTimeout(saveTimer);
+                try { localStorage.setItem(STORE, JSON.stringify(P)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } // too big for the browser: stay here
             },
         });
     }

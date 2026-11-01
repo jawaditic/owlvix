@@ -12,7 +12,10 @@
                  click(e, el, box), input(e, el, box), change(e, el, box) }],
        preview: { mount(side), unmount(), refresh() },   // shown beside the steps, updated as answers come in
        tasks: ['Laying out your pages', …],               // the short "building" moment
-       done: { title, sub, actions: [{ label, cls, act(close) }] },
+       done: { title, sub, actions: [{ label, cls, act(close), then }] },
+       editorUrl,                   // on a builder's main page: its editor page (routes/web.php). Finishing goes there; a
+                                    // finish button with `then` runs again on the editor page (#then=…)
+       beforeLeave: () => bool,     // save everything now; false (couldn't keep it in the browser) = stay on this page
      }) → { open(fromStart), close(), refresh() }
 
    Answers go straight into the builder, so the full builder shows the same project afterwards, and running the
@@ -54,8 +57,18 @@
             requestAnimationFrame(() => box.classList.add('is-in'));
             draw(1);
         };
-        const close = () => {
+        /** Finished on a builder's main page: open its editor page, with the work saved in the browser first. */
+        const leave = async then => {
+            let kept = false;
+            try { kept = (await cfg.beforeLeave?.()) !== false; } catch { kept = false; }
+            if (!kept) return false;
+            $('[data-wz-step]', box)?.insertAdjacentHTML('beforeend', '<p class="wz-leaving" role="status">Opening the editor…</p>');
+            location.assign(cfg.editorUrl + (then ? '#then=' + encodeURIComponent(then) : ''));
+            return true;
+        };
+        const close = async () => {
             if (!box) return;
+            if (finished && cfg.editorUrl && await leave()) return;
             cfg.preview?.unmount?.();
             const b = box; box = null;
             document.documentElement.classList.remove('wz-open');
@@ -127,7 +140,11 @@
             if (t.matches('[data-wz-next]')) return next();
             if (t.matches('[data-wz-back]')) return back();
             if (t.matches('[data-wz-again]')) { finished = false; box.classList.remove('is-done'); $('.wz__nav', box).hidden = false; step = 0; return draw(-1); }
-            if (t.dataset.wzAct !== undefined) return cfg.done.actions[+t.dataset.wzAct].act(close);
+            if (t.dataset.wzAct !== undefined) {
+                const a = cfg.done.actions[+t.dataset.wzAct];
+                if (cfg.editorUrl && await leave(a.then)) return; // the button runs on the editor page
+                return a.act(close);
+            }
             if (finished) return;
             const s = live()[step]; if (!s?.click) return;
             await s.click(e, t, box);
@@ -180,6 +197,13 @@
                 if (!alive() || !say || !lines.length) { clearInterval(timer); return; }
                 n = (n + 1) % lines.length; say.parentNode.classList.remove('is-new'); void say.offsetWidth; say.textContent = lines[n]; say.parentNode.classList.add('is-new');
             }, 4200);
+        }
+        // Arrived on the editor page from a finish button on the main page (#then=save, …): run it here
+        const then = decodeURIComponent((location.hash.match(/^#then=([a-z-]{1,20})$/) || [])[1] || '');
+        if (then) {
+            try { history.replaceState(history.state, '', location.pathname + location.search); } catch {}
+            const a = cfg.done?.actions?.find(x => x.then === then);
+            if (a) setTimeout(() => a.act(() => {}), 500);
         }
         let off = false; try { off = !!localStorage.getItem(cfg.offKey); } catch {}
         if (banner && !off && !cfg.hasSaved?.()) showBanner();

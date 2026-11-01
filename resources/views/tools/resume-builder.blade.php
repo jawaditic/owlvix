@@ -23,6 +23,7 @@
 @endsection
 
 @section('content')
+@unless ($editor ?? false)
 <section class="hero speed-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -34,9 +35,11 @@
         @include('guides.partials.link')
     </div>
 </section>
+@endunless
 
 <section class="calc-wrap">
     <div class="container">
+        @unless ($editor ?? false)
         @include('partials.wizard-banner', [
             'say' => 'Hoo! Need a CV? I’ll write it with you — it takes about 3 minutes.',
             'title' => 'Let’s write <span class="accent">your CV</span> together',
@@ -45,7 +48,8 @@
             'go' => '🚀 Start my CV',
             'pill' => 'Quick setup · about 3 minutes',
         ])
-        <div class="fb rb card" data-rb>
+        @endunless
+        <div class="fb rb card" data-rb @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif>
             <div class="fb-top">
                 <div class="fb-tpls"><span>Design:</span><div data-designs></div></div>
                 <div class="fb-top__actions">
@@ -69,15 +73,19 @@
             <input type="file" accept="image/jpeg,image/png,image/webp" data-photo-file hidden>
         </div>
 
+        <div class="editor-hidden" @if (! empty($editor)) hidden @endif>
         <div class="lp-cta__box card speed-cta">
             <div class="lp-cta__owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'dev', 'alt' => 'Owlvix owl'])</div>
             <div><h2>Want a personal website too?</h2><p>Show your work and get found by recruiters with a portfolio site — build one free, or let us design it for you.</p></div>
             <a href="{{ route('portfolio-builder') }}" class="btn btn--glow">Build my portfolio <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         </div>
+        </div>
     </div>
 </section>
 
+@unless ($editor ?? false)
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'CVs and resumes, explained'])
+@endunless
 
 <script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/resume-builder.js') }}" defer></script>

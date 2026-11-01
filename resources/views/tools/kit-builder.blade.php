@@ -19,6 +19,7 @@
 @endsection
 
 @section('content')
+@unless ($editor ?? false)
 <section class="hero speed-hero lpb-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -31,9 +32,11 @@
         @include('guides.partials.link')
     </div>
 </section>
+@endunless
 
 @include('tools.partials.builder-app', ['mode' => $kit])
 
+<div class="editor-hidden" @if (! empty($editor)) hidden @endif>
 <section class="lpb-below">
     <div class="container">
         <div class="lpb-after card" data-lpb-after hidden>
@@ -57,8 +60,11 @@
         </div>
     </div>
 </section>
+</div>
 
+@unless ($editor ?? false)
 @include('tools.partials.faq', ['faq' => $faq, 'title' => $k['crumb'].', explained'])
+@endunless
 
 <script src="{{ \App\Support\Asset::url('js/builder-engine.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>

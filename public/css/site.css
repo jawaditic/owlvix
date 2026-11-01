@@ -3697,3 +3697,24 @@ h2.fb-sub { text-align: left; margin-bottom: 0; font-family: Inter, 'Inter Fallb
 .ex-made__go { margin-top: 10px; color: var(--green); font-weight: 600; font-size: .9rem; }
 .ex-made__card small { overflow-wrap: anywhere; }
 @media (max-width: 600px) { .ex-dlg__devices { display: none; } .ex-group__head h2 { font-size: 1.3rem; } }
+
+/* A builder's own editor page (body.is-editor, routes/web.php "editor"): a slim bar, then the builder filling the window */
+.ebar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 16px;
+    background: rgba(var(--bg-rgb), .85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(var(--border-rgb), .6); }
+.ebar__back { display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none; font: 700 1.05rem Poppins, 'Poppins Fallback', sans-serif; flex: none; }
+.ebar__back svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.ebar__back:hover svg { transform: translateX(-2px); }
+.ebar__name { min-width: 0; padding-left: 14px; border-left: 1px solid var(--card-border); color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ebar__right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex: none; }
+.ebar__link { color: var(--green); font-weight: 600; font-size: .9rem; }
+@media (max-width: 600px) { .ebar__brand, .ebar__link { display: none; } }
+body.is-editor .lpb-app:not(.is-full) { width: auto; margin: 0; border: 0; border-radius: 0; box-shadow: none; display: flex; flex-direction: column; height: calc(100dvh - 56px); }
+body.is-editor .lpb-app:not(.is-full) .lpb-body { flex: 1; height: auto; min-height: 0; }
+body.is-editor .lpb-app:not(.is-full) .lpb-canvas { padding: 12px; }
+@media (max-width: 900px) {
+    body.is-editor .lpb-app:not(.is-full) { height: auto; }
+    body.is-editor .lpb-app:not(.is-full) .lpb-canvas { height: 70vh; }
+}
+body.is-editor .calc-wrap { padding-top: 20px; }
+body.is-editor .calc-wrap > .container { max-width: 1500px; }
+.wz-leaving { margin-top: 16px; text-align: center; color: var(--muted); font-weight: 600; }

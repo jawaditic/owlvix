@@ -335,10 +335,12 @@
                 title: 'Your form is ready',
                 sub: 'Publish it to get a link to share and a code for your website. Answers are emailed to you and saved in the Responses tab.',
                 actions: [
-                    { label: '🚀 Publish my form', cls: 'btn btn--glow', act: close => { close(); publish(); } },
+                    { label: '🚀 Publish my form', cls: 'btn btn--glow', then: 'publish', act: close => { close(); publish(); } },
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
             },
+            editorUrl: root.dataset.editorUrl || '',
+            beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(D)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } },
         });
     }
 
