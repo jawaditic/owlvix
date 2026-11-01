@@ -49,7 +49,9 @@ class BuilderHtml
     private const URL_ATTRIBUTES = ['href', 'src', 'action', 'formaction', 'xlink:href', 'poster', 'data', 'background', 'srcset', 'cite', 'ping'];
 
     /** Form fields the builder creates. Anything else (e.g. a "password" box) could be used to phish. */
-    private const FIELDS = ['name', 'email', 'phone', 'message', '_hp', '_back', '_next', '_site', '_step', '_v'];
+    private const FIELDS = ['name', 'email', 'phone', 'message', '_hp', '_back', '_next', '_site', '_step', '_v',
+        // shop checkout (online store builder): address, note, the cart, delivery / payment choice, a product's option
+        'address', 'note', '_cart', '_delivery', '_pay', '_opt', 'country', '_code', '_q', '_dial'];
 
     private const PHISHY = '/pass|pwd|otp|pin\b|card|cvv|cvc|ssn|iban|login|username|secret|token/i';
 
@@ -64,11 +66,12 @@ class BuilderHtml
         // that redirect against form-action too, so the sites domain is allowed as well (it only serves static pages).
         $sites = rtrim(BuilderSite::base(), '/');
         $sitesOrigin = config('builder.domain') ? preg_replace('#^(https?://[^/]+).*$#', '$1', $sites) : null;
-        $formAction = $origin.($sitesOrigin && $sitesOrigin !== $origin ? ' '.$sitesOrigin : '');
+        // Shop checkouts post to owlvix, which sends card payments on to Stripe's checkout page (also a redirect)
+        $formAction = $origin.($sitesOrigin && $sitesOrigin !== $origin ? ' '.$sitesOrigin : '').' https://checkout.stripe.com';
 
         return 'sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation; '
             ."default-src 'none'; script-src ".self::runtimeUrl().'; '
-            ."connect-src {$origin}/fs; "
+            ."connect-src {$origin}/fs {$origin}/shop/ https://get.geojs.io; "
             ."img-src data: https:; style-src 'unsafe-inline' https://fonts.googleapis.com; "
             .'font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com/embed/ https://www.google.com/maps; '
             ."frame-ancestors 'none'; "
@@ -79,8 +82,9 @@ class BuilderHtml
      * Why this page can't be published, in plain English, or null if it's fine.
      *
      * @param  string[]  $formIds  the form ids the publishing account owns
+     * @param  string[]  $storeIds  the shop ids it owns (online store builder checkouts)
      */
-    public static function problem(string $html, array $formIds): ?string
+    public static function problem(string $html, array $formIds, array $storeIds = []): ?string
     {
         // The runtime tag is the one script allowed; check everything else without it
         $html = str_replace(self::runtimeTag(), '', $html);
@@ -153,6 +157,13 @@ class BuilderHtml
             }
             if ($tag === 'form') {
                 $action = trim($el->getAttribute('action'));
+                if (preg_match('#^'.preg_quote(self::appOrigin(), '#').'/shop/([a-z0-9]{16})$#', $action, $m)) {
+                    if (! in_array($m[1], $storeIds, true)) {
+                        return 'This page uses a shop checkout from another account. Please switch checkout on again.';
+                    }
+
+                    continue;
+                }
                 if (! preg_match('#^'.preg_quote(self::appOrigin(), '#').'/f/([a-z0-9]{16})$#', $action, $m)) {
                     return 'Forms must use an Owlvix contact form.';
                 }

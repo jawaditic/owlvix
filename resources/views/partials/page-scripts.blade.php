@@ -10,4 +10,5 @@
 <script src="{{ \App\Support\Asset::url('js/sweet.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/owl.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/site.js') }}" defer></script>
+<script src="{{ \App\Support\Asset::url('js/phone-field.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/theme.js') }}" defer></script>

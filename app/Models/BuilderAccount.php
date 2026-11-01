@@ -38,6 +38,11 @@ class BuilderAccount extends Model
         return $this->hasMany(BuilderProject::class);
     }
 
+    public function stores(): HasMany
+    {
+        return $this->hasMany(BuilderStore::class);
+    }
+
     public function forms(): HasMany
     {
         return $this->hasMany(BuilderForm::class);

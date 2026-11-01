@@ -67,6 +67,7 @@ Route::view('/link-in-bio-builder', 'tools.kit-builder', ['kit' => 'links'])->na
 Route::view('/coming-soon-page-builder', 'tools.kit-builder', ['kit' => 'soon'])->name('coming-soon-builder');
 Route::view('/event-website-builder', 'tools.kit-builder', ['kit' => 'event'])->name('event-website-builder');
 Route::view('/restaurant-menu-builder', 'tools.kit-builder', ['kit' => 'menu'])->name('menu-builder');
+Route::view('/online-store-builder', 'tools.kit-builder', ['kit' => 'store'])->name('store-builder');
 Route::view('/mobile-app-builder', 'tools.app-builder')->name('app-builder');
 Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
 Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');
@@ -174,6 +175,23 @@ Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->con
     Route::post('{id}/stripe/disconnect', 'stripeDisconnect')->where('id', '[a-z0-9]{16}')->name('stripe.disconnect');
 });
 // Stripe sends the owner back here after they connect their account (see App\Support\Stripe)
+// Online store builder: the editor's shop, orders and Stripe connection (signed in)
+Route::prefix('builder/stores')->name('builder.stores.')->middleware('builder')->controller(\App\Http\Controllers\StoreController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::post('/', 'save')->middleware('throttle:60,1,store-save')->name('save');
+    Route::get('{id}', 'show')->where('id', '[a-z0-9]{16}')->name('show');
+    Route::get('{id}/orders', 'orders')->where('id', '[a-z0-9]{16}')->name('orders');
+    Route::post('{id}/orders/{number}', 'updateOrder')->where(['id' => '[a-z0-9]{16}', 'number' => '[0-9]{1,9}'])->name('orders.update');
+    Route::post('{id}/stock', 'stock')->where('id', '[a-z0-9]{16}')->middleware('throttle:60,1,store-stock')->name('stock');
+    Route::get('{id}/discounts', 'discounts')->where('id', '[a-z0-9]{16}')->name('discounts');
+    Route::post('{id}/discounts', 'saveDiscount')->where('id', '[a-z0-9]{16}')->middleware('throttle:60,1,store-discount')->name('discounts.save');
+    Route::post('{id}/discounts/{discount}/delete', 'deleteDiscount')->where(['id' => '[a-z0-9]{16}', 'discount' => '[0-9]{1,12}'])->name('discounts.delete');
+    Route::post('{id}/orders/{number}/check', 'checkOrder')->where(['id' => '[a-z0-9]{16}', 'number' => '[0-9]{1,9}'])->middleware('throttle:20,1,store-check')->name('orders.check');
+    Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
+    Route::post('{id}/stripe/connect', 'stripeConnect')->where('id', '[a-z0-9]{16}')->middleware('throttle:10,1,store-stripe')->name('stripe.connect');
+    Route::post('{id}/stripe/disconnect', 'stripeDisconnect')->where('id', '[a-z0-9]{16}')->name('stripe.disconnect');
+});
+
 Route::get('/builder/stripe/callback', [\App\Http\Controllers\AppBuilderController::class, 'stripeCallback'])->middleware('throttle:20,1,app-stripe-back')->name('builder.stripe.callback');
 // Where a customer lands after paying in the browser (then goes back to the app)
 Route::get('/app-paid/{id}', [\App\Http\Controllers\AppBuilderController::class, 'paid'])->where('id', '[a-z0-9]{16}')->name('builder.apps.paid');
@@ -188,6 +206,13 @@ Route::get('/app-builds/{build}/{kind}', [\App\Http\Controllers\AppBuilderContro
     ->middleware(['signed', 'throttle:30,1,app-download'])->withoutMiddleware($stateless)->name('builder.apps.download');
 // Funnel step stats beacon from published pages (sendBeacon from a sandboxed page): no session, cookies or CSRF
 Route::post('/fs', [\App\Http\Controllers\BuilderPublicController::class, 'beacon'])->withoutMiddleware('web')->name('builder.beacon');
+// Shop checkout: posted from shop pages hosted anywhere (no session, so no CSRF: see bootstrap/app.php), and the
+// customer's private receipt page with "Pay now" for card orders
+Route::post('/shop/{id}', [\App\Http\Controllers\ShopController::class, 'order'])->where('id', '[a-z0-9]{16}')->middleware('throttle:20,1,shop-order')->withoutMiddleware($stateless)->name('shop.checkout');
+Route::get('/shop/{id}/stock', [\App\Http\Controllers\ShopController::class, 'stock'])->where('id', '[a-z0-9]{16}')->middleware('throttle:120,1,shop-stock')->withoutMiddleware($stateless)->name('shop.stock');
+Route::get('/shop/{id}/code', [\App\Http\Controllers\ShopController::class, 'code'])->where('id', '[a-z0-9]{16}')->middleware('throttle:30,1,shop-code')->withoutMiddleware($stateless)->name('shop.code');
+Route::get('/shop/order/{token}', [\App\Http\Controllers\ShopController::class, 'receipt'])->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:60,1,shop-receipt')->withoutMiddleware($stateless)->name('shop.order');
+Route::post('/shop/order/{token}/pay', [\App\Http\Controllers\ShopController::class, 'pay'])->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:10,1,shop-pay')->withoutMiddleware($stateless)->name('shop.pay');
 // Contact forms on builder pages (posted from any host, so no CSRF token: see bootstrap/app.php)
 Route::post('/f/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'submit'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.form.submit');
 // Forms made with the form builder: the page people fill in (also embedded in other sites in an iframe)
@@ -245,6 +270,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // App payments: owlvix's Stripe platform keys (test and live), kept encrypted
         Route::get('payments', [\App\Http\Controllers\Admin\PaymentsController::class, 'index'])->name('payments.index');
         Route::post('payments', [\App\Http\Controllers\Admin\PaymentsController::class, 'save'])->name('payments.save');
+        Route::post('builder/stores/{store}/toggle', [\App\Http\Controllers\Admin\BuilderController::class, 'toggleStore'])->name('builder.stores.toggle');
         Route::post('builder/forms/{form}/toggle', [\App\Http\Controllers\Admin\BuilderController::class, 'toggleForm'])->name('builder.forms.toggle');
 
         // Portfolio ("Our work")

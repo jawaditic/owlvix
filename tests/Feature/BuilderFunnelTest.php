@@ -373,8 +373,8 @@ class BuilderFunnelTest extends TestCase
     public function test_published_pages_allow_the_beacon_and_lead_forms_pass_the_check(): void
     {
         $origin = rtrim(url('/'), '/');
-        $this->assertStringContainsString("connect-src {$origin}/fs;", BuilderHtml::csp());
-        $this->assertStringContainsString("connect-src {$origin}/fs;", BuilderHtml::htaccess());
+        $this->assertStringContainsString("connect-src {$origin}/fs {$origin}/shop/ https://get.geojs.io;", BuilderHtml::csp());
+        $this->assertStringContainsString("connect-src {$origin}/fs {$origin}/shop/ https://get.geojs.io;", BuilderHtml::htaccess());
         $this->assertStringContainsString("default-src 'none'", BuilderHtml::csp());
 
         $form = str_repeat('a', 16);
@@ -387,7 +387,8 @@ class BuilderFunnelTest extends TestCase
 
         // With the sites subdomain, the redirect to the next step is allowed by form-action
         config(['builder.domain' => 'sites.owlvix.test']);
-        $this->assertMatchesRegularExpression('#form-action '.preg_quote($origin, '#').' https?://sites\.owlvix\.test;#', BuilderHtml::csp());
+        // (and shop checkouts may go on to Stripe's checkout page)
+        $this->assertMatchesRegularExpression('#form-action '.preg_quote($origin, '#').' https?://sites\.owlvix\.test https://checkout\.stripe\.com;#', BuilderHtml::csp());
     }
 
     public function test_email_tools_get_a_valid_phone_and_retry_without_it(): void

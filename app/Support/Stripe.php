@@ -23,7 +23,7 @@ class Stripe
     public const MODES = ['test', 'live'];
 
     /** Currencies Stripe counts in whole units (no cents). */
-    private const ZERO_DECIMAL = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
+    public const ZERO_DECIMAL = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
 
     /** Currencies offered in the builder (Stripe supports them for cards). */
     public const CURRENCIES = ['usd', 'eur', 'gbp', 'cad', 'aud', 'nzd', 'chf', 'sek', 'nok', 'dkk', 'pln', 'czk', 'huf', 'ron', 'try', 'aed', 'sar', 'qar', 'inr', 'pkr', 'bdt', 'lkr', 'myr', 'sgd', 'hkd', 'idr', 'php', 'thb', 'jpy', 'krw', 'cny', 'brl', 'mxn', 'zar', 'ngn', 'kes', 'egp'];
@@ -151,7 +151,35 @@ class Stripe
      */
     public static function checkout(BuilderApp $app, string $mode, string $currency, array $lines, string $success, string $cancel): array
     {
-        $form = ['mode' => 'payment', 'success_url' => $success, 'cancel_url' => $cancel, 'metadata[owlvix_app]' => $app->id, 'payment_intent_data[metadata][owlvix_app]' => $app->id];
+        return self::checkoutOn($mode, self::account($app, $mode), $currency, $lines, $success, $cancel, ['owlvix_app' => $app->id]);
+    }
+
+    /**
+     * A Stripe Checkout page on a connected account (an app's or a shop's), with owlvix's fee taken off.
+     *
+     * @param  list<array{name: string, price: float, qty: int}>  $lines
+     * @param  array<string, string>  $meta  kept on the session and the payment, to check them later
+     * @return array{id: string, url: string}
+     */
+    public static function checkoutOn(string $mode, ?string $account, string $currency, array $lines, string $success, string $cancel, array $meta, ?string $email = null,
+        int $discount = 0, string $discountName = '', ?int $expiresAt = null): array
+    {
+        $form = ['mode' => 'payment', 'success_url' => $success, 'cancel_url' => $cancel];
+        if ($expiresAt) {
+            $form['expires_at'] = $expiresAt;
+        }
+        if ($discount > 0) { // a one-off coupon on the owner's account for this order's discount (smallest unit)
+            $coupon = self::api($mode, $account)->post('https://api.stripe.com/v1/coupons', ['amount_off' => $discount, 'currency' => $currency, 'duration' => 'once',
+                'name' => mb_substr($discountName ?: 'Discount', 0, 40), 'max_redemptions' => 1])->throw();
+            $form['discounts[0][coupon]'] = (string) $coupon->json('id');
+        }
+        foreach ($meta as $k => $v) {
+            $form["metadata[$k]"] = $v;
+            $form["payment_intent_data[metadata][$k]"] = $v;
+        }
+        if ($email) {
+            $form['customer_email'] = $email;
+        }
         $total = 0;
         foreach (array_values($lines) as $i => $l) {
             $unit = self::minor($l['price'], $currency);
@@ -161,11 +189,11 @@ class Stripe
             $form["line_items[$i][price_data][unit_amount]"] = $unit;
             $form["line_items[$i][price_data][product_data][name]"] = mb_substr($l['name'], 0, 200);
         }
-        $fee = (int) floor($total * max(0, min(20, (float) (self::settings()['fee'] ?? 0))) / 100);
+        $fee = (int) floor(max(0, $total - $discount) * max(0, min(20, (float) (self::settings()['fee'] ?? 0))) / 100);
         if ($fee > 0) {
             $form['payment_intent_data[application_fee_amount]'] = $fee;
         }
-        $res = self::api($mode, self::account($app, $mode))->post('https://api.stripe.com/v1/checkout/sessions', $form)->throw();
+        $res = self::api($mode, $account)->post('https://api.stripe.com/v1/checkout/sessions', $form)->throw();
 
         return ['id' => (string) $res->json('id'), 'url' => (string) $res->json('url')];
     }
@@ -173,10 +201,24 @@ class Stripe
     /** @return array{paid: bool, amount: int, currency: string} */
     public static function session(BuilderApp $app, string $mode, string $id): array
     {
-        $res = self::api($mode, self::account($app, $mode))->get('https://api.stripe.com/v1/checkout/sessions/'.rawurlencode($id))->throw();
+        $s = self::sessionOn($mode, self::account($app, $mode), $id);
 
-        return ['paid' => $res->json('payment_status') === 'paid' && ($res->json('metadata.owlvix_app') === $app->id),
-            'amount' => (int) $res->json('amount_total'), 'currency' => (string) $res->json('currency')];
+        return ['paid' => $s['paid'] && ($s['meta']['owlvix_app'] ?? null) === $app->id, 'amount' => $s['amount'], 'currency' => $s['currency']];
+    }
+
+    /** Closes an open Checkout page so it can't be paid any more. */
+    public static function expireSession(string $mode, ?string $account, string $id): void
+    {
+        self::api($mode, $account)->post('https://api.stripe.com/v1/checkout/sessions/'.rawurlencode($id).'/expire')->throw();
+    }
+
+    /** @return array{paid: bool, amount: int, currency: string, meta: array} */
+    public static function sessionOn(string $mode, ?string $account, string $id): array
+    {
+        $res = self::api($mode, $account)->get('https://api.stripe.com/v1/checkout/sessions/'.rawurlencode($id))->throw();
+
+        return ['paid' => $res->json('payment_status') === 'paid', 'amount' => (int) $res->json('amount_total'),
+            'currency' => (string) $res->json('currency'), 'meta' => (array) ($res->json('metadata') ?? [])];
     }
 
     /** A price in the currency's smallest unit (cents), as Stripe wants it. */

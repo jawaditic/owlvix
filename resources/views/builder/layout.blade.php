@@ -29,6 +29,7 @@
         .credit { margin-top: 18px; font-size: .8rem; color: var(--muted); }
         .credit a { color: inherit; }
     </style>
+    @stack('styles')
 </head>
 <body>
     <main class="card">

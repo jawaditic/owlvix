@@ -98,7 +98,10 @@ class BuilderPublicController extends Controller
         return response()->view('builder.survey', ['form' => $form, 's' => $form->schema, 'embed' => $embed, 'sent' => $sent, 'errors_list' => $errors, 'old' => $old, 'back' => $back], $status)
             ->header('X-Robots-Tag', 'noindex, nofollow')
             // Embeddable anywhere; no scripts at all
-            ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'self'; frame-ancestors *; base-uri 'none'")
+            // Embeddable anywhere. The only script is owlvix's page runtime (it starts phone pickers on the visitor's
+            // country, asking geojs.io), and only on forms with a phone question
+            ->header('Content-Security-Policy', "default-src 'none'; script-src ".BuilderHtml::runtimeUrl().'; connect-src https://get.geojs.io; '
+                ."style-src 'unsafe-inline'; img-src data:; form-action 'self'; frame-ancestors *; base-uri 'none'")
             ->header('Cache-Control', 'no-store');
     }
 
@@ -124,7 +127,7 @@ class BuilderPublicController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'max:'.($request->filled('_dial') ? 24 : 30)], // with a calling code in front it must still fit
             'message' => ['required', 'string', 'min:2', 'max:5000'],
         ], [
             'name.required' => 'Please enter your name.',
@@ -151,7 +154,7 @@ class BuilderPublicController extends Controller
             Mail::to($form->account->email)->send(new BuilderFormMessage($form, [
                 'name' => trim($data['name']),
                 'email' => $data['email'],
-                'phone' => isset($data['phone']) ? trim($data['phone']) : null,
+                'phone' => \App\Support\Phone::combine($data['phone'] ?? null, $request->input('_dial')), // "+44 7911 123456"
                 'message' => trim($data['message']),
                 'page' => $back,
             ]));
@@ -189,7 +192,7 @@ class BuilderPublicController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['nullable', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:150'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'max:'.($request->filled('_dial') ? 24 : 30)], // with a calling code in front it must still fit
         ], [
             'name.max' => 'Please keep your name under 100 characters.',
             'email.required' => 'Please enter your email.',
@@ -225,7 +228,7 @@ class BuilderPublicController extends Controller
             'variant' => $variant,
             'name' => filled($data['name'] ?? null) ? trim($data['name']) : null,
             'email' => trim($data['email']),
-            'phone' => filled($data['phone'] ?? null) ? trim($data['phone']) : null,
+            'phone' => \App\Support\Phone::combine($data['phone'] ?? null, $request->input('_dial')),
         ]);
         if ($site && $step && $site->hasPage($step)) {
             BuilderStat::bump($site->id, $step, $variant ?? 'a', 'leads');

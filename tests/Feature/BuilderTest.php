@@ -128,7 +128,7 @@ class BuilderTest extends TestCase
         $this->assertStringNotContainsString('allow-same-origin', $csp);
         $this->assertStringNotContainsString('unsafe-eval', $csp);
         $this->assertStringContainsString('form-action '.rtrim(url('/'), '/'), $csp);
-        $this->assertStringContainsString('connect-src '.rtrim(url('/'), '/').'/fs;', $csp);
+        $this->assertStringContainsString('connect-src '.rtrim(url('/'), '/').'/fs '.rtrim(url('/'), '/').'/shop/ https://get.geojs.io;', $csp);
         $this->assertMatchesRegularExpression('#Made with.*</body>#s', $res->getContent());
 
         $this->get('/p/joes-bakery/about')->assertOk()->assertSee('About us');

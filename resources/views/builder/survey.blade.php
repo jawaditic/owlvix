@@ -17,6 +17,12 @@
         :root { --c: {{ $c }}; --bg: #f4f6fb; --card: #fff; --text: #0f172a; --muted: #64748b; --line: #e2e8f0; --field: #f8fafc; --error: #b91c1c; }
         @media (prefers-color-scheme: dark) { :root { --bg: #070b14; --card: #0f1626; --text: #e2e8f0; --muted: #94a3b8; --line: #1e293b; --field: #0b1220; --error: #f87171; } }
         * { box-sizing: border-box; }
+        .tel { display: flex; gap: 8px; } .tel input { flex: 1; min-width: 0; }
+        .dial { position: relative; flex: none; display: block; }
+        .dial__face { display: flex; align-items: center; height: 100%; min-height: 44px; padding: 0 30px 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); font-weight: 600; white-space: nowrap; }
+        .dial__face::after { content: ''; position: absolute; right: 12px; top: 50%; width: 7px; height: 7px; margin-top: -5px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+        .dial select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; margin: 0; }
+        .dial:focus-within .dial__face { outline: 2px solid var(--c); outline-offset: 1px; }
         body { margin: 0; padding: {{ $embed ? '0' : '32px 16px' }}; background: {{ $embed ? 'transparent' : 'var(--bg)' }}; color: var(--text); font: 16px/1.55 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         .card { max-width: 640px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-top: 8px solid var(--c); border-radius: 18px; padding: 30px 28px; box-shadow: 0 12px 40px rgba(15, 23, 42, .07); }
         h1 { margin: 0 0 8px; font-size: 1.6rem; line-height: 1.25; }
@@ -97,6 +103,17 @@
                                 <option value="">{{ $f['placeholder'] ?: 'Choose…' }}</option>
                                 @foreach ($f['options'] as $o)<option value="{{ $o }}" @selected($val($f['id']) === $o)>{{ $o }}</option>@endforeach
                             </select>
+                        @elseif ($f['type'] === 'phone')
+                            {{-- flag + calling code: the <select> lies invisibly over the flag; the runtime starts it on the visitor's country --}}
+                            @php($dialOld = $old[$f['id'].'_dial'] ?? null)
+                            @php($dialPick = collect(\App\Support\Phone::options())->first(fn ($o) => $dialOld ? $o[2] === $dialOld : $o[0] === 'US'))
+                            <div class="tel" data-dial-row>
+                                <label class="dial"><span class="dial__face" aria-hidden="true" data-dial-face>{{ \App\Support\Country::flag($dialPick[0]) }} {{ $dialPick[2] }}</span>
+                                    <select name="{{ $f['id'] }}_dial" aria-label="Country calling code" data-dial>
+                                        @foreach (\App\Support\Phone::options() as [$iso, $cname, $code])<option value="{{ $code }}" data-c="{{ $iso }}" @selected($iso === $dialPick[0])>{{ \App\Support\Country::flag($iso) }} {{ $cname }} ({{ $code }})</option>@endforeach
+                                    </select></label>
+                                <input id="{{ $fid }}" type="tel" name="{{ $f['id'] }}" maxlength="24" inputmode="tel" autocomplete="tel-national" placeholder="{{ $f['placeholder'] ?: 'Phone number' }}" value="{{ $val($f['id']) }}" {{ $req }}>
+                            </div>
                         @else
                             @php($type = ['phone' => 'tel', 'text' => 'text', 'email' => 'email', 'number' => 'number', 'date' => 'date'][$f['type']])
                             <input id="{{ $fid }}" type="{{ $type }}" name="{{ $f['id'] }}" maxlength="500" placeholder="{{ $f['placeholder'] }}" value="{{ $val($f['id']) }}" {{ $req }}
@@ -107,6 +124,7 @@
                 @endif
             @endforeach
             <button class="btn" type="submit">{{ $s['button'] }}</button>
+            @if (collect($s['fields'])->contains('type', 'phone'))<script src="{{ \App\Support\BuilderHtml::runtimeUrl() }}" defer></script>@endif
             <p class="note">Never send passwords or card details through this form.</p>
         </form>
     @endif

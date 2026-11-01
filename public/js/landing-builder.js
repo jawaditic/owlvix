@@ -396,7 +396,7 @@
             }
             if (key.startsWith('popup|')) { page().popup.image = await readImage(file, 1000); commit(); drawPage(); return; }
             const [obj, path, id] = ownerOf(key), isLogo = key === 'site|logo';
-            setPath(obj, path, await readImage(file, isLogo ? 480 : /photo|avatar/.test(path) ? 700 : 1600, isLogo));
+            setPath(obj, path, await readImage(file, isLogo ? 480 : /photo|avatar/.test(path) ? 700 : /^items\.\d+\.(image|images)/.test(path) && find(id)?.obj.type === 'products' ? 1100 : 1600, isLogo));
             commit(); id === 'site' ? (refreshChrome(), drawSite()) : (refreshEl(id), drawEdit());
         } catch { toast('Sorry, that image could not be read. Try a JPG or PNG.'); }
     });
@@ -526,7 +526,7 @@
         const minePages = FUNNEL ? '' : myPageTemplates().map((t, i) => (match(t.name + ' page') ? `<div class="lpb-tpl-row lpb-tpl-card lpb-tpl-mine" role="button" tabindex="0" data-my-page="${i}">${thumb('mypage:' + i)}<span class="lpb-tpl-name">📄 ${esc(t.name)} <small>${t.secs?.length || 0} sections</small><button type="button" data-pagetpl-del="${i}" title="Remove this page template">✕</button></span></div>` : '')).join('');
         // after the last card too, so people who scrolled through the list don't have to go back up
         const more = (kind, label) => { const n = Object.keys(kind === 'sec' ? B.TEMPLATES.sections : B.TEMPLATES.pages).length; return q ? '' : `<button type="button" class="lpb-viewall lpb-viewall--end" data-tpl-all="${kind}">View all ${n} ${label} →</button>`; };
-        const html = (FUNNEL ? group('Funnel widgets', widgets('funnel')) : '') + group('Layout — columns', layouts) + group('Basic widgets', widgets('basic')) + group('Pro widgets', widgets('pro')) + group('Ready sections', widgets('section'))
+        const html = (FUNNEL ? group('Funnel widgets', widgets('funnel')) : '') + (KIT === 'store' ? group('Shop', widgets('shop')) : '') + group('Layout — columns', layouts) + group('Basic widgets', widgets('basic')) + group('Pro widgets', widgets('pro')) + group('Ready sections', widgets('section'))
             + (secT ? `<h2 class="lpb-ph lpb-ph--row">Section templates <button type="button" class="lpb-viewall" data-tpl-all="sec">View all (${Object.keys(B.TEMPLATES.sections).length})</button></h2><div class="lpb-tpl-list">${secT}</div>${more('sec', 'section templates')}` : '')
             + (pageT ? `<h2 class="lpb-ph lpb-ph--row">Page templates <button type="button" class="lpb-viewall" data-tpl-all="page">View all (${Object.keys(B.TEMPLATES.pages).length})</button></h2><div class="lpb-tpl-list">${pageT}</div>${more('page', 'page templates')}` : '')
             + (!q || mine || minePages ? `<h2 class="lpb-ph">My templates</h2><div class="lpb-tpl-list">${mine + minePages || `<p class="lpb-hint">Select a section and press ★ on its toolbar to save it here${FUNNEL ? '' : ' — or save a whole page from the Page tab'}.</p>`}</div>` : '');
@@ -647,12 +647,12 @@
         l = l || { to: 'contact' };
         const pageOpts = P.pages.map(p => `<option value="${esc(p.slug)}" ${l.val === p.slug ? 'selected' : ''}>${esc(p.title)}</option>`).join('');
         return `<div class="lpb-link"><select data-link-to="${key}">${Object.entries(FUNNEL ? { ...B.FUNNEL_LINKS, ...B.LINK_TYPES } : B.LINK_TYPES).map(([k, v]) => `<option value="${k}" ${l.to === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
-            ${l.to === 'page' ? `<select data-link-val="${key}">${pageOpts}</select>` : ['url', 'whatsapp', 'phone', 'email'].includes(l.to) ? `<input data-link-val="${key}" value="${esc(l.val || '')}" placeholder="${{ url: 'https://…', whatsapp: '+1 555 123 4567', phone: '+1 555 123 4567', email: 'you@example.com' }[l.to]}">` : ''}</div>`;
+            ${l.to === 'page' ? `<select data-link-val="${key}">${pageOpts}</select>` : ['url', 'whatsapp', 'phone', 'email'].includes(l.to) ? `<input data-link-val="${key}"${['whatsapp', 'phone'].includes(l.to) ? ' type="tel"' : ''} value="${esc(l.val || '')}" placeholder="${{ url: 'https://…', whatsapp: '+1 555 123 4567', phone: '+1 555 123 4567', email: 'you@example.com' }[l.to]}">` : ''}</div>`;
     };
     const fieldHtml = (f, obj, prefix) => {
         const key = prefix + f.k, v = getPath(obj, f.k);
         switch (f.type) {
-            case 'text': return `<label>${f.label}<input data-f="${key}" value="${esc(v ?? '')}" placeholder="${esc(f.ph || '')}"></label>`;
+            case 'text': return `<label>${f.label}<input data-f="${key}"${/(^|\.)(whatsapp|phone)$/.test(f.k) ? ' type="tel"' : ''} value="${esc(v ?? '')}" placeholder="${esc(f.ph || '')}"></label>`;
             case 'textarea': return `<label>${f.label}<textarea data-f="${key}" rows="3">${esc(v ?? '')}</textarea></label>`;
             case 'number': return `<label>${f.label}<input type="number" data-f="${key}" value="${esc(v ?? '')}" min="${f.min}" max="${f.max}" step="${f.step}"></label>`;
             case 'datetime': return `<label>${f.label}<input type="datetime-local" data-f="${key}" value="${esc(v ?? '')}"></label>`;
@@ -770,7 +770,8 @@
                 const d = W[o.type];
                 if (d.variants) out += `<label>Layout<select data-wv>${Object.entries(d.variants).map(([k, l]) => `<option value="${k}" ${(o.v || Object.keys(d.variants)[0]) === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
                 out += `<p class="lpb-hint">Click text on the page to type over it.</p>`;
-                for (const fl of d.fields) out += fl.type === 'list' ? listHtml(fl, o) : fieldHtml(fl, o.p, `${o.id}|`);
+                if (o.type === 'products') out += shopPanel();
+                for (const fl of d.fields) out += fl.type === 'list' ? (o.type === 'products' ? productsHtml(fl, o) : listHtml(fl, o)) : fieldHtml(fl, o.p, `${o.id}|`);
                 if (o.type === 'contact' || o.type === 'form') out += formPanel();
                 if (o.type === 'optin') out += leadPanel();
                 if (o.type === 'rsvp') out += (B.rsvpWidget(P)?.id !== o.id ? '<p class="lpb-hint">This site has more than one RSVP form. They all send to one guest list, so they all ask the questions of the first one — change them there.</p>' : '') + rsvpPanel();
@@ -790,6 +791,49 @@
         } else out += advControls(o);
         box.innerHTML = out;
         box.querySelectorAll('.lpb-acc').forEach(dd => { const k = dd.querySelector('summary').textContent; if (openAcc[k] !== undefined) dd.open = openAcc[k]; dd.addEventListener('toggle', () => (openAcc[k] = dd.open)); });
+        box.querySelectorAll('[data-prod]').forEach(dd => dd.addEventListener('toggle', () => (dd.open ? openProd.add(dd.dataset.prod) : openProd.delete(dd.dataset.prod))));
+    };
+    /* ----- online store: each product in its own fold-out (photo, name, prices, options, label, sold out) */
+    const openProd = new Set();
+    const productsHtml = (f, w) => {
+        const list = w.p.items || [], cur = P.site.shop?.currency, pre = `${w.id}|`;
+        const cats = [...new Set(list.map(it => String(it.cat || '').trim()).filter(Boolean))];
+        return `<div class="lpb-list lpb-prods"><span>${f.label} <small>(${list.length})</small></span><datalist id="lpb-cats-${esc(w.id)}">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>${list.map((it, i) => {
+            const k = n => `items.${i}.${n}`, pr = B.money(it.price, cur), vals = it.vals || [], imgs = it.images || [];
+            return `<details class="lpb-prod" data-prod="${esc(it.pid || '')}"${openProd.has(it.pid) ? ' open' : ''}><summary>
+                <span class="lpb-thumb" ${it.image ? `style="background-image:url('${esc(it.image)}')"` : ''} aria-hidden="true">${it.image ? '' : '🛍'}</span>
+                <span class="lpb-prod__t"><b>${esc(it.name || 'Untitled product')}</b><small${pr ? '' : ' class="lpb-err-t"'}>${pr ? esc(pr) : 'No price yet'}${it.cat ? ' · ' + esc(it.cat) : ''}${it.sold ? ' · Sold out' : ''}</small></span></summary>
+                <div class="lpb-prod__body">${fieldHtml(B.F.img(k('image'), 'Main photo'), w.p, pre)}
+                <div class="lpb-pimgs"><span>More photos <small>(shown on the product’s page)</small></span><div>${imgs.map((src, j) => `<span class="lpb-pimg" style="background-image:url('${esc(src)}')"><button type="button" data-pimg-del="${i}|${j}" aria-label="Remove this photo">✕</button></span>`).join('')}${imgs.length < 5 ? `<button type="button" class="lpb-pimg lpb-pimg--add" data-img-pick="${pre}${k('images')}.${imgs.length}" aria-label="Add a photo">＋</button>` : ''}</div></div>
+                ${fieldHtml(B.F.text(k('name'), 'Name'), w.p, pre)}
+                <div class="lpb-2">${fieldHtml(B.F.text(k('price'), 'Price', '24.99'), w.p, pre)}${fieldHtml(B.F.text(k('old'), 'Old price (shows a sale)', 'optional'), w.p, pre)}</div>
+                ${fieldHtml(B.F.area(k('desc'), 'Short description (on the card)'), w.p, pre)}
+                <div class="lpb-2"><label>Category<input data-f="${pre}${k('cat')}" value="${esc(it.cat || '')}" list="lpb-cats-${esc(w.id)}" maxlength="40" placeholder="e.g. Tops"></label>${fieldHtml(B.F.text(k('badge'), 'Label on photo', 'New, Sale…'), w.p, pre)}</div>
+                <div class="lpb-vals"><b>Sizes, colours…</b><label>Choice name<input data-f="${pre}${k('optName')}" value="${esc(it.optName || '')}" maxlength="30" placeholder="Size, Colour, Scent…"></label>
+                    ${vals.map((v, j) => `<div class="lpb-vals__row"><input data-f="${pre}${k(`vals.${j}.v`)}" value="${esc(v.v || '')}" maxlength="60" placeholder="e.g. M" aria-label="Choice ${j + 1}"><input data-f="${pre}${k(`vals.${j}.price`)}" value="${esc(v.price || '')}" inputmode="decimal" maxlength="12" placeholder="${esc(pr || 'Price')}" aria-label="Price of choice ${j + 1} (empty: same as the product)"><button type="button" data-vals="${i}|${j}|del" aria-label="Remove">✕</button></div>`).join('')}
+                    <button type="button" class="btn btn--sm btn--ghost" data-vals="${i}|-1|add" ${vals.length >= 30 ? 'disabled' : ''}>＋ Add a ${esc(String(it.optName || 'choice').toLowerCase())}</button>
+                    <p class="lpb-hint">${vals.length ? 'Leave a price empty to use the product’s price.' : 'Optional — add sizes or colours customers pick from, each with its own price if you like.'}</p></div>
+                ${fieldHtml(B.F.area(k('long'), 'Product page text (optional)'), w.p, pre)}
+                ${stockHtml(it, i)}
+                ${fieldHtml(B.F.bool(k('sold'), 'Sold out'), w.p, pre)}
+                <div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--ghost" data-list="items|${i}|up" ${i === 0 ? 'disabled' : ''}>↑ Move up</button><button type="button" class="btn btn--sm btn--ghost" data-list="items|${i}|dup" ${list.length >= f.max ? 'disabled' : ''}>Duplicate</button><button type="button" class="btn btn--sm btn--ghost lpb-danger" data-list="items|${i}|del">Remove</button></div></div></details>`;
+        }).join('')}${list.length < f.max ? '<button type="button" class="btn btn--sm btn--glow" data-list="items|-1|add">＋ Add a product</button>' : `<p class="lpb-hint">Up to ${f.max} products in one section — add another Products section for more.</p>`}</div>`;
+    };
+    /* ----- stock counts: kept by owlvix (orders lower them), saved as soon as they're typed */
+    const trackOpen = new Set();
+    const stockHtml = (it, i) => {
+        if (!P.site.shopId) return '<div class="lpb-stock"><b>📦 Stock</b><p class="lpb-hint">Switch on checkout to count stock — products sell out by themselves.</p></div>';
+        if (!token) return '<div class="lpb-stock"><b>📦 Stock</b><p class="lpb-hint">Sign in to count stock.</p></div>';
+        if (!store()) { if (storeError) return `<div class="lpb-stock"><b>📦 Stock</b>${storeRetry()}</div>`; if (!storeLoading) loadStore().then(r => (r || storeError) && drawEdit()); return '<div class="lpb-stock"><b>📦 Stock</b><p class="lpb-hint">Loading…</p></div>'; }
+        const st = store().stock || {}, keys = B.stockKeys(it), tracked = keys.some(([key]) => key in st) || trackOpen.has(it.pid);
+        return `<div class="lpb-stock"><label class="lpb-check"><input type="checkbox" data-stock-track="${i}" ${tracked ? 'checked' : ''}> 📦 Count stock</label>
+            ${tracked ? `${keys.map(([key, label]) => `<label class="lpb-stock__row"><span>${esc(label || 'In stock')}</span><input type="number" min="0" max="1000000" step="1" inputmode="numeric" data-stock-key="${esc(key)}" value="${esc(st[key] ?? '')}" placeholder="0"></label>`).join('')}
+            <p class="lpb-hint">Orders take from these counts (cancelled orders give it back). At 0 it shows as sold out — changes reach your live shop straight away.</p>` : ''}</div>`;
+    };
+    const stockTimers = {};
+    const saveStock = async patch => {
+        try { const r = await api('POST', `/builder/stores/${P.site.shopId}/stock`, { stock: patch }); if (store()) store().stock = r.stock; }
+        catch (ex) { toast(ex.message, 'error'); }
     };
     const syncPanelInputs = () => { $$('[data-edit-panel] [data-f]').forEach(el => { if (el === document.activeElement || el.type === 'checkbox') return; const [obj, path] = ownerOf(el.dataset.f); const v = getPath(obj || {}, path); if (typeof v === 'string') el.value = v; }); };
     $$('[data-etab]').forEach(b => b.addEventListener('click', () => { editTab = b.dataset.etab; drawEdit(); }));
@@ -826,6 +870,18 @@
         }
     };
     ['input', 'change'].forEach(ev => editPanel.addEventListener(ev, onPanelInput));
+    editPanel.addEventListener('input', e => { // stock counts save on their own, a moment after typing stops
+        const el = e.target.closest('[data-stock-key]'); if (!el || el.value === '') return;
+        const key = el.dataset.stockKey; clearTimeout(stockTimers[key]);
+        stockTimers[key] = setTimeout(() => saveStock({ [key]: Math.max(0, Math.floor(+el.value || 0)) }), 600);
+    });
+    editPanel.addEventListener('change', async e => {
+        const el = e.target.closest('[data-stock-track]'), f = sel && find(sel.id); if (!el || !f) return;
+        const it = f.obj.p.items[+el.dataset.stockTrack]; B.fixPids(P);
+        if (el.checked) { trackOpen.add(it.pid); drawEdit(); $(`[data-prod="${CSS.escape(it.pid)}"] [data-stock-key]`)?.focus(); return; }
+        trackOpen.delete(it.pid);
+        await saveStock(Object.fromEntries(B.stockKeys(it).map(([key]) => [key, null]))); drawEdit();
+    });
     editPanel.addEventListener('click', e => {
         const f = sel && find(sel.id);
         const crumb = e.target.closest('[data-crumb]'); if (crumb) return select(crumb.dataset.crumb, '_');
@@ -853,14 +909,29 @@
         if (li && f) {
             const [k, i, act] = li.dataset.list.split('|'), list = f.obj.p[k], fl = W[f.obj.type].fields.find(x2 => x2.k === k), n = +i;
             if (act === 'add') list.push(clone(fl.item));
+            if (act === 'dup' && list[n]) list.splice(n + 1, 0, { ...clone(list[n]), pid: '' });
             if (act === 'del') list.splice(n, 1);
+            if (f.obj.type === 'products' && (act === 'add' || act === 'dup')) { B.fixPids(P); openProd.add(list[act === 'add' ? list.length - 1 : n + 1].pid); }
             if (act === 'up' && n > 0) [list[n - 1], list[n]] = [list[n], list[n - 1]];
             commit(); refreshEl(f.obj.id); return drawEdit();
         }
+        const pv = e.target.closest('[data-vals]');
+        if (pv && f) {
+            const [i, j, act] = pv.dataset.vals.split('|').map((v, n) => (n < 2 ? +v : v)), it = f.obj.p.items[i]; it.vals ||= [];
+            if (act === 'add') it.vals.push({ vid: '', v: '', price: '' });
+            if (act === 'del') it.vals.splice(j, 1);
+            B.fixPids(P); commit(); refreshEl(f.obj.id); drawEdit();
+            if (act === 'add') $(`[data-prod="${CSS.escape(it.pid)}"] .lpb-vals__row:last-of-type input`)?.focus();
+            return;
+        }
+        const pd = e.target.closest('[data-pimg-del]');
+        if (pd && f) { const [i, j] = pd.dataset.pimgDel.split('|').map(Number); f.obj.p.items[i].images.splice(j, 1); commit(); refreshEl(f.obj.id); return drawEdit(); }
+        if (e.target.closest('[data-store-retry]')) { storeError = ''; loadStore().then(() => drawEdit()); return; }
         const pe = e.target.closest('[data-panel-ed]'); if (pe && f) return barAction(pe.dataset.panelEd, f.obj.id);
         if (e.target.closest('[data-activate-form]')) activateForm();
         if (e.target.closest('[data-activate-rsvp]')) activateRsvp();
         if (e.target.closest('[data-activate-leads]')) activateLeads();
+        if (e.target.closest('[data-activate-shop]')) activateShop();
     });
     const changeLayout = (s, layout) => {
         const n = B.LAYOUTS[layout][1];
@@ -1006,8 +1077,8 @@
     const drawSite = () => {
         const s = P.site, c = s.colors, fo = s.fonts;
         const keep = {}; $$('[data-site-panel] .lpb-acc').forEach(d => (keep[d.querySelector('summary').textContent] = d.open));
-        $('[data-site-panel]').innerHTML = `
-            <details class="lpb-acc" open><summary>Global colours</summary>
+        $('[data-site-panel]').innerHTML = (KIT === 'store' ? shopSettings() : '') + `
+            <details class="lpb-acc" ${KIT === 'store' ? '' : 'open'}><summary>Global colours</summary>
             <div class="lpb-globals">${[['primary', 'Primary'], ['secondary', 'Secondary'], ['accent', 'Accent'], ['text', 'Text'], ['bg', 'Background']].map(([k, l]) => `<label><input type="color" data-site="colors.${k}" value="${hex(c[k])}"><span>${l}</span></label>`).join('')}</div>
             <p class="lpb-hint">Change one and everything using it updates. Pick these colours in any Style tab.</p></details>
             <details class="lpb-acc" open><summary>Global fonts</summary>
@@ -1040,6 +1111,11 @@
         syncGlobals(); drawQr($('[data-qr-box]'));
     };
     const sitePanel = $('[data-tab-panel=site]');
+    sitePanel.addEventListener('change', e => {
+        const add = e.target.closest('[data-zone-add]'); if (!add || !add.value) return;
+        const z = P.site.shop.zones[+add.dataset.zoneAdd]; P.site.shop.zones.forEach(o => (o.countries = o.countries.filter(c => c !== add.value))); // a country is in one zone
+        z.countries.push(add.value); commit(); drawSite();
+    });
     ['input', 'change'].forEach(ev => sitePanel.addEventListener(ev, e => {
         const el = e.target;
         if (el.dataset.linkTo || el.dataset.linkVal || el.dataset.f) return onPanelInput(e);
@@ -1052,6 +1128,7 @@
         if (k.startsWith('fonts.') && JSON.stringify([P.site.fonts.heading, P.site.fonts.body]) !== fontBefore) return renderCanvas();
         if (/^(colors|theme|radius|buttons|css|fonts)/.test(k)) refreshCss(); else refreshChrome();
         if ((k === 'announce.on' || k === 'bare') && e.type === 'change') drawSite();
+        if (k.startsWith('shop.')) { refreshMain(); if (e.type === 'change' && (el.type === 'checkbox' || el.tagName === 'SELECT')) drawSite(); }
     }));
     sitePanel.addEventListener('click', e => {
         const exb = e.target.closest('[data-example]');
@@ -1059,6 +1136,18 @@
         const pick = e.target.closest('[data-img-pick]'); if (pick) { picking = pick.dataset.imgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-img-clear]')) { P.site.logo = ''; commit(); refreshChrome(); drawSite(); }
         if (e.target.closest('[data-qr-publish]')) $('[data-act=publish]').click();
+        if (e.target.closest('[data-activate-shop]')) activateShop();
+        const sh = P.site.shop, zoneDel = e.target.closest('[data-zone-del]'), zoneC = e.target.closest('[data-zone-c]');
+        if (e.target.closest('[data-zones-on]')) { sh.zones = [{ name: 'Home country', countries: [], fee: sh.fee, freeOver: sh.freeOver }, { name: 'Everywhere else', countries: [], fee: '15', freeOver: '' }]; commit(); drawSite(); toast('Add your country to the first zone'); }
+        if (e.target.closest('[data-zones-off]')) { sh.zones = []; commit(); drawSite(); }
+        if (e.target.closest('[data-zone-new]')) { sh.zones.push({ name: '', countries: [], fee: '', freeOver: '' }); commit(); drawSite(); }
+        if (zoneDel) { sh.zones.splice(+zoneDel.dataset.zoneDel, 1); commit(); drawSite(); }
+        if (zoneC) { const [zi, c] = zoneC.dataset.zoneC.split('|'); sh.zones[+zi].countries = sh.zones[+zi].countries.filter(x2 => x2 !== c); commit(); drawSite(); }
+        if (e.target.closest('[data-store-retry]')) { storeError = ''; loadStore().then(() => drawSite()); }
+        if (e.target.closest('[data-shop-signin]')) needAccount(async () => { if (dlg.open) dlg.close(); await loadStore(); drawSite(); });
+        const on = e.target.closest('[data-stripe-on]'), off = e.target.closest('[data-stripe-off]');
+        if (on) stripeConnect(on.dataset.stripeOn);
+        if (off) stripeDisconnect(off.dataset.stripeOff);
     });
 
     /* =========================================================== tabs, pages, toolbar */
@@ -1069,6 +1158,7 @@
         if (name === 'site') drawSite();
         if (name === 'edit') drawEdit();
         if (name === 'results') drawResults();
+        if (name === 'orders') drawOrders();
     };
     $$('[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
     const drawPages = () => { $('[data-pages]').innerHTML = P.pages.map((p, i) => `<option value="${i}" ${i === pageIdx ? 'selected' : ''}>${FUNNEL ? `Step ${i + 1} · ${esc(p.title)}` : esc(p.title) + (p.slug === 'index' ? ' (home)' : '')}</option>`).join(''); syncVariantBadge(); };
@@ -1242,8 +1332,9 @@
     };
     const exportHtml = (pg, mode) => B.render(P, pg, mode, { runtime: RUNTIME, siteBase: SITE_BASE, statsUrl: STATS_URL });
     $('[data-act=download]').addEventListener('click', async () => {
-        if (!(await rsvpReady())) return;
+        if (!(await rsvpReady()) || !(await shopReady())) return;
         try { await syncRsvp(); } catch (ex) { toast(ex.message); } // the download goes ahead either way
+        try { await syncShop(); } catch (ex) { toast(ex.message, 'error'); }
         if (P.pages.length === 1) save(new Blob([exportHtml(P.pages[0], 'download')], { type: 'text/html' }), baseName() + '.html');
         else save(zip(P.pages.map(p => ({ name: (p.slug === 'index' ? 'index' : p.slug) + '.html', text: exportHtml(p, 'download') }))), baseName() + '.zip');
         const after = document.querySelector('[data-lpb-after]');
@@ -1378,6 +1469,7 @@
         const slug = slugify(slugIn);
         if (slug.length < 3) throw new Error('Please use at least 3 letters or numbers.');
         await syncRsvp(); // errors show in the publish dialog
+        await syncShop(); // the prices checkout charges
         const previous = P.site.publishSlug;
         P.site.publishSlug = slug;
         const pages = P.pages.map(p => ({ slug: p.slug, title: p.title, html: exportHtml(p, 'publish') }));
@@ -1392,7 +1484,7 @@
         drawQr(dlgBody.querySelector('[data-qr-box]')); redrawSiteQr();
         track('builder_publish', { pages: pages.length });
     };
-    $('[data-act=publish]').addEventListener('click', async () => { if (await rsvpReady()) needAccount(publishDialog); });
+    $('[data-act=publish]').addEventListener('click', async () => { if (await rsvpReady() && await shopReady()) needAccount(publishDialog); });
     dlgBody.addEventListener('click', async e => {
         if (e.target.closest('[data-qr-publish]')) { dlg.close(); return $('[data-act=publish]').click(); }
         const un = e.target.closest('[data-unpublish]');
@@ -1480,12 +1572,251 @@
     }
 
 
+    /* =========================================================== online store (/online-store-builder): checkout, orders, Stripe */
+    // The shop's products and settings are copied to owlvix (StoreController) when checkout is switched on and before
+    // every publish and download, so checkout charges the prices the owner set. Orders show in the Orders tab.
+    let storeInfo = null, storeLoading = null;
+    const CUR_NAMES = (() => { try { return new Intl.DisplayNames(['en'], { type: 'currency' }); } catch { return null; } })();
+    const currencyOptions = cur => B.CURRENCIES.map(c => `<option value="${c}" ${c === cur ? 'selected' : ''}>${c.toUpperCase()}${CUR_NAMES ? ' — ' + esc(CUR_NAMES.of(c.toUpperCase()) || '') : ''}</option>`).join('');
+    const shopPayload = id => ({ id, ref: P.site.ref, name: P.site.name || 'My shop', currency: P.site.shop.currency, products: B.shopProducts(P), settings: P.site.shop });
+    const shopGone = () => { P.site.shopAction = ''; P.site.shopId = ''; storeInfo = null; commit(); refreshMain(); drawEdit(); };
+    let storeError = '';
+    /** The shop this project uses (forgotten when another project — another shop — is open). */
+    const store = () => (storeInfo && storeInfo.id === P.site.shopId ? storeInfo : null);
+    const loadStore = async () => {
+        if (!token || !P.site.shopId) return null;
+        storeError = '';
+        return (storeLoading ||= api('GET', '/builder/stores/' + P.site.shopId).then(r => (storeInfo = r.store))
+            .catch(ex => { if (ex.status === 404) shopGone(); else storeError = ex.message; return null; }).finally(() => (storeLoading = null)));
+    };
+    const storeRetry = () => `<p class="lpb-err">${esc(storeError)}</p><button type="button" class="btn btn--sm btn--ghost" data-store-retry>Try again</button>`;
+    const activateShop = () => needAccount(async () => {
+        if (activating) return; activating = true;
+        try {
+            P.site.ref ||= uid() + uid();
+            const r = await api('POST', '/builder/stores', shopPayload(null));
+            storeInfo = r.store; P.site.shopId = r.store.id; P.site.shopAction = r.store.action; P.site.shop.cardReady = !!r.store.card_ready;
+            commit(); if (dlg.open) dlg.close();
+            refreshMain(); refreshChrome(); drawEdit(); drawSite(); toast('Checkout is on — publish your shop to start selling'); track('store_checkout_on');
+        } catch (ex) { toast(ex.message, 'error'); } finally { activating = false; }
+    });
+    /** Before publishing or downloading: save the products and settings checkout uses. Throws if the shop can't sell. */
+    const syncShop = async () => {
+        if (KIT !== 'store' || !P.site.shopId) return;
+        if (!token) throw new Error('Sign in again to keep your shop’s prices up to date.');
+        let r;
+        try { r = await api('POST', '/builder/stores', shopPayload(P.site.shopId)); }
+        catch (ex) {
+            if (ex.status === 404 || ex.status === 403) { shopGone(); throw new Error('Your shop’s checkout was removed. Switch checkout on again in the Site tab.'); }
+            throw ex;
+        }
+        storeInfo = r.store; P.site.shopAction = r.store.action; P.site.shop.cardReady = !!r.store.card_ready; commit();
+        if (!B.payWays(P.site.shop).length) throw new Error('Card payments aren’t ready yet: connect Stripe in the Site tab (Shop & checkout), or also switch on cash on delivery or bank transfer.');
+        if (!B.shopProducts(P).length) throw new Error('Your shop has no products with a price yet. Add a price to at least one product.');
+    };
+    /** A store whose checkout was never switched on would go out without a cart: offer to switch it on. True = go ahead. */
+    const shopReady = async () => {
+        if (KIT !== 'store' || P.site.shopAction || !B.productWidgets(P).length) return true;
+        const on = await sweet({ icon: 'warning', title: 'Checkout is off', text: 'Customers won’t be able to add to cart or order until you switch checkout on (free — sign in with your email).', confirm: 'Switch on checkout', cancel: 'Continue without' });
+        if (on) { activateShop(); return false; }
+        return true;
+    };
+    const shopPanel = () => P.site.shopAction
+        ? `<div class="lpb-form-ok">✅ Checkout is on. Orders are emailed to ${esc(account?.email || 'you')} and listed in the <b>Orders</b> tab. Delivery and payment settings are in the <b>Site</b> tab.</div>`
+        : '<div class="lpb-form-off"><b>🛒 Switch on checkout</b><p>Customers add products to a cart and order — by card, cash on delivery or bank transfer. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-shop>Switch on checkout</button></div>';
+    const stripeBox = () => {
+        const sh = P.site.shop;
+        if (!sh.card) return '';
+        if (!P.site.shopId) return '<p class="lpb-hint">Switch on checkout first, then connect Stripe here.</p>';
+        if (!token) return '<p class="lpb-hint">Sign in to connect Stripe.</p><button type="button" class="btn btn--sm btn--ghost" data-shop-signin>Sign in</button>';
+        if (!store()) { if (storeError) return storeRetry(); if (!storeLoading) loadStore().then(r => (r || storeError) && drawSite()); return '<p class="lpb-hint">Checking your Stripe connection…</p>'; }
+        const st = store().stripe, modes = ['test', 'live'].filter(m => st[m].available);
+        if (!modes.length) return '<p class="lpb-hint">Card payments aren’t available yet — use cash on delivery or bank transfer for now.</p>';
+        const m = modes.includes(sh.mode) ? sh.mode : modes[0], c = st[m].connected;
+        return `${modes.length > 1 ? `<label>Card payments<select data-site="shop.mode"><option value="test" ${m === 'test' ? 'selected' : ''}>Test mode — test cards, no real money</option><option value="live" ${m === 'live' ? 'selected' : ''}>Live — real payments</option></select></label>` : ''}
+            ${c ? `<div class="lpb-form-ok">✅ Stripe is connected${m === 'test' ? ' (test mode)' : ''}. Card payments go straight to your Stripe account.${sh.cardReady ? '' : ' <b>Publish again</b> so customers can pay by card.'}</div><button type="button" class="lpb-link-btn" data-stripe-off="${m}">Disconnect Stripe</button>`
+                : `<button type="button" class="btn btn--sm btn--glow" data-stripe-on="${m}">Connect Stripe${m === 'test' ? ' (test mode)' : ''}</button><p class="lpb-hint">You sign in to Stripe (or open a free account), then come back here. Owlvix never sees your Stripe password. Stripe’s normal card fees apply.</p>`}`;
+    };
+    const shopSettings = () => {
+        const sh = P.site.shop;
+        return `<details class="lpb-acc" open><summary>Shop &amp; checkout</summary>
+            ${P.site.shopAction ? `<div class="lpb-form-ok">✅ Checkout is on. Orders are emailed to ${esc(account?.email || 'you')} and listed in the <b>Orders</b> tab.</div>` : '<div class="lpb-form-off"><b>🛒 Checkout is off</b><p>Switch it on so customers can add to cart and order. Free — sign in with your email.</p><button type="button" class="btn btn--sm btn--glow" data-activate-shop>Switch on checkout</button></div>'}
+            <label>Currency<select data-site="shop.currency">${currencyOptions(sh.currency)}</select></label>
+            <h4>Delivery</h4>
+            <label class="lpb-check"><input type="checkbox" data-site="shop.delivery" ${sh.delivery ? 'checked' : ''}> I deliver orders</label>
+            ${!sh.delivery ? '' : (sh.zones || []).length ? zonesHtml(sh) : `<div class="lpb-2"><label>Delivery fee<input data-site="shop.fee" inputmode="decimal" maxlength="12" value="${esc(sh.fee)}" placeholder="0 = free"></label><label>Free delivery over<input data-site="shop.freeOver" inputmode="decimal" maxlength="12" value="${esc(sh.freeOver)}" placeholder="Never"></label></div>
+                <button type="button" class="lpb-link-btn" data-zones-on>🌍 Charge different prices by country</button>`}
+            <label class="lpb-check"><input type="checkbox" data-site="shop.pickup" ${sh.pickup ? 'checked' : ''}> Customers can pick up</label>
+            ${sh.pickup ? `<label>Where and when<input data-site="shop.pickupText" maxlength="200" value="${esc(sh.pickupText)}" placeholder="12 Market Street, 9 am – 5 pm"></label>` : ''}
+            <h4>Payment</h4>
+            <label class="lpb-check"><input type="checkbox" data-site="shop.cod" ${sh.cod ? 'checked' : ''}> Cash on delivery${sh.pickup ? ' / when they collect' : ''}</label>
+            <label class="lpb-check"><input type="checkbox" data-site="shop.bank" ${sh.bank ? 'checked' : ''}> Bank transfer</label>
+            ${sh.bank ? `<label>Your bank details<textarea data-site="shop.bankText" rows="4" maxlength="1000" placeholder="Bank name, account name, account number…">${esc(sh.bankText)}</textarea></label><p class="lpb-hint">Shown to the customer after they order, and in their receipt email. Mark bank orders as paid in the Orders tab.</p>` : ''}
+            <label class="lpb-check"><input type="checkbox" data-site="shop.card" ${sh.card ? 'checked' : ''}> Card payments (Stripe)</label>
+            ${stripeBox()}
+            <h4>Tax</h4>
+            <div class="lpb-2"><label>Tax rate (%)<input data-site="shop.taxRate" inputmode="decimal" maxlength="6" value="${esc(sh.taxRate)}" placeholder="0 = no tax"></label><label>Called<input data-site="shop.taxLabel" maxlength="20" value="${esc(sh.taxLabel || 'Tax')}" placeholder="Tax, VAT, GST…"></label></div>
+            ${+sh.taxRate > 0 ? `<label class="lpb-check"><input type="checkbox" data-site="shop.taxIncl" ${sh.taxIncl !== false ? 'checked' : ''}> My prices already include tax</label><label class="lpb-check"><input type="checkbox" data-site="shop.taxShip" ${sh.taxShip ? 'checked' : ''}> Charge tax on delivery too</label>
+                <p class="lpb-hint">${sh.taxIncl !== false ? 'Checkout shows how much tax the total includes.' : 'Tax is added to the total at checkout.'}</p>` : ''}
+            <h4>Discount codes</h4>
+            <label class="lpb-check"><input type="checkbox" data-site="shop.codes" ${sh.codes ? 'checked' : ''}> Customers can enter a discount code</label>
+            ${sh.codes ? '<p class="lpb-hint">Make your codes (like SAVE10) in the <b>Orders</b> tab → Discount codes. They’re kept on our side, never in your pages.</p>' : ''}
+            <h4>Order form</h4>
+            <label class="lpb-check"><input type="checkbox" data-site="shop.phoneReq" ${sh.phoneReq ? 'checked' : ''}> Phone number is required</label>
+            <label>Your WhatsApp number (optional)<input data-site="shop.whatsapp" type="tel" maxlength="30" value="${esc(sh.whatsapp)}" placeholder="+1 555 123 4567"></label>
+            <p class="lpb-hint">Customers can message you from their order page.</p>
+            <label>Thank-you message<input data-site="shop.thanks" maxlength="300" value="${esc(sh.thanks)}" placeholder="Thank you! We’ll be in touch when your order is on its way."></label>
+            <p class="lpb-hint">Changes reach your live shop when you publish again.</p></details>`;
+    };
+    /* shipping zones: a price per group of countries; a zone with no countries covers everywhere else */
+    const zonesHtml = sh => `<div class="lpb-zones">${sh.zones.map((z, zi) => `<div class="lpb-zone">
+            <div class="lpb-zone__top"><input data-site="shop.zones.${zi}.name" value="${esc(z.name || '')}" maxlength="60" placeholder="Zone name, e.g. Europe" aria-label="Zone name"><button type="button" data-zone-del="${zi}" aria-label="Remove this zone">✕</button></div>
+            <div class="lpb-zone__cs">${(z.countries || []).length ? z.countries.map(c => `<span class="lpb-cchip">${esc(B.countryName(c))}<button type="button" data-zone-c="${zi}|${c}" aria-label="Remove ${esc(B.countryName(c))}">×</button></span>`).join('') : '<span class="lpb-hint">🌍 Everywhere else — every country not in another zone</span>'}</div>
+            <select data-zone-add="${zi}" aria-label="Add a country to this zone"><option value="">＋ Add a country…</option>${B.COUNTRIES.map(c => [c, B.countryName(c)]).sort((a, b) => a[1].localeCompare(b[1])).filter(([c]) => !(z.countries || []).includes(c)).map(([c, l]) => `<option value="${c}">${esc(l)}</option>`).join('')}</select>
+            <div class="lpb-2"><label>Delivery fee<input data-site="shop.zones.${zi}.fee" inputmode="decimal" maxlength="12" value="${esc(z.fee || '')}" placeholder="0 = free"></label><label>Free over<input data-site="shop.zones.${zi}.freeOver" inputmode="decimal" maxlength="12" value="${esc(z.freeOver || '')}" placeholder="Never"></label></div></div>`).join('')}
+        ${sh.zones.length < 20 ? '<button type="button" class="btn btn--sm btn--ghost" data-zone-new>＋ Add a zone</button>' : ''}
+        <p class="lpb-hint">Customers pick their country at checkout.${sh.zones.some(z => !(z.countries || []).length) ? '' : ' Countries in no zone can’t order delivery — add a zone with no countries to cover everywhere else.'}</p>
+        <button type="button" class="lpb-link-btn" data-zones-off>Use one delivery price everywhere</button></div>`;
+    const stripeConnect = async mode => {
+        try {
+            await syncShop().catch(() => {}); // the shop exists and knows card payments are wanted
+            const r = await api('POST', `/builder/stores/${P.site.shopId}/stripe/connect`, { mode });
+            flush(); persist(); track('store_stripe_connect', { mode });
+            location.href = r.url;
+        } catch (ex) { toast(ex.message, 'error'); }
+    };
+    const stripeDisconnect = async mode => {
+        if (!(await sweet({ icon: 'warning', title: 'Disconnect Stripe?', text: 'Customers won’t be able to pay by card until you connect it again (after you publish).', confirm: 'Disconnect', danger: true }))) return;
+        try { storeInfo = (await api('POST', `/builder/stores/${P.site.shopId}/stripe/disconnect`, { mode })).store; P.site.shop.cardReady = false; commit(); drawSite(); toast('Stripe disconnected — publish again to update your shop'); }
+        catch (ex) { toast(ex.message, 'error'); }
+    };
+    // Back from Stripe's connect page (/online-store-builder?stripe=connected-test…)
+    if (KIT === 'store') {
+        const back = new URLSearchParams(location.search).get('stripe');
+        if (back) {
+            try { history.replaceState(null, '', location.pathname); } catch {}
+            const msg = { 'connected-test': ['Stripe is connected (test mode). Publish again so customers can pay by card.', 'success'], 'connected-live': ['Stripe is connected. Publish again so customers can pay by card.', 'success'],
+                cancelled: ['Stripe wasn’t connected.', 'info'], failed: ['Stripe couldn’t be connected. Please try again.', 'error'], expired: ['That took too long — please press Connect Stripe again.', 'error'] }[back];
+            if (msg) setTimeout(() => toast(...msg), 400);
+            loadStore().then(() => { showTab('site'); drawSite(); });
+        }
+    }
+
+    /* ----- the Orders tab: orders, and the shop's discount codes */
+    let orderFilter = '', ordersView = 'orders', codesCache = [], codeEditing = null;
+    const KIND_LABEL = { percent: '% off', amount: 'Amount off', shipping: 'Free delivery' };
+    const drawCodes = async (box, seg) => {
+        box.innerHTML = seg + '<p class="lpb-hint">Loading codes…</p>';
+        try { codesCache = (await api('GET', `/builder/stores/${P.site.shopId}/discounts`)).discounts; }
+        catch (ex) { box.innerHTML = seg + `<p class="lpb-err">${esc(ex.message)}</p>`; return; }
+        const c = codeEditing, cur = (P.site.shop.currency || 'usd').toUpperCase(), kind = c?.kind || 'percent';
+        const form = c ? `<form class="lpb-code-form" data-code-form="${esc(c.id || '')}"><h4>${c.id ? 'Change code' : 'New discount code'}</h4>
+            <label>Code<input name="code" required maxlength="40" value="${esc(c.code || '')}" placeholder="SAVE10" autocapitalize="characters"></label>
+            <label>Discount<select name="kind" data-code-kind>${Object.entries(KIND_LABEL).map(([k, l]) => `<option value="${k}" ${kind === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+            <label data-code-value ${kind === 'shipping' ? 'hidden' : ''}>How much (<span data-code-unit>${kind === 'percent' ? '%' : cur}</span>)<input name="value" inputmode="decimal" maxlength="12" value="${esc(c.value || '')}" placeholder="10"></label>
+            <div class="lpb-2"><label>Minimum order<input name="min" inputmode="decimal" maxlength="12" value="${esc(c.min || '')}" placeholder="None"></label><label>Uses allowed<input name="max_uses" type="number" min="1" value="${esc(c.max_uses ?? '')}" placeholder="No limit"></label></div>
+            <label>Ends on<input name="ends" type="date" value="${esc(c.ends || '')}"></label>
+            <label class="lpb-check"><input type="checkbox" name="active" ${c.active !== false ? 'checked' : ''}> Active</label>
+            <p class="lpb-err" hidden></p><div class="lpb-block-actions"><button type="submit" class="btn btn--sm btn--glow">Save code</button><button type="button" class="btn btn--sm btn--ghost" data-code-cancel>Cancel</button></div></form>` : '';
+        const rows = codesCache.map(d2 => `<div class="lpb-code${d2.active ? '' : ' is-off'}"><div><b>${esc(d2.code)}</b> <span>${esc(d2.label)}</span><small>${[d2.min && 'min ' + B.money(d2.min, P.site.shop.currency), d2.ends && 'until ' + d2.ends, `used ${d2.uses}${d2.max_uses ? '/' + d2.max_uses : ''}×`, !d2.active && 'off'].filter(Boolean).map(esc).join(' · ')}</small></div>
+            <span><button type="button" class="lpb-link-btn" data-code-edit="${d2.id}">Edit</button> <button type="button" class="lpb-link-btn lpb-danger" data-code-del="${d2.id}">Delete</button></span></div>`).join('');
+        box.innerHTML = seg + (P.site.shop.codes ? '' : '<p class="lpb-hint">The code box is off at checkout — it switches on when you save a code (then publish again).</p>')
+            + (rows || (c ? '' : '<div class="lpb-empty-edit"><b>No codes yet</b><p>Make a code like SAVE10 for 10% off, $5 off, or free delivery — with a minimum order, end date or number of uses if you like.</p></div>'))
+            + (form || '<button type="button" class="btn btn--sm btn--glow" data-code-new>＋ New discount code</button>');
+    };
+    const ORDER_STATUS = { unpaid: 'Waiting for payment', new: 'New', shipped: 'Sent', done: 'Completed', cancelled: 'Cancelled' };
+    const PAY_LABEL = { card: 'Card', cod: 'Cash on delivery', bank: 'Bank transfer' };
+    const ordersBox = () => $('[data-orders-panel]');
+    const ordersBadge = n => { const t = $('[data-tab=orders]'); if (t) t.innerHTML = `Orders${n ? ` <span class="lpb-badge">${n}</span>` : ''}`; };
+    const drawOrders = async () => {
+        const box = ordersBox(); if (!box) return;
+        if (!P.site.shopId) { box.innerHTML = '<div class="lpb-empty-edit"><b>No orders yet</b><p>Switch on checkout so customers can order. Every order is emailed to you and listed here.</p><button type="button" class="btn btn--sm btn--glow" data-activate-shop>Switch on checkout</button></div>'; return; }
+        if (!token) { box.innerHTML = '<div class="lpb-empty-edit"><b>See your orders</b><p>Sign in with the email you used for this shop.</p><button type="button" class="btn btn--sm btn--glow" data-orders-signin>Sign in with email</button></div>'; return; }
+        const seg = `<div class="lpb-seg" role="tablist"><button type="button" role="tab" data-oview="orders" aria-selected="${ordersView === 'orders'}">Orders</button><button type="button" role="tab" data-oview="codes" aria-selected="${ordersView === 'codes'}">Discount codes</button></div>`;
+        if (ordersView === 'codes') return drawCodes(box, seg);
+        box.innerHTML = seg + '<p class="lpb-hint">Loading orders…</p>';
+        let r;
+        try { r = await api('GET', `/builder/stores/${P.site.shopId}/orders${orderFilter ? '?status=' + orderFilter : ''}`); }
+        catch (ex) { if (ex.status === 404) { shopGone(); return drawOrders(); } box.innerHTML = `<p class="lpb-err">${esc(ex.message)}</p>`; return; }
+        storeInfo = r.store; ordersBadge(r.counts.new || 0);
+        const chips = [['', 'All', r.total], ...Object.entries(ORDER_STATUS).map(([k, l]) => [k, l, r.counts[k] || 0])].filter(([k, , n]) => !k || n || k === orderFilter)
+            .map(([k, l, n]) => `<button type="button" class="lpb-chip${k === orderFilter ? ' is-on' : ''}" data-orders-filter="${k}">${esc(l)} <small>${n}</small></button>`).join('');
+        const row = o => `<details class="lpb-order"><summary><span class="lpb-order__top"><b>${esc(o.label)}</b> ${esc(o.name)}<b class="lpb-order__sum">${esc(o.total)}</b></span>
+                <span class="lpb-order__meta"><span class="lpb-ost is-${esc(o.status)}">${esc(ORDER_STATUS[o.status] || o.status)}</span>${esc(new Date(o.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }))} · ${esc(PAY_LABEL[o.pay] || o.pay)}${o.paid ? ' · paid' : ''}${o.test ? ' · test' : ''}</span></summary>
+            <div class="lpb-order__body"><table>${o.items.map(l => `<tr><td>${esc(l.qty)} × ${esc(l.name)}${l.option ? `<small>${esc(l.option)}</small>` : ''}</td><td>${esc(l.total)}</td></tr>`).join('')}
+                ${o.discount ? `<tr class="is-sum"><td>Discount ${o.discount_code ? `(${esc(o.discount_code)})` : ''}</td><td>${esc(o.discount)}</td></tr>` : ''}
+                <tr class="is-sum"><td>${o.delivery === 'pickup' ? 'Pick-up' : 'Delivery'}</td><td>${esc(o.delivery_fee)}</td></tr>${o.tax && !o.tax_included ? `<tr class="is-sum"><td>Tax</td><td>${esc(o.tax)}</td></tr>` : ''}
+                <tr class="is-total"><td>Total${o.tax && o.tax_included ? ` <small>incl. ${esc(o.tax)} tax</small>` : ''}</td><td>${esc(o.total)}</td></tr></table>
+                <p><a href="mailto:${esc(o.email)}">${esc(o.email)}</a>${o.phone ? ` · <a href="tel:${esc(o.phone.replace(/[^\d+]/g, ''))}">${esc(o.phone)}</a>` : ''}</p>
+                ${o.address ? `<p class="lpb-order__addr">${esc(o.address)}${o.country ? '\n' + esc(o.country) : ''}</p>` : '<p class="lpb-hint">Picking it up.</p>'}${o.tracking ? `<p>🚚 Tracking: ${/^https?:\/\//i.test(o.tracking) ? `<a href="${esc(o.tracking)}" target="_blank" rel="noopener nofollow">${esc(o.tracking)}</a>` : esc(o.tracking)}</p>` : ''}${o.note ? `<p class="lpb-order__note">“${esc(o.note)}”</p>` : ''}
+                ${o.status === 'unpaid' ? `<p class="lpb-hint">The customer started paying by card but Stripe hasn’t confirmed it yet.</p><div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--glow" data-order-check="${o.number}">Check payment</button><button type="button" class="btn btn--sm btn--ghost lpb-danger" data-order-set="${o.number}|cancelled">Cancel order</button></div>`
+                    : o.status === 'cancelled' ? '<p class="lpb-hint">Cancelled — its stock went back.</p>' : `<label>Status<select data-order-status="${o.number}">${['new', 'shipped', 'done', 'cancelled'].map(k => `<option value="${k}" ${o.status === k ? 'selected' : ''}>${ORDER_STATUS[k]}</option>`).join('')}</select></label>
+                    ${o.pay !== 'card' ? `<label class="lpb-check"><input type="checkbox" data-order-paid="${o.number}" ${o.paid ? 'checked' : ''}> Paid</label>` : ''}`}</div></details>`;
+        box.innerHTML = seg + `<div class="lpb-orders-top"><div class="lpb-chips">${chips}</div><button type="button" class="lpb-tb" data-orders-refresh title="Check for new orders">↻</button></div>
+            ${r.orders.length ? r.orders.map(row).join('') : `<div class="lpb-empty-edit"><b>${orderFilter ? 'No orders here' : 'No orders yet'}</b><p>${orderFilter ? 'Try another filter.' : 'Orders appear here (and in your email) as soon as a customer checks out. Publish your shop and share the link!'}</p></div>`}
+            ${r.total ? '<button type="button" class="btn btn--sm btn--ghost" data-orders-csv>Download all orders (CSV)</button>' : ''}`;
+    };
+    const op = ordersBox()?.closest('[data-tab-panel]');
+    if (op) {
+        const update = async (number, body) => { try { await api('POST', `/builder/stores/${P.site.shopId}/orders/${number}`, body); toast('Order updated', 'success'); } catch (ex) { toast(ex.message, 'error'); } drawOrders(); };
+        op.addEventListener('click', async e => {
+            if (e.target.closest('[data-orders-signin]')) return needAccount(() => { dlg.close(); drawOrders(); });
+            if (e.target.closest('[data-activate-shop]')) return activateShop();
+            if (e.target.closest('[data-orders-refresh]')) return drawOrders();
+            const ov = e.target.closest('[data-oview]'); if (ov) { ordersView = ov.dataset.oview; return drawOrders(); }
+            const ce = e.target.closest('[data-code-edit]'); if (ce) { codeEditing = codesCache.find(c => String(c.id) === ce.dataset.codeEdit) || null; return drawOrders(); }
+            if (e.target.closest('[data-code-new]')) { codeEditing = {}; return drawOrders(); }
+            if (e.target.closest('[data-code-cancel]')) { codeEditing = null; return drawOrders(); }
+            const cd = e.target.closest('[data-code-del]');
+            if (cd) { if (await sweet({ icon: 'warning', title: 'Delete this code?', text: 'Customers won’t be able to use it any more.', confirm: 'Delete', danger: true })) { try { await api('POST', `/builder/stores/${P.site.shopId}/discounts/${cd.dataset.codeDel}/delete`); toast('Code deleted'); } catch (ex) { toast(ex.message, 'error'); } drawOrders(); } return; }
+            const f = e.target.closest('[data-orders-filter]'); if (f) { orderFilter = f.dataset.ordersFilter; return drawOrders(); }
+            const set = e.target.closest('[data-order-set]');
+            if (set) { const [n, st] = set.dataset.orderSet.split('|'); if (await sweet({ icon: 'warning', title: 'Cancel this order?', text: 'It stays in your list as cancelled.', confirm: 'Cancel order', cancel: 'Keep it', danger: true })) update(n, { status: st }); return; }
+            const chk = e.target.closest('[data-order-check]');
+            if (chk) { chk.disabled = true; try { const r = await api('POST', `/builder/stores/${P.site.shopId}/orders/${chk.dataset.orderCheck}/check`); toast(r.paid ? 'Paid — the order is now New' : 'Not paid yet', r.paid ? 'success' : 'info'); } catch (ex) { toast(ex.message, 'error'); } return drawOrders(); }
+            if (e.target.closest('[data-orders-csv]')) {
+                try {
+                    const res = await fetch(`/builder/stores/${P.site.shopId}/orders?format=csv`, { headers: { 'X-Builder-Token': token, Accept: 'text/csv' } });
+                    if (!res.ok) throw new Error('Could not download the orders.');
+                    save(await res.blob(), `orders-${baseName()}-${new Date().toISOString().slice(0, 10)}.csv`); track('store_orders_csv');
+                } catch (ex) { toast(ex.message, 'error'); }
+            }
+        });
+        op.addEventListener('submit', async e => {
+            const f = e.target.closest('[data-code-form]'); if (!f) return;
+            e.preventDefault();
+            const err = f.querySelector('.lpb-err'); err.hidden = true;
+            const v = n => f[n]?.value.trim() ?? '';
+            try {
+                await api('POST', `/builder/stores/${P.site.shopId}/discounts`, { id: f.dataset.codeForm ? +f.dataset.codeForm : null, code: v('code'), kind: v('kind'), value: v('value') || null, min: v('min') || null, ends: v('ends') || null, max_uses: v('max_uses') || null, active: f.active.checked });
+                codeEditing = null; toast('Code saved', 'success'); track('store_code_saved');
+                if (!P.site.shop.codes) { P.site.shop.codes = true; commit(); toast('Discount codes are on at checkout — publish again to show the box'); }
+                drawOrders();
+            } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+        });
+        op.addEventListener('change', e => {
+            const kind = e.target.closest('[data-code-kind]'); if (kind) { kind.form.querySelector('[data-code-value]').hidden = kind.value === 'shipping'; kind.form.querySelector('[data-code-unit]').textContent = kind.value === 'percent' ? '%' : (P.site.shop.currency || 'usd').toUpperCase(); return; }
+            const st = e.target.closest('[data-order-status]');
+            if (st) return (async () => {
+                if (st.value === 'cancelled' && !(await sweet({ icon: 'warning', title: 'Cancel this order?', text: 'Its stock goes back on sale. A cancelled order can’t be opened again.', confirm: 'Cancel order', cancel: 'Keep it', danger: true }))) return drawOrders();
+                if (st.value !== 'shipped') return update(st.dataset.orderStatus, { status: st.value });
+                // "Sent": the customer gets an email that it's on its way, with the tracking number if there is one
+                if (!(await sweet({ icon: 'question', title: 'Mark this order as sent?', text: 'We email the customer that their order is on its way.', confirm: 'Yes, it’s sent', cancel: 'Not yet' }))) return drawOrders();
+                const tracking = await sweet({ icon: 'info', title: 'Add a tracking number?', text: 'It goes in the email so the customer can follow the parcel.', input: { placeholder: 'Tracking number or link', max: 500 }, confirm: 'Add it', cancel: 'No tracking number' });
+                update(st.dataset.orderStatus, { status: 'shipped', tracking: tracking || '' });
+            })();
+            const pd = e.target.closest('[data-order-paid]'); if (pd) return update(pd.dataset.orderPaid, { paid: pd.checked });
+        });
+        if (token && P.site.shopId) loadStore().then(si => si && ordersBadge(si.new_orders));
+    }
+
+
     /* =========================================================== saved to the account ("My sites", Save) */
     // Like the app builder: the whole editable project is saved to the visitor's builder account
     // (BuilderProjectController), listed under "My sites" and opened again on any device. The browser copy
     // (localStorage) keeps working as before.
     const KIND = FUNNEL ? 'funnel' : KIT || 'landing';
-    const NOUN = FUNNEL ? 'funnel' : KIT === 'links' ? 'page' : KIT === 'soon' ? 'page' : KIT === 'menu' ? 'menu' : 'site';
+    const NOUN = FUNNEL ? 'funnel' : KIT === 'links' ? 'page' : KIT === 'soon' ? 'page' : KIT === 'menu' ? 'menu' : KIT === 'store' ? 'shop' : 'site';
     const CLOUD_KEY = STORE + '-cloud';
     const hashOf = str => { let h = 5381; for (let i = 0; i < str.length; i++) h = (h * 33 ^ str.charCodeAt(i)) >>> 0; return h.toString(36) + ':' + str.length; };
     let cloud = {}; try { cloud = JSON.parse(localStorage.getItem(CLOUD_KEY) || '{}') || {}; } catch {}
@@ -1543,6 +1874,7 @@
             if (KIT) data.kind = KIT;
             data.pages.forEach(pg => B.render(data, pg, 'edit'));
             undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null;
+            if (KIT === 'store') { codesCache = []; codeEditing = null; orderFilter = ''; } // another shop's codes and orders
             setCloud({ id: r.project.id, saved: hashOf(JSON.stringify(P)) });
             persist(); renderAll(); syncHistory(); drawCloudList();
             toast(`Opened “${r.project.name}”`, 'success');
@@ -1580,8 +1912,8 @@
         const EM = { agency: '💼', dental: '🦷', restaurant: '🍽️', course: '🎓', realestate: '🏡', services: '🔧', business: '💼', clinic: '🩺', trades: '🔧',
             photographer: '📷', designer: '🎨', developer: '💻', artist: '🖌️', creator: '🎬', musician: '🎸', shop: '🛍️', coach: '🧭',
             wedding: '💍', birthday: '🎂', conference: '🎤', babyshower: '🍼', cafe: '☕', pizzeria: '🍕', foodtruck: '🚚',
-            launch: '🚀', maintenance: '🛠️', waitlist: '📱', opening: '🏪', leadmagnet: '🧲', webinar: '🖥️', tripwire: '🏷️', consult: '📞' };
-        const WHAT = FUNNEL ? 'funnel' : { website: 'website', portfolio: 'portfolio', links: 'link-in-bio page', soon: 'coming soon page', event: 'event website', menu: 'menu' }[KIT] || 'page';
+            launch: '🚀', maintenance: '🛠️', waitlist: '📱', opening: '🏪', fashion: '👕', bakery: '🥐', beauty: '🧴', handmade: '🏺', leadmagnet: '🧲', webinar: '🖥️', tripwire: '🏷️', consult: '📞' };
+        const WHAT = FUNNEL ? 'funnel' : { website: 'website', portfolio: 'portfolio', links: 'link-in-bio page', soon: 'coming soon page', event: 'event website', menu: 'menu', store: 'online store' }[KIT] || 'page';
         let picked = null, hadWork = false;
         try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}
         const widgets = () => P.pages[0].sections.flatMap(sec => sec.cols.flatMap(c => c.widgets));
@@ -1648,6 +1980,26 @@
                     ${m.text ? `<label class="wz-field">A line or two about it<textarea data-wz="text" rows="3" maxlength="400">${esc(val(m.text))}</textarea></label>` : ''}
                     ${m.btn ? `<label class="wz-field">Button<input data-wz="btn" maxlength="40" value="${esc(val(m.btn))}"></label>` : ''}`; },
                 input: (e, el) => { const m = main(), k = el.dataset.wz; if (m[k]) { set(m[k], el.value); changed(); } },
+            },
+            {
+                title: 'How do you sell?', sub: 'Your currency, delivery and how customers pay. You can add card payments (Stripe) later in the Site tab.',
+                skip: () => KIT !== 'store',
+                draw: () => {
+                    const sh = P.site.shop, chip = (k, label) => `<button type="button" data-wz-shop-t="${k}" aria-pressed="${!!sh[k]}">${label}</button>`;
+                    return `<label class="wz-field">Currency<select data-wz-shop="currency">${currencyOptions(sh.currency)}</select></label>
+                        <div class="wz-look"><b>Getting it to customers</b><div class="wz-chips">${chip('delivery', '🚚 I deliver')}${chip('pickup', '🏪 Customers can pick up')}</div></div>
+                        ${sh.delivery ? `<label class="wz-field">Delivery fee <small>— 0 for free delivery</small><input data-wz-shop="fee" inputmode="decimal" maxlength="12" value="${esc(sh.fee)}"></label>` : ''}
+                        <div class="wz-look"><b>How customers pay</b><div class="wz-chips">${chip('cod', '💵 Cash on delivery')}${chip('bank', '🏦 Bank transfer')}</div></div>`;
+                },
+                input: (e, el) => { if (el.dataset.wzShop) { P.site.shop[el.dataset.wzShop] = el.value; changed(); } },
+                change: (e, el) => { if (el.dataset.wzShop) { P.site.shop[el.dataset.wzShop] = el.value; changed(); } },
+                click: (e, el) => {
+                    const k = el.dataset.wzShopT; if (!k) return;
+                    const sh = P.site.shop; sh[k] = !sh[k];
+                    if (!sh.delivery && !sh.pickup) sh[k === 'delivery' ? 'pickup' : 'delivery'] = true; // one way to get it to them
+                    if (!sh.cod && !sh.bank && !sh.card) sh[k === 'cod' ? 'bank' : 'cod'] = true; // and one way to pay
+                    changed(); wizard.redraw();
+                },
             },
             {
                 title: 'Pick your colours', sub: 'Buttons, links and highlights use your main colour.',

@@ -302,7 +302,7 @@
             return `<form class="form optin" method="post" action="${esc(x.P.site.leadAction)}">
                 ${p.name !== false ? '<input name="name" maxlength="100" autocomplete="name" placeholder="Your name" aria-label="Your name">' : ''}
                 <input name="email" type="email" required maxlength="150" autocomplete="email" placeholder="Your best email" aria-label="Email">
-                ${p.phone ? '<input name="phone" type="tel" maxlength="30" autocomplete="tel" placeholder="Phone (optional)" aria-label="Phone">' : ''}
+                ${p.phone ? dialPhone({ label: 'Phone (optional)', compact: true }) : ''}
                 <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
                 ${backInput(x)}
                 <input type="hidden" name="_next" value="${esc(nextUrl)}"><input type="hidden" name="_site" value="${esc(x.P.site.publishSlug || '')}">
@@ -318,7 +318,7 @@
         if (x.P.site.formAction) return `<form class="form" method="post" action="${esc(x.P.site.formAction)}">
             <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
             <label>Email<input name="email" type="email" required maxlength="150" autocomplete="email"></label>
-            ${p.phone !== false ? '<label>Phone (optional)<input name="phone" type="tel" maxlength="30" autocomplete="tel"></label>' : ''}
+            ${p.phone !== false ? dialPhone({ label: 'Phone (optional)' }) : ''}
             <label>Message<textarea name="message" required rows="4" maxlength="5000"></textarea></label>
             <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
             ${backInput(x)}
@@ -396,6 +396,160 @@
             return `<div class="wrap ${form ? 'contact-grid' : 'narrow center'}"><div>${H.t('title', 'h2', (form ? 'left ' : '') + 'hd', 'Heading')}${H.t('text', 'p', 'intro', '', { ml: true })}
                 ${acts ? `<div class="actions ${form ? '' : 'center'}">${acts}</div>` : (x.edit ? '<p class="intro">Add WhatsApp, phone or email in the Content tab.</p>' : '')}${p.address ? `<p class="addr">📍 ${esc(p.address)}</p>` : ''}</div>${form ? `<div class="card">${form}</div>` : ''}</div>`;
         } });
+    /* ---------- online store (/online-store-builder): product cards, a cart and checkout.
+       Cards carry data-product / data-name / data-price for the cart (builder-runtime.js keeps it in window.name, so
+       it follows the shopper from page to page). Checkout posts the cart to owlvix (/shop/{id}), which prices it from
+       the products saved before every publish and download (shopProducts) — never from the page. */
+    // Must match App\Support\Stripe::CURRENCIES and ::ZERO_DECIMAL (StoreBuilderTest checks this)
+    const CURRENCIES = ['usd', 'eur', 'gbp', 'cad', 'aud', 'nzd', 'chf', 'sek', 'nok', 'dkk', 'pln', 'czk', 'huf', 'ron', 'try', 'aed', 'sar', 'qar', 'inr', 'pkr', 'bdt', 'lkr', 'myr', 'sgd', 'hkd', 'idr', 'php', 'thb', 'jpy', 'krw', 'cny', 'brl', 'mxn', 'zar', 'ngn', 'kes', 'egp'];
+    const ZERO_DEC = ['bif', 'clp', 'djf', 'gnf', 'jpy', 'kmf', 'krw', 'mga', 'pyg', 'rwf', 'ugx', 'vnd', 'vuv', 'xaf', 'xof', 'xpf'];
+    /** A typed price ("24.99", "1,500") as a number, or null when it isn't one. */
+    const MONEY = v => { const t = String(v ?? '').replace(/,/g, '').trim(), n = +t; return t !== '' && isFinite(n) && n >= 0 && n <= 1e6 ? n : null; };
+    const money = (v, cur) => {
+        const n = MONEY(v); if (n === null) return '';
+        cur = CURRENCIES.includes(cur) ? cur : 'usd';
+        const zero = ZERO_DEC.includes(cur), whole = zero || Math.round(n * 100) % 100 === 0;
+        try { return new Intl.NumberFormat('en', { style: 'currency', currency: cur.toUpperCase(), minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: zero ? 0 : 2 }).format(n); }
+        catch { return cur.toUpperCase() + ' ' + (whole ? n : n.toFixed(2)); }
+    };
+    /** "Size: S, M, L" (older projects) → { label: 'Size', list: ['S', 'M', 'L'] }. */
+    const optionsOf = v => {
+        let t = String(v || '').trim(), label = '';
+        const m = t.match(/^([^:,]{1,30}):(.*)$/s); if (m) { label = m[1].trim(); t = m[2]; }
+        return { label: label || 'Option', list: [...new Set(t.split(',').map(o => o.trim().slice(0, 60)).filter(Boolean))].slice(0, 30) };
+    };
+    // Every country a shipping zone can name (ISO 3166 codes; names come from the browser)
+    const COUNTRIES = 'AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VG VI VN VU WF WS XK YE YT ZA ZM ZW'.split(' ');
+    // Each country's calling code (for the phone box at checkout)
+    const DIAL = Object.fromEntries('AD376 AE971 AF93 AG1268 AI1264 AL355 AM374 AO244 AR54 AS1684 AT43 AU61 AW297 AX358 AZ994 BA387 BB1246 BD880 BE32 BF226 BG359 BH973 BI257 BJ229 BL590 BM1441 BN673 BO591 BQ599 BR55 BS1242 BT975 BW267 BY375 BZ501 CA1 CC61 CD243 CF236 CG242 CH41 CI225 CK682 CL56 CM237 CN86 CO57 CR506 CU53 CV238 CW599 CX61 CY357 CZ420 DE49 DJ253 DK45 DM1767 DO1809 DZ213 EC593 EE372 EG20 EH212 ER291 ES34 ET251 FI358 FJ679 FK500 FM691 FO298 FR33 GA241 GB44 GD1473 GE995 GF594 GG44 GH233 GI350 GL299 GM220 GN224 GP590 GQ240 GR30 GT502 GU1671 GW245 GY592 HK852 HN504 HR385 HT509 HU36 ID62 IE353 IL972 IM44 IN91 IQ964 IR98 IS354 IT39 JE44 JM1876 JO962 JP81 KE254 KG996 KH855 KI686 KM269 KN1869 KP850 KR82 KW965 KY1345 KZ7 LA856 LB961 LC1758 LI423 LK94 LR231 LS266 LT370 LU352 LV371 LY218 MA212 MC377 MD373 ME382 MF590 MG261 MH692 MK389 ML223 MM95 MN976 MO853 MP1670 MQ596 MR222 MS1664 MT356 MU230 MV960 MW265 MX52 MY60 MZ258 NA264 NC687 NE227 NF672 NG234 NI505 NL31 NO47 NP977 NR674 NU683 NZ64 OM968 PA507 PE51 PF689 PG675 PH63 PK92 PL48 PM508 PN64 PR1787 PS970 PT351 PW680 PY595 QA974 RE262 RO40 RS381 RU7 RW250 SA966 SB677 SC248 SD249 SE46 SG65 SH290 SI386 SK421 SL232 SM378 SN221 SO252 SR597 SS211 ST239 SV503 SX1721 SY963 SZ268 TC1649 TD235 TG228 TH66 TJ992 TK690 TL670 TM993 TN216 TO676 TR90 TT1868 TV688 TW886 TZ255 UA380 UG256 US1 UY598 UZ998 VA39 VC1784 VE58 VG1284 VI1340 VN84 VU678 WF681 WS685 XK383 YE967 YT262 ZA27 ZM260 ZW263'.split(' ').map(x => [x.slice(0, 2), '+' + x.slice(2)]));
+    const flag = c => String.fromCodePoint(...[...c].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65));
+    const REGION = (() => { try { return new Intl.DisplayNames(['en'], { type: 'region' }); } catch { return null; } })();
+    const countryName = c => { try { return REGION?.of(c) || c; } catch { return c; } };
+    const productWidgets = P => P.pages.flatMap(pg => pg.sections.flatMap(sc => sc.cols.flatMap(c => c.widgets))).filter(w => w.type === 'products');
+    /**
+     * Every product (and each of its sizes / colours) needs its own id: a new or copied one has none, or shares one.
+     * Older projects kept options as text ("Size: S, M"): they become a list with their own prices. Fixes P in place.
+     */
+    const fixPids = P => {
+        const seen = new Set();
+        productWidgets(P).forEach(w => (w.p.items || []).forEach(it => {
+            if (!/^[a-z0-9]{1,24}$/i.test(it.pid || '') || seen.has(it.pid)) it.pid = uid();
+            seen.add(it.pid);
+            if (!Array.isArray(it.vals)) { const o = optionsOf(it.options); it.vals = o.list.map(v => ({ vid: '', v, price: '' })); if (o.list.length) it.optName = o.label; }
+            delete it.options;
+            it.optName ??= 'Size';
+            if (!Array.isArray(it.images)) it.images = [];
+            const vs = new Set(); it.vals.forEach(v => { if (!/^[a-z0-9]{1,24}$/i.test(v.vid || '') || vs.has(v.vid)) v.vid = uid(); vs.add(v.vid); });
+        }));
+        return P;
+    };
+    /** A product's sizes / colours with a name (the same name twice counts once, as on the server). */
+    const variants = it => { const seen = new Set(); return (it.vals || []).filter(v => { const n = String(v.v || '').trim(); if (!n || seen.has(n)) return false; seen.add(n); return true; }); };
+    /** The product's own price — or, when only its sizes have prices, the cheapest of those. */
+    const basePrice = it => MONEY(it.price) ?? (variants(it).map(v => MONEY(v.price)).filter(n => n !== null).sort((a, b) => a - b)[0] ?? null);
+    /** The products checkout sells: sent to owlvix before every publish and download. */
+    const shopProducts = P => productWidgets(fixPids(P)).flatMap(w => (w.p.items || []).filter(it => basePrice(it) !== null && String(it.name || '').trim())
+        .map(it => ({ id: it.pid, name: String(it.name).trim().slice(0, 200), price: String(basePrice(it)), sold: !!it.sold, opt: String(it.optName || 'Option').trim().slice(0, 30),
+            vars: variants(it).map(v => ({ id: v.vid, name: String(v.v).trim().slice(0, 60), price: MONEY(v.price) === null ? '' : String(MONEY(v.price)) })) })));
+    /** Stock keys, as the server keeps them: "product" or "product:variant". */
+    const stockKeys = it => (variants(it).length ? variants(it).map(v => [`${it.pid}:${v.vid}`, v.v]) : [[it.pid, '']]);
+    const defaultsShop = () => ({ currency: 'usd', delivery: true, fee: '4.99', freeOver: '50', zones: [], pickup: false, pickupText: '', cod: true, bank: false, bankText: '', card: false, cardReady: false, mode: 'test',
+        taxRate: '', taxIncl: true, taxLabel: 'Tax', taxShip: false, codes: false, phoneReq: true, thanks: '', whatsapp: '' });
+    /** Checkout works on this finished page: a store whose checkout is switched on. */
+    const shopOn = x => x.P.kind === 'store' && !!x.P.site.shopAction;
+    /** The ways to pay the page offers (cards only once a Stripe account is connected). */
+    const payWays = s => [s.card && s.cardReady && ['card', '💳 Pay by card'], s.cod && ['cod', s.pickup && !s.delivery ? '💵 Pay when you collect' : '💵 Cash on delivery'], s.bank && ['bank', '🏦 Bank transfer']].filter(Boolean);
+    /** The price a product shows: its own, or "from" the cheapest size when sizes cost different amounts. */
+    const priceOf = it => { const b = basePrice(it), vs = variants(it), ps = vs.length ? vs.map(v => MONEY(v.price) ?? b) : [b]; const ok = ps.filter(n => n !== null); return { low: ok.length ? Math.min(...ok) : null, varies: new Set(ok).size > 1 }; };
+    def('products', { label: 'Products', icon: '🛍', group: 'shop', full: true,
+        make: () => ({ title: 'Shop our bestsellers', intro: '', cols: '3', btn: 'Add to cart', filters: true, items: [
+            { pid: '', name: 'Product name', price: '24', old: '', desc: 'A short description of this product.', long: '', cat: '', badge: 'New', image: '', images: [], sold: false, optName: 'Size', vals: [] },
+            { pid: '', name: 'Another product', price: '39', old: '49', desc: 'What makes it special, in a sentence.', long: '', cat: '', badge: 'Sale', image: '', images: [], sold: false, optName: 'Size', vals: [{ vid: '', v: 'S', price: '' }, { vid: '', v: 'M', price: '' }, { vid: '', v: 'L', price: '' }] },
+            { pid: '', name: 'Third product', price: '18.50', old: '', desc: 'Materials, size or what is included.', long: '', cat: '', badge: '', image: '', images: [], sold: false, optName: 'Size', vals: [] }] }),
+        fields: [F.area('intro', 'Intro text (optional)'), F.select('cols', 'Products per row', { 3: 'Three', 2: 'Two', 4: 'Four' }), F.text('btn', 'Button text'), F.bool('filters', 'Show categories & search (when there are some)'),
+            F.list('items', 'Products', { pid: '', name: 'New product', price: '19.99', old: '', desc: 'A short description.', long: '', cat: '', badge: '', image: '', images: [], sold: false, optName: 'Size', vals: [] }, [['image', 'img'], ['name', 'text'], ['price', 'text']], 50)],
+        render: (w, x, H) => {
+            const cur = x.P.site.shop?.currency, n = pick(String(w.p.cols), ['3', '2', '4']), canBuy = x.edit || shopOn(x);
+            const items = H.items(), cats = [...new Set(items.map(it => String(it.cat || '').trim()).filter(Boolean))];
+            const cards = items.map((it, i) => {
+                const vs = variants(it), pr = priceOf(it), price = pr.low === null ? '' : money(pr.low, cur), old = !pr.varies && MONEY(it.old) > MONEY(it.price) ? money(it.old, cur) : '';
+                const opts = vs.length ? `<div class="popt"><span class="popt__l">${esc(it.optName || 'Option')}</span><div class="popt__v" role="group" aria-label="${esc(it.optName || 'Option')}">${vs.map(v => {
+                    const vp = MONEY(v.price); return `<button type="button" data-optv="${esc(v.vid)}" data-v="${esc(String(v.v).trim())}"${vp !== null ? ` data-price="${vp}"` : ''} aria-pressed="${vs.length === 1}">${esc(String(v.v).trim())}</button>`;
+                }).join('')}</div></div>` : '';
+                const buy = it.sold ? '<span class="pcard__sold">Sold out</span>' : !canBuy || !price ? '' : `${opts}<button type="button" class="btn btn-sm pcard__add ${H.K('btn')}" data-add>${esc(w.p.btn || 'Add to cart')}</button>`;
+                const data = x.edit ? '' : ` id="p-${esc(it.pid || '')}" data-product="${esc(it.pid || '')}" data-name="${esc(String(it.name || '').trim())}" data-price="${esc(String(basePrice(it) ?? ''))}" data-cat="${esc(String(it.cat || '').trim())}"`;
+                const initial = esc((String(it.name || '?').trim()[0] || '?').toUpperCase());
+                // no photo yet: the same coloured tile as the finished page, with an "Add photo" button on it in the editor
+                const pic = it.image ? H.pic(`items.${i}.image`, it.name || 'Product', 'pic')
+                    : `<div class="pic pic-fill pcard__ph"${x.edit ? ` data-img="${esc(w.id)}|items.${i}.image"` : ' aria-hidden="true"'}><b>${initial}</b>${x.edit ? '<span>＋ Add photo</span>' : ''}</div>`;
+                const extra = (it.images || []).filter(Boolean);
+                // what the product's own page (opened from the card) adds: more photos and the longer description
+                const more = x.edit || (!extra.length && !String(it.long || '').trim()) ? '' : `<div class="pcard__more" hidden>${extra.map(src => `<img src="${esc(src)}" alt="${esc(it.name || '')}" loading="lazy">`).join('')}${String(it.long || '').trim() ? `<div class="pcard__long">${nl(it.long)}</div>` : ''}</div>`;
+                const open = !x.edit && it.pid ? `<a class="pcard__open" href="#p-${esc(it.pid)}" data-quick aria-label="${esc(String(it.name || 'Product').trim())} — see details"></a>` : '';
+                return `<article class="pcard${it.sold ? ' is-sold' : ''}"${data}><div class="pcard__pic">${pic}${it.badge ? `<span class="pbadge">${esc(it.badge)}</span>` : ''}${extra.length && !x.edit ? `<span class="pcard__n">＋${extra.length}</span>` : ''}${open}</div>
+                    <div class="pcard__b">${H.t(`items.${i}.name`, 'h3', '', 'Product name', { keep: true })}${H.t(`items.${i}.desc`, 'p', 'muted', 'Short description', { ml: true })}<p class="pprice"><b data-pprice>${pr.varies ? 'From ' : ''}${price || (x.edit ? 'Set a price →' : '')}</b>${old ? ` <s>${old}</s>` : ''}</p><p class="pstock" data-pstock hidden></p>${buy}</div>${more}</article>`;
+            }).join('');
+            const off = x.edit && x.P.kind === 'store' && !x.P.site.shopAction ? '<p class="shop-off">🛒 Checkout is off — switch it on in the Content tab</p>' : '';
+            const filters = w.p.filters !== false && (cats.length > 1 || items.length > 8)
+                ? `<div class="pfilter">${cats.length > 1 ? `<div class="pfilter__cats" role="group" aria-label="Categories"><button type="button" data-pcat="" aria-pressed="true">All</button>${cats.map(c => `<button type="button" data-pcat="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('')}</div>` : ''}${items.length > 8 ? '<input type="search" name="_q" data-psearch placeholder="Search products" aria-label="Search products" maxlength="60">' : ''}</div>` : '';
+            return `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}${H.t('intro', 'p', 'intro', '', { ml: true })}${off}${filters}<div class="grid g${n} shop-grid">${cards}</div><p class="pnone" data-pnone hidden>No products match. Try another search.</p></div>`;
+        } });
+    /** The cart drawer with the checkout form (finished store pages, once checkout is on). */
+    const shopHtml = x => {
+        if (!shopOn(x)) return '';
+        const s = x.P.site.shop, cur = s.currency, fee = MONEY(s.fee) || 0, free = MONEY(s.freeOver) || 0, zones = (s.zones || []).filter(z => z && typeof z === 'object');
+        const byZone = !!zones.length && s.delivery;
+        const dels = [s.delivery && ['delivery', byZone ? '🚚 Delivery' : `🚚 Delivery — ${fee ? money(fee, cur) + (free ? ` (free over ${money(free, cur)})` : '') : 'free'}`], s.pickup && ['pickup', `🏪 Pick up${s.pickupText ? ' — ' + s.pickupText : ' — free'}`]].filter(Boolean);
+        const pays = payWays(s);
+        const choice = (name, list, legend) => list.length > 1
+            ? `<fieldset class="ob-choice"><legend>${legend}</legend>${list.map(([v, l], i) => `<label><input type="radio" name="${name}" value="${v}"${i ? '' : ' checked'}> ${esc(l)}</label>`).join('')}</fieldset>`
+            : list.length ? `<div class="ob-choice"><b>${legend}</b><input type="hidden" name="${name}" value="${list[0][0]}"><p class="ob-one">${esc(list[0][1])}</p></div>` : '';
+        const delivers = !!s.delivery, first = dels[0]?.[0] === 'delivery';
+        // shipping by country: the countries the zones name, or every country when one zone is "everywhere else"
+        const anywhere = zones.some(z => !(z.countries || []).length), named = [...new Set(zones.flatMap(z => z.countries || []))];
+        const list = (anywhere ? COUNTRIES : named).map(c => [c, countryName(c)]).sort((a, b) => a[1].localeCompare(b[1]));
+        const country = byZone ? `<label data-country${first ? '' : ' hidden'}>Country<select name="country" autocomplete="country"${first ? ' required' : ''}><option value="">Choose your country…</option>${list.map(([c, l]) => `<option value="${c}">${esc(l)}</option>`).join('')}</select></label>` : '';
+        const tax = MONEY(s.taxRate) > 0;
+        const home = zones.flatMap(z => z.countries || [])[0] || ''; // the shop's own country, until the shopper's browser says otherwise
+        const form = pays.length ? `<form class="form ob-checkout" method="post" action="${esc(x.P.site.shopAction)}" data-checkout>
+                ${s.codes ? '<div class="ob-code"><label>Discount code<span><input name="_code" maxlength="40" autocomplete="off" autocapitalize="characters" data-code><button type="button" class="btn btn-sm btn-ghost" data-code-apply>Apply</button></span></label><small data-code-msg hidden></small></div>' : ''}
+                <div class="ob-sum"><div><span>Subtotal</span><b data-sum="sub"></b></div><div data-sum-row="off" hidden><span>Discount <small data-sum-code></small></span><b data-sum="off"></b></div><div><span data-sum-label>Delivery</span><b data-sum="fee"></b></div>${tax && !s.taxIncl ? `<div><span>${esc(s.taxLabel || 'Tax')}</span><b data-sum="tax"></b></div>` : ''}<div class="ob-total"><span>Total</span><b data-sum="total"></b></div>${tax && s.taxIncl ? `<small class="ob-taxnote">Includes <span data-sum="tax"></span> ${esc(!s.taxLabel || s.taxLabel === 'Tax' ? 'tax' : s.taxLabel)}</small>` : ''}</div>
+                ${choice('_delivery', dels, 'Delivery')}
+                <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
+                <label>Email<input name="email" type="email" required maxlength="150" autocomplete="email"></label>
+                ${country}
+                ${dialPhone({ label: 'Phone' + (s.phoneReq ? '' : ' (optional)'), required: s.phoneReq, home })}
+                <label data-address${delivers ? '' : ' hidden'}>Delivery address<textarea name="address" rows="3" maxlength="1000" autocomplete="street-address"${delivers && first ? ' required' : ''}></textarea></label>
+                <label>Note for the shop (optional)<textarea name="note" rows="2" maxlength="1000"></textarea></label>
+                ${choice('_pay', pays, 'Payment')}
+                <input type="hidden" name="_cart" value="[]" data-cart-field><input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">${backInput(x)}
+                <button class="btn btn-lg ob-place" type="submit" data-place>Place order</button>
+                ${pays.some(p => p[0] === 'card') ? `<small class="ob-small">🔒 Card payments are handled securely by Stripe${s.mode === 'test' ? ' (test mode — no real money)' : ''}.</small>` : ''}</form>`
+            : '<p class="ob-one">This shop isn’t taking orders online yet.</p>';
+        return `${x.P.site.bare ? `<a href="#cart" class="nav-cart ob-cartfab" data-cart-open aria-label="Your cart">${I(ICONS.cart)}<span class="nav-cart__n" data-cart-count hidden>0</span></a>` : ''}
+<div class="ob-cart" data-cart hidden role="dialog" aria-modal="true" aria-labelledby="ob-cart-t"><div class="ob-cart__box">
+<div class="ob-cart__top"><h3 id="ob-cart-t">Your cart</h3><button type="button" class="ob-cart__x" data-cart-close aria-label="Close">×</button></div>
+<p class="ob-cart__empty" data-cart-empty>Your cart is empty.</p><ul class="ob-lines" data-cart-lines></ul>${form}</div></div>
+<div class="ob-quick" data-quickview hidden role="dialog" aria-modal="true" aria-label="Product"><div class="ob-quick__box"><button type="button" class="ob-cart__x ob-quick__x" data-quick-close aria-label="Close">×</button><div data-quick-body></div></div></div>`;
+    };
+    /**
+     * A phone box with the country's flag and calling code in front (checkout, contact and opt-in forms). The real
+     * <select name="_dial"> lies invisibly over the flag, so it works with a finger, the keyboard and screen readers,
+     * and without the runtime too; the runtime starts it on the visitor's country (from their IP address). The server
+     * puts the code in front of the number (App\Support\Phone::combine).
+     */
+    const dialPhone = ({ label = 'Phone', required = false, home = '', compact = false } = {}) => {
+        const start = DIAL[home] ? home : 'US', id = 'ph-' + uid();
+        const opts = COUNTRIES.filter(c => DIAL[c]).map(c => [c, countryName(c)]).sort((a, b) => a[1].localeCompare(b[1]))
+            .map(([c, l]) => `<option value="${DIAL[c]}" data-c="${c}"${c === start ? ' selected' : ''}>${flag(c)} ${esc(l)} (${DIAL[c]})</option>`).join('');
+        return `<div class="ob-phone${compact ? ' ob-phone--compact' : ''}">${compact ? '' : `<span class="ob-phone__l" id="${id}">${esc(label)}</span>`}<div class="ob-phone__row" data-dial-row>
+            <label class="ob-dial"><span class="ob-dial__face" aria-hidden="true" data-dial-face>${flag(start)} ${DIAL[start]}</span><select name="_dial" aria-label="Country calling code" data-dial>${opts}</select></label>
+            <input name="phone" type="tel" maxlength="24" autocomplete="tel-national" inputmode="tel" placeholder="${compact ? esc(label) : 'Phone number'}" ${compact ? `aria-label="${esc(label)}"` : `aria-labelledby="${id}"`}${required ? ' required' : ''}></div></div>`;
+    };
+    /** What the cart needs to price delivery and tax like the server does (Shop::totals). */
+    const shopData = s => JSON.stringify({ fee: s.delivery ? MONEY(s.fee) || 0 : 0, free: MONEY(s.freeOver) || 0, zones: s.delivery ? (s.zones || []).map(z => ({ c: z.countries || [], fee: MONEY(z.fee) || 0, free: MONEY(z.freeOver) || 0 })) : [],
+        tax: Math.round(Math.min(50, MONEY(s.taxRate) || 0) * 1000) / 1000, incl: s.taxIncl !== false, ship: !!s.taxShip });
+
     // Older projects used "text" for the text section
     const LEGACY_TYPES = { text: 'textblock' };
 
@@ -431,7 +585,7 @@
     const defaultsSite = () => ({
         name: 'Your business', logo: '', colors: { primary: '#4f46e5', secondary: '#0ea5e9', accent: '#f59e0b', text: '#0f172a', bg: '#ffffff' },
         fonts: { heading: 'Poppins', body: 'Inter', base: 17 }, theme: 'light', radius: 'round', buttons: 'pill', navBtn: 'Get in touch', navLink: { to: 'contact' },
-        sticky: true, bare: false, backTop: false, announce: { on: false, text: 'Free delivery this week only!', link: { to: 'contact' } }, footer: '', social: {}, formAction: '', css: '',
+        sticky: true, bare: false, backTop: false, announce: { on: false, text: 'Free delivery this week only!', link: { to: 'contact' } }, footer: '', social: {}, formAction: '', css: '', shop: defaultsShop(),
     });
     const defaultsPopup = () => ({ on: false, trigger: 'delay', delay: 6, title: 'Get 10% off your first order', text: 'Leave your details and we will send you the offer today.', btn: 'Claim my offer', link: { to: 'contact' }, image: '' });
 
@@ -686,6 +840,22 @@
         return { v: 3, kind: 'menu', site, pages: [homePage([hero, quick, ...o.menu.flatMap(cat), special, ...(o.more || []), visit])] };
     };
     const soonSite = (name, color, o = {}) => kitSite(name, color, { bare: true, sticky: false, navBtn: '', ...o });
+    /** An online store: hero, perks, the products (#shop), story, reviews, FAQ and contact — plus a delivery & returns page. */
+    const storePage = (name, color, o) => {
+        const site = kitSite(name, color, { navBtn: '', ...(o.site || {}) });
+        site.shop = { ...defaultsShop(), ...(o.shop || {}) };
+        const hero = fill(sectionOf('hero'), { v: 'split', eyebrow: o.eyebrow, title: o.title, text: o.text, btn: 'Shop now', link: { to: 'url', val: '#shop' }, btn2: '', image: '' });
+        const perks = styled(section('3', o.perks.map(([ic, title, text]) => column([wp('iconbox', { icon: 'i:' + ic, title, text, layout: 'left' })]))), { pt: 28, pb: 28 }, 'soft');
+        const shop = sectionOf('products');
+        Object.assign(shop.cols[0].widgets[0].p, { title: o.shopTitle, intro: o.shopIntro || '', items: o.products.map(([pname, price, desc, extra = {}]) => ({ pid: uid(), name: pname, price, old: '', desc, long: '', cat: '', options: '', badge: '', image: '', images: [], sold: false, ...extra })) });
+        shop.adv = { id: 'shop' };
+        const story = fill(sectionOf('imagetext'), { eyebrow: o.story[0], title: o.story[1], text: `<p>${o.story[2]}</p>`, btn: '', image: '' });
+        const reviews = styled(fill(sectionOf('testimonials'), { title: 'Happy customers', items: o.reviews.map(([quote, rname]) => ({ quote, name: rname, role: 'Customer' })) }), {}, 'alt');
+        const faq = fill(sectionOf('faq'), { title: 'Good to know', items: o.faq.map(([q, a]) => ({ q, a })) });
+        const contact = fill(sectionOf('contact'), { title: 'Questions? We’re here to help', text: 'Message us about sizes, gifts or big orders — we reply the same day.', form: false });
+        const policy = { id: uid(), slug: 'delivery', title: 'Delivery & returns', menu: true, seo: { title: '', description: '' }, popup: defaultsPopup(), sections: [fill(sectionOf('textblock'), { title: 'Delivery & returns', text: o.policy }), contact] };
+        return { v: 3, kind: 'store', site, pages: [homePage([hero, perks, shop, story, reviews, faq, fill(sectionOf('contact'), { ...contact.cols[0].widgets[0].p })]), policy] };
+    };
     const KITS = {
         website: { label: 'website', examples: {
             business: ['Consultant / agency', () => withPages(newProject('agency'), [['About', 'about'], ['Services', 'services'], ['Contact', 'contact']])],
@@ -771,6 +941,40 @@
                 special: ['Taco Tuesday', 'Any 3 tacos for $7 every Tuesday.'],
                 hours: [['Monday – Friday', '11:30 – 15:00 · Business park'], ['Saturday – Sunday', '10:00 – 16:00 · Central market']], address: 'Different spot each day —<br>follow us for today’s location' })],
         } },
+        store: { label: 'online store', examples: {
+            fashion: ['Clothing & fashion', () => storePage('Thread & Co.', '#0f766e', { eyebrow: 'New season · Free delivery over $75', title: 'Everyday clothes, made to last', text: 'Soft organic cotton, honest prices and pieces you will wear for years. Order today, delivered in 2–3 days.',
+                shop: { fee: '4.99', freeOver: '75' }, shopTitle: 'Bestsellers', shopIntro: 'Pick your size — every order ships within 24 hours.', perks: [['truck', 'Free delivery', 'On orders over $75'], ['award', '30-day returns', 'Easy, no questions asked'], ['shield', 'Secure checkout', 'Card, cash or bank transfer']],
+                products: [['Classic white tee', '24', '100% organic cotton, relaxed fit.', { cat: 'Tops', options: 'Size: S, M, L, XL', badge: 'Bestseller', long: 'Our everyday tee in heavyweight organic cotton. Pre-washed, so it keeps its shape and size.\nMachine wash at 30°. Model is 1.80 m and wears M.' }], ['Linen shirt', '49', 'Breathable linen for warm days.', { cat: 'Tops', options: 'Size: S, M, L, XL' }], ['Denim jacket', '89', 'Washed denim with a timeless cut.', { cat: 'Jackets', old: '110', badge: 'Sale', options: 'Size: S, M, L, XL' }],
+                    ['Everyday hoodie', '59', 'Brushed inside, built to keep its shape.', { cat: 'Tops', options: 'Size: S, M, L, XL' }], ['Canvas tote bag', '19', 'Roomy, sturdy and machine washable.', { cat: 'Accessories' }], ['Wool beanie', '22', 'Merino blend, one size.', { cat: 'Accessories', options: 'Colour: Black, Grey, Mustard' }]],
+                story: ['Our story', 'Fewer, better clothes', 'We started Thread & Co. because we were tired of clothes that fell apart after a few washes. Every piece is made in small batches by a family-run workshop we know by name.'],
+                reviews: [['The tee is the softest I own — I bought three more.', 'Hannah W.'], ['Fast delivery and the jacket fits perfectly.', 'Marcus D.'], ['Great quality for the price. Returns were easy too.', 'Priya S.']],
+                faq: [['How long does delivery take?', 'Orders ship within 24 hours and arrive in 2–3 working days.'], ['Can I return something?', 'Yes — send it back within 30 days for a full refund or exchange.'], ['How do I choose my size?', 'Our sizes are true to size. Between sizes? Pick the bigger one for a relaxed fit.']],
+                policy: '<p><b>Delivery:</b> orders ship within 24 hours and arrive in 2–3 working days. Delivery is $4.99, or free on orders over $75.</p><p><b>Returns:</b> send unworn items back within 30 days for a refund or exchange. Message us and we will help.</p>' })],
+            bakery: ['Bakery & cakes', () => storePage('Golden Crust Bakery', '#d97706', { eyebrow: 'Baked fresh every morning', title: 'Fresh bread, cakes and treats — to your door', text: 'Order by 2 pm for next-day delivery, or collect from our shop. Everything is baked by hand with real butter.',
+                shop: { fee: '3.50', freeOver: '40', pickup: true, pickupText: '12 Market Street, 8 am – 4 pm' }, shopTitle: 'Order today', perks: [['truck', 'Next-day delivery', 'Order by 2 pm'], ['home', 'Pick up in store', 'Ready in 2 hours'], ['heart', 'Made by hand', 'Real butter, no shortcuts']],
+                products: [['Sourdough loaf', '6.50', 'Slow-fermented for 24 hours, crackly crust.', { cat: 'Bread', badge: 'Bestseller' }], ['Butter croissants (4)', '9', 'Flaky, golden and baked this morning.', { cat: 'Pastries' }], ['Celebration cake', '35', 'Chocolate, vanilla or red velvet — tell us in the order note.', { cat: 'Cakes', optName: 'Size', vals: [{ v: '6 inch (serves 8)', price: '' }, { v: '8 inch (serves 14)', price: '48' }, { v: '10 inch (serves 20)', price: '62' }], long: 'Three layers of sponge with buttercream, finished by hand. Add your message (up to 30 letters) and flavour in the order note.\nPlease order two days ahead.' }],
+                    ['Cinnamon buns (6)', '14', 'Soft, sticky and finished with icing.', { cat: 'Pastries' }], ['Cookie box (12)', '12', 'A mix of our four favourite cookies.', { cat: 'Gifts' }], ['Afternoon tea hamper', '45', 'Scones, jam, cakes and loose-leaf tea.', { cat: 'Gifts', badge: 'New' }]],
+                story: ['Since 2009', 'A small bakery with a big oven', 'Three bakers, one wood-fired oven and recipes from our grandmother’s notebook. We bake in small batches through the night so everything reaches you fresh.'],
+                reviews: [['The best sourdough in town. It arrived still warm!', 'Tom R.'], ['Ordered a birthday cake — beautiful and delicious.', 'Sofia M.'], ['The hamper made a perfect gift for my mum.', 'Daniel K.']],
+                faq: [['When will my order arrive?', 'Order by 2 pm for delivery the next morning. Pick-up orders are ready in 2 hours.'], ['Do you make gluten-free bakes?', 'We have gluten-free brownies and cookies — ask us in the order note.'], ['Can I order a custom cake?', 'Yes! Choose the celebration cake and write your message in the note.']],
+                policy: '<p><b>Delivery:</b> next morning for orders placed by 2 pm. Delivery is $3.50, free over $40.</p><p><b>Pick-up:</b> collect from 12 Market Street, 8 am – 4 pm — usually ready within 2 hours.</p><p>Fresh food can’t be returned, but if anything is wrong, message us and we will put it right.</p>' })],
+            beauty: ['Beauty & skincare', () => storePage('Glow Botanics', '#be185d', { site: { fonts: { heading: 'Playfair Display', body: 'Lato', base: 17 } }, eyebrow: 'Clean, plant-powered skincare', title: 'Skin that feels as good as it looks', text: 'Gentle formulas made with botanical oils, tested on people — never on animals.',
+                shop: { fee: '3.99', freeOver: '45' }, shopTitle: 'Shop skincare', perks: [['leaf', 'Natural ingredients', 'Vegan and cruelty-free'], ['truck', 'Free delivery', 'On orders over $45'], ['gift', 'Gift wrapping', 'Ask in the order note']],
+                products: [['Vitamin C serum', '28', 'Brightens dull skin in two weeks.', { cat: 'Face', badge: 'Bestseller', optName: 'Size', vals: [{ v: '30 ml', price: '' }, { v: '50 ml', price: '42' }] }], ['Hydrating face cream', '32', 'Rich but light, for all skin types.', { cat: 'Face' }], ['Gentle cleanser', '18', 'Removes make-up without drying.', { cat: 'Face' }],
+                    ['Lip balm trio', '12', 'Shea, rose and vanilla.', { cat: 'Lips' }], ['Clay face mask', '22', 'Deep cleans in 10 minutes.', { cat: 'Face' }], ['Glow gift set', '65', 'Serum, cream and cleanser in a gift box.', { cat: 'Gift sets', old: '78', badge: 'Sale' }]],
+                story: ['Why we started', 'Skincare without the long words', 'Glow Botanics began in a kitchen with three ingredients and one sensitive-skinned founder. Today every product still has a short ingredient list you can actually read.'],
+                reviews: [['My skin has never looked this good. The serum is magic.', 'Aisha K.'], ['Lovely packaging and super fast delivery.', 'Emma L.'], ['Finally a cream that doesn’t make me break out.', 'Jo P.']],
+                faq: [['Are your products vegan?', 'Yes, every product is vegan and cruelty-free.'], ['Which product is right for me?', 'Message us with your skin type and we will suggest a routine.'], ['How long does delivery take?', '2–4 working days. Free on orders over $45.']],
+                policy: '<p><b>Delivery:</b> 2–4 working days. $3.99, free over $45.</p><p><b>Returns:</b> unopened products can be returned within 14 days. If a product doesn’t suit your skin, tell us — we will help.</p>' })],
+            handmade: ['Handmade & gifts', () => storePage('Clay & Cotton', '#7c3aed', { eyebrow: 'Handmade in small batches', title: 'Thoughtful gifts, made by hand', text: 'Ceramics, candles and home goods from our little studio — each one a little different.',
+                shop: { fee: '5', freeOver: '60', bank: true, bankText: 'Bank: Your Bank\nAccount name: Clay & Cotton\nAccount number: 12345678\nSort code: 00-00-00' }, shopTitle: 'From the studio', perks: [['heart', 'Made by hand', 'No two pieces the same'], ['gift', 'Ready to gift', 'Wrapped with care'], ['truck', 'Careful delivery', 'Free over $60']],
+                products: [['Handmade mug', '26', 'Wheel-thrown stoneware, holds 350 ml.', { cat: 'Kitchen', options: 'Colour: Sage, Sand, Ocean', badge: 'Bestseller' }], ['Ceramic planter', '34', 'With a drainage hole and saucer.', { cat: 'Home' }], ['Scented soy candle', '18', '40-hour burn, cotton wick.', { cat: 'Home', options: 'Scent: Lavender, Fig, Cedar' }],
+                    ['Macramé wall hanging', '45', 'Natural cotton cord, 60 cm long.', { cat: 'Home' }], ['Linen napkins (set of 4)', '28', 'Soft stonewashed linen.', { cat: 'Kitchen' }], ['Gift card', '25', 'Let them choose — sent by email.', { cat: 'Gifts', badge: 'New' }]],
+                story: ['Meet the maker', 'From our studio to your home', 'Hi, I’m Lena. I make everything in a small studio behind my house, one piece at a time. Thank you for supporting handmade.'],
+                reviews: [['The mug is even prettier in real life.', 'Clara B.'], ['Beautifully wrapped — a perfect birthday present.', 'Sam T.'], ['The fig candle smells amazing.', 'Nadia F.']],
+                faq: [['Do you ship gifts directly?', 'Yes — add the recipient’s address and a gift message in the order note.'], ['Why does my mug look different?', 'Every piece is handmade, so colours and shapes vary a little. That’s the charm!'], ['How do I pay by bank transfer?', 'Choose bank transfer at checkout and you’ll see our bank details straight away.']],
+                policy: '<p><b>Delivery:</b> every order is packed by hand and sent within 3 working days. $5, free over $60.</p><p><b>Returns:</b> if something arrives broken, send us a photo within 7 days and we will replace it.</p>' })],
+        } },
         soon: { label: 'coming soon page', examples: {
             launch: ['Launching soon (countdown)', () => {
                 const col = column([wp('heading', { text: 'Northwind', tag: 'p' }), wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know — plus get 20% off on launch day.</p>' }), widget('countdown'), wp('form', { btn: 'Notify me', phone: false }), widget('social')]);
@@ -797,7 +1001,7 @@
     };
     const KINDS = ['funnel', ...Object.keys(KITS)];
     // Must match the routes in routes/web.php (FreeToolsTest checks this)
-    const KIT_PATH = { funnel: 'funnel-builder', menu: 'restaurant-menu-builder', event: 'event-website-builder', website: 'website-builder', portfolio: 'portfolio-builder', links: 'link-in-bio-builder', soon: 'coming-soon-page-builder' };
+    const KIT_PATH = { funnel: 'funnel-builder', menu: 'restaurant-menu-builder', store: 'online-store-builder', event: 'event-website-builder', website: 'website-builder', portfolio: 'portfolio-builder', links: 'link-in-bio-builder', soon: 'coming-soon-page-builder' };
     /** A new project for a kit (website, portfolio, links, soon), from one of its examples. */
     const newKit = (kit, key) => {
         const ex = KITS[kit]?.examples || KITS.website.examples;
@@ -806,7 +1010,12 @@
         return P;
     };
     /** Give a copied section (and everything in it) new ids. */
-    const reId = sec => { sec = clone(sec); sec.id = uid(); sec.cols.forEach(c => { c.id = uid(); c.widgets.forEach(w => (w.id = uid())); }); return sec; };
+    const reId = sec => {
+        sec = clone(sec); sec.id = uid();
+        // copied products are new products: new ids, so they never take over the original's stock or links
+        sec.cols.forEach(c => { c.id = uid(); c.widgets.forEach(w => { w.id = uid(); if (w.type === 'products') (w.p.items || []).forEach(it => { it.pid = ''; (it.vals || []).forEach(v => (v.vid = '')); }); }); });
+        return sec;
+    };
 
     /* ================================================================ styles → CSS */
     const FONTS = { Poppins: 'Poppins', Inter: 'Inter', 'DM Sans': 'DM Sans', Outfit: 'Outfit', Montserrat: 'Montserrat', 'Plus Jakarta Sans': 'Plus Jakarta Sans', Lato: 'Lato', 'Open Sans': 'Open Sans', Raleway: 'Raleway', 'Playfair Display': 'Playfair Display (elegant)', Merriweather: 'Merriweather (classic)', Lora: 'Lora (classic)', 'Space Grotesk': 'Space Grotesk (tech)', Caveat: 'Caveat (handwritten)' };
@@ -937,6 +1146,48 @@ ${Array.from({ length: 8 }, (_, i) => `.tabs>input:nth-of-type(${i + 1}):checked
 .ob-pop__box .pic{border-radius:0;aspect-ratio:16/8}.ob-pop__in{padding:26px}.ob-pop__in p{color:var(--muted)}.ob-pop__x{position:absolute;top:10px;right:10px;z-index:2;width:36px;height:36px;border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:1.3rem;cursor:pointer}
 .ob-top{position:fixed;right:18px;bottom:60px;z-index:50;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--primary);color:var(--ink);text-decoration:none;font-size:1.3rem;box-shadow:0 10px 24px -8px var(--primary);opacity:0;pointer-events:none;transition:.25s}.ob-top.is-on{opacity:1;pointer-events:auto}
 .ob-anim [data-anim]{opacity:0;transition:opacity .8s ease,transform .8s ease}.ob-anim [data-anim=fade-up]{transform:translateY(36px)}.ob-anim [data-anim=fade-down]{transform:translateY(-36px)}.ob-anim [data-anim=zoom-in]{transform:scale(.9)}.ob-anim [data-anim=slide-left]{transform:translateX(-48px)}.ob-anim [data-anim=slide-right]{transform:translateX(48px)}.ob-anim [data-anim].ob-in{opacity:1;transform:none}
+.shop-grid{align-items:stretch}.pcard{display:flex;flex-direction:column;border-radius:var(--r);background:var(--card);border:1px solid var(--border);overflow:hidden}.pcard__pic{position:relative}.pcard__pic .pic{border-radius:0;aspect-ratio:1/1}.pcard__pic .pic-fill{font-size:3.4rem}
+.pbadge{position:absolute;top:12px;left:12px;padding:4px 11px;border-radius:999px;background:var(--primary);color:var(--ink);font-size:.74rem;font-weight:700;letter-spacing:.02em}
+.pcard__b{display:flex;flex-direction:column;gap:8px;padding:18px 18px 20px;flex:1}.pcard h3{margin:0;font-size:1.08rem}.pcard .muted{margin:0;font-size:.92rem;color:var(--muted)}
+.pprice{margin:auto 0 0;display:flex;align-items:baseline;flex-wrap:wrap;gap:8px}.pprice b{font:800 1.25rem var(--hf),sans-serif;color:var(--text)}.pprice s{color:var(--muted);font-size:.92rem}
+.pcard__ph{position:relative}.pcard__ph b{font:inherit}.pcard__ph span{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.94);color:#111827;font:600 .8rem var(--bf),sans-serif;white-space:nowrap;box-shadow:0 6px 16px rgba(15,23,42,.18)}
+.popt{display:grid;gap:7px}.popt__l{font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.popt__v{display:flex;flex-wrap:wrap;gap:6px}
+.popt__v button{min-width:42px;padding:7px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font:600 .88rem var(--bf),sans-serif;cursor:pointer;transition:border-color .15s,background .15s}.popt__v button:hover{border-color:var(--primary)}.popt__v button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.popt__v button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:var(--ink)}.popt__v.is-need button{border-color:#dc2626;animation:ob-shake .35s}@keyframes ob-shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.pcard__add{width:100%}.pcard__add.is-added{background:var(--text);border-color:var(--text);color:var(--bg)}.pcard__sold{display:block;text-align:center;padding:9px;border-radius:var(--br);background:var(--alt);color:var(--muted);font-weight:700;font-size:.9rem}.pcard.is-sold .pic{filter:grayscale(.7);opacity:.7}
+.pcard[hidden]{display:none}.pcard__open{position:absolute;inset:0;z-index:1}.pcard__open:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}.pcard__pic .pbadge,.pcard__n{z-index:2;pointer-events:none}
+.pcard__n{position:absolute;right:12px;bottom:12px;padding:3px 9px;border-radius:999px;background:rgba(17,24,39,.72);color:#fff;font-size:.74rem;font-weight:700}
+.pstock{margin:0;color:#c2410c;font-size:.84rem;font-weight:700}.pstock[hidden]{display:none}
+.popt__v button.is-out{opacity:.45;text-decoration:line-through;cursor:not-allowed}.pcard__add.is-soldout{background:var(--alt);border-color:var(--alt);color:var(--muted);cursor:default}
+.pfilter{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:28px}.pfilter__cats{display:flex;flex-wrap:wrap;gap:8px}
+.pfilter__cats button{padding:8px 16px;border-radius:999px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font:600 .9rem var(--bf),sans-serif;cursor:pointer}.pfilter__cats button[aria-pressed=true]{background:var(--text);border-color:var(--text);color:var(--bg)}
+.pfilter input{flex:0 1 260px;min-width:0;padding:10px 16px;border-radius:999px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font:inherit}.pfilter input:focus{outline:2px solid var(--primary);outline-offset:1px}
+.pfilter+.grid{margin-top:20px}.pnone{text-align:center;color:var(--muted);margin:24px 0 0}.pnone[hidden]{display:none}
+.ob-quick{position:fixed;inset:0;z-index:105;display:grid;place-items:center;padding:16px;background:rgba(10,15,30,.6);opacity:0;transition:opacity .25s}.ob-quick.is-open{opacity:1}.ob-quick[hidden]{display:none}
+.ob-quick__box{position:relative;width:min(920px,100%);max-height:92vh;overflow:auto;overscroll-behavior:contain;border-radius:var(--r);background:var(--card);color:var(--text);box-shadow:0 40px 80px -20px rgba(0,0,0,.5);transform:translateY(16px);transition:transform .25s}.ob-quick.is-open .ob-quick__box{transform:none}
+.ob-quick__x{position:absolute;top:12px;right:12px;z-index:3}.ob-quick__in{display:grid;grid-template-columns:1.1fr 1fr;gap:28px;padding:26px}.ob-quick__in .pcard__b{padding:8px 0;gap:12px}.ob-quick__in h3{font-size:1.6rem;margin:0;padding-right:40px}.ob-quick__in .pprice{margin:0}
+.pcard__long{color:var(--muted);line-height:1.65;white-space:normal}.ob-gal{display:grid;gap:10px;align-content:start}.ob-gal__big,.ob-gal>.pic{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:calc(var(--r) - 4px)}.ob-gal__big{background:var(--soft)}
+.ob-gal__thumbs{display:flex;flex-wrap:wrap;gap:8px}.ob-gal__thumbs button{width:64px;height:64px;padding:0;border-radius:10px;overflow:hidden;border:2px solid transparent;cursor:pointer;background:var(--soft)}.ob-gal__thumbs button[aria-pressed=true]{border-color:var(--primary)}.ob-gal__thumbs img{width:100%;height:100%;object-fit:cover}
+.ob-code label>span{display:flex;gap:8px}.ob-code input{flex:1;min-width:0;text-transform:uppercase}.ob-code small{display:block;margin-top:6px;color:#dc2626;font-size:.84rem}.ob-code small.is-ok{color:#15803d;font-weight:600}.ob-code small[hidden]{display:none}
+.ob-phone{display:grid;gap:6px}.ob-phone--compact{gap:0}.optin .ob-phone__row input{padding:15px 16px;font-size:1rem}.ob-phone__l{font-weight:600;font-size:.9rem}.ob-phone__row{display:flex;gap:8px}.ob-phone__row input{flex:1;min-width:0}
+.ob-dial{position:relative;display:block!important;flex:none}.ob-dial__face{display:flex;align-items:center;gap:6px;height:100%;min-height:46px;padding:0 30px 0 12px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-weight:600;white-space:nowrap}
+.ob-dial__face::after{content:'';position:absolute;right:12px;top:50%;width:7px;height:7px;margin-top:-5px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg)}
+.form .ob-dial select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;padding:0;border:0}.ob-dial:focus-within .ob-dial__face{outline:2px solid var(--primary);outline-offset:1px}
+.ob-taxnote{color:var(--muted);font-size:.8rem;text-align:right}.ob-sum [hidden]{display:none}
+@media (max-width:767px){.ob-quick{padding:0;align-items:end}.ob-quick__box{max-height:94vh;border-radius:var(--r) var(--r) 0 0}.ob-quick__in{grid-template-columns:1fr;gap:16px;padding:18px 18px 72px}.pfilter input{flex-basis:100%}}
+.shop-off{display:table;margin:14px auto 0;padding:7px 16px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:.84rem;font-weight:600}
+.nav-cart{position:relative;display:inline-flex!important;align-items:center;justify-content:center;flex:none;width:42px;height:42px;border-radius:50%;color:var(--text);text-decoration:none;background:var(--alt)}.nav-cart svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-cart__n{position:absolute;top:-5px;right:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--primary);color:var(--ink);font:700 .72rem/20px var(--bf),sans-serif;text-align:center}.nav-cart__n[hidden]{display:none}.nav-cart.is-bump{animation:ob-bump .45s}@keyframes ob-bump{40%{transform:scale(1.18)}}
+.ob-cartfab{position:fixed;top:14px;right:14px;z-index:60;background:var(--card);box-shadow:0 8px 22px rgba(15,23,42,.2)}
+.ob-cart{position:fixed;inset:0;z-index:110;display:flex;justify-content:flex-end;background:rgba(10,15,30,.55);opacity:0;transition:opacity .25s}.ob-cart.is-open{opacity:1}.ob-cart[hidden]{display:none}
+.ob-cart__box{width:min(440px,100%);height:100%;overflow:auto;overscroll-behavior:contain;background:var(--card);color:var(--text);padding:20px 22px 80px;transform:translateX(40px);transition:transform .25s;box-shadow:-20px 0 60px -20px rgba(0,0,0,.4)}.ob-cart.is-open .ob-cart__box{transform:none}
+.ob-cart__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.ob-cart__top h3{margin:0}.ob-cart__x{width:38px;height:38px;border-radius:50%;border:0;background:var(--alt);color:var(--text);font-size:1.4rem;line-height:1;cursor:pointer}.ob-cart__empty{color:var(--muted)}
+.ob-lines{list-style:none;margin:0 0 14px;padding:0}.ob-lines li{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 12px;padding:12px 0;border-bottom:1px solid var(--border)}.ob-lines li>div b{display:block;font-weight:600}.ob-lines small{color:var(--muted)}.ob-lt{text-align:right;white-space:nowrap}
+.ob-qty{display:inline-flex;align-items:center;gap:8px}.ob-qty button{width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font:600 1rem/1 var(--bf),sans-serif}.ob-rm{justify-self:end;border:0;background:none;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:.82rem}
+.ob-sum{display:grid;gap:6px;padding:14px 16px;border-radius:14px;background:var(--alt)}.ob-sum>div{display:flex;justify-content:space-between;gap:12px;color:var(--muted)}.ob-sum .ob-total{padding-top:8px;border-top:1px solid var(--border);color:var(--text);font-size:1.1rem}
+.ob-choice{border:0;margin:0;padding:0;display:grid;gap:8px}.ob-choice legend,.ob-choice>b{font-weight:700;font-size:.9rem;margin-bottom:6px;padding:0}.form .ob-choice label{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;font-weight:500;cursor:pointer}.ob-choice label:has(input:checked){border-color:var(--primary);background:var(--soft)}.form .ob-choice input{width:auto;padding:0;accent-color:var(--primary)}
+.ob-one{margin:0;padding:10px 14px;border-radius:12px;background:var(--alt);color:var(--muted);font-size:.92rem}.ob-place{width:100%}.ob-place[disabled]{opacity:.6;cursor:wait}.ob-small{color:var(--muted);text-align:center;font-size:.8rem}
+.ob-toast{position:fixed;left:50%;bottom:56px;z-index:120;width:max-content;max-width:calc(100vw - 32px);text-align:center;transform:translate(-50%,16px);padding:10px 18px;border-radius:999px;background:#111827;color:#fff;font-weight:600;font-size:.9rem;opacity:0;transition:.25s;pointer-events:none}.ob-toast.is-on{opacity:1;transform:translate(-50%,0)}
 .optin{gap:10px}.optin input{padding:15px 16px;font-size:1rem}.optin .btn{width:100%}.optin__note{color:var(--muted);text-align:center;font-size:.82rem}
 .paybtn{display:flex;flex-direction:column;align-items:center;gap:8px}.paybtn.al-left{align-items:flex-start}.paybtn.al-right{align-items:flex-end}.paybtn.al-full .btn{width:100%}.paybtn .btn{font-size:1.2rem;padding:20px 38px;box-shadow:0 16px 34px -14px var(--primary)}.paybtn__no{color:var(--muted);font-size:.9rem;margin-top:4px}
 [data-variant=b]{display:none}html.ob-v-b [data-variant=a]{display:none}html.ob-v-b [data-variant=b]{display:block}
@@ -984,7 +1235,7 @@ ${cssSafe(s.css || '')}`;
         if (s.bare) return bar; // simple page (link-in-bio, coming soon): no header or menu
         return `${bar}<header class="nav${s.sticky !== false ? ' is-sticky' : ''}"${x.edit ? ' data-hdr' : ''}><div class="wrap"><a class="brand" href="${x.edit ? '#' : esc(pageHref('index', x))}"><span${x.edit ? ' data-img="site|logo"' : ''}>${logo}</span><span${x.edit ? ' data-e="site|name" data-ph="Business name"' : ''}>${esc(name)}</span></a>
             <nav>${menu.length > 1 ? menu.map(p => `<a href="${x.edit ? '#' : esc(pageHref(p.slug, x))}"${x.edit ? ` data-goto="${esc(p.id)}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('') : ''}
-            ${s.navBtn && !goesNowhere(s.navLink, x) ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}${
+            ${shopOn(x) || (x.edit && x.P.kind === 'store') ? `<a class="nav-cart" href="#cart" data-cart-open aria-label="Your cart">${I(ICONS.cart)}<span class="nav-cart__n" data-cart-count hidden>0</span></a>` : ''}${s.navBtn && !goesNowhere(s.navLink, x) ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}${
             // phones: the page links fold into a ☰ menu (a <details>, so it works without scripts)
             menu.length > 1 ? `<details class="mnav"><summary aria-label="Menu"><span></span><span></span><span></span></summary><div class="mnav__list">${menu.map(p => `<a href="${x.edit ? '#' : esc(pageHref(p.slug, x))}"${x.edit ? ` data-goto="${esc(p.id)}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('')}${
                 // small phones: the header button moves into the menu, so the name keeps its room
@@ -1005,7 +1256,7 @@ ${cssSafe(s.css || '')}`;
             ${p.image ? `<div class="pic"><img src="${esc(p.image)}" alt=""></div>` : ''}<div class="ob-pop__in"><h3>${esc(p.title)}</h3>${p.text ? `<p>${nl(p.text)}</p>` : ''}${p.btn ? `<a class="btn" href="${esc(href(p.link, x))}" data-popup-close>${esc(p.btn)}</a>` : ''}</div></div></div>`;
     };
     /** Does this page need the runtime script (animations, sliders, counters, popup…)? */
-    const needsRuntime = (pg, P) => !!(P.kind === 'funnel' || pg.popup?.on || P.site.backTop || (!P.site.bare && P.site.sticky !== false)
+    const needsRuntime = (pg, P) => !!(P.kind === 'funnel' || (P.kind === 'store' && P.site.shopAction) || pg.popup?.on || P.site.backTop || (!P.site.bare && P.site.sticky !== false)
         || pg.sections.some(s => s.adv?.anim || s.cols.some(c => c.adv?.anim || c.widgets.some(w => w.adv?.anim || W[w.type]?.runtime))));
     const fontsLink = P => {
         const f = [...new Set([P.site.fonts?.heading, P.site.fonts?.body].filter(n => FONTS[n]))];
@@ -1015,6 +1266,9 @@ ${cssSafe(s.css || '')}`;
     /** Full HTML document. mode: edit | download | publish. opts: { origin, runtime (script URL), extraHead } */
     const render = (P, pg, mode, opts = {}) => {
         const x = { edit: mode === 'edit', mode, page: pg, P, origin: opts.origin || location.origin, siteBase: opts.siteBase }, s = P.site, name = s.name || 'Your business';
+        if (P.kind === 'store') fixPids(P);
+        // Store pages tell the cart (builder-runtime.js) which shop it is and how delivery is charged
+        const shopAttrs = shopOn(x) ? ` data-shop="${esc(s.shopId || '')}" data-shop-cur="${esc(s.shop.currency)}" data-shop-fee="${s.shop.delivery ? MONEY(s.shop.fee) || 0 : 0}" data-shop-free="${MONEY(s.shop.freeOver) || 0}" data-shop-api="${esc(s.shopAction)}" data-shop-rules="${esc(shopData(s.shop))}"` : '';
         const hero = pg.sections.flatMap(sc => sc.cols.flatMap(c => c.widgets)).find(w => w.type === 'hero');
         const title = pg.seo.title.trim() || (pg.slug === 'index' ? `${name}${hero?.p.title ? ' — ' + hero.p.title : ''}` : `${pg.title} | ${name}`);
         const desc = pg.seo.description.trim() || hero?.p.text || '';
@@ -1027,7 +1281,7 @@ ${cssSafe(s.css || '')}`;
             ? `<div data-variant="a">${pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n')}</div><div data-variant="b">${pg.sectionsB.map((sc, i) => renderSection(sc, i, xB)).join('\n')}</div>`
             : pg.sections.map((sc, i) => renderSection(sc, i, x)).join('\n');
         return `<!doctype html>
-<html lang="en"${ab ? ' class="ob-ab"' : ''}${fs}>
+<html lang="en"${ab ? ' class="ob-ab"' : ''}${fs}${shopAttrs}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1046,7 +1300,7 @@ ${header(x)}
 ${body}
 </main>
 ${footer(x)}
-${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob-top" aria-label="Back to top">↑</a>' : ''}
+${x.edit ? '' : popupHtml(pg, x) + shopHtml(x)}${!x.edit && s.backTop ? '<a href="#" class="ob-top" aria-label="Back to top">↑</a>' : ''}
 </body>
 </html>`;
     };
@@ -1064,7 +1318,24 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
     };
     const FORM_URL = /^https?:\/\/[^\s"'<>]+\/f\/[a-z0-9]{16}$/, FORM_ID = /^[a-z0-9]{16}$/;
     /** Site settings tied to the signed-in account (forms, published address): kept on template changes and Undo. */
-    const ACCOUNT_KEYS = ['formAction', 'leadAction', 'leadFormId', 'rsvpAction', 'rsvpFormId', 'publishSlug', 'ref'];
+    const ACCOUNT_KEYS = ['formAction', 'leadAction', 'leadFormId', 'rsvpAction', 'rsvpFormId', 'shopAction', 'shopId', 'publishSlug', 'ref'];
+    const SHOP_URL = /^https?:\/\/[^\s"'<>]+\/shop\/[a-z0-9]{16}$/;
+    const PRICE = v => (MONEY(v) === null ? '' : String(MONEY(v)));
+    /** A store's checkout settings (the server checks them again: App\Support\Shop::settings). */
+    const SHOP = s => {
+        s = s && typeof s === 'object' ? s : {};
+        const d = defaultsShop(), out = {
+            currency: CURRENCIES.includes(s.currency) ? s.currency : d.currency, delivery: s.delivery !== false, fee: s.fee === undefined ? d.fee : PRICE(s.fee), freeOver: s.freeOver === undefined ? d.freeOver : PRICE(s.freeOver),
+            pickup: !!s.pickup, pickupText: STR(s.pickupText, 200), cod: s.cod === undefined ? d.cod : !!s.cod, bank: !!s.bank, bankText: STR(s.bankText, 1000), card: !!s.card, cardReady: !!s.cardReady,
+            mode: s.mode === 'live' ? 'live' : 'test', phoneReq: s.phoneReq !== false, codes: !!s.codes,
+            zones: (Array.isArray(s.zones) ? s.zones : []).slice(0, 20).filter(z => z && typeof z === 'object').map(z => ({ name: STR(z.name, 60),
+                countries: [...new Set((Array.isArray(z.countries) ? z.countries : []).map(c => String(c).toUpperCase()).filter(c => COUNTRIES.includes(c)))], fee: PRICE(z.fee), freeOver: PRICE(z.freeOver) })),
+            taxRate: MONEY(s.taxRate) === null ? '' : String(Math.min(50, MONEY(s.taxRate))), taxIncl: s.taxIncl !== false, taxLabel: STR(s.taxLabel, 20) || 'Tax', taxShip: !!s.taxShip, thanks: STR(s.thanks, 300), whatsapp: STR(s.whatsapp, 30).replace(/[^\d+ ]/g, ''),
+        };
+        if (!out.delivery && !out.pickup) out.delivery = true;
+        if (!out.cod && !out.bank && !out.card) out.cod = true;
+        return out;
+    };
     const STYLE_KEYS = {
         num: ['size', 'lh', 'ls', 'pt', 'pr', 'pb', 'pl', 'mt', 'mb', 'radius', 'bw', 'maxw', 'minH', 'opacity', 'gAngle', 'weight'],
         color: ['color', 'bg', 'g1', 'g2', 'bc', 'overlay'],
@@ -1103,14 +1374,14 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
         const clean = (v, depth = 0) => {
             if (typeof v === 'string') return v.slice(0, 20000);
             if (typeof v === 'number' || typeof v === 'boolean') return v;
-            if (Array.isArray(v) && depth < 3) return v.slice(0, 50).map(x2 => clean(x2, depth + 1)).filter(x2 => x2 !== undefined);
-            if (v && typeof v === 'object' && depth < 3) { const o = {}; Object.keys(v).slice(0, 40).forEach(k => { if (/^[a-zA-Z_]\w{0,30}$/.test(k)) o[k] = clean(v[k], depth + 1); }); return o; }
+            if (Array.isArray(v) && depth < 6) return v.slice(0, 50).map(x2 => clean(x2, depth + 1)).filter(x2 => x2 !== undefined);
+            if (v && typeof v === 'object' && depth < 6) { const o = {}; Object.keys(v).slice(0, 40).forEach(k => { if (/^[a-zA-Z_]\w{0,30}$/.test(k)) o[k] = clean(v[k], depth + 1); }); return o; }
             return undefined;
         };
         Object.assign(out, clean(p && typeof p === 'object' ? p : {}) || {});
         // before/after are photos only on the before/after slider (the animated headline uses them for text)
         const IMAGE_KEYS = ['image', 'src', 'photo', 'logo', ...(d.type === 'beforeafter' ? ['before', 'after'] : [])];
-        const walk = o => { if (!o || typeof o !== 'object') return; Object.keys(o).forEach(k => { if (IMAGE_KEYS.includes(k)) o[k] = IMG(o[k]); else if (k === 'link' || k === 'link2') o[k] = LINK(o[k]); else walk(o[k]); }); };
+        const walk = o => { if (!o || typeof o !== 'object') return; Object.keys(o).forEach(k => { if (IMAGE_KEYS.includes(k)) o[k] = IMG(o[k]); else if (k === 'images') o[k] = (Array.isArray(o[k]) ? o[k] : []).map(IMG).filter(Boolean).slice(0, 6); else if (k === 'link' || k === 'link2') o[k] = LINK(o[k]); else walk(o[k]); }); };
         walk(out);
         (d.fields || []).forEach(f => { if (f.type === 'select' && !has(f.options, out[f.k])) out[f.k] = Object.keys(f.options)[0]; });
         return out;
@@ -1144,6 +1415,7 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
             rsvpAction: FORM_URL.test(s.rsvpAction || '') ? s.rsvpAction : '',
             rsvpFormId: FORM_ID.test(s.rsvpFormId || '') ? s.rsvpFormId : '', ref: /^[a-z0-9]{6,20}$/.test(s.ref || '') ? s.ref : undefined,
             publishSlug: slugify(STR(s.publishSlug, 40)) || undefined, css: cssSafe(STR(s.css, 20000)),
+            shop: SHOP(s.shop), shopAction: SHOP_URL.test(s.shopAction || '') ? s.shopAction : '', shopId: FORM_ID.test(s.shopId || '') ? s.shopId : '',
         };
         const seen = new Set();
         const pages = (P.pages || []).slice(0, 10).filter(pg => pg && typeof pg === 'object').map((pg, i) => {
@@ -1173,6 +1445,7 @@ ${x.edit ? '' : popupHtml(pg, x)}${!x.edit && s.backTop ? '<a href="#" class="ob
         uid, esc, nl, clone, hex, slugify, getPath, setPath, sanitize, styleKey, classKey, cssSafe, safeUrl,
         ICONS, icon, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
         widget, column, section, sectionOf, isFull, migrate, newProject, newPage, reId, defaultsSite, defaultsPopup,
+        CURRENCIES, COUNTRIES, countryName, money, MONEY, optionsOf, shopProducts, fixPids, productWidgets, variants, stockKeys, defaultsShop, payWays,
         FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, KITS, KIT_PATH, newKit, rsvpSchema, rsvpWidget, ACCOUNT_KEYS, newStep, nextOf, normalize, normalizeSection: SECTION,
         render, renderSection, renderWidget, header, footer, siteCss, pageCss, needsRuntime, href, pageHref, fontsLink,
     };

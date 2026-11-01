@@ -2143,6 +2143,9 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 /* ---------- Funnel builder ---------- */
 .lpb-app[data-mode="funnel"] .lpb-tabs { grid-template-columns: repeat(5, 1fr); }
 .lpb-app[data-mode="funnel"] .lpb-tabs button { font-size: .78rem; }
+.lpb-app[data-mode="store"] .lpb-tabs { grid-template-columns: repeat(5, 1fr); }
+.lpb-app[data-mode="store"] .lpb-tabs button { font-size: .78rem; white-space: nowrap; }
+.lpb-tabs .lpb-badge { min-width: 16px; height: 16px; padding: 0 4px; font-size: .62rem; }
 .lpb-vbadge { padding: 5px 10px; border-radius: 999px; font: 700 .75rem Inter, sans-serif; color: #fff; background: #4f7cff; }
 .lpb-vbadge[data-v="b"] { background: #db2777; }
 .lpb-vbadge[hidden] { display: none; }
@@ -2173,6 +2176,83 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .lpb-leads th, .lpb-leads td { padding: 7px 8px; border-bottom: 1px solid var(--card-border); text-align: left; white-space: nowrap; }
 .lpb-leads th { position: sticky; top: 0; background: var(--card); color: var(--muted); font-weight: 700; }
 .lpb-integ h4 { margin: 10px 0 6px !important; }
+
+/* Online store builder (kit "store"): product fold-outs, shop settings and the Orders tab */
+.lpb-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--green); color: #04130b; font-size: .68rem; font-weight: 800; vertical-align: 1px; }
+.lpb-prods { gap: 8px; }
+.lpb-prods > span small { color: var(--muted); font-weight: 500; }
+.lpb-prod { border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); }
+.lpb-prod > summary { display: flex; align-items: center; gap: 10px; padding: 8px 10px; cursor: pointer; list-style: none; }
+.lpb-prod > summary::-webkit-details-marker { display: none; }
+.lpb-prod > summary::after { content: ''; flex: none; width: 8px; height: 8px; margin: 0 6px 4px auto; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .15s; }
+.lpb-prod[open] > summary::after { margin-bottom: -4px; transform: rotate(-135deg); }
+.lpb-prod > summary:hover { background: rgba(var(--tint-rgb), .03); border-radius: 12px; }
+.lpb-prod .lpb-thumb { display: grid; place-items: center; cursor: default; border-style: solid; font-size: 1rem; }
+.lpb-prod__t { display: grid; min-width: 0; }
+.lpb-prod__t b { font-size: .86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lpb-prod__t small { color: var(--muted); font-size: .76rem; }
+.lpb-prod__t small.lpb-err-t { color: var(--danger-ink); font-weight: 600; }
+.lpb-prod__body { display: grid; gap: 10px; padding: 4px 12px 12px; border-top: 1px solid var(--card-border); }
+.lpb-prod__body .lpb-hint { margin: -4px 0 0; }
+.lpb-prod__body .lpb-block-actions { flex-wrap: wrap; gap: 6px; }
+.lpb-prod__body .lpb-block-actions .btn { padding: 6px 12px; font-size: .78rem; white-space: nowrap; }
+.lpb-panel h4 { margin-top: 14px; margin-bottom: 4px; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.lpb-orders-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.lpb-chip.is-on { border-color: var(--green); background: rgba(30, 199, 115, .1); color: var(--green-ink); }
+.lpb-chip small { color: var(--muted); font-weight: 500; }
+.lpb-order { margin-bottom: 8px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); }
+.lpb-order > summary { display: grid; gap: 4px; padding: 10px 12px; cursor: pointer; list-style: none; }
+.lpb-order > summary::-webkit-details-marker { display: none; }
+.lpb-order__top { display: flex; gap: 6px; align-items: baseline; font-size: .88rem; min-width: 0; }
+.lpb-order__sum { margin-left: auto; white-space: nowrap; }
+.lpb-order__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .74rem; color: var(--muted); }
+.lpb-ost { padding: 1px 8px; border-radius: 999px; font-weight: 700; background: rgba(var(--tint-rgb), .08); color: var(--text-2); }
+.lpb-ost.is-new { background: rgba(30, 199, 115, .14); color: var(--green-ink); }
+.lpb-ost.is-unpaid { background: rgba(217, 119, 6, .14); color: #b45309; }
+.lpb-ost.is-shipped { background: rgba(79, 124, 255, .14); color: #3b5bdb; }
+.lpb-ost.is-cancelled { text-decoration: line-through; }
+.lpb-order__body { display: grid; gap: 8px; padding: 4px 12px 12px; border-top: 1px solid var(--card-border); font-size: .84rem; }
+.lpb-order__body p { margin: 0; }
+.lpb-order__body table { width: 100%; border-collapse: collapse; }
+.lpb-order__body td { padding: 6px 0; border-bottom: 1px solid var(--card-border); vertical-align: top; }
+.lpb-order__body td:last-child { text-align: right; white-space: nowrap; padding-left: 8px; }
+.lpb-order__body td small { display: block; color: var(--muted); }
+.lpb-order__body tr.is-sum td { color: var(--muted); }
+.lpb-order__body tr.is-total td { border: 0; font-weight: 700; }
+.lpb-order__addr { white-space: pre-wrap; }
+.lpb-order__note { color: var(--text-2); font-style: italic; }
+.lpb-pimgs > span { display: block; margin-bottom: 6px; font-weight: 600; font-size: .83rem; color: var(--text-2); }
+.lpb-pimgs > span small, .lpb-vals b small { font-weight: 500; color: var(--muted); }
+.lpb-pimgs > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.lpb-pimg { position: relative; width: 52px; height: 52px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--field) center/cover; }
+.lpb-pimg button { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; padding: 0; border-radius: 50%; border: 0; background: #111827; color: #fff; font-size: .62rem; cursor: pointer; }
+.lpb-pimg--add { display: grid; place-items: center; border-style: dashed; color: var(--green); font-size: 1.2rem; cursor: pointer; }
+.lpb-vals, .lpb-stock { display: grid; gap: 8px; padding: 10px; border-radius: 10px; background: rgba(var(--tint-rgb), .035); }
+.lpb-vals > b, .lpb-stock > b { font-size: .83rem; }
+.lpb-vals__row { display: grid; grid-template-columns: 1fr 96px 30px; gap: 6px; }
+.lpb-vals__row input { min-width: 0; }
+.lpb-vals__row button, .lpb-zone__top button { border-radius: 8px; border: 1px solid var(--card-border); background: var(--card); color: var(--muted); cursor: pointer; }
+.lpb-vals__row button:hover, .lpb-zone__top button:hover { color: var(--danger-ink); border-color: var(--danger); }
+.lpb-vals .lpb-hint, .lpb-stock .lpb-hint { margin: 0; }
+.lpb-stock__row { display: grid !important; grid-template-columns: 1fr 96px; align-items: center; gap: 8px; font-weight: 500 !important; }
+.lpb-zones { display: grid; gap: 10px; }
+.lpb-zone { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--card-border); border-radius: 12px; }
+.lpb-zone__top { display: grid; grid-template-columns: 1fr 30px; gap: 6px; }
+.lpb-zone__cs { display: flex; flex-wrap: wrap; gap: 6px; }
+.lpb-zone__cs .lpb-hint { margin: 0; }
+.lpb-cchip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: rgba(30, 199, 115, .1); color: var(--green-ink); font-size: .78rem; font-weight: 600; }
+.lpb-cchip button { width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
+.lpb-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 12px; padding: 4px; border-radius: 12px; background: rgba(var(--tint-rgb), .05); }
+.lpb-seg button { padding: 8px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: 700 .8rem Inter, sans-serif; cursor: pointer; }
+.lpb-seg button[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(15, 23, 42, .1); }
+.lpb-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding: 10px 12px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); font-size: .84rem; }
+.lpb-code b { font-family: ui-monospace, Menlo, monospace; letter-spacing: .04em; }
+.lpb-code small { display: block; color: var(--muted); font-size: .74rem; }
+.lpb-code.is-off { opacity: .6; }
+.lpb-code > span { white-space: nowrap; }
+.lpb-code-form { display: grid; gap: 10px; margin-top: 4px; padding: 12px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); }
+.lpb-code-form h4 { margin: 0 !important; }
+.lpb-code-form [hidden] { display: none !important; }
 
 /* Email signature generator (tools/email-signature) */
 .esig-designs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
@@ -3497,3 +3577,12 @@ h2.fb-sub { text-align: left; margin-bottom: 0; font-family: Inter, sans-serif; 
 .lpb-gal-cats button[aria-pressed="true"] { border-color: var(--green); background: rgba(30, 199, 115, .12); color: var(--green); }
 .lpb-savepage { width: 100%; justify-content: center; margin-bottom: 12px; }
 .lpb-tpl-name small { color: var(--muted); font-weight: 500; font-size: .74rem; margin-left: auto; }
+
+/* Phone boxes with a flag + calling code (public/js/phone-field.js): the picker sits after the box in the page but shows in front */
+.opf { display: flex; gap: 6px; width: 100%; min-width: 0; }
+.opf > input { flex: 1; min-width: 0; }
+.opf__cc { position: relative; flex: none; order: -1; display: block; }
+.opf__face { display: flex; align-items: center; height: 100%; min-height: 38px; padding: 0 26px 0 10px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--field); color: var(--text); font: 600 .85rem Inter, sans-serif; white-space: nowrap; }
+.opf__face::after { content: ''; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; margin-top: -4px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+.opf__cc select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.opf__cc:focus-within .opf__face { outline: 2px solid var(--green); outline-offset: 1px; }

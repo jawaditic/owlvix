@@ -7,8 +7,9 @@ use App\Models\BuilderAccount;
 use App\Models\BuilderApp;
 use App\Models\BuilderForm;
 use App\Models\BuilderSite;
+use App\Models\BuilderStore;
 
-/** Admin → Page builder: sites published with the free builders, their forms, and apps made with the mobile app builder. */
+/** Admin → Page builder: sites published with the free builders, their forms and shops, and apps made with the mobile app builder. */
 class BuilderController extends Controller
 {
     public function index()
@@ -16,6 +17,7 @@ class BuilderController extends Controller
         return view('admin.builder', [
             'sites' => BuilderSite::with('account')->orderByRaw('reported_at is null')->orderByDesc('reported_at')->orderByDesc('updated_at')->get(),
             'apps' => BuilderApp::with('account')->withCount(['builds' => fn ($q) => $q->where('status', 'done')])->orderByRaw('reported_at is null')->orderByDesc('reported_at')->orderByDesc('updated_at')->get(),
+            'stores' => BuilderStore::with('account')->orderByDesc('updated_at')->get(),
             'forms' => BuilderForm::with('account')->withCount('leads')->orderByDesc('last_submission_at')->orderByDesc('created_at')->get(),
             'stats' => [
                 'accounts' => BuilderAccount::count(),
@@ -75,6 +77,14 @@ class BuilderController extends Controller
         $app->forceFill(['reported_at' => null])->save();
 
         return back()->with('status', 'Report on the app '.$app->name.' dismissed.');
+    }
+
+    /** Switch a shop's checkout off (or on again): its pages, published or downloaded, can't take orders while it's off. */
+    public function toggleStore(BuilderStore $store)
+    {
+        $store->forceFill(['disabled_at' => $store->disabled_at ? null : now()])->save();
+
+        return back()->with('status', 'Checkout for '.$store->name.($store->disabled_at ? ' turned off.' : ' turned on.'));
     }
 
     public function toggleForm(BuilderForm $form)

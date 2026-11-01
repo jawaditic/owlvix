@@ -27,6 +27,7 @@ class FreeTools
             ['route' => 'coming-soon-builder', 'group' => 'builder', 'name' => 'Coming soon page builder', 'desc' => 'Countdown, waitlist form and socials', 'icon' => 'rocket', 'tone' => 'is-blue'],
             ['route' => 'event-website-builder', 'group' => 'builder', 'name' => 'Wedding & event website builder', 'desc' => 'Invitation, countdown & RSVP list', 'icon' => 'calendar', 'tone' => ''],
             ['route' => 'menu-builder', 'group' => 'builder', 'name' => 'Restaurant menu & QR builder', 'desc' => 'Digital menu + QR table cards', 'icon' => 'cart', 'tone' => 'is-blue'],
+            ['route' => 'store-builder', 'group' => 'builder', 'name' => 'Online store builder', 'desc' => 'Products, cart & checkout — card, cash or bank', 'icon' => 'tag', 'tone' => ''],
             ['route' => 'app-builder', 'group' => 'builder', 'name' => 'Mobile app builder', 'desc' => 'Make a native Android app, no code', 'icon' => 'phone', 'tone' => ''],
             ['route' => 'resume-builder', 'group' => 'builder', 'name' => 'Resume / CV builder', 'desc' => '5 designs, free PDF, ATS tips', 'icon' => 'doc', 'tone' => 'is-blue'],
             ['route' => 'email-builder', 'group' => 'builder', 'name' => 'Email & newsletter builder', 'desc' => 'Mailchimp-ready HTML emails', 'icon' => 'mail', 'tone' => ''],

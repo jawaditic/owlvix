@@ -115,6 +115,9 @@ class SurveySchema
                 continue;
             }
             $raw = $input[$f['id']] ?? null;
+            if ($f['type'] === 'phone' && is_string($raw)) { // the calling code picked beside the box goes in front
+                $raw = Phone::combine($raw, $input[$f['id'].'_dial'] ?? null) ?? '';
+            }
             $label = $f['label'];
             if ($f['type'] === 'checkbox') {
                 $picked = array_values(array_intersect($f['options'], array_filter(is_array($raw) ? $raw : [], 'is_string')));

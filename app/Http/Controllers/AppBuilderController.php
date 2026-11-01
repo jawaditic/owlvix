@@ -510,9 +510,23 @@ class AppBuilderController extends Controller
     /** Stripe sends the owner back here; the account's id is kept (encrypted) and phones get the "Pay now" button. */
     public function stripeCallback(Request $request)
     {
-        $back = fn (string $result) => redirect('/mobile-app-builder?stripe='.$result);
         $state = Cache::pull('app-stripe-state:'.(string) $request->query('state'));
-        if (! is_array($state) || ! ($app = BuilderApp::find($state['app']))) {
+        // Shops made with the online store builder connect Stripe through this same address
+        $shop = is_array($state) && isset($state['store']);
+        $back = fn (string $result) => redirect(($shop ? '/online-store-builder' : '/mobile-app-builder').'?stripe='.$result);
+        if ($shop) {
+            if ($request->query('error') || ! is_string($request->query('code'))) {
+                return $back('cancelled');
+            }
+            try {
+                return $back(\App\Http\Controllers\StoreController::stripeConnected($state, Stripe::exchange($state['mode'], $request->query('code'))));
+            } catch (\Throwable $e) {
+                report($e);
+
+                return $back('failed');
+            }
+        }
+        if (! is_array($state) || ! ($app = BuilderApp::find($state['app'] ?? null))) {
             return $back('expired');
         }
         if ($request->query('error') || ! is_string($request->query('code'))) {

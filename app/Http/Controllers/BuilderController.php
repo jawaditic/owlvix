@@ -213,11 +213,12 @@ class BuilderController extends Controller
         }
 
         $formIds = $account->forms()->pluck('id')->all();
+        $storeIds = $account->stores()->pluck('id')->all();
         foreach ($data['pages'] as $page) {
             if (strlen($page['html']) > BuilderHtml::MAX_BYTES) {
                 return $this->fail('The page “'.$page['title'].'” is too big (over 2.5 MB). Try smaller images.', 422);
             }
-            if ($problem = BuilderHtml::problem($page['html'], $formIds)) {
+            if ($problem = BuilderHtml::problem($page['html'], $formIds, $storeIds)) {
                 return $this->fail('“'.$page['title'].'”: '.$problem, 422);
             }
         }

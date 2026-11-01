@@ -44,6 +44,9 @@
                 <button type="button" role="tab" data-tab="edit" aria-selected="false">Edit</button>
                 <button type="button" role="tab" data-tab="page" aria-selected="false">Page</button>
                 <button type="button" role="tab" data-tab="site" aria-selected="false">Site</button>
+                @if (($mode ?? '') === 'store')
+                    <button type="button" role="tab" data-tab="orders" aria-selected="false">Orders</button>
+                @endif
             </div>
             <div class="lpb-panel is-active" data-tab-panel="add">
                 <input type="search" class="lpb-search" data-add-search placeholder="Search widgets &amp; templates…" aria-label="Search widgets and templates">
@@ -60,6 +63,9 @@
             </div>
             <div class="lpb-panel" data-tab-panel="page"><div data-page-panel></div></div>
             <div class="lpb-panel" data-tab-panel="site"><div data-site-panel></div></div>
+            @if (($mode ?? '') === 'store')
+                <div class="lpb-panel" data-tab-panel="orders"><div data-orders-panel></div></div>
+            @endif
             <p class="lpb-autosave" data-autosave>Saved on this device</p>
         </div>
         <div class="lpb-canvas">

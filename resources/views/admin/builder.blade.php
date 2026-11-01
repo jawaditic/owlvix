@@ -118,6 +118,37 @@
         @endforelse
     </section>
 
+    <h2 style="margin-top: 28px;" id="shops">Shops</h2>
+    <section class="panel list">
+        @forelse ($stores as $store)
+            <div class="row feedback-row">
+                <span class="dot"></span>
+                <span class="what">
+                    <span class="tags">
+                        <em class="src--contact">Online store</em>
+                        <em>{{ count($store->catalog ?? []) }} {{ \Illuminate\Support\Str::plural('product', count($store->catalog ?? [])) }}</em>
+                        <em>{{ number_format($store->orders_count) }} {{ \Illuminate\Support\Str::plural('order', $store->orders_count) }}</em>
+                        <em>{{ strtoupper($store->currency) }}</em>
+                        @if ($store->stripe_live_account || $store->stripe_test_account)<em>Stripe {{ $store->stripe_live_account ? 'live' : 'test' }}</em>@endif
+                        @if ($store->disabled_at)<em class="src--popup">Checkout off</em>@endif
+                    </span>
+                    <span class="feedback-row__comment">{{ $store->name }}</span>
+                    <span class="feedback-row__email">Owner <a href="mailto:{{ $store->account->email }}" class="link">{{ $store->account->email }}</a></span>
+                </span>
+                <time title="Last change">{{ $store->updated_at?->diffForHumans(short: true) }}</time>
+                <form method="POST" action="{{ route('admin.builder.stores.toggle', $store) }}">
+                    @csrf
+                    <button type="submit" class="btn btn--ghost btn--sm">{{ $store->disabled_at ? 'Turn checkout on' : 'Turn checkout off' }}</button>
+                </form>
+            </div>
+        @empty
+            <div class="empty">
+                <img src="{{ asset('images/logo-mark.svg') }}" alt="" width="48" height="48">
+                <p>No shops yet.</p>
+            </div>
+        @endforelse
+    </section>
+
     <h2 style="margin-top: 28px;">Forms</h2>
     <section class="panel list">
         @forelse ($forms as $form)

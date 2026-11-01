@@ -15,6 +15,7 @@ class BuilderKits
         'soon' => 'coming-soon-builder',
         'event' => 'event-website-builder',
         'menu' => 'menu-builder',
+        'store' => 'store-builder',
     ];
 
     public static function get(string $kit): array
@@ -93,6 +94,22 @@ class BuilderKits
                     ['Do I need to reprint the QR code when prices change?', 'No. The QR code points to your menu’s web address, which stays the same. Change your prices, publish again, and every printed code shows the new menu.'],
                     ['Can customers order?', 'Yes — the buttons can open WhatsApp, a phone call or your own ordering link. Add your WhatsApp number in the button’s Content tab.'],
                     ['Can I add photos of dishes?', 'Yes. Add an Image, Gallery or Image box widget anywhere on the page and click it to upload a photo.'],
+                ],
+            ],
+            'store' => [
+                'crumb' => 'Online store builder',
+                'title' => 'Free Online Store Builder — Sell Online with Cart & Checkout',
+                'description' => 'Build a free online store: product pages, a shopping cart and checkout with card payments (Stripe), cash on delivery or bank transfer. Orders are emailed to you.',
+                'h1' => 'Start selling with a <span class="accent">free online store</span>',
+                'lead' => 'Pick a clothing, bakery, beauty or gift shop, add your products and prices, and switch on checkout. Customers add to cart and pay by card, cash on delivery or bank transfer — every order is emailed to you.',
+                'cta' => ['Ready for a bigger store?', 'We build online stores with stock tracking, discount codes, shipping rules and your own domain. Start free: we design the first version at no cost.'],
+                'faq' => [
+                    ['Is the online store builder really free?', 'Yes. Build your shop, publish it free on sites.owlvix.com and take orders. Cash on delivery and bank transfer cost nothing. Card payments go through your own Stripe account, so Stripe’s normal card fee applies.'],
+                    ['How do customers pay?', 'You choose: card payments with Stripe (money goes straight to your Stripe account), cash on delivery, bank transfer (we show your bank details after the order), or any mix of them.'],
+                    ['Where do I see my orders?', 'Every order is emailed to you, and the Orders tab in the builder lists them all. Mark them as sent or completed, and download them as a CSV file. Customers get an email receipt too.'],
+                    ['Can I charge for delivery?', 'Yes. Set a delivery fee and, if you like, free delivery over a certain amount. You can also offer pick-up from your shop.'],
+                    ['Can I sell sizes or colours?', 'Yes. Give a product options such as “Size: S, M, L” and customers pick one before adding it to their cart.'],
+                    ['Can my customers change the prices?', 'No. The prices are saved on our side when you publish, and checkout always charges those prices — whatever someone changes on the page.'],
                 ],
             ],
             'soon' => [

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class BuilderProject extends Model
 {
     /** The builders that save here: the page builder's modes and the email builder. */
-    public const KINDS = ['landing', 'funnel', 'website', 'portfolio', 'links', 'soon', 'event', 'menu', 'email'];
+    public const KINDS = ['landing', 'funnel', 'website', 'portfolio', 'links', 'soon', 'event', 'menu', 'store', 'email'];
 
     public const MAX_PER_KIND = 20;
 

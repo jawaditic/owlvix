@@ -76,7 +76,8 @@ class BuilderSurveyTest extends TestCase
             ->assertSee('Party RSVP')->assertSee('name="food1[]"', false)->assertSee('--c: #ff0000', false);
         $this->assertStringContainsString('frame-ancestors *', $page->headers->get('Content-Security-Policy'));
         $this->assertStringContainsString("default-src 'none'", $page->headers->get('Content-Security-Policy')); // no scripts allowed
-        $this->assertStringNotContainsString('script-src', $page->headers->get('Content-Security-Policy'));
+        // the only script allowed is owlvix's page runtime (it starts phone pickers on the visitor's country)
+        $this->assertStringContainsString('script-src '.\App\Support\BuilderHtml::runtimeUrl().';', $page->headers->get('Content-Security-Policy'));
         $this->get('/form/'.$form['id'].'?embed=1')->assertOk()->assertSee('name="_embed"', false);
     }
 
