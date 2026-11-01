@@ -265,6 +265,22 @@ class BuilderTest extends TestCase
         $this->post('/f/zzzzzzzzzzzzzzzz', ['name' => 'A'])->assertNotFound();
     }
 
+    public function test_a_waitlist_form_needs_only_an_email(): void
+    {
+        $token = $this->signIn();
+        $form = $this->api($token)->postJson('/builder/forms', ['site_name' => 'Kite'])->json('form');
+        Mail::fake();
+        // a sign-up form has no message (or name) box at all
+        $this->post('/f/'.$form['id'], ['email' => 'ann@example.com', '_back' => 'https://kite.example/'])
+            ->assertRedirect(route('builder.form.sent', ['id' => $form['id'], 'back' => 'https://kite.example/', 'signup' => 1]));
+        Mail::assertSent(BuilderFormMessage::class, fn ($m) => $m->envelope()->subject === 'New sign-up on your website: Kite' && $m->hasReplyTo('ann@example.com')
+            && str_contains($m->render(), 'ann@example.com joined your list'));
+        $this->get('/f/'.$form['id'].'/sent?signup=1')->assertSee('You’re on the list');
+        // a contact form's message box still has to be filled in
+        $this->post('/f/'.$form['id'], ['name' => 'Ann', 'email' => 'ann@example.com', 'message' => ''])->assertStatus(422)->assertSee('Please write a message');
+        Mail::assertSentCount(1);
+    }
+
     public function test_the_form_endpoint_needs_no_csrf_token(): void
     {
         // Static pages hosted anywhere post to /f/{id}, so it must be excluded from CSRF checks

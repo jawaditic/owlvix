@@ -71,8 +71,15 @@ class StoreController extends Controller
             // amounts in codes were in the old currency: those codes are switched off until the owner checks them
             $store->discounts()->where(fn ($q) => $q->where('kind', 'amount')->orWhere('min_total', '>', 0))->update(['active' => false]);
         }
-        $fill = ['name' => trim($data['name']), 'currency' => $currency,
-            'catalog' => Shop::catalog($data['products'] ?? [], $currency), 'settings' => Shop::settings($data['settings'] ?? [], $currency)];
+        $catalog = Shop::catalog($data['products'] ?? [], $currency);
+        $own = $store ? $store->files()->pluck('id')->all() : [];
+        foreach ($catalog as &$product) { // a download can only be one of this shop's own files
+            if ($product['file'] && ! in_array($product['file'], $own, true)) {
+                $product['file'] = null;
+            }
+        }
+        unset($product);
+        $fill = ['name' => trim($data['name']), 'currency' => $currency, 'catalog' => $catalog, 'settings' => Shop::settings($data['settings'] ?? [], $currency)];
         if (! $store) {
             $store = new BuilderStore(['id' => BuilderStore::newId(), 'ref' => $data['ref'] ?? null] + $fill);
             $store->builder_account_id = $account->id;
@@ -81,7 +88,7 @@ class StoreController extends Controller
             $store->update($fill + ['ref' => $store->ref ?? ($data['ref'] ?? null)]);
         }
         // stock of products (or sizes) that are gone is forgotten (under the lock orders use)
-        $keys = collect($store->catalog)->flatMap(fn ($p) => $p['vars'] ? array_map(fn ($v) => Shop::key($p['id'], $v['id']), $p['vars']) : [$p['id']])->all();
+        $keys = collect($store->catalog)->flatMap(fn ($p) => array_keys(Shop::keysOf($p)))->all();
         \Illuminate\Support\Facades\DB::transaction(function () use ($store, $keys) {
             $locked = BuilderStore::whereKey($store->id)->lockForUpdate()->first();
             if ($locked->stock) {
@@ -107,14 +114,14 @@ class StoreController extends Controller
             return response()->streamDownload(function () use ($store) {
                 $out = fopen('php://output', 'w');
                 fwrite($out, "\xEF\xBB\xBF"); // so Excel reads UTF-8
-                fputcsv($out, ['Order', 'Date', 'Status', 'Paid', 'Payment', 'Delivery', 'Name', 'Email', 'Phone', 'Address', 'Country', 'Items', 'Subtotal', 'Discount', 'Code', 'Delivery fee', 'Tax', 'Total', 'Tracking', 'Note'], escape: '');
+                fputcsv($out, ['Order', 'Date', 'Status', 'Paid', 'Payment', 'Delivery', 'Name', 'Email', 'Phone', 'Address', 'Country', 'Items', 'Subtotal', 'Discount', 'Code', 'Delivery fee', 'Tax', 'Total', 'Refunded', 'Tracking', 'Note'], escape: '');
                 $store->orders()->latest('id')->chunk(200, function ($orders) use ($out) {
                     foreach ($orders as $o) {
                         $items = implode('; ', array_map(fn ($l) => $l['qty'].' × '.$l['name'].($l['option'] ? ' ('.$l['option'].')' : ''), $o->items ?? []));
                         fputcsv($out, array_map([BuilderController::class, 'csvCell'], [$o->label(), $o->created_at?->format('Y-m-d H:i'), BuilderOrder::STATUS_LABELS[$o->status] ?? $o->status,
                             $o->isPaid() ? 'Yes' : 'No', BuilderOrder::PAY_LABELS[$o->pay] ?? $o->pay, $o->delivery === 'pickup' ? 'Pick-up' : 'Delivery', $o->name, $o->email, $o->phone,
                             $o->address, $o->country, $items, $o->money($o->subtotal), $o->discount ? $o->money($o->discount) : '', $o->discount_code, $o->money($o->delivery_fee),
-                            $o->tax ? $o->money($o->tax).($o->tax_included ? ' (included)' : '') : '', $o->money($o->total), $o->tracking, $o->note]), escape: '');
+                            $o->tax ? $o->money($o->tax).($o->tax_included ? ' (included)' : '') : '', $o->money($o->total), $o->refunded ? $o->money($o->refunded) : '', $o->tracking, $o->note]), escape: '');
                     }
                 });
                 fclose($out);
@@ -162,7 +169,9 @@ class StoreController extends Controller
             }
             $order->status = $status;
         }
+        $paidNow = false;
         if ($request->has('paid') && $order->pay !== 'card') { // card orders are only marked paid by Stripe
+            $paidNow = $request->boolean('paid') && ! $order->paid_at;
             $order->paid_at = $request->boolean('paid') ? ($order->paid_at ?? now()) : null;
         }
         if (($status ?? null) === 'cancelled') {
@@ -171,6 +180,9 @@ class StoreController extends Controller
         $order->save();
         if (($status ?? null) === 'cancelled') {
             Shop::giveBack($order); // its stock and its code's use can be used again
+        }
+        if ($paidNow && $order->status !== 'cancelled') {
+            ShopController::paidNow($order, $this->user($request)->email); // gift cards made; downloads and codes emailed
         }
         if (! empty($shipNow) && $request->boolean('notify', true) && ShopController::mayEmailCustomer($store)) { // "Your order is on its way"
             $owner = $this->user($request)->email;
@@ -184,6 +196,119 @@ class StoreController extends Controller
         }
 
         return response()->json(['ok' => true, 'order' => $order->fresh()->toApi()]);
+    }
+
+    /**
+     * Give money back: {amount: "12.50"} (empty: everything not refunded yet). Card orders are refunded through Stripe
+     * on the owner's account; for cash and bank orders the owner pays it back themselves and this records it.
+     * The customer is emailed. A refund doesn't cancel the order or give stock back — that's the status's job.
+     */
+    public function refundOrder(Request $request, string $id, int $number): JsonResponse
+    {
+        $store = $this->own($request, $id);
+        $order = $store?->orders()->where('number', $number)->first();
+        if (! $order) {
+            return $this->fail('Order not found.', 404);
+        }
+        if (! $order->isPaid()) {
+            return $this->fail($order->pay === 'card' ? 'This order isn’t paid, so there is nothing to refund.' : 'Mark the order as paid first — then you can record a refund.', 422);
+        }
+        $left = $order->total - $order->refunded;
+        $in = $request->input('amount');
+        $amount = $in === null || $in === '' ? $left : Shop::minor($in, $order->currency);
+        if (! $amount || $amount < 1) {
+            return $this->fail('Please enter how much to refund.', 422);
+        }
+        if ($amount > $left) {
+            return $this->fail('You can refund up to '.$order->money($left).'.', 422);
+        }
+        if ($order->pay === 'card') {
+            if (! in_array($order->stripe_mode, Stripe::MODES, true) || ! $order->stripe_session || ! ($account = $store->stripeAccount($order->stripe_mode))) {
+                return $this->fail('Stripe isn’t connected any more. Refund it in your Stripe dashboard instead.', 422);
+            }
+            try {
+                $intent = Stripe::sessionOn($order->stripe_mode, $account, $order->stripe_session)['payment_intent'] ?? '';
+                if (! $intent) {
+                    throw new \RuntimeException('No payment found for this order.');
+                }
+                Stripe::refund($order->stripe_mode, $account, $intent, $amount);
+            } catch (\Throwable $e) {
+                report($e);
+
+                return $this->fail('Stripe couldn’t make the refund. Please try again, or refund it in your Stripe dashboard.', 502);
+            }
+        }
+        // counted under a lock, so two clicks can't refund more than was paid
+        $updated = \Illuminate\Support\Facades\DB::table('builder_orders')->where('id', $order->id)->whereRaw('refunded + ? <= total', [$amount])
+            ->update(['refunded' => \Illuminate\Support\Facades\DB::raw('refunded + '.(int) $amount), 'refunded_at' => now(), 'updated_at' => now()]);
+        if (! $updated) {
+            return $this->fail('This order was refunded meanwhile. Please reload.', 409);
+        }
+        $order->refresh();
+        if (ShopController::mayEmailCustomer($store)) {
+            $owner = $this->user($request)->email;
+            \Illuminate\Support\defer(function () use ($order, $owner, $amount) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($order->email)->send(new \App\Mail\BuilderOrderRefunded($order, $owner, $amount));
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            });
+        }
+
+        return response()->json(['ok' => true, 'order' => $order->toApi()]);
+    }
+
+    /**
+     * Sales for the last 7, 30 or 90 days: takings (orders not cancelled or unpaid, less refunds), orders, average
+     * order, the change from the period before, takings per day, best sellers and what is running low.
+     */
+    public function sales(Request $request, string $id): JsonResponse
+    {
+        $store = $this->own($request, $id);
+        if (! $store) {
+            return $this->fail('Shop not found.', 404);
+        }
+        $days = in_array((int) $request->query('days'), [7, 30, 90], true) ? (int) $request->query('days') : 30;
+        $from = now()->startOfDay()->subDays($days - 1);
+        $counted = fn ($q) => $q->whereIn('status', ['new', 'shipped', 'done']);
+        $orders = $counted($store->orders()->where('created_at', '>=', $from))->get(['total', 'refunded', 'items', 'pay', 'created_at']);
+        $before = $counted($store->orders()->whereBetween('created_at', [$from->copy()->subDays($days), $from]))->get(['total', 'refunded']);
+        $takings = fn ($list) => $list->sum(fn ($o) => $o->total - $o->refunded);
+        $money = fn (int $m) => Shop::format($m, $store->currency);
+        $now = $takings($orders);
+        $prev = $takings($before);
+
+        $perDay = [];
+        for ($d = $from->copy(); $d->lte(now()); $d->addDay()) {
+            $perDay[$d->format('Y-m-d')] = 0;
+        }
+        foreach ($orders as $o) {
+            $perDay[$o->created_at->format('Y-m-d')] = ($perDay[$o->created_at->format('Y-m-d')] ?? 0) + $o->total - $o->refunded;
+        }
+        $best = [];
+        foreach ($orders as $o) {
+            foreach ($o->items ?? [] as $l) {
+                $k = $l['name'].($l['option'] ? ' ('.$l['option'].')' : '');
+                $best[$k] = ['name' => $k, 'qty' => ($best[$k]['qty'] ?? 0) + $l['qty'], 'sales' => ($best[$k]['sales'] ?? 0) + $l['price'] * $l['qty']];
+            }
+        }
+        usort($best, fn ($a, $b) => $b['qty'] <=> $a['qty'] ?: $b['sales'] <=> $a['sales']);
+        // tracked stock at 5 or less, with the product's name
+        $names = [];
+        foreach ($store->catalog ?? [] as $p) {
+            $names += Shop::keysOf($p + ['vars2' => []]);
+        }
+        $low = collect($store->stock ?? [])->filter(fn ($n, $k) => $n <= 5 && isset($names[$k]))->sort()
+            ->map(fn ($n, $k) => ['name' => $names[$k], 'left' => $n])->values()->take(8);
+
+        return response()->json(['ok' => true, 'days' => $days, 'currency' => $store->currency,
+            'takings' => $money($now), 'orders' => $orders->count(), 'average' => $orders->count() ? $money(intdiv($now, $orders->count())) : $money(0),
+            'change' => $prev > 0 ? (int) round(($now - $prev) / $prev * 100) : null,
+            'per_day' => collect($perDay)->map(fn ($m, $day) => ['day' => $day, 'value' => Shop::zeroDecimal($store->currency) ? $m : $m / 100, 'label' => $money($m)])->values(),
+            'best' => array_map(fn ($b) => ['name' => $b['name'], 'qty' => $b['qty'], 'sales' => $money($b['sales'])], array_slice($best, 0, 5)),
+            'low' => $low,
+            'by_pay' => $orders->groupBy('pay')->map->count()]);
     }
 
     /**
@@ -204,7 +329,7 @@ class StoreController extends Controller
             $locked = BuilderStore::whereKey($store->id)->lockForUpdate()->first();
             $stock = $locked->stock ?? [];
             foreach ($in as $key => $qty) {
-                if (! is_string($key) || ! preg_match('/^[a-z0-9]{1,24}(:[a-z0-9]{1,24})?$/i', $key)) {
+                if (! is_string($key) || ! preg_match('/^[a-z0-9]{1,24}(:[a-z0-9]{1,24}(_[a-z0-9]{1,24})?)?$/i', $key)) {
                     continue;
                 }
                 if ($qty === null || $qty === '') {
@@ -218,6 +343,97 @@ class StoreController extends Controller
         });
 
         return response()->json(['ok' => true, 'stock' => (object) ($store->fresh()->stock ?? [])]);
+    }
+
+    /* ---------- files sold as digital downloads */
+
+    public function files(Request $request, string $id): JsonResponse
+    {
+        $store = $this->own($request, $id);
+
+        return $store ? response()->json(['ok' => true, 'files' => $store->files()->latest()->get()->map->toApi()->values()]) : $this->fail('Shop not found.', 404);
+    }
+
+    /** Upload a file to sell (multipart "file"). Kept privately; only buyers of a paid order can download it. */
+    public function uploadFile(Request $request, string $id): JsonResponse
+    {
+        $store = $this->own($request, $id);
+        if (! $store) {
+            return $this->fail('Shop not found.', 404);
+        }
+        $file = $request->file('file');
+        if (! $file || ! $file->isValid()) {
+            return $this->fail('Please choose a file.', 422);
+        }
+        if ($file->getSize() > \App\Models\BuilderShopFile::MAX_BYTES) {
+            return $this->fail('Files can be up to 25 MB.', 422);
+        }
+        if ($store->files()->count() >= \App\Models\BuilderShopFile::MAX_PER_STORE) {
+            return $this->fail('A shop can have up to '.\App\Models\BuilderShopFile::MAX_PER_STORE.' files. Delete one first.', 422);
+        }
+        $ext = strtolower($file->getClientOriginalExtension());
+        if (in_array($ext, ['php', 'phtml', 'phar', 'html', 'htm', 'svg', 'js', 'exe', 'sh', 'bat', 'cmd', 'msi', 'jar', 'app', 'dmg'], true)) {
+            return $this->fail('That kind of file can’t be sold here. Zip it first, or use PDF, images, audio, video or documents.', 422);
+        }
+        $name = trim(preg_replace('/[^\w .()\-]+/u', '', $file->getClientOriginalName())) ?: 'download'.($ext ? '.'.$ext : '');
+        $item = $store->files()->make(['id' => \App\Models\BuilderShopFile::newId(), 'name' => mb_substr($name, 0, 150), 'size' => $file->getSize(),
+            'mime' => mb_substr($file->getMimeType() ?: 'application/octet-stream', 0, 100)]);
+        \App\Models\BuilderShopFile::disk()->putFileAs('shop-files/'.$store->id, $file, $item->id);
+        $item->save();
+
+        return response()->json(['ok' => true, 'file' => $item->toApi()]);
+    }
+
+    public function deleteFile(Request $request, string $id, string $file): JsonResponse
+    {
+        $store = $this->own($request, $id);
+        $item = $store?->files()->find($file);
+        if (! $item) {
+            return $this->fail('File not found.', 404);
+        }
+        \App\Models\BuilderShopFile::disk()->delete($item->path());
+        $item->delete();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /* ---------- reviews and gift cards */
+
+    public function reviews(Request $request, string $id): JsonResponse
+    {
+        $store = $this->own($request, $id);
+        if (! $store) {
+            return $this->fail('Shop not found.', 404);
+        }
+        $names = collect($store->catalog ?? [])->pluck('name', 'id');
+
+        return response()->json(['ok' => true, 'reviews' => $store->reviews()->latest()->take(200)->get()->map(fn ($r) => [
+            'id' => $r->id, 'product' => $names[$r->product_id] ?? 'A product that’s gone', 'name' => $r->name, 'rating' => $r->rating,
+            'text' => (string) $r->text, 'hidden' => $r->hidden, 'date' => $r->created_at?->toIso8601String()])->values()]);
+    }
+
+    /** Hide or show a review on the shop ({hidden: true|false}), or delete it ({delete: true}). */
+    public function updateReview(Request $request, string $id, int $review): JsonResponse
+    {
+        $store = $this->own($request, $id);
+        $item = $store?->reviews()->find($review);
+        if (! $item) {
+            return $this->fail('Review not found.', 404);
+        }
+        if ($request->boolean('delete')) {
+            $item->delete();
+        } else {
+            $item->update(['hidden' => $request->boolean('hidden')]);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function giftCards(Request $request, string $id): JsonResponse
+    {
+        $store = $this->own($request, $id);
+
+        return $store ? response()->json(['ok' => true, 'cards' => $store->giftCards()->latest()->take(200)->get()->map->toApi()->values()]) : $this->fail('Shop not found.', 404);
     }
 
     public function discounts(Request $request, string $id): JsonResponse
@@ -323,6 +539,7 @@ class StoreController extends Controller
                 }
             }
         }
+        \App\Models\BuilderShopFile::disk()->deleteDirectory('shop-files/'.$store->id); // its files for sale go too
         $store->delete();
 
         return response()->json(['ok' => true]);

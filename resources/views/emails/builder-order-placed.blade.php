@@ -5,7 +5,11 @@
         'Customer' => e($order->name),
         'Email' => '<a href="mailto:'.e($order->email).'" style="color:#17a85f;font-weight:600;">'.e($order->email).'</a>',
         'Phone' => filled($order->phone) ? '<a href="tel:'.e(preg_replace('/[^\d+]/', '', $order->phone)).'" style="color:#17a85f;">'.e($order->phone).'</a>' : '—',
-        $order->delivery === 'pickup' ? 'Pick-up' : 'Deliver to' => $order->delivery === 'pickup' ? 'The customer will collect it' : nl2br(e($order->address)).($order->countryName() ? '<br>'.e($order->countryName()) : ''),
+        $order->delivery === 'pickup' ? 'Pick-up' : ($order->delivery === 'digital' ? 'Delivery' : 'Deliver to') => match ($order->delivery) {
+            'pickup' => 'The customer will collect it',
+            'digital' => 'Nothing to post: downloads and gift cards are sent once the order is paid',
+            default => nl2br(e($order->address)).($order->countryName() ? '<br>'.e($order->countryName()) : ''),
+        },
         'Payment' => e(\App\Models\BuilderOrder::PAY_LABELS[$order->pay] ?? $order->pay).($paid ? ' — <b style="color:#17a85f;">paid</b>' : ' — not paid yet').($order->stripe_mode === 'test' ? ' (test payment)' : ''),
         'Placed' => $order->created_at->format('d M Y, H:i').' UTC',
     ];

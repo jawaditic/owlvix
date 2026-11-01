@@ -117,7 +117,9 @@ class BuilderPublicController extends Controller
             return $this->submitSurvey($request, $form);
         }
         $back = $this->safeUrl($request->input('_back'));
-        $sent = redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303);
+        // A sign-up form (waitlist, "notify me") sends no message box; a contact form must have its message filled in
+        $signup = ! $request->has('message');
+        $sent = redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back] + ($signup ? ['signup' => 1] : []), 303);
 
         // Bots fill the hidden field: pretend it worked
         if (filled($request->input('_hp'))) {
@@ -125,10 +127,10 @@ class BuilderPublicController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['sometimes', 'required', 'string', 'max:100'], // only when the form asks for it
             'email' => ['required', 'email', 'max:150'],
             'phone' => ['nullable', 'string', 'max:'.($request->filled('_dial') ? 24 : 30)], // with a calling code in front it must still fit
-            'message' => ['required', 'string', 'min:2', 'max:5000'],
+            'message' => ['sometimes', 'required', 'string', 'min:2', 'max:5000'],
         ], [
             'name.required' => 'Please enter your name.',
             'name.max' => 'Please keep your name under 100 characters.',
@@ -142,7 +144,7 @@ class BuilderPublicController extends Controller
             return $this->problem($form, $back, $validator->errors()->all(), 422);
         }
         $data = $validator->validated();
-        if (preg_match_all('#https?://|www\.#i', $data['message']) > self::MAX_LINKS) {
+        if (preg_match_all('#https?://|www\.#i', ($data['message'] ?? '').' '.($data['name'] ?? '')) > self::MAX_LINKS) {
             return $this->problem($form, $back, ['Please include no more than '.self::MAX_LINKS.' links in your message.'], 422);
         }
 
@@ -152,10 +154,10 @@ class BuilderPublicController extends Controller
 
         try {
             Mail::to($form->account->email)->send(new BuilderFormMessage($form, [
-                'name' => trim($data['name']),
+                'name' => trim($data['name'] ?? ''),
                 'email' => $data['email'],
                 'phone' => \App\Support\Phone::combine($data['phone'] ?? null, $request->input('_dial')), // "+44 7911 123456"
-                'message' => trim($data['message']),
+                'message' => isset($data['message']) ? trim($data['message']) : null, // none: a sign-up
                 'page' => $back,
             ]));
         } catch (\Throwable $e) {
@@ -307,7 +309,7 @@ class BuilderPublicController extends Controller
     {
         $form = $this->form($id);
 
-        return response()->view('builder.sent', ['form' => $form, 'back' => $this->safeUrl($request->query('back'))])
+        return response()->view('builder.sent', ['form' => $form, 'back' => $this->safeUrl($request->query('back')), 'signup' => $request->boolean('signup')])
             ->header('X-Robots-Tag', 'noindex');
     }
 

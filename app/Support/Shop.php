@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\BuilderDiscount;
+use App\Models\BuilderGiftCard;
 use App\Models\BuilderOrder;
 use App\Models\BuilderStore;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,9 @@ class Shop
     public const MAX_QTY = 99;
 
     public const PAY = ['card', 'cod', 'bank'];
+
+    /** item: posted or collected; digital: a file to download; gift: a gift card (its price is its value). */
+    public const KINDS = ['item', 'digital', 'gift'];
 
     public const DELIVERY = ['delivery', 'pickup'];
 
@@ -115,10 +119,25 @@ class Shop
                     }
                 }
             }
+            // a second choice (size × colour): names only, every combination costs what the first choice costs
+            $vars2 = [];
+            foreach (array_slice($vars && is_array($p['vars2'] ?? null) ? $p['vars2'] : [], 0, self::MAX_VARIANTS) as $v) {
+                $vname = is_array($v) && is_string($v['name'] ?? null) ? trim(mb_substr(strip_tags($v['name']), 0, 60)) : '';
+                $vid = is_array($v) && is_string($v['id'] ?? null) && preg_match('/^[a-z0-9]{1,24}$/i', $v['id']) ? $v['id'] : null;
+                if ($vname !== '' && $vid && ! in_array($vid, array_column($vars2, 'id'), true) && ! in_array($vname, array_column($vars2, 'name'), true)) {
+                    $vars2[] = ['id' => $vid, 'name' => $vname];
+                }
+            }
+            $kind = in_array($p['kind'] ?? null, self::KINDS, true) ? $p['kind'] : 'item';
+            if ($kind === 'gift') { // a gift card is worth what it costs: no sizes
+                $vars = $vars2 = [];
+            }
             $seen[$p['id']] = true;
             $opt = is_string($p['opt'] ?? null) ? trim(mb_substr($p['opt'], 0, 30)) : '';
+            $opt2 = is_string($p['opt2'] ?? null) ? trim(mb_substr($p['opt2'], 0, 30)) : '';
             $out[] = ['id' => $p['id'], 'name' => mb_substr($name, 0, 200), 'price' => $price, 'sold' => ! empty($p['sold']),
-                'opt' => $vars ? ($opt ?: 'Option') : null, 'vars' => $vars];
+                'opt' => $vars ? ($opt ?: 'Option') : null, 'vars' => $vars, 'opt2' => $vars2 ? ($opt2 ?: 'Option') : null, 'vars2' => $vars2,
+                'kind' => $kind, 'file' => $kind === 'digital' && is_string($p['file'] ?? null) && preg_match('/^[a-z0-9]{24}$/', $p['file']) ? $p['file'] : null];
         }
 
         return $out;
@@ -157,6 +176,7 @@ class Shop
             'tax_label' => $str('taxLabel', 20) ?: 'Tax',
             'tax_ship' => ! empty($s['taxShip']),
             'phone_req' => ($s['phoneReq'] ?? true) !== false,
+            'remind' => ($s['remind'] ?? true) !== false, // one email to people who started paying by card and stopped
             'thanks' => $str('thanks', 300),
             'whatsapp' => substr(preg_replace('/\D/', '', (string) ($s['whatsapp'] ?? '')), 0, 15),
         ];
@@ -216,9 +236,26 @@ class Shop
     }
 
     /** The stock key of a product or one of its variants ("tee1", "tee1:v2"). */
-    public static function key(string $id, ?string $vid): string
+    /** The stock key of a product or one of its variants ("tee1", "tee1:v2", "tee1:v2_c3" for size × colour). */
+    public static function key(string $id, ?string $vid, ?string $vid2 = null): string
     {
-        return $vid ? $id.':'.$vid : $id;
+        return $vid ? $id.':'.$vid.($vid2 ? '_'.$vid2 : '') : $id;
+    }
+
+    /** Every stock key of a catalog product. */
+    public static function keysOf(array $p): array
+    {
+        if (! $p['vars']) {
+            return [$p['id'] => $p['name']];
+        }
+        $out = [];
+        foreach ($p['vars'] as $v) {
+            foreach (($p['vars2'] ?? []) ?: [null] as $v2) {
+                $out[self::key($p['id'], $v['id'], $v2['id'] ?? null)] = $p['name'].' ('.$v['name'].($v2 ? ' / '.$v2['name'] : '').')';
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -243,6 +280,7 @@ class Shop
             $id = is_array($l) && is_string($l['id'] ?? null) ? $l['id'] : '';
             $qty = is_array($l) && is_numeric($l['qty'] ?? null) ? (int) $l['qty'] : 0;
             $vid = is_array($l) && is_string($l['vid'] ?? null) ? $l['vid'] : '';
+            $vid2 = is_array($l) && is_string($l['vid2'] ?? null) ? $l['vid2'] : '';
             $opt = is_array($l) && is_string($l['opt'] ?? null) ? trim($l['opt']) : '';
             $p = $products->get($id);
             if (! $p) {
@@ -269,9 +307,20 @@ class Shop
                     continue;
                 }
             }
-            $line = ['id' => $id, 'vid' => $var['id'] ?? null, 'name' => $p['name'], 'option' => $var['name'] ?? null, 'price' => $var['price'] ?? $p['price'], 'qty' => $qty];
+            $var2 = null;
+            if (! empty($p['vars2'])) {
+                $var2 = collect($p['vars2'])->first(fn ($v) => $v['id'] === $vid2);
+                if (! $var2) {
+                    $errors[] = 'Please choose your '.strtolower($p['opt2'] ?? 'option').' for “'.$p['name'].'”.';
+
+                    continue;
+                }
+            }
+            $line = ['id' => $id, 'vid' => $var['id'] ?? null, 'vid2' => $var2['id'] ?? null, 'name' => $p['name'],
+                'option' => isset($var) ? $var['name'].($var2 ? ' / '.$var2['name'] : '') : null, 'price' => $var['price'] ?? $p['price'], 'qty' => $qty,
+                'kind' => $p['kind'] ?? 'item', 'file' => $p['file'] ?? null];
             foreach ($lines as &$same) { // the same product and variant twice: one line
-                if ($same['id'] === $id && $same['vid'] === $line['vid']) {
+                if ($same['id'] === $id && $same['vid'] === $line['vid'] && $same['vid2'] === $line['vid2']) {
                     $same['qty'] = min(self::MAX_QTY, $same['qty'] + $qty);
 
                     continue 2;
@@ -292,12 +341,30 @@ class Shop
         return $code !== '' && strlen($code) <= 40 ? $store->discounts()->where('code', $code)->first() : null;
     }
 
+    /** The shop's gift card for this code (any case, with or without dashes), when it has money left. */
+    public static function giftCard(BuilderStore $store, mixed $code): ?BuilderGiftCard
+    {
+        $code = is_string($code) ? strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $code)) : '';
+        if (! preg_match('/^GIFT[A-Z0-9]{8}$/', $code)) {
+            return null;
+        }
+
+        return $store->giftCards()->where('code', substr($code, 0, 4).'-'.substr($code, 4, 4).'-'.substr($code, 8))
+            ->where('currency', $store->currency)->where('balance', '>', 0)->first();
+    }
+
+    /** Something in these lines has to be posted or collected (not only downloads and gift cards). */
+    public static function ships(array $lines): bool
+    {
+        return collect($lines)->contains(fn ($l) => ($l['kind'] ?? 'item') === 'item');
+    }
+
     /**
      * Subtotal, discount, delivery fee, tax and total (smallest unit) for these lines.
      *
      * @return array{subtotal: int, discount: int, delivery_fee: int, tax: int, tax_included: bool, total: int}
      */
-    public static function totals(BuilderStore $store, array $lines, string $delivery, ?string $country = null, ?BuilderDiscount $code = null): array
+    public static function totals(BuilderStore $store, array $lines, string $delivery, ?string $country = null, ?BuilderDiscount $code = null, ?BuilderGiftCard $gift = null): array
     {
         $s = $store->settings ?? [];
         $sub = array_sum(array_map(fn ($l) => $l['price'] * $l['qty'], $lines));
@@ -308,7 +375,7 @@ class Shop
         };
         $after = $sub - $off;
         $fee = 0;
-        if ($delivery === 'delivery' && ($zone = self::zone($store, $country))) {
+        if ($delivery === 'delivery' && self::ships($lines) && ($zone = self::zone($store, $country))) {
             $fee = $code?->kind === 'shipping' || ($zone['free_over'] > 0 && $after >= $zone['free_over']) ? 0 : (int) $zone['fee'];
         }
         $rate = (float) ($s['tax_rate'] ?? 0);
@@ -316,7 +383,10 @@ class Shop
         $base = $after + (! empty($s['tax_ship']) ? $fee : 0);
         $tax = $rate > 0 ? ($incl ? $base - (int) round($base / (1 + $rate / 100)) : (int) round($base * $rate / 100)) : 0;
 
-        return ['subtotal' => $sub, 'discount' => $off, 'delivery_fee' => $fee, 'tax' => $tax, 'tax_included' => $incl, 'total' => $after + $fee + ($incl ? 0 : $tax)];
+        $total = $after + $fee + ($incl ? 0 : $tax);
+        $giftAmount = $gift ? min($gift->balance, $total) : 0; // a gift card pays what it can; the rest is paid as usual
+
+        return ['subtotal' => $sub, 'discount' => $off, 'delivery_fee' => $fee, 'tax' => $tax, 'tax_included' => $incl, 'gift_amount' => $giftAmount, 'total' => $total - $giftAmount];
     }
 
     /**
@@ -327,7 +397,7 @@ class Shop
     {
         $stock = $store->stock ?? [];
         foreach ($lines as $l) {
-            $k = self::key($l['id'], $l['vid']);
+            $k = self::key($l['id'], $l['vid'], $l['vid2'] ?? null);
             if (array_key_exists($k, $stock)) {
                 if ($stock[$k] < $l['qty']) {
                     return $stock[$k] > 0
@@ -354,7 +424,7 @@ class Shop
             $store = BuilderStore::whereKey($order->builder_store_id)->lockForUpdate()->first();
             $stock = $store->stock ?? [];
             foreach ($order->items as $l) {
-                $k = self::key($l['id'], $l['vid'] ?? null);
+                $k = self::key($l['id'], $l['vid'] ?? null, $l['vid2'] ?? null);
                 if (array_key_exists($k, $stock)) {
                     $stock[$k] += $l['qty'];
                 }
@@ -363,6 +433,9 @@ class Shop
             $store->save();
             if ($order->discount_code) {
                 $store->discounts()->where('code', $order->discount_code)->where('uses', '>', 0)->decrement('uses');
+            }
+            if ($order->gift_code && $order->gift_amount) { // the gift card gets back what it paid
+                $store->giftCards()->where('code', $order->gift_code)->increment('balance', $order->gift_amount);
             }
         });
         $order->stock_taken = false;
@@ -381,7 +454,7 @@ class Shop
             $store = BuilderStore::whereKey($order->builder_store_id)->lockForUpdate()->first();
             $stock = $store->stock ?? [];
             foreach ($order->items as $l) {
-                $k = self::key($l['id'], $l['vid'] ?? null);
+                $k = self::key($l['id'], $l['vid'] ?? null, $l['vid2'] ?? null);
                 if (array_key_exists($k, $stock)) {
                     $stock[$k] = max(0, $stock[$k] - $l['qty']);
                 }
@@ -390,6 +463,9 @@ class Shop
             $store->save();
             if ($order->discount_code) {
                 $store->discounts()->where('code', $order->discount_code)->increment('uses');
+            }
+            if ($order->gift_code && $order->gift_amount && ($card = $store->giftCards()->where('code', $order->gift_code)->lockForUpdate()->first())) {
+                $card->update(['balance' => max(0, $card->balance - $order->gift_amount)]);
             }
         });
         $order->stock_taken = true;
@@ -411,6 +487,7 @@ class Shop
                 self::closeStripe($o);
                 if (BuilderOrder::whereKey($o->id)->where('status', 'unpaid')->whereNull('paid_at')->update(['status' => 'cancelled'])) {
                     self::giveBack($o);
+                    self::remind($o);
                 }
             });
     }
@@ -425,5 +502,48 @@ class Shop
                 // already closed or paid: checkPaid sorts out the second case
             }
         }
+    }
+
+    /**
+     * One email to someone who started paying by card and stopped (an abandoned cart): what they chose and a link back
+     * to the shop. Only when the shop allows it, once per order, and only to shops that may email customers.
+     */
+    public static function remind(BuilderOrder $order): void
+    {
+        $store = $order->store;
+        if (($store->settings['remind'] ?? true) === false || ! $order->email || ! \App\Http\Controllers\ShopController::mayEmailCustomer($store)) {
+            return;
+        }
+        if (! BuilderOrder::whereKey($order->id)->whereNull('reminded_at')->update(['reminded_at' => now()])) {
+            return;
+        }
+        try {
+            \Illuminate\Support\Facades\Mail::to($order->email)->send(new \App\Mail\BuilderOrderReminder($order->fresh(), $store->account->email));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * An order has just been paid: its gift cards are made (once). Returns the cards made now.
+     *
+     * @return list<BuilderGiftCard>
+     */
+    public static function onPaid(BuilderOrder $order): array
+    {
+        $store = $order->store;
+        $gifts = array_values(array_filter($order->items ?? [], fn ($l) => ($l['kind'] ?? '') === 'gift'));
+        if (! $gifts || $store->giftCards()->where('builder_order_id', $order->id)->exists()) {
+            return [];
+        }
+        $made = [];
+        foreach ($gifts as $l) {
+            for ($i = 0; $i < $l['qty']; $i++) {
+                $made[] = $store->giftCards()->create(['code' => BuilderGiftCard::newCode($store), 'currency' => $order->currency, 'initial' => $l['price'],
+                    'balance' => $l['price'], 'builder_order_id' => $order->id, 'email' => $order->email]);
+            }
+        }
+
+        return $made;
     }
 }

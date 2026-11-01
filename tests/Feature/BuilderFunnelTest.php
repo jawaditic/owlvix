@@ -197,7 +197,8 @@ class BuilderFunnelTest extends TestCase
         Mail::assertSent(BuilderFormMessage::class);
         Mail::assertNotSent(BuilderLeadMessage::class);
         $this->assertSame(0, BuilderLead::count());
-        $this->post('/f/'.$form['id'], ['email' => 'ann@example.com'])->assertStatus(422)->assertSee('Please enter your name.');
+        // a name box that is there must be filled in (a form with no name box is a waitlist sign-up)
+        $this->post('/f/'.$form['id'], ['name' => '', 'email' => 'ann@example.com', 'message' => 'Hi'])->assertStatus(422)->assertSee('Please enter your name.');
         $this->get('/f/'.$form['id'].'/sent')->assertSee('Message sent');
     }
 

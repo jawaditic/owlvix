@@ -162,16 +162,16 @@ class Stripe
      * @return array{id: string, url: string}
      */
     public static function checkoutOn(string $mode, ?string $account, string $currency, array $lines, string $success, string $cancel, array $meta, ?string $email = null,
-        int $discount = 0, string $discountName = '', ?int $expiresAt = null): array
+        int $discount = 0, string $discountName = '', ?int $expiresAt = null, ?string $couponId = null): array
     {
         $form = ['mode' => 'payment', 'success_url' => $success, 'cancel_url' => $cancel];
         if ($expiresAt) {
             $form['expires_at'] = $expiresAt;
         }
-        if ($discount > 0) { // a one-off coupon on the owner's account for this order's discount (smallest unit)
-            $coupon = self::api($mode, $account)->post('https://api.stripe.com/v1/coupons', ['amount_off' => $discount, 'currency' => $currency, 'duration' => 'once',
-                'name' => mb_substr($discountName ?: 'Discount', 0, 40), 'max_redemptions' => 1])->throw();
-            $form['discounts[0][coupon]'] = (string) $coupon->json('id');
+        if ($discount > 0) { // a one-off coupon on the owner's account for this order's discount (smallest unit), reused on "Pay now"
+            $couponId ??= (string) self::api($mode, $account)->post('https://api.stripe.com/v1/coupons', ['amount_off' => $discount, 'currency' => $currency, 'duration' => 'once',
+                'name' => mb_substr($discountName ?: 'Discount', 0, 40), 'max_redemptions' => 1])->throw()->json('id');
+            $form['discounts[0][coupon]'] = $couponId;
         }
         foreach ($meta as $k => $v) {
             $form["metadata[$k]"] = $v;
@@ -195,7 +195,7 @@ class Stripe
         }
         $res = self::api($mode, $account)->post('https://api.stripe.com/v1/checkout/sessions', $form)->throw();
 
-        return ['id' => (string) $res->json('id'), 'url' => (string) $res->json('url')];
+        return ['id' => (string) $res->json('id'), 'url' => (string) $res->json('url'), 'coupon' => $form['discounts[0][coupon]'] ?? null];
     }
 
     /** @return array{paid: bool, amount: int, currency: string} */
@@ -218,7 +218,21 @@ class Stripe
         $res = self::api($mode, $account)->get('https://api.stripe.com/v1/checkout/sessions/'.rawurlencode($id))->throw();
 
         return ['paid' => $res->json('payment_status') === 'paid', 'amount' => (int) $res->json('amount_total'),
-            'currency' => (string) $res->json('currency'), 'meta' => (array) ($res->json('metadata') ?? [])];
+            'currency' => (string) $res->json('currency'), 'meta' => (array) ($res->json('metadata') ?? []),
+            'payment_intent' => is_string($res->json('payment_intent')) ? $res->json('payment_intent') : (string) $res->json('payment_intent.id')];
+    }
+
+    /**
+     * Gives money back for a Checkout payment on the connected account (smallest unit). Owlvix's fee on that part is
+     * given back to the owner too. Returns the refund's id.
+     */
+    public static function refund(string $mode, ?string $account, string $paymentIntent, int $amount): string
+    {
+        $res = self::api($mode, $account)->post('https://api.stripe.com/v1/refunds', [
+            'payment_intent' => $paymentIntent, 'amount' => $amount, 'refund_application_fee' => 'true',
+        ])->throw();
+
+        return (string) $res->json('id');
     }
 
     /** A price in the currency's smallest unit (cents), as Stripe wants it. */

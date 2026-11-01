@@ -3,7 +3,7 @@
 @php($leads = $form->isLeads())
 @php($survey = $form->isSurvey())
 
-@section('title', $survey ? ($failed ? 'Not sent' : 'Thank you') : ($leads ? ($failed ? 'Not signed up' : 'You’re signed up') : ($failed ? 'Message not sent' : 'Message sent')))
+@section('title', $survey ? ($failed ? 'Not sent' : 'Thank you') : ($leads ? ($failed ? 'Not signed up' : 'You’re signed up') : ($failed ? 'Message not sent' : (! empty($signup) ? 'You’re on the list' : 'Message sent'))))
 
 @section('content')
     @if ($failed)
@@ -27,6 +27,9 @@
         @elseif ($leads)
             <h1>You’re signed up</h1>
             <p>Thanks! {{ $form->site_name }} has your details.</p>
+        @elseif (! empty($signup))
+            <h1>You’re on the list</h1>
+            <p>Thanks! {{ $form->site_name }} will let you know.</p>
         @else
             <h1>Message sent</h1>
             <p>{{ $form->site_name }} will get back to you soon.</p>

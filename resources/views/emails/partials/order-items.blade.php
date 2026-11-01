@@ -19,9 +19,15 @@
         </tr>
     @endif
     <tr>
-        <td style="padding:4px 18px;font-size:13px;color:#64748b;">{{ $order->delivery === 'pickup' ? 'Pick-up' : 'Delivery' }}</td>
+        <td style="padding:4px 18px;font-size:13px;color:#64748b;">{{ $order->delivery === 'pickup' ? 'Pick-up' : ($order->delivery === 'digital' ? 'Delivery (download)' : 'Delivery') }}</td>
         <td align="right" style="padding:4px 18px;font-size:13px;color:#64748b;">{{ $order->delivery_fee ? $order->money($order->delivery_fee) : 'Free' }}</td>
     </tr>
+    @if ($order->gift_amount)
+        <tr>
+            <td style="padding:4px 18px;font-size:13px;color:#17a85f;">Gift card</td>
+            <td align="right" style="padding:4px 18px;font-size:13px;color:#17a85f;">−{{ $order->money($order->gift_amount) }}</td>
+        </tr>
+    @endif
     @if ($order->tax && ! $order->tax_included)
         <tr>
             <td style="padding:4px 18px;font-size:13px;color:#64748b;">{{ $order->store->settings['tax_label'] ?? 'Tax' }}</td>
@@ -30,6 +36,6 @@
     @endif
     <tr>
         <td style="padding:8px 18px 14px;font-size:16px;font-weight:700;color:#0f172a;">Total</td>
-        <td align="right" style="padding:8px 18px 14px;font-size:16px;font-weight:700;color:#0f172a;">{{ $order->money($order->total) }}@if ($order->tax && $order->tax_included)<br><span style="font-size:12px;font-weight:400;color:#64748b;">includes {{ $order->money($order->tax) }} {{ $order->store->settings['tax_label'] ?? 'tax' }}</span>@endif</td>
+        <td align="right" style="padding:8px 18px 14px;font-size:16px;font-weight:700;color:#0f172a;">{{ $order->money($order->total) }}@if ($order->refunded)<br><span style="font-size:13px;font-weight:600;color:#17a85f;">Refunded −{{ $order->money($order->refunded) }}</span>@endif @if ($order->tax && $order->tax_included)<br><span style="font-size:12px;font-weight:400;color:#64748b;">includes {{ $order->money($order->tax) }} {{ $order->store->settings['tax_label'] ?? 'tax' }}</span>@endif</td>
     </tr>
 </table>

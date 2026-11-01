@@ -2242,8 +2242,8 @@ html.lpb-locked, html.lpb-locked body { overflow: hidden; }
 .lpb-zone__cs .lpb-hint { margin: 0; }
 .lpb-cchip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px; background: rgba(30, 199, 115, .1); color: var(--green-ink); font-size: .78rem; font-weight: 600; }
 .lpb-cchip button { width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
-.lpb-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 12px; padding: 4px; border-radius: 12px; background: rgba(var(--tint-rgb), .05); }
-.lpb-seg button { padding: 8px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: 700 .8rem Inter, sans-serif; cursor: pointer; }
+.lpb-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 12px; padding: 4px; border-radius: 12px; background: rgba(var(--tint-rgb), .05); }
+.lpb-seg button { padding: 8px 2px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: 700 .8rem Inter, sans-serif; cursor: pointer; }
 .lpb-seg button[aria-selected="true"] { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(15, 23, 42, .1); }
 .lpb-code { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; padding: 10px 12px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); font-size: .84rem; }
 .lpb-code b { font-family: ui-monospace, Menlo, monospace; letter-spacing: .04em; }
@@ -3586,3 +3586,53 @@ h2.fb-sub { text-align: left; margin-bottom: 0; font-family: Inter, sans-serif; 
 .opf__face::after { content: ''; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; margin-top: -4px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
 .opf__cc select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
 .opf__cc:focus-within .opf__face { outline: 2px solid var(--green); outline-offset: 1px; }
+
+/* Store builder: the Orders tab's Sales view (one series: one green; dark mode uses the darker green, which passes contrast) */
+.lpb-sales { --bar: var(--green-dark); display: grid; gap: 12px; }
+:root[data-theme="light"] .lpb-sales { --bar: var(--green); }
+.lpb-sales h4 { margin: 6px 0 0 !important; }
+.lpb-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lpb-kpi { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); }
+.lpb-kpi--wide { grid-column: 1 / -1; }
+.lpb-kpi span { font-size: .74rem; color: var(--muted); font-weight: 600; }
+.lpb-kpi b { font: 800 1.15rem Inter, sans-serif; color: var(--text); }
+.lpb-kpi--wide b { font-size: 1.5rem; }
+.lpb-kpi small { font-size: .74rem; color: var(--muted); font-weight: 600; }
+.lpb-kpi small.is-up { color: var(--green-ink); }
+.lpb-kpi small.is-down { color: var(--danger-ink); }
+.lpb-chart { margin: 0; padding: 12px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); }
+.lpb-chart figcaption { font-size: .78rem; font-weight: 700; color: var(--text-2); margin-bottom: 8px; }
+.lpb-chart__plot { position: relative; display: flex; align-items: flex-end; gap: var(--gap, 2px); height: 96px; padding-top: 16px; border-bottom: 1px solid var(--card-border); }
+.lpb-chart__max { position: absolute; top: 0; left: 0; font-size: .68rem; color: var(--muted); }
+.lpb-bar { position: relative; flex: 1; min-width: 1px; height: var(--h); border-radius: 4px 4px 0 0; background: var(--bar); outline: none; }
+.lpb-bar::before { content: ''; position: absolute; inset: -16px -1px 0; } /* a bigger hover target than the bar */
+.lpb-bar:hover, .lpb-bar:focus-visible { filter: brightness(1.15); }
+.lpb-bar:focus-visible { box-shadow: 0 0 0 2px var(--text); }
+.lpb-bar:hover::after, .lpb-bar:focus-visible::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 2; padding: 4px 8px; border-radius: 8px; background: var(--text); color: var(--card); font: 600 .72rem Inter, sans-serif; white-space: nowrap; pointer-events: none; }
+.lpb-bar:first-child:hover::after, .lpb-bar:first-child:focus-visible::after { left: 0; transform: none; }
+.lpb-bar:last-child:hover::after, .lpb-bar:last-child:focus-visible::after { left: auto; right: 0; transform: none; }
+.lpb-chart__x { display: flex; justify-content: space-between; margin-top: 4px; font-size: .68rem; color: var(--muted); }
+.lpb-chart__table { margin-top: 8px; padding: 0; border: 0; background: none; font-size: .78rem; }
+.lpb-chart__table summary { color: var(--muted); font-weight: 600; font-size: .74rem; }
+.lpb-chart__table table { width: 100%; margin-top: 6px; border-collapse: collapse; }
+.lpb-chart__table th, .lpb-chart__table td { padding: 4px 0; border-bottom: 1px solid var(--card-border); text-align: left; }
+.lpb-chart__table td:last-child, .lpb-chart__table th:last-child { text-align: right; }
+.lpb-best, .lpb-low { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: .84rem; }
+.lpb-best { counter-reset: best; }
+.lpb-best li, .lpb-low li { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 8px 10px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--card); }
+.lpb-best li { grid-template-columns: auto 1fr auto; counter-increment: best; }
+.lpb-best li::before { content: counter(best); color: var(--muted); font-weight: 700; }
+.lpb-best small { grid-column: 2 / -1; color: var(--muted); font-size: .74rem; }
+.lpb-low b { color: #b45309; }
+.lpb-low b.is-out { color: var(--danger-ink); }
+.lpb-order__body tr.is-refund td { border: 0; color: var(--green-ink); font-weight: 600; }
+
+.lpb-vals__row--2 { grid-template-columns: 1fr 30px; }
+.lpb-file { display: grid; gap: 8px; padding: 10px; border-radius: 10px; background: rgba(var(--tint-rgb), .035); }
+.lpb-file > b { font-size: .83rem; }
+.lpb-file .lpb-hint { margin: 0; }
+.lpb-review { display: grid; gap: 4px; margin-bottom: 8px; padding: 10px 12px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); font-size: .84rem; }
+.lpb-review b { color: #f59e0b; letter-spacing: 1px; }
+.lpb-review p { margin: 0; color: var(--text); }
+.lpb-review small { color: var(--muted); }
+.lpb-review.is-off { opacity: .6; }

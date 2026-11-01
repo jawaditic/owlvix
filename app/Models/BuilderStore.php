@@ -45,6 +45,21 @@ class BuilderStore extends Model
         return $this->hasMany(BuilderDiscount::class);
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(BuilderReview::class);
+    }
+
+    public function giftCards(): HasMany
+    {
+        return $this->hasMany(BuilderGiftCard::class);
+    }
+
+    public function files(): HasMany
+    {
+        return $this->hasMany(BuilderShopFile::class);
+    }
+
     public static function newId(): string
     {
         do {

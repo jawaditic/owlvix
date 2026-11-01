@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\BuilderOrderPlaced;
 use App\Mail\BuilderOrderReceipt;
 use App\Mail\BuilderOrderShipped;
+use App\Mail\BuilderOrderRefunded;
 use App\Models\BuilderAccount;
 use App\Models\BuilderOrder;
 use App\Models\BuilderStore;
@@ -138,7 +139,8 @@ class StoreBuilderTest extends TestCase
             ->assertRedirect()->assertStatus(303);
         $o = BuilderOrder::first();
         $this->assertSame([5900, 0, 5900], [$o->subtotal, $o->delivery_fee, $o->total]); // free delivery over 50
-        $this->assertSame([['id' => 'tee1', 'vid' => 'o'.substr(md5('M'), 0, 10), 'name' => 'Classic tee', 'option' => 'M', 'price' => 2450, 'qty' => 2], ['id' => 'bag1', 'vid' => null, 'name' => 'Tote bag', 'option' => null, 'price' => 1000, 'qty' => 1]], $o->items);
+        $this->assertSame([['id' => 'tee1', 'vid' => 'o'.substr(md5('M'), 0, 10), 'vid2' => null, 'name' => 'Classic tee', 'option' => 'M', 'price' => 2450, 'qty' => 2, 'kind' => 'item', 'file' => null],
+            ['id' => 'bag1', 'vid' => null, 'vid2' => null, 'name' => 'Tote bag', 'option' => null, 'price' => 1000, 'qty' => 1, 'kind' => 'item', 'file' => null]], $o->items);
         $this->assertSame(['new', 'cod', 1, 'ann@example.com', '#1001'], [$o->status, $o->pay, $o->number, $o->email, $o->label()]);
         Mail::assertSent(BuilderOrderPlaced::class, fn ($m) => $m->hasTo('owner@example.com') && $m->hasReplyTo('ann@example.com'));
         Mail::assertSent(BuilderOrderReceipt::class, fn ($m) => $m->hasTo('ann@example.com') && $m->hasReplyTo('owner@example.com'));
@@ -505,5 +507,226 @@ class StoreBuilderTest extends TestCase
         $this->order($store, [['id' => 'bag1', 'qty' => 1]], ['_dial' => '+44', 'phone' => '+1 555 0100']); // typed with its own code
         $this->order($store, [['id' => 'bag1', 'qty' => 1]], ['_dial' => '44; DROP', 'phone' => '555'])->assertStatus(422);
         $this->assertSame(['+44 7911 123456', '+1 555 0100'], BuilderOrder::orderBy('id')->pluck('phone')->all());
+    }
+
+    public function test_refunds_through_stripe_and_recorded_ones(): void
+    {
+        $this->saveKeys();
+        $token = $this->token();
+        $store = $this->store($token, ['card' => true]);
+        $store->forceFill(['stripe_test_account' => 'acct_1Shop'])->save();
+        Http::fake(['api.stripe.com/v1/checkout/sessions' => Http::response(['id' => 'cs_test_refund1abcdef', 'url' => 'https://checkout.stripe.com/x']),
+            'api.stripe.com/v1/checkout/sessions/*' => fn () => Http::response(['payment_status' => 'paid', 'amount_total' => BuilderOrder::first()->total, 'currency' => 'usd', 'payment_intent' => 'pi_123',
+                'metadata' => ['owlvix_order' => (string) BuilderOrder::first()->id, 'owlvix_store' => $store->id]]),
+            'api.stripe.com/v1/refunds' => Http::response(['id' => 're_1'])]);
+        $this->order($store->fresh(), [['id' => 'bag1', 'qty' => 2]], ['_pay' => 'card']); // 20 + 4.99 delivery
+        $url = "/builder/stores/{$store->id}/orders/1/refund";
+        $this->api($token)->postJson($url)->assertStatus(422); // not paid yet
+        $this->get('/shop/order/'.BuilderOrder::first()->token.'?paid=cs_test_refund1abcdef');
+        $this->assertSame('24.99', $this->api($token)->getJson("/builder/stores/{$store->id}/orders")->json('orders.0.refundable'));
+
+        $this->api($token)->postJson($url, ['amount' => '30'])->assertStatus(422)->assertJsonPath('error', 'You can refund up to $24.99.');
+        $this->api($token)->postJson($url, ['amount' => '10'])->assertOk()->assertJsonPath('order.refunded', '$10')->assertJsonPath('order.refundable', '14.99');
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.stripe.com/v1/refunds' && $r['payment_intent'] === 'pi_123' && $r['amount'] == 1000
+            && $r->hasHeader('Stripe-Account', 'acct_1Shop') && $r['refund_application_fee'] === 'true');
+        Mail::assertSent(BuilderOrderRefunded::class, fn ($m) => $m->hasTo('ann@example.com') && $m->amount === 1000);
+        $this->api($token)->postJson($url)->assertOk()->assertJsonPath('order.refunded', '$24.99')->assertJsonPath('order.refundable', null); // the rest
+        $this->api($token)->postJson($url)->assertStatus(422); // nothing left
+        $this->get('/shop/order/'.BuilderOrder::first()->token)->assertSee('Refunded')->assertSee('−$24.99');
+        $this->api($this->token('other@example.com'))->postJson($url)->assertNotFound();
+
+        // a cash order: paid by hand, then a refund is recorded (no Stripe)
+        $this->order($store->fresh(), [['id' => 'bag1', 'qty' => 1]], ['_pay' => 'cod']);
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/2/refund")->assertStatus(422)->assertJsonPath('error', 'Mark the order as paid first — then you can record a refund.');
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/2", ['paid' => true]);
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/2/refund", ['amount' => '5'])->assertOk()->assertJsonPath('order.refunded', '$5');
+        $this->assertSame(2, collect(Http::recorded())->filter(fn ($p) => $p[0]->url() === 'https://api.stripe.com/v1/refunds')->count());
+    }
+
+    public function test_sales_numbers(): void
+    {
+        $token = $this->token();
+        $store = $this->store($token);
+        $this->api($token)->postJson("/builder/stores/{$store->id}/stock", ['stock' => ['bag1' => 9]]);
+        $this->order($store, [['id' => 'bag1', 'qty' => 3]]);                                   // 30 + 4.99
+        $this->order($store, [['id' => 'tee1', 'qty' => 2, 'opt' => 'M']]);                    // 49 + 4.99 (free only over 50)
+        $this->order($store, [['id' => 'bag1', 'qty' => 1]]);                                   // cancelled below
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/3", ['status' => 'cancelled']);
+        $this->travel(-40)->days();
+        $this->order($store, [['id' => 'bag1', 'qty' => 1]]);                                   // 14.99, in the 30 days before
+        $this->travelBack();
+
+        $r = $this->api($token)->getJson("/builder/stores/{$store->id}/sales?days=30")->assertOk()->json();
+        $this->assertSame(['$88.98', 2, '$44.49', 30], [$r['takings'], $r['orders'], $r['average'], count($r['per_day'])]);
+        $this->assertSame(88.98, end($r['per_day'])['value']);
+        $this->assertSame(['Tote bag', 3, '$30'], [$r['best'][0]['name'], $r['best'][0]['qty'], $r['best'][0]['sales']]);
+        $this->assertSame([['name' => 'Tote bag', 'left' => 5]], $r['low']); // 9 - 3 - 1 (the 40-day-old one), the cancelled one gave its 1 back
+        $this->assertSame(494, $r['change']); // 88.98 against 14.99 in the 30 days before
+        $this->api($this->token('other@example.com'))->getJson("/builder/stores/{$store->id}/sales")->assertNotFound();
+    }
+
+    /** A shop with a size × colour tee, a download and a gift card. */
+    private function bigStore(string $token, array $settings = [], ?string $file = null): BuilderStore
+    {
+        $products = [
+            ['id' => 'tee1', 'name' => 'Tee', 'price' => '20', 'opt' => 'Size', 'vars' => [['id' => 's1', 'name' => 'S', 'price' => ''], ['id' => 'm1', 'name' => 'M', 'price' => '22']],
+                'opt2' => 'Colour', 'vars2' => [['id' => 'red', 'name' => 'Red'], ['id' => 'blu', 'name' => 'Blue']]],
+            ['id' => 'ebook', 'name' => 'Recipe e-book', 'price' => '9', 'kind' => 'digital', 'file' => $file],
+            ['id' => 'gift25', 'name' => 'Gift card $25', 'price' => '25', 'kind' => 'gift', 'vars' => [['id' => 'x', 'name' => 'ignored']]],
+        ];
+        $id = $this->api($token)->postJson('/builder/stores', ['ref' => 'big123big123', 'name' => 'Big Shop', 'currency' => 'usd', 'products' => $products,
+            'settings' => $settings + ['delivery' => true, 'fee' => '5', 'cod' => true, 'bank' => true, 'phoneReq' => false]])->assertOk()->json('store.id');
+
+        return BuilderStore::find($id);
+    }
+
+    public function test_size_and_colour_together(): void
+    {
+        $token = $this->token();
+        $store = $this->bigStore($token);
+        $this->assertSame(['Colour', 'gift', []], [$store->catalog[0]['opt2'], $store->catalog[2]['kind'], $store->catalog[2]['vars']]);
+        $this->order($store, [['id' => 'tee1', 'vid' => 'm1', 'qty' => 1]])->assertStatus(422)->assertSee('Please choose your colour');
+        $this->api($token)->postJson("/builder/stores/{$store->id}/stock", ['stock' => ['tee1:m1_red' => 1]])->assertOk();
+        $this->order($store, [['id' => 'tee1', 'vid' => 'm1', 'vid2' => 'red', 'qty' => 1]])->assertRedirect();
+        $o = BuilderOrder::first();
+        $this->assertSame(['M / Red', 2200, 'm1', 'red'], [$o->items[0]['option'], $o->items[0]['price'], $o->items[0]['vid'], $o->items[0]['vid2']]);
+        $this->assertSame(0, $store->fresh()->stock['tee1:m1_red']);
+        $this->order($store, [['id' => 'tee1', 'vid' => 'm1', 'vid2' => 'red', 'qty' => 1]])->assertStatus(409)->assertSee('Tee (M / Red)” has just sold out');
+        $this->order($store, [['id' => 'tee1', 'vid' => 'm1', 'vid2' => 'blu', 'qty' => 1]])->assertRedirect(); // not counted: unlimited
+    }
+
+    public function test_digital_downloads(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $token = $this->token();
+        $store = $this->bigStore($token);
+        $this->api($token)->post("/builder/stores/{$store->id}/files", ['file' => \Illuminate\Http\UploadedFile::fake()->create('evil.php', 10)])->assertStatus(422);
+        $this->api($token)->post("/builder/stores/{$store->id}/files", ['file' => \Illuminate\Http\UploadedFile::fake()->create('big.pdf', 26 * 1024)])->assertStatus(422);
+        $file = $this->api($token)->post("/builder/stores/{$store->id}/files", ['file' => \Illuminate\Http\UploadedFile::fake()->create('Recipes 2026.pdf', 120, 'application/pdf')])->assertOk()->json('file');
+        $store = $this->bigStore($token, [], $file['id']);
+        $this->assertSame($file['id'], $store->catalog[1]['file']);
+        // another shop can't sell this file
+        $other = $this->bigStore($this->token('other@example.com'), [], $file['id']);
+        $this->assertNull($other->catalog[1]['file']);
+
+        // only a download: no address, no delivery fee
+        $this->order($store, [['id' => 'ebook', 'qty' => 1]], ['address' => '', '_delivery' => 'nonsense', '_pay' => 'bank'])->assertRedirect();
+        $o = BuilderOrder::first();
+        $this->assertSame(['digital', 0, 900, null], [$o->delivery, $o->delivery_fee, $o->total, $o->address]);
+        $this->get("/shop/order/{$o->token}/file/ebook")->assertNotFound(); // not paid yet
+        $this->get('/shop/order/'.$o->token)->assertSee('Ready here once your payment is received');
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/1", ['paid' => true])->assertOk();
+        Mail::assertSent(\App\Mail\BuilderOrderPaid::class, fn ($m) => $m->hasTo('ann@example.com'));
+        $this->get('/shop/order/'.$o->token)->assertSee("/shop/order/{$o->token}/file/ebook", false);
+        $this->get("/shop/order/{$o->token}/file/ebook")->assertOk()->assertDownload('Recipes 2026.pdf');
+        for ($i = 1; $i < \App\Models\BuilderShopFile::MAX_DOWNLOADS; $i++) {
+            $this->get("/shop/order/{$o->token}/file/ebook")->assertOk();
+        }
+        $this->get("/shop/order/{$o->token}/file/ebook")->assertRedirect(route('shop.order', ['token' => $o->token, 'r' => 'downloads']));
+        // with something to post, delivery is charged as usual
+        $this->order($store, [['id' => 'ebook', 'qty' => 1], ['id' => 'tee1', 'vid' => 's1', 'vid2' => 'red', 'qty' => 1]]);
+        $this->assertSame(['delivery', 500], [BuilderOrder::find(2)->delivery, BuilderOrder::find(2)->delivery_fee]);
+    }
+
+    public function test_gift_cards(): void
+    {
+        $token = $this->token();
+        $store = $this->bigStore($token);
+        $this->order($store, [['id' => 'gift25', 'qty' => 2]], ['_pay' => 'bank', 'address' => '']);
+        $this->assertSame(0, $store->giftCards()->count()); // made once paid
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/1", ['paid' => true]);
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/1", ['paid' => true]); // once only
+        $cards = $store->giftCards()->get();
+        $this->assertSame([2, 2500, 2500], [$cards->count(), $cards[0]->initial, $cards[0]->balance]);
+        $this->assertMatchesRegularExpression('/^GIFT-[A-Z2-9]{4}-[A-Z2-9]{4}$/', $cards[0]->code);
+        Mail::assertSent(\App\Mail\BuilderOrderPaid::class, fn ($m) => str_contains($m->render(), $cards[0]->code));
+        $this->assertSame(2, count($this->api($token)->getJson("/builder/stores/{$store->id}/gift-cards")->json('cards')));
+
+        // the cart checks it (any case, no dashes needed)
+        $this->getJson("/shop/{$store->id}/code?c=".strtolower(str_replace('-', '', $cards[0]->code)).'&sub=20')->assertJson(['ok' => true, 'kind' => 'gift', 'value' => 25]);
+        // it pays part of an order (after delivery), and gives it back if the order is cancelled
+        $this->order($store, [['id' => 'tee1', 'vid' => 's1', 'vid2' => 'red', 'qty' => 1]], ['_code' => $cards[0]->code]);
+        $o = BuilderOrder::find(2);
+        $this->assertSame([2500, 0, $cards[0]->code], [$o->gift_amount, $o->total, $o->gift_code]); // 20 + 5 delivery, all covered
+        $this->assertNotNull($o->paid_at); // nothing left to pay
+        $this->assertSame(0, $cards[0]->fresh()->balance);
+        $this->getJson("/shop/{$store->id}/code?c={$cards[0]->code}")->assertJson(['ok' => false]);
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/2", ['status' => 'cancelled']);
+        $this->assertSame(2500, $cards[0]->fresh()->balance);
+        // a smaller order leaves money on the card; a gift card can't buy gift cards
+        $this->order($store, [['id' => 'ebook', 'qty' => 1]], ['_code' => $cards[0]->code]);
+        $this->assertSame([900, 0, 1600], [BuilderOrder::find(3)->gift_amount, BuilderOrder::find(3)->total, $cards[0]->fresh()->balance]);
+        $this->order($store, [['id' => 'gift25', 'qty' => 1]], ['_code' => $cards[1]->code])->assertStatus(422)->assertSee('can’t be used to buy gift cards');
+    }
+
+    public function test_reviews_from_buyers(): void
+    {
+        $token = $this->token();
+        $store = $this->bigStore($token);
+        $this->order($store, [['id' => 'tee1', 'vid' => 's1', 'vid2' => 'red', 'qty' => 1]], ['name' => 'Ann Buyer']);
+        $o = BuilderOrder::first();
+        $this->post("/shop/order/{$o->token}/review", ['product' => 'tee1', 'rating' => 5])->assertRedirect(); // not sent yet: ignored
+        $this->assertSame(0, $store->reviews()->count());
+        $this->get('/shop/order/'.$o->token)->assertDontSee('How did you like it?');
+        $this->api($token)->postJson("/builder/stores/{$store->id}/orders/1", ['status' => 'shipped']);
+        $this->get('/shop/order/'.$o->token)->assertSee('How did you like it?');
+        $this->post("/shop/order/{$o->token}/review", ['product' => 'ebook', 'rating' => 5])->assertRedirect(route('shop.order', ['token' => $o->token, 'r' => 'review-error']).'#review'); // not in the order
+        $this->post("/shop/order/{$o->token}/review", ['product' => 'tee1', 'rating' => 4, 'text' => 'Soft and fits well.'])->assertRedirect();
+        $this->post("/shop/order/{$o->token}/review", ['product' => 'tee1', 'rating' => 5, 'text' => 'Even better after washing.'])->assertRedirect(); // updated, not doubled
+        $this->getJson("/shop/{$store->id}/reviews")->assertHeader('Access-Control-Allow-Origin', '*')
+            ->assertJsonPath('reviews.tee1.avg', 5)->assertJsonPath('reviews.tee1.count', 1)->assertJsonPath('reviews.tee1.items.0.name', 'Ann B.')
+            ->assertJsonPath('reviews.tee1.items.0.text', 'Even better after washing.');
+        $rid = $this->api($token)->getJson("/builder/stores/{$store->id}/reviews")->assertOk()->json('reviews.0.id');
+        $this->api($token)->postJson("/builder/stores/{$store->id}/reviews/$rid", ['hidden' => true])->assertOk();
+        $this->getJson("/shop/{$store->id}/reviews")->assertJsonMissingPath('reviews.tee1');
+        $this->api($this->token('other@example.com'))->postJson("/builder/stores/{$store->id}/reviews/$rid", ['delete' => true])->assertNotFound();
+    }
+
+    public function test_customers_see_their_orders_with_an_emailed_code(): void
+    {
+        $token = $this->token();
+        $store = $this->bigStore($token);
+        $this->order($store, [['id' => 'ebook', 'qty' => 1]]);
+        $this->get("/shop/{$store->id}/account")->assertOk()->assertSee('Send my code');
+        // a stranger's address: same answer, no email
+        $this->post("/shop/{$store->id}/account/code", ['email' => 'nobody@example.com'])->assertRedirect();
+        Mail::assertNotSent(\App\Mail\BuilderShopSignIn::class);
+        $this->get("/shop/{$store->id}/account")->assertSee('If <b>nobody@example.com</b> has ordered', false);
+        $this->post("/shop/{$store->id}/account/logout");
+        $this->post("/shop/{$store->id}/account/code", ['email' => 'ANN@example.com'])->assertRedirect();
+        $code = null;
+        Mail::assertSent(\App\Mail\BuilderShopSignIn::class, function ($m) use (&$code) { $code = $m->code; return $m->hasTo('ann@example.com'); });
+        $this->post("/shop/{$store->id}/account/verify", ['code' => '000000' === $code ? '111111' : '000000'])->assertStatus(422)->assertSee('isn’t right');
+        $this->post("/shop/{$store->id}/account/verify", ['code' => $code])->assertRedirect(route('shop.account', $store->id));
+        $this->get("/shop/{$store->id}/account")->assertSee('#1001')->assertSee('Recipe e-book')->assertSee(BuilderOrder::first()->receiptUrl(), false);
+    }
+
+    public function test_abandoned_card_orders_get_one_reminder_and_coupons_are_reused(): void
+    {
+        $this->saveKeys();
+        $token = $this->token();
+        $store = $this->bigStore($token, ['card' => true]);
+        $store->forceFill(['stripe_test_account' => 'acct_1Shop'])->save();
+        $this->api($token)->postJson("/builder/stores/{$store->id}/discounts", ['code' => 'TEN', 'kind' => 'percent', 'value' => 10])->assertOk();
+        Http::fake(['api.stripe.com/v1/coupons' => Http::response(['id' => 'co_1']), 'api.stripe.com/v1/checkout/sessions' => Http::response(['id' => 'cs_test_abandon1abcd', 'url' => 'https://checkout.stripe.com/x']),
+            'api.stripe.com/v1/checkout/sessions/*/expire' => Http::response([]),
+            'api.stripe.com/v1/checkout/sessions/*' => Http::response(['payment_status' => 'unpaid', 'amount_total' => 0, 'currency' => 'usd', 'metadata' => []])]);
+        $this->order($store->fresh(), [['id' => 'ebook', 'qty' => 1]], ['_pay' => 'card', '_code' => 'TEN', '_back' => 'https://localhost/p/big/shop'])->assertRedirect('https://checkout.stripe.com/x');
+        $o = BuilderOrder::first();
+        $this->assertSame('co_1', $o->stripe_coupon);
+        $this->post('/shop/order/'.$o->token.'/pay')->assertRedirect('https://checkout.stripe.com/x');
+        $this->assertSame(1, collect(Http::recorded())->filter(fn ($p) => $p[0]->url() === 'https://api.stripe.com/v1/coupons')->count()); // reused
+        Http::assertSent(fn ($r) => $r->url() === 'https://api.stripe.com/v1/checkout/sessions' && $r['discounts[0][coupon]'] === 'co_1');
+
+        $this->travel(70)->minutes();
+        Shop::releaseExpired($store); // what the scheduler does every five minutes
+        $this->assertSame('cancelled', $o->fresh()->status);
+        Mail::assertSent(\App\Mail\BuilderOrderReminder::class, fn ($m) => $m->hasTo('ann@example.com') && str_contains($m->render(), 'https://localhost/p/big/shop'));
+        Shop::remind($o->fresh());
+        Mail::assertSent(\App\Mail\BuilderOrderReminder::class, 1); // only once
+
+        // a shop that turned reminders off sends none
+        $quiet = $this->bigStore($this->token('quiet@example.com'), ['card' => true, 'remind' => false]);
+        $this->assertFalse($quiet->settings['remind']);
     }
 }

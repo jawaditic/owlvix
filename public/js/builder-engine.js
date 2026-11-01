@@ -247,7 +247,8 @@
         fields: [F.area('words', 'Rotating words (one per line)'), F.select('tag', 'HTML tag', { h1: 'H1', h2: 'H2', h3: 'H3' })],
         render: (w, x, H) => { const words = String(w.p.words || '').split('\n').map(s => s.trim()).filter(Boolean); const tag = ['h1', 'h2', 'h3'].includes(w.p.tag) ? w.p.tag : 'h2';
             return `<${tag} class="ahead hd"${x.edit ? '' : ` aria-label="${esc([w.p.before, words.join(', '), w.p.after].filter(Boolean).join(' '))}"`}>${H.t('before', 'span', '', 'Text before')} <span class="ahead__w"${x.edit ? '' : ' data-rotate aria-hidden="true"'}>${x.edit ? `<span class="is-on">${esc(words.join(' / '))}</span>` : words.map((wd, i) => `<span class="${i === 0 ? 'is-on' : ''}">${esc(wd)}</span>`).join('')}</span> ${H.t('after', 'span', '', 'Text after')}</${tag}>`; }, runtime: true });
-    def('form', { label: 'Contact form', icon: '✉', group: 'pro', make: () => ({ btn: 'Send message', phone: true }), fields: [F.text('btn', 'Button text'), F.bool('phone', 'Ask for a phone number')],
+    def('form', { label: 'Contact form', icon: '✉', group: 'pro', make: () => ({ btn: 'Send message', phone: true, name: true, message: true }),
+        fields: [F.text('btn', 'Button text'), F.bool('name', 'Ask for a name'), F.bool('phone', 'Ask for a phone number'), F.bool('message', 'Ask for a message (untick for a waitlist or “notify me” sign-up)')],
         render: (w, x) => formHtml(x, w.p) });
 
     /* RSVP: posts to a form-builder form whose questions match these fields (rsvpSchema keeps them in step) */
@@ -316,10 +317,10 @@
     const backInput = x => `<input type="hidden" name="_back" value="${esc(x.mode === 'publish' ? new URL(pageHref(x.page.slug, x), x.origin).href : '')}">`;
     const formHtml = (x, p) => {
         if (x.P.site.formAction) return `<form class="form" method="post" action="${esc(x.P.site.formAction)}">
-            <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
-            <label>Email<input name="email" type="email" required maxlength="150" autocomplete="email"></label>
+            ${p.name !== false ? '<label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>' : ''}
+            <label>Email<input name="email" type="email" required maxlength="150" autocomplete="email"${p.message === false ? ' placeholder="you@example.com"' : ''}></label>
             ${p.phone !== false ? dialPhone({ label: 'Phone (optional)' }) : ''}
-            <label>Message<textarea name="message" required rows="4" maxlength="5000"></textarea></label>
+            ${p.message !== false ? '<label>Message<textarea name="message" required rows="4" maxlength="5000"></textarea></label>' : ''}
             <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
             ${backInput(x)}
             <button class="btn" type="submit">${esc(p.btn || 'Send message')}</button></form>`;
@@ -440,21 +441,35 @@
             it.optName ??= 'Size';
             if (!Array.isArray(it.images)) it.images = [];
             const vs = new Set(); it.vals.forEach(v => { if (!/^[a-z0-9]{1,24}$/i.test(v.vid || '') || vs.has(v.vid)) v.vid = uid(); vs.add(v.vid); });
+            // a second choice (size × colour) and the product's type: item, digital (a file) or gift (a gift card)
+            if (!Array.isArray(it.vals2)) it.vals2 = [];
+            it.opt2Name ??= 'Colour';
+            const vs2 = new Set(); it.vals2.forEach(v => { if (!/^[a-z0-9]{1,24}$/i.test(v.vid || '') || vs2.has(v.vid)) v.vid = uid(); vs2.add(v.vid); });
+            if (!['item', 'digital', 'gift'].includes(it.kind)) it.kind = 'item';
         }));
         return P;
     };
     /** A product's sizes / colours with a name (the same name twice counts once, as on the server). */
-    const variants = it => { const seen = new Set(); return (it.vals || []).filter(v => { const n = String(v.v || '').trim(); if (!n || seen.has(n)) return false; seen.add(n); return true; }); };
+    const named = list => { const seen = new Set(); return (list || []).filter(v => { const n = String(v.v || '').trim(); if (!n || seen.has(n)) return false; seen.add(n); return true; }); };
+    const variants = it => (it.kind === 'gift' ? [] : named(it.vals));
+    /** The second choice (e.g. colour): only next to a first one, as on the server. */
+    const variants2 = it => (variants(it).length ? named(it.vals2) : []);
     /** The product's own price — or, when only its sizes have prices, the cheapest of those. */
     const basePrice = it => MONEY(it.price) ?? (variants(it).map(v => MONEY(v.price)).filter(n => n !== null).sort((a, b) => a - b)[0] ?? null);
     /** The products checkout sells: sent to owlvix before every publish and download. */
     const shopProducts = P => productWidgets(fixPids(P)).flatMap(w => (w.p.items || []).filter(it => basePrice(it) !== null && String(it.name || '').trim())
         .map(it => ({ id: it.pid, name: String(it.name).trim().slice(0, 200), price: String(basePrice(it)), sold: !!it.sold, opt: String(it.optName || 'Option').trim().slice(0, 30),
-            vars: variants(it).map(v => ({ id: v.vid, name: String(v.v).trim().slice(0, 60), price: MONEY(v.price) === null ? '' : String(MONEY(v.price)) })) })));
-    /** Stock keys, as the server keeps them: "product" or "product:variant". */
-    const stockKeys = it => (variants(it).length ? variants(it).map(v => [`${it.pid}:${v.vid}`, v.v]) : [[it.pid, '']]);
+            vars: variants(it).map(v => ({ id: v.vid, name: String(v.v).trim().slice(0, 60), price: MONEY(v.price) === null ? '' : String(MONEY(v.price)) })),
+            opt2: String(it.opt2Name || 'Option').trim().slice(0, 30), vars2: variants2(it).map(v => ({ id: v.vid, name: String(v.v).trim().slice(0, 60) })),
+            kind: it.kind || 'item', file: it.kind === 'digital' ? it.file || null : null })));
+    /** Stock keys, as the server keeps them: "product", "product:size" or "product:size_colour". */
+    const stockKeys = it => {
+        const a = variants(it), b = variants2(it);
+        if (!a.length) return [[it.pid, '']];
+        return a.flatMap(v => (b.length ? b.map(c => [`${it.pid}:${v.vid}_${c.vid}`, `${String(v.v).trim()} / ${String(c.v).trim()}`]) : [[`${it.pid}:${v.vid}`, String(v.v).trim()]]));
+    };
     const defaultsShop = () => ({ currency: 'usd', delivery: true, fee: '4.99', freeOver: '50', zones: [], pickup: false, pickupText: '', cod: true, bank: false, bankText: '', card: false, cardReady: false, mode: 'test',
-        taxRate: '', taxIncl: true, taxLabel: 'Tax', taxShip: false, codes: false, phoneReq: true, thanks: '', whatsapp: '' });
+        taxRate: '', taxIncl: true, taxLabel: 'Tax', taxShip: false, codes: false, phoneReq: true, thanks: '', whatsapp: '', remind: true });
     /** Checkout works on this finished page: a store whose checkout is switched on. */
     const shopOn = x => x.P.kind === 'store' && !!x.P.site.shopAction;
     /** The ways to pay the page offers (cards only once a Stripe account is connected). */
@@ -473,11 +488,14 @@
             const items = H.items(), cats = [...new Set(items.map(it => String(it.cat || '').trim()).filter(Boolean))];
             const cards = items.map((it, i) => {
                 const vs = variants(it), pr = priceOf(it), price = pr.low === null ? '' : money(pr.low, cur), old = !pr.varies && MONEY(it.old) > MONEY(it.price) ? money(it.old, cur) : '';
-                const opts = vs.length ? `<div class="popt"><span class="popt__l">${esc(it.optName || 'Option')}</span><div class="popt__v" role="group" aria-label="${esc(it.optName || 'Option')}">${vs.map(v => {
+                const vs2 = variants2(it);
+                const opts = (vs.length ? `<div class="popt"><span class="popt__l">${esc(it.optName || 'Option')}</span><div class="popt__v" role="group" aria-label="${esc(it.optName || 'Option')}">${vs.map(v => {
                     const vp = MONEY(v.price); return `<button type="button" data-optv="${esc(v.vid)}" data-v="${esc(String(v.v).trim())}"${vp !== null ? ` data-price="${vp}"` : ''} aria-pressed="${vs.length === 1}">${esc(String(v.v).trim())}</button>`;
-                }).join('')}</div></div>` : '';
+                }).join('')}</div></div>` : '') + (vs2.length ? `<div class="popt"><span class="popt__l">${esc(it.opt2Name || 'Option')}</span><div class="popt__v" role="group" data-second aria-label="${esc(it.opt2Name || 'Option')}">${vs2.map(v =>
+                    `<button type="button" data-optv2="${esc(v.vid)}" data-v="${esc(String(v.v).trim())}" aria-pressed="${vs2.length === 1}">${esc(String(v.v).trim())}</button>`).join('')}</div></div>` : '');
+                const tag = it.kind === 'digital' ? '<span class="pkind">⬇️ Instant download</span>' : it.kind === 'gift' ? '<span class="pkind">🎁 Gift card · code by email</span>' : '';
                 const buy = it.sold ? '<span class="pcard__sold">Sold out</span>' : !canBuy || !price ? '' : `${opts}<button type="button" class="btn btn-sm pcard__add ${H.K('btn')}" data-add>${esc(w.p.btn || 'Add to cart')}</button>`;
-                const data = x.edit ? '' : ` id="p-${esc(it.pid || '')}" data-product="${esc(it.pid || '')}" data-name="${esc(String(it.name || '').trim())}" data-price="${esc(String(basePrice(it) ?? ''))}" data-cat="${esc(String(it.cat || '').trim())}"`;
+                const data = x.edit ? '' : ` id="p-${esc(it.pid || '')}" data-product="${esc(it.pid || '')}" data-name="${esc(String(it.name || '').trim())}" data-price="${esc(String(basePrice(it) ?? ''))}" data-cat="${esc(String(it.cat || '').trim())}" data-kind="${esc(it.kind || 'item')}"`;
                 const initial = esc((String(it.name || '?').trim()[0] || '?').toUpperCase());
                 // no photo yet: the same coloured tile as the finished page, with an "Add photo" button on it in the editor
                 const pic = it.image ? H.pic(`items.${i}.image`, it.name || 'Product', 'pic')
@@ -487,7 +505,7 @@
                 const more = x.edit || (!extra.length && !String(it.long || '').trim()) ? '' : `<div class="pcard__more" hidden>${extra.map(src => `<img src="${esc(src)}" alt="${esc(it.name || '')}" loading="lazy">`).join('')}${String(it.long || '').trim() ? `<div class="pcard__long">${nl(it.long)}</div>` : ''}</div>`;
                 const open = !x.edit && it.pid ? `<a class="pcard__open" href="#p-${esc(it.pid)}" data-quick aria-label="${esc(String(it.name || 'Product').trim())} — see details"></a>` : '';
                 return `<article class="pcard${it.sold ? ' is-sold' : ''}"${data}><div class="pcard__pic">${pic}${it.badge ? `<span class="pbadge">${esc(it.badge)}</span>` : ''}${extra.length && !x.edit ? `<span class="pcard__n">＋${extra.length}</span>` : ''}${open}</div>
-                    <div class="pcard__b">${H.t(`items.${i}.name`, 'h3', '', 'Product name', { keep: true })}${H.t(`items.${i}.desc`, 'p', 'muted', 'Short description', { ml: true })}<p class="pprice"><b data-pprice>${pr.varies ? 'From ' : ''}${price || (x.edit ? 'Set a price →' : '')}</b>${old ? ` <s>${old}</s>` : ''}</p><p class="pstock" data-pstock hidden></p>${buy}</div>${more}</article>`;
+                    <div class="pcard__b">${H.t(`items.${i}.name`, 'h3', '', 'Product name', { keep: true })}${H.t(`items.${i}.desc`, 'p', 'muted', 'Short description', { ml: true })}<p class="prating" data-prating hidden></p><p class="pprice"><b data-pprice>${pr.varies ? 'From ' : ''}${price || (x.edit ? 'Set a price →' : '')}</b>${old ? ` <s>${old}</s>` : ''}</p>${tag}<p class="pstock" data-pstock hidden></p>${buy}</div>${more}</article>`;
             }).join('');
             const off = x.edit && x.P.kind === 'store' && !x.P.site.shopAction ? '<p class="shop-off">🛒 Checkout is off — switch it on in the Content tab</p>' : '';
             const filters = w.p.filters !== false && (cats.length > 1 || items.length > 8)
@@ -510,16 +528,18 @@
         const list = (anywhere ? COUNTRIES : named).map(c => [c, countryName(c)]).sort((a, b) => a[1].localeCompare(b[1]));
         const country = byZone ? `<label data-country${first ? '' : ' hidden'}>Country<select name="country" autocomplete="country"${first ? ' required' : ''}><option value="">Choose your country…</option>${list.map(([c, l]) => `<option value="${c}">${esc(l)}</option>`).join('')}</select></label>` : '';
         const tax = MONEY(s.taxRate) > 0;
+        // the code box: for discount codes, and always when the shop sells gift cards (they're spent there)
+        const sellsGifts = productWidgets(x.P).some(w => (w.p.items || []).some(it => it.kind === 'gift'));
         const home = zones.flatMap(z => z.countries || [])[0] || ''; // the shop's own country, until the shopper's browser says otherwise
         const form = pays.length ? `<form class="form ob-checkout" method="post" action="${esc(x.P.site.shopAction)}" data-checkout>
-                ${s.codes ? '<div class="ob-code"><label>Discount code<span><input name="_code" maxlength="40" autocomplete="off" autocapitalize="characters" data-code><button type="button" class="btn btn-sm btn-ghost" data-code-apply>Apply</button></span></label><small data-code-msg hidden></small></div>' : ''}
-                <div class="ob-sum"><div><span>Subtotal</span><b data-sum="sub"></b></div><div data-sum-row="off" hidden><span>Discount <small data-sum-code></small></span><b data-sum="off"></b></div><div><span data-sum-label>Delivery</span><b data-sum="fee"></b></div>${tax && !s.taxIncl ? `<div><span>${esc(s.taxLabel || 'Tax')}</span><b data-sum="tax"></b></div>` : ''}<div class="ob-total"><span>Total</span><b data-sum="total"></b></div>${tax && s.taxIncl ? `<small class="ob-taxnote">Includes <span data-sum="tax"></span> ${esc(!s.taxLabel || s.taxLabel === 'Tax' ? 'tax' : s.taxLabel)}</small>` : ''}</div>
-                ${choice('_delivery', dels, 'Delivery')}
+                ${s.codes || sellsGifts ? '<div class="ob-code"><label>Discount or gift card code<span><input name="_code" maxlength="40" autocomplete="off" autocapitalize="characters" data-code><button type="button" class="btn btn-sm btn-ghost" data-code-apply>Apply</button></span></label><small data-code-msg hidden></small></div>' : ''}
+                <div class="ob-sum"><div><span>Subtotal</span><b data-sum="sub"></b></div><div data-sum-row="off" hidden><span>Discount <small data-sum-code></small></span><b data-sum="off"></b></div><div data-sum-row="fee"><span data-sum-label>Delivery</span><b data-sum="fee"></b></div>${tax && !s.taxIncl ? `<div><span>${esc(s.taxLabel || 'Tax')}</span><b data-sum="tax"></b></div>` : ''}<div data-sum-row="gift" hidden><span>Gift card</span><b data-sum="gift"></b></div><div class="ob-total"><span>Total</span><b data-sum="total"></b></div>${tax && s.taxIncl ? `<small class="ob-taxnote">Includes <span data-sum="tax"></span> ${esc(!s.taxLabel || s.taxLabel === 'Tax' ? 'tax' : s.taxLabel)}</small>` : ''}</div>
+                <div class="ob-ship" data-ship>${choice('_delivery', dels, 'Delivery')}</div>
                 <label>Your name<input name="name" required maxlength="100" autocomplete="name"></label>
                 <label>Email<input name="email" type="email" required maxlength="150" autocomplete="email"></label>
-                ${country}
+                <div class="ob-ship" data-ship>${country}</div>
                 ${dialPhone({ label: 'Phone' + (s.phoneReq ? '' : ' (optional)'), required: s.phoneReq, home })}
-                <label data-address${delivers ? '' : ' hidden'}>Delivery address<textarea name="address" rows="3" maxlength="1000" autocomplete="street-address"${delivers && first ? ' required' : ''}></textarea></label>
+                <label data-ship data-address${delivers ? '' : ' hidden'}>Delivery address<textarea name="address" rows="3" maxlength="1000" autocomplete="street-address"${delivers && first ? ' required' : ''}></textarea></label>
                 <label>Note for the shop (optional)<textarea name="note" rows="2" maxlength="1000"></textarea></label>
                 ${choice('_pay', pays, 'Payment')}
                 <input type="hidden" name="_cart" value="[]" data-cart-field><input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">${backInput(x)}
@@ -529,7 +549,8 @@
         return `${x.P.site.bare ? `<a href="#cart" class="nav-cart ob-cartfab" data-cart-open aria-label="Your cart">${I(ICONS.cart)}<span class="nav-cart__n" data-cart-count hidden>0</span></a>` : ''}
 <div class="ob-cart" data-cart hidden role="dialog" aria-modal="true" aria-labelledby="ob-cart-t"><div class="ob-cart__box">
 <div class="ob-cart__top"><h3 id="ob-cart-t">Your cart</h3><button type="button" class="ob-cart__x" data-cart-close aria-label="Close">×</button></div>
-<p class="ob-cart__empty" data-cart-empty>Your cart is empty.</p><ul class="ob-lines" data-cart-lines></ul>${form}</div></div>
+<p class="ob-cart__empty" data-cart-empty>Your cart is empty.</p><ul class="ob-lines" data-cart-lines></ul>${form}
+<p class="ob-myorders"><a href="${esc(x.P.site.shopAction)}/account" target="_blank" rel="noopener">📦 My orders</a></p></div></div>
 <div class="ob-quick" data-quickview hidden role="dialog" aria-modal="true" aria-label="Product"><div class="ob-quick__box"><button type="button" class="ob-cart__x ob-quick__x" data-quick-close aria-label="Close">×</button><div data-quick-body></div></div></div>`;
     };
     /**
@@ -945,7 +966,7 @@
             fashion: ['Clothing & fashion', () => storePage('Thread & Co.', '#0f766e', { eyebrow: 'New season · Free delivery over $75', title: 'Everyday clothes, made to last', text: 'Soft organic cotton, honest prices and pieces you will wear for years. Order today, delivered in 2–3 days.',
                 shop: { fee: '4.99', freeOver: '75' }, shopTitle: 'Bestsellers', shopIntro: 'Pick your size — every order ships within 24 hours.', perks: [['truck', 'Free delivery', 'On orders over $75'], ['award', '30-day returns', 'Easy, no questions asked'], ['shield', 'Secure checkout', 'Card, cash or bank transfer']],
                 products: [['Classic white tee', '24', '100% organic cotton, relaxed fit.', { cat: 'Tops', options: 'Size: S, M, L, XL', badge: 'Bestseller', long: 'Our everyday tee in heavyweight organic cotton. Pre-washed, so it keeps its shape and size.\nMachine wash at 30°. Model is 1.80 m and wears M.' }], ['Linen shirt', '49', 'Breathable linen for warm days.', { cat: 'Tops', options: 'Size: S, M, L, XL' }], ['Denim jacket', '89', 'Washed denim with a timeless cut.', { cat: 'Jackets', old: '110', badge: 'Sale', options: 'Size: S, M, L, XL' }],
-                    ['Everyday hoodie', '59', 'Brushed inside, built to keep its shape.', { cat: 'Tops', options: 'Size: S, M, L, XL' }], ['Canvas tote bag', '19', 'Roomy, sturdy and machine washable.', { cat: 'Accessories' }], ['Wool beanie', '22', 'Merino blend, one size.', { cat: 'Accessories', options: 'Colour: Black, Grey, Mustard' }]],
+                    ['Everyday hoodie', '59', 'Brushed inside, built to keep its shape.', { cat: 'Tops', options: 'Size: S, M, L, XL', opt2Name: 'Colour', vals2: [{ vid: '', v: 'Grey' }, { vid: '', v: 'Navy' }] }], ['Canvas tote bag', '19', 'Roomy, sturdy and machine washable.', { cat: 'Accessories' }], ['Wool beanie', '22', 'Merino blend, one size.', { cat: 'Accessories', options: 'Colour: Black, Grey, Mustard' }]],
                 story: ['Our story', 'Fewer, better clothes', 'We started Thread & Co. because we were tired of clothes that fell apart after a few washes. Every piece is made in small batches by a family-run workshop we know by name.'],
                 reviews: [['The tee is the softest I own — I bought three more.', 'Hannah W.'], ['Fast delivery and the jacket fits perfectly.', 'Marcus D.'], ['Great quality for the price. Returns were easy too.', 'Priya S.']],
                 faq: [['How long does delivery take?', 'Orders ship within 24 hours and arrive in 2–3 working days.'], ['Can I return something?', 'Yes — send it back within 30 days for a full refund or exchange.'], ['How do I choose my size?', 'Our sizes are true to size. Between sizes? Pick the bigger one for a relaxed fit.']],
@@ -969,7 +990,7 @@
             handmade: ['Handmade & gifts', () => storePage('Clay & Cotton', '#7c3aed', { eyebrow: 'Handmade in small batches', title: 'Thoughtful gifts, made by hand', text: 'Ceramics, candles and home goods from our little studio — each one a little different.',
                 shop: { fee: '5', freeOver: '60', bank: true, bankText: 'Bank: Your Bank\nAccount name: Clay & Cotton\nAccount number: 12345678\nSort code: 00-00-00' }, shopTitle: 'From the studio', perks: [['heart', 'Made by hand', 'No two pieces the same'], ['gift', 'Ready to gift', 'Wrapped with care'], ['truck', 'Careful delivery', 'Free over $60']],
                 products: [['Handmade mug', '26', 'Wheel-thrown stoneware, holds 350 ml.', { cat: 'Kitchen', options: 'Colour: Sage, Sand, Ocean', badge: 'Bestseller' }], ['Ceramic planter', '34', 'With a drainage hole and saucer.', { cat: 'Home' }], ['Scented soy candle', '18', '40-hour burn, cotton wick.', { cat: 'Home', options: 'Scent: Lavender, Fig, Cedar' }],
-                    ['Macramé wall hanging', '45', 'Natural cotton cord, 60 cm long.', { cat: 'Home' }], ['Linen napkins (set of 4)', '28', 'Soft stonewashed linen.', { cat: 'Kitchen' }], ['Gift card', '25', 'Let them choose — sent by email.', { cat: 'Gifts', badge: 'New' }]],
+                    ['Macramé wall hanging', '45', 'Natural cotton cord, 60 cm long.', { cat: 'Home' }], ['Linen napkins (set of 4)', '28', 'Soft stonewashed linen.', { cat: 'Kitchen' }], ['Gift card', '25', 'Let them choose — the code is emailed.', { cat: 'Gifts', badge: 'New', kind: 'gift' }]],
                 story: ['Meet the maker', 'From our studio to your home', 'Hi, I’m Lena. I make everything in a small studio behind my house, one piece at a time. Thank you for supporting handmade.'],
                 reviews: [['The mug is even prettier in real life.', 'Clara B.'], ['Beautifully wrapped — a perfect birthday present.', 'Sam T.'], ['The fig candle smells amazing.', 'Nadia F.']],
                 faq: [['Do you ship gifts directly?', 'Yes — add the recipient’s address and a gift message in the order note.'], ['Why does my mug look different?', 'Every piece is handmade, so colours and shapes vary a little. That’s the charm!'], ['How do I pay by bank transfer?', 'Choose bank transfer at checkout and you’ll see our bank details straight away.']],
@@ -977,7 +998,7 @@
         } },
         soon: { label: 'coming soon page', examples: {
             launch: ['Launching soon (countdown)', () => {
-                const col = column([wp('heading', { text: 'Northwind', tag: 'p' }), wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know — plus get 20% off on launch day.</p>' }), widget('countdown'), wp('form', { btn: 'Notify me', phone: false }), widget('social')]);
+                const col = column([wp('heading', { text: 'Northwind', tag: 'p' }), wp('animhead', { before: 'Something', words: 'new\nexciting\nbig', after: 'is coming', tag: 'h1' }), wp('text', { html: '<p>We are launching soon. Leave your details and be the first to know — plus get 20% off on launch day.</p>' }), widget('countdown'), wp('form', { btn: 'Notify me', phone: false, name: false, message: false }), widget('social')]);
                 col.widgets[0].st = { _: { d: { size: 20, weight: 800, transform: 'uppercase', ls: 3 } } }; col.st._ = { d: { maxw: 680 } };
                 return { v: 3, kind: 'soon', site: soonSite('Northwind', '#4f46e5'), pages: [homePage([styled(section('1', [col]), { align: 'center', minH: 760 }, 'soft')])] };
             }],
@@ -988,7 +1009,7 @@
             }],
             waitlist: ['App waitlist', () => {
                 const s = section('2', [column([wp('heading', { text: 'Coming soon', tag: 'p' }), wp('heading', { text: 'The simplest way to plan your week', tag: 'h1' }), wp('text', { html: '<p>Kite turns your to-do list into a calm, realistic plan. Join the waitlist for early access.</p>' }),
-                    wp('iconlist', { items: [{ icon: 'i:check', text: 'Free for early users' }, { icon: 'i:check', text: 'iPhone, Android and web' }, { icon: 'i:check', text: 'No spam — one email when we launch' }] }), wp('form', { btn: 'Join the waitlist', phone: false })]), column([wp('image', { alt: 'App preview' })])]);
+                    wp('iconlist', { items: [{ icon: 'i:check', text: 'Free for early users' }, { icon: 'i:check', text: 'iPhone, Android and web' }, { icon: 'i:check', text: 'No spam — one email when we launch' }] }), wp('form', { btn: 'Join the waitlist', phone: false, message: false })]), column([wp('image', { alt: 'App preview' })])]);
                 s.cols[0].widgets[0].st = { _: { d: { color: 'g:primary', weight: 700, transform: 'uppercase', ls: 2, size: 14 } } };
                 return { v: 3, kind: 'soon', site: soonSite('Kite', '#16a34a'), pages: [homePage([styled(s, { minH: 760 }, 'soft')])] };
             }],
@@ -1155,7 +1176,9 @@ ${Array.from({ length: 8 }, (_, i) => `.tabs>input:nth-of-type(${i + 1}):checked
 .popt__v button{min-width:42px;padding:7px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font:600 .88rem var(--bf),sans-serif;cursor:pointer;transition:border-color .15s,background .15s}.popt__v button:hover{border-color:var(--primary)}.popt__v button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .popt__v button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:var(--ink)}.popt__v.is-need button{border-color:#dc2626;animation:ob-shake .35s}@keyframes ob-shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
 .pcard__add{width:100%}.pcard__add.is-added{background:var(--text);border-color:var(--text);color:var(--bg)}.pcard__sold{display:block;text-align:center;padding:9px;border-radius:var(--br);background:var(--alt);color:var(--muted);font-weight:700;font-size:.9rem}.pcard.is-sold .pic{filter:grayscale(.7);opacity:.7}
-.pcard[hidden]{display:none}.pcard__open{position:absolute;inset:0;z-index:1}.pcard__open:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}.pcard__pic .pbadge,.pcard__n{z-index:2;pointer-events:none}
+.pcard[hidden]{display:none}.prating{margin:0;color:#f59e0b;font-size:.86rem;letter-spacing:1px}.prating span{color:var(--muted);letter-spacing:0;margin-left:4px}.prating[hidden]{display:none}.pkind{font-size:.8rem;font-weight:600;color:var(--muted)}
+.ob-myorders{margin:18px 0 0;text-align:center;font-size:.86rem}.ob-myorders a{color:var(--muted)}.ob-ship[hidden],[data-ship][hidden]{display:none!important}
+.ob-reviews{display:grid;gap:10px;margin-top:6px;padding-top:12px;border-top:1px solid var(--border)}.ob-reviews h4{margin:0;font-size:1rem}.ob-review{display:grid;gap:2px;font-size:.9rem}.ob-review b{color:#f59e0b;letter-spacing:1px}.ob-review small{color:var(--muted)}.ob-review p{margin:0;color:var(--text)}.pcard__open{position:absolute;inset:0;z-index:1}.pcard__open:focus-visible{outline:3px solid var(--primary);outline-offset:-3px}.pcard__pic .pbadge,.pcard__n{z-index:2;pointer-events:none}
 .pcard__n{position:absolute;right:12px;bottom:12px;padding:3px 9px;border-radius:999px;background:rgba(17,24,39,.72);color:#fff;font-size:.74rem;font-weight:700}
 .pstock{margin:0;color:#c2410c;font-size:.84rem;font-weight:700}.pstock[hidden]{display:none}
 .popt__v button.is-out{opacity:.45;text-decoration:line-through;cursor:not-allowed}.pcard__add.is-soldout{background:var(--alt);border-color:var(--alt);color:var(--muted);cursor:default}
@@ -1327,7 +1350,7 @@ ${x.edit ? '' : popupHtml(pg, x) + shopHtml(x)}${!x.edit && s.backTop ? '<a href
         const d = defaultsShop(), out = {
             currency: CURRENCIES.includes(s.currency) ? s.currency : d.currency, delivery: s.delivery !== false, fee: s.fee === undefined ? d.fee : PRICE(s.fee), freeOver: s.freeOver === undefined ? d.freeOver : PRICE(s.freeOver),
             pickup: !!s.pickup, pickupText: STR(s.pickupText, 200), cod: s.cod === undefined ? d.cod : !!s.cod, bank: !!s.bank, bankText: STR(s.bankText, 1000), card: !!s.card, cardReady: !!s.cardReady,
-            mode: s.mode === 'live' ? 'live' : 'test', phoneReq: s.phoneReq !== false, codes: !!s.codes,
+            mode: s.mode === 'live' ? 'live' : 'test', phoneReq: s.phoneReq !== false, codes: !!s.codes, remind: s.remind !== false,
             zones: (Array.isArray(s.zones) ? s.zones : []).slice(0, 20).filter(z => z && typeof z === 'object').map(z => ({ name: STR(z.name, 60),
                 countries: [...new Set((Array.isArray(z.countries) ? z.countries : []).map(c => String(c).toUpperCase()).filter(c => COUNTRIES.includes(c)))], fee: PRICE(z.fee), freeOver: PRICE(z.freeOver) })),
             taxRate: MONEY(s.taxRate) === null ? '' : String(Math.min(50, MONEY(s.taxRate))), taxIncl: s.taxIncl !== false, taxLabel: STR(s.taxLabel, 20) || 'Tax', taxShip: !!s.taxShip, thanks: STR(s.thanks, 300), whatsapp: STR(s.whatsapp, 30).replace(/[^\d+ ]/g, ''),

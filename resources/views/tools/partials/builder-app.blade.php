@@ -76,6 +76,9 @@
     </div>
 
     <input type="file" accept="image/*" data-pick-image hidden>
+    @if (($mode ?? '') === 'store')
+        <input type="file" data-pick-file hidden>
+    @endif
     <div class="lpb-toast" data-toast role="status" hidden></div>
 
     <dialog class="lpb-dialog" data-builder-dialog aria-label="Builder account">

@@ -162,7 +162,8 @@
         let cart = [];
         try { if (String(window.name).startsWith(KEY)) cart = JSON.parse(window.name.slice(KEY.length)); } catch {}
         cart = (Array.isArray(cart) ? cart : []).filter(l => l && typeof l.id === 'string' && typeof l.name === 'string' && l.qty > 0).slice(0, 50)
-            .map(l => ({ id: l.id.slice(0, 24), vid: String(l.vid || '').slice(0, 24), name: l.name.slice(0, 200), opt: String(l.opt || '').slice(0, 60), price: +l.price || 0, qty: Math.min(99, Math.floor(l.qty)) }));
+            .map(l => ({ id: l.id.slice(0, 24), vid: String(l.vid || '').slice(0, 24), vid2: String(l.vid2 || '').slice(0, 24), kind: ['digital', 'gift'].includes(l.kind) ? l.kind : 'item',
+                name: l.name.slice(0, 200), opt: String(l.opt || '').slice(0, 125), price: +l.price || 0, qty: Math.min(99, Math.floor(l.qty)) }));
         // Back from a finished order (the receipt links to #ordered): start with an empty cart
         if (location.hash === '#ordered') { cart = []; try { history.replaceState(null, '', location.pathname + location.search); } catch {} }
         const cardOf = id => d.querySelector(`.pcard[data-product="${CSS.escape(id)}"]`);
@@ -178,14 +179,23 @@
 
         /* live stock from owlvix: {"product" or "product:variant": count} for the products the owner tracks */
         let stock = {};
-        const left = (id, vid) => { const k = vid ? id + ':' + vid : id; return Object.prototype.hasOwnProperty.call(stock, k) ? stock[k] : Infinity; };
-        const inCart = (id, vid) => cart.filter(l => l.id === id && l.vid === (vid || '')).reduce((n, l) => n + l.qty, 0);
+        let reviews = {};
+        const stars = avg => '★★★★★'.slice(0, Math.round(avg)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(avg));
+        // a size × colour is counted as "product:size_colour"
+        const left = (id, vid, vid2) => { const k = vid ? id + ':' + vid + (vid2 ? '_' + vid2 : '') : id; return Object.prototype.hasOwnProperty.call(stock, k) ? stock[k] : Infinity; };
+        const inCart = (id, vid, vid2) => cart.filter(l => l.id === id && l.vid === (vid || '') && l.vid2 === (vid2 || '')).reduce((n, l) => n + l.qty, 0);
+        const setOut = (c, out) => { c.classList.toggle('is-out', out); c.setAttribute('aria-disabled', String(out)); if (out && c.getAttribute('aria-pressed') === 'true') c.setAttribute('aria-pressed', 'false'); };
         const markStock = root => $$('[data-product]', root).forEach(card => {
-            const id = card.dataset.product, chips = $$('[data-optv]', card), add = card.querySelector('[data-add]'), note = card.querySelector('[data-pstock]');
-            chips.forEach(c => { const out = left(id, c.dataset.optv) <= 0; c.classList.toggle('is-out', out); c.setAttribute('aria-disabled', String(out)); if (out && c.getAttribute('aria-pressed') === 'true') c.setAttribute('aria-pressed', 'false'); });
+            const id = card.dataset.product, chips = $$('[data-optv]', card), chips2 = $$('[data-optv2]', card), add = card.querySelector('[data-add]'), note = card.querySelector('[data-pstock]');
+            const v2s = chips2.length ? chips2.map(c => c.dataset.optv2) : [''];
+            const pick1 = chips.find(c => c.getAttribute('aria-pressed') === 'true')?.dataset.optv;
+            // a size is out when every colour of it is; a colour is out for the chosen size (or for every size)
+            chips.forEach(c => setOut(c, v2s.every(v2 => left(id, c.dataset.optv, v2) <= 0)));
+            chips2.forEach(c => setOut(c, (pick1 ? [pick1] : chips.map(x => x.dataset.optv)).every(v1 => left(id, v1, c.dataset.optv2) <= 0)));
             const all = chips.length ? chips.every(c => c.classList.contains('is-out')) : left(id) <= 0;
             if (add && all) { add.disabled = true; add.textContent = 'Sold out'; add.classList.add('is-soldout'); }
-            const pickedChip = chips.find(c => c.getAttribute('aria-pressed') === 'true'), n = chips.length ? (pickedChip ? left(id, pickedChip.dataset.optv) : Infinity) : left(id);
+            const p1 = chips.find(c => c.getAttribute('aria-pressed') === 'true'), p2 = chips2.find(c => c.getAttribute('aria-pressed') === 'true');
+            const n = chips.length ? (p1 && (!chips2.length || p2) ? left(id, p1.dataset.optv, p2?.dataset.optv2) : Infinity) : left(id);
             if (note) { note.hidden = !(n > 0 && n <= 5); note.textContent = n === 1 ? 'Only 1 left' : `Only ${n} left`; }
         });
         if (api && 'fetch' in window) {
@@ -193,7 +203,16 @@
                 if (!j || !j.stock) return;
                 stock = j.stock; markStock(d);
                 // nothing in the cart beyond what is left
-                cart.forEach(l => { l.qty = Math.min(l.qty, left(l.id, l.vid)); }); cart = cart.filter(l => l.qty > 0); save(); draw();
+                cart.forEach(l => { l.qty = Math.min(l.qty, left(l.id, l.vid, l.vid2)); }); cart = cart.filter(l => l.qty > 0); save(); draw();
+            }).catch(() => {});
+            // reviews from buyers: stars on the cards, the latest ones on each product's page
+            fetch(api + '/reviews', { credentials: 'omit' }).then(r => (r.ok ? r.json() : null)).then(j => {
+                reviews = (j && j.reviews) || {};
+                $$('[data-product]').forEach(card => {
+                    const r = reviews[card.dataset.product], el = card.querySelector('[data-prating]'); if (!r || !el) return;
+                    el.textContent = stars(r.avg); el.setAttribute('aria-label', `Rated ${r.avg} out of 5 from ${r.count} review${r.count === 1 ? '' : 's'}`);
+                    const n = d.createElement('span'); n.textContent = `${r.avg} (${r.count})`; el.append(n); el.hidden = false;
+                });
             }).catch(() => {});
         }
 
@@ -210,8 +229,9 @@
         /* totals, worked out like the server: discount, delivery by country, tax */
         let code = null; // {code, kind, value, label} once the shopper applies one
         // all in the smallest unit (App\Support\Shop::totals does the same sums), shown with W()
+        const ships = () => cart.some(l => l.kind === 'item'); // downloads and gift cards aren't posted
         const totals = () => {
-            const sub = cart.reduce((n, l) => n + M(l.price) * l.qty, 0), pickup = picked('_delivery') === 'pickup';
+            const sub = cart.reduce((n, l) => n + M(l.price) * l.qty, 0), pickup = picked('_delivery') === 'pickup' || !ships();
             const off = !code ? 0 : code.kind === 'percent' ? Math.floor(sub * Math.min(100, code.value) / 100) : code.kind === 'amount' ? Math.min(M(code.value), sub) : 0;
             const after = sub - off, country = form?.querySelector('[name=country]')?.value || '';
             let zone = { fee: rules.fee, free: rules.free }, unknown = false;
@@ -219,7 +239,8 @@
             const fee = pickup || !zone || code?.kind === 'shipping' || (zone.free && after >= M(zone.free)) ? 0 : M(zone.fee);
             const base = after + (rules.ship ? fee : 0);
             const tax = rules.tax > 0 ? (rules.incl ? base - Math.round(base / (1 + rules.tax / 100)) : Math.round(base * rules.tax / 100)) : 0;
-            return { sub, off, fee, tax, pickup, unknown, country, total: after + fee + (rules.incl ? 0 : tax) };
+            const due = after + fee + (rules.incl ? 0 : tax), gift = code?.kind === 'gift' ? Math.min(M(code.value), due) : 0; // a gift card pays what it can
+            return { sub, off, fee, tax, gift, pickup, unknown: unknown && ships(), country, total: due - gift };
         };
         const draw = () => {
             const count = cart.reduce((n, l) => n + l.qty, 0);
@@ -236,7 +257,7 @@
                 li.querySelector('small').textContent = [l.opt, fmt(l.price)].filter(Boolean).join(' · ');
                 li.querySelector('.ob-lt').textContent = fmt(W(M(l.price) * l.qty));
                 li.querySelector('.ob-qty span').textContent = l.qty;
-                if (l.qty >= Math.min(99, left(l.id, l.vid))) li.querySelector('[data-q="1"]').disabled = true;
+                if (l.qty >= Math.min(99, left(l.id, l.vid, l.vid2))) li.querySelector('[data-q="1"]').disabled = true;
                 list.append(li);
             });
             if (!form) return;
@@ -245,14 +266,19 @@
                 say(`${code.code} needs an order of at least ${fmt(code.min)}.`); code = null; t = totals();
             }
             const set = (k, v) => form.querySelectorAll(`[data-sum=${k}]`).forEach(el => (el.textContent = v));
-            set('sub', fmt(W(t.sub))); set('off', '−' + fmt(W(t.off))); set('tax', fmt(W(t.tax))); set('total', fmt(W(t.total)));
+            set('sub', fmt(W(t.sub))); set('off', '−' + fmt(W(t.off))); set('tax', fmt(W(t.tax))); set('total', fmt(W(t.total))); set('gift', '−' + fmt(W(t.gift)));
+            const giftRow = form.querySelector('[data-sum-row=gift]'); if (giftRow) giftRow.hidden = !t.gift;
+            // only downloads and gift cards: no delivery, address or country
+            const post = ships();
+            $$('[data-ship]', form).forEach(el => { el.hidden = !post; $$('input,select,textarea', el).forEach(f => (f.disabled = !post)); });
+            const feeRow = form.querySelector('[data-sum-row=fee]'); if (feeRow) feeRow.hidden = !post;
             set('fee', t.pickup ? 'Free' : t.unknown ? (t.country ? 'Not available' : 'Choose country') : t.fee ? fmt(W(t.fee)) : 'Free');
             const offRow = form.querySelector('[data-sum-row=off]'); if (offRow) offRow.hidden = !t.off;
             const codeTag = form.querySelector('[data-sum-code]'); if (codeTag) codeTag.textContent = code ? `(${code.code})` : '';
             const label = form.querySelector('[data-sum-label]'); if (label) label.textContent = t.pickup ? 'Pick-up' : 'Delivery';
             const addr = form.querySelector('[data-address]'), area = addr?.querySelector('textarea');
-            if (addr) { addr.hidden = t.pickup; area.required = !t.pickup; }
-            const ctry = form.querySelector('[data-country]'); if (ctry) { ctry.hidden = t.pickup; ctry.querySelector('select').required = !t.pickup; }
+            if (addr) { addr.hidden = t.pickup; area.required = !t.pickup; area.disabled = !post; }
+            const ctry = form.querySelector('[data-country]'); if (ctry) { ctry.hidden = t.pickup; ctry.querySelector('select').required = !t.pickup && post; }
             if (place) place.textContent = picked('_pay') === 'card' ? `Continue to payment · ${fmt(W(t.total))}` : `Place order · ${fmt(W(t.total))}`;
         };
 
@@ -274,7 +300,7 @@
             const body = card.querySelector('.pcard__b').cloneNode(true), long = card.querySelector('.pcard__long');
             quickBody.textContent = '';
             const wrap = d.createElement('div'); wrap.className = 'ob-quick__in';
-            ['product', 'name', 'price', 'cat'].forEach(k => { if (card.dataset[k] !== undefined) wrap.dataset[k] = card.dataset[k]; });
+            ['product', 'name', 'price', 'cat', 'kind'].forEach(k => { if (card.dataset[k] !== undefined) wrap.dataset[k] = card.dataset[k]; });
             const gal = d.createElement('div'); gal.className = 'ob-gal';
             if (pics.length) {
                 const big = d.createElement('img'); big.className = 'ob-gal__big'; big.src = pics[0].src; big.alt = pics[0].alt; gal.append(big);
@@ -285,6 +311,19 @@
                 }
             } else gal.append(card.querySelector('.pcard__pic .pic')?.cloneNode(true) || d.createElement('div'));
             if (long) body.querySelector('.pprice')?.after(Object.assign(long.cloneNode(true), { hidden: false }));
+            const rv = reviews[id];
+            if (rv && rv.items.length) { // what buyers said
+                const box = d.createElement('div'); box.className = 'ob-reviews';
+                const h = d.createElement('h4'); h.textContent = `${stars(rv.avg)} ${rv.avg} · ${rv.count} review${rv.count === 1 ? '' : 's'}`; box.append(h);
+                rv.items.forEach(it => {
+                    const r = d.createElement('div'); r.className = 'ob-review';
+                    r.innerHTML = '<b></b><p></p><small></small>';
+                    r.querySelector('b').textContent = stars(it.rating); r.querySelector('p').textContent = it.text; r.querySelector('small').textContent = it.name;
+                    if (!it.text) r.querySelector('p').remove();
+                    box.append(r);
+                });
+                body.append(box);
+            }
             wrap.append(gal, body); quickBody.append(wrap);
             markStock(quickBody);
             if (!drawer.hidden) closeLayer(drawer);
@@ -303,12 +342,12 @@
         $$('[data-psearch]').forEach(inp => inp.addEventListener('input', () => filter(inp.closest('.wrap'))));
 
         d.addEventListener('click', e => {
-            const ov = e.target.closest('[data-optv]');
+            const ov = e.target.closest('[data-optv], [data-optv2]');
             if (ov) {
                 if (ov.getAttribute('aria-disabled') === 'true') return toast(`${ov.dataset.v} is sold out`);
-                ov.parentNode.querySelectorAll('[data-optv]').forEach(b => b.setAttribute('aria-pressed', String(b === ov))); ov.parentNode.classList.remove('is-need');
+                ov.parentNode.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === ov))); ov.parentNode.classList.remove('is-need');
                 const box = ov.closest('[data-product]'), pp = box?.querySelector('[data-pprice]');
-                if (pp) pp.textContent = fmt(num(ov.dataset.price) ?? num(box.dataset.price) ?? 0);
+                if (pp && ov.dataset.optv) pp.textContent = fmt(num(ov.dataset.price) ?? num(box.dataset.price) ?? 0);
                 markStock(box.parentNode); return;
             }
             const cat = e.target.closest('[data-pcat]');
@@ -321,17 +360,21 @@
             const add = e.target.closest('[data-add]');
             if (add) {
                 const box = add.closest('[data-product]'); if (!box || !box.dataset.product) return;
-                const group = box.querySelector('.popt__v'), chip = group?.querySelector('[aria-pressed="true"]'), id = box.dataset.product, vid = chip?.dataset.optv || '';
-                if (group && !chip) { // sizes, colours…: the shopper picks one first
-                    toast(`Please choose your ${(group.getAttribute('aria-label') || 'option').toLowerCase()} first`);
-                    group.classList.remove('is-need'); void group.offsetWidth; group.classList.add('is-need');
-                    group.querySelector('button:not([aria-disabled="true"])')?.focus(); return;
+                const groups = $$('.popt__v', box), id = box.dataset.product;
+                const need = groups.find(g => !g.querySelector('[aria-pressed="true"]'));
+                if (need) { // sizes, colours…: the shopper picks one of each first
+                    toast(`Please choose your ${(need.getAttribute('aria-label') || 'option').toLowerCase()} first`);
+                    need.classList.remove('is-need'); void need.offsetWidth; need.classList.add('is-need');
+                    need.querySelector('button:not([aria-disabled="true"])')?.focus(); return;
                 }
-                const max = Math.min(99, left(id, vid));
-                if (inCart(id, vid) >= max) return toast(max <= 0 ? 'Sold out' : `Only ${max} available`);
-                const line = cart.find(l => l.id === id && l.vid === vid);
+                const chip = box.querySelector('[data-optv][aria-pressed="true"]'), chip2 = box.querySelector('[data-optv2][aria-pressed="true"]');
+                const vid = chip?.dataset.optv || '', vid2 = chip2?.dataset.optv2 || '';
+                const max = Math.min(99, left(id, vid, vid2));
+                if (inCart(id, vid, vid2) >= max) return toast(max <= 0 ? 'Sold out' : `Only ${max} available`);
+                const line = cart.find(l => l.id === id && l.vid === vid && l.vid2 === vid2);
                 if (line) line.qty += 1;
-                else if (cart.length < 50) cart.push({ id, vid, name: box.dataset.name || 'Item', opt: chip?.dataset.v || '', price: num(chip?.dataset.price) ?? num(box.dataset.price) ?? 0, qty: 1 });
+                else if (cart.length < 50) cart.push({ id, vid, vid2, kind: box.dataset.kind || 'item', name: box.dataset.name || 'Item', opt: [chip?.dataset.v, chip2?.dataset.v].filter(Boolean).join(' / '),
+                    price: num(chip?.dataset.price) ?? num(box.dataset.price) ?? 0, qty: 1 });
                 else return toast('Your cart is full');
                 const first = cart.reduce((n, l) => n + l.qty, 0) === 1;
                 save(); draw(); bump();
@@ -347,7 +390,7 @@
             if (li) {
                 const l = cart[+li.dataset.i]; if (!l) return;
                 const q = e.target.closest('[data-q]');
-                if (q) l.qty = Math.max(0, Math.min(99, left(l.id, l.vid), l.qty + +q.dataset.q));
+                if (q) l.qty = Math.max(0, Math.min(99, left(l.id, l.vid, l.vid2), l.qty + +q.dataset.q));
                 if (e.target.closest('[data-rm]')) l.qty = 0;
                 cart = cart.filter(x => x.qty > 0); save(); draw();
                 if (!cart.length) drawer.querySelector('[data-cart-close]')?.focus();
@@ -392,7 +435,7 @@
             if (!cart.length) { e.preventDefault(); return; }
             const t = totals();
             if (!t.pickup && t.unknown && t.country) { e.preventDefault(); toast('Sorry — the shop doesn’t deliver to that country'); return; }
-            form.querySelector('[data-cart-field]').value = JSON.stringify(cart.map(l => ({ id: l.id, vid: l.vid, opt: l.opt, qty: l.qty })));
+            form.querySelector('[data-cart-field]').value = JSON.stringify(cart.map(l => ({ id: l.id, vid: l.vid, vid2: l.vid2, opt: l.opt, qty: l.qty })));
             if (codeInput && !code) codeInput.value = codeInput.value.trim(); // an unchecked code is still sent and checked
             if (place) { place.disabled = true; place.textContent = picked('_pay') === 'card' ? 'Opening secure payment…' : 'Placing your order…'; }
         });

@@ -186,6 +186,14 @@ Route::prefix('builder/stores')->name('builder.stores.')->middleware('builder')-
     Route::get('{id}/discounts', 'discounts')->where('id', '[a-z0-9]{16}')->name('discounts');
     Route::post('{id}/discounts', 'saveDiscount')->where('id', '[a-z0-9]{16}')->middleware('throttle:60,1,store-discount')->name('discounts.save');
     Route::post('{id}/discounts/{discount}/delete', 'deleteDiscount')->where(['id' => '[a-z0-9]{16}', 'discount' => '[0-9]{1,12}'])->name('discounts.delete');
+    Route::post('{id}/orders/{number}/refund', 'refundOrder')->where(['id' => '[a-z0-9]{16}', 'number' => '[0-9]{1,9}'])->middleware('throttle:10,1,store-refund')->name('orders.refund');
+    Route::get('{id}/sales', 'sales')->where('id', '[a-z0-9]{16}')->name('sales');
+    Route::get('{id}/files', 'files')->where('id', '[a-z0-9]{16}')->name('files');
+    Route::post('{id}/files', 'uploadFile')->where('id', '[a-z0-9]{16}')->middleware('throttle:20,1,store-file')->name('files.upload');
+    Route::post('{id}/files/{file}/delete', 'deleteFile')->where(['id' => '[a-z0-9]{16}', 'file' => '[a-z0-9]{24}'])->name('files.delete');
+    Route::get('{id}/reviews', 'reviews')->where('id', '[a-z0-9]{16}')->name('reviews');
+    Route::post('{id}/reviews/{review}', 'updateReview')->where(['id' => '[a-z0-9]{16}', 'review' => '[0-9]{1,12}'])->name('reviews.update');
+    Route::get('{id}/gift-cards', 'giftCards')->where('id', '[a-z0-9]{16}')->name('gift-cards');
     Route::post('{id}/orders/{number}/check', 'checkOrder')->where(['id' => '[a-z0-9]{16}', 'number' => '[0-9]{1,9}'])->middleware('throttle:20,1,store-check')->name('orders.check');
     Route::post('{id}/delete', 'delete')->where('id', '[a-z0-9]{16}')->name('delete');
     Route::post('{id}/stripe/connect', 'stripeConnect')->where('id', '[a-z0-9]{16}')->middleware('throttle:10,1,store-stripe')->name('stripe.connect');
@@ -211,6 +219,16 @@ Route::post('/fs', [\App\Http\Controllers\BuilderPublicController::class, 'beaco
 Route::post('/shop/{id}', [\App\Http\Controllers\ShopController::class, 'order'])->where('id', '[a-z0-9]{16}')->middleware('throttle:20,1,shop-order')->withoutMiddleware($stateless)->name('shop.checkout');
 Route::get('/shop/{id}/stock', [\App\Http\Controllers\ShopController::class, 'stock'])->where('id', '[a-z0-9]{16}')->middleware('throttle:120,1,shop-stock')->withoutMiddleware($stateless)->name('shop.stock');
 Route::get('/shop/{id}/code', [\App\Http\Controllers\ShopController::class, 'code'])->where('id', '[a-z0-9]{16}')->middleware('throttle:30,1,shop-code')->withoutMiddleware($stateless)->name('shop.code');
+// "My orders" for a shop's customers (with a session: they sign in with an emailed code)
+Route::prefix('shop/{id}/account')->where(['id' => '[a-z0-9]{16}'])->name('shop.account')->controller(\App\Http\Controllers\ShopAccountController::class)->group(function () {
+    Route::get('/', 'show');
+    Route::post('code', 'code')->middleware('throttle:10,1,shop-account-code')->name('.code');
+    Route::post('verify', 'verify')->middleware('throttle:20,1,shop-account-verify')->name('.verify');
+    Route::post('logout', 'logout')->name('.logout');
+});
+Route::get('/shop/{id}/reviews', [\App\Http\Controllers\ShopController::class, 'reviews'])->where('id', '[a-z0-9]{16}')->middleware('throttle:120,1,shop-reviews')->withoutMiddleware($stateless)->name('shop.reviews');
+Route::post('/shop/order/{token}/review', [\App\Http\Controllers\ShopController::class, 'review'])->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:10,1,shop-review')->withoutMiddleware($stateless)->name('shop.review');
+Route::get('/shop/order/{token}/file/{product}', [\App\Http\Controllers\ShopController::class, 'download'])->where(['token' => '[A-Za-z0-9]{40}', 'product' => '[A-Za-z0-9]{1,24}'])->middleware('throttle:20,1,shop-download')->withoutMiddleware($stateless)->name('shop.download');
 Route::get('/shop/order/{token}', [\App\Http\Controllers\ShopController::class, 'receipt'])->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:60,1,shop-receipt')->withoutMiddleware($stateless)->name('shop.order');
 Route::post('/shop/order/{token}/pay', [\App\Http\Controllers\ShopController::class, 'pay'])->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:10,1,shop-pay')->withoutMiddleware($stateless)->name('shop.pay');
 // Contact forms on builder pages (posted from any host, so no CSRF token: see bootstrap/app.php)

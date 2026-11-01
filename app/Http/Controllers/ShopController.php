@@ -46,11 +46,21 @@ class ShopController extends Controller
         }
         $s = $store->settings ?? [];
         $ways = Shop::payWays($store);
-        $deliveries = array_values(array_filter(Shop::DELIVERY, fn ($d) => ! empty($s[$d])));
-        $delivery = $request->input('_delivery', $deliveries[0] ?? 'delivery');
+        [$lines, $errors] = Shop::lines($store, $request->input('_cart'));
+        if ($errors) {
+            return $this->problem($store, $back, $errors, 422);
+        }
+        // only downloads and gift cards: nothing to post, so no delivery, address or country
+        $ships = Shop::ships($lines);
+        $deliveries = $ships ? array_values(array_filter(Shop::DELIVERY, fn ($d) => ! empty($s[$d]))) : ['digital'];
+        $delivery = $ships ? $request->input('_delivery', $deliveries[0] ?? 'delivery') : 'digital';
         $byCountry = $delivery === 'delivery' && Shop::byCountry($store);
+        $input = ['_delivery' => $delivery] + $request->all();
+        if (! $ships) {
+            unset($input['address'], $input['country']);
+        }
 
-        $validator = Validator::make($request->all() + ['_delivery' => $delivery], [
+        $validator = Validator::make($input, [
             'country' => [$byCountry ? 'required' : 'nullable', 'string', 'regex:/^[A-Za-z]{2}$/'],
             '_code' => ['nullable', 'string', 'max:40'],
             'name' => ['required', 'string', 'max:100'],
@@ -81,17 +91,13 @@ class ShopController extends Controller
                 return $this->problem($store, $back, ['Please leave links out of your order details.'], 422);
             }
         }
-        [$lines, $errors] = Shop::lines($store, $request->input('_cart'));
-        if ($errors) {
-            return $this->problem($store, $back, $errors, 422);
-        }
         // the calling code picked beside the phone box goes in front: "+44 7911 123456" (a number typed with + keeps its own)
         $data['phone'] = \App\Support\Phone::combine($data['phone'] ?? null, $data['_dial'] ?? null);
         $country = $byCountry ? strtoupper($data['country']) : null;
         if ($byCountry && ! Shop::zone($store, $country)) {
             return $this->problem($store, $back, ['Sorry, this shop doesn’t deliver to '.\App\Support\Country::name($country).'.'.(! empty($s['pickup']) ? ' You can choose pick-up instead.' : '')], 422);
         }
-        $code = null;
+        $code = $gift = null;
         if (filled($data['_code'] ?? null)) {
             // wrong codes count against the same limit as the cart's code check, so codes can't be guessed here instead
             $tries = 'shop-code:'.$store->id.':'.$request->ip();
@@ -99,18 +105,24 @@ class ShopController extends Controller
                 return $this->problem($store, $back, ['Too many discount codes tried. Please wait a few minutes, or order without one.'], 429);
             }
             $code = Shop::discount($store, $data['_code']);
+            $gift = $code ? null : Shop::giftCard($store, $data['_code']); // the same box takes a gift card
             $sub = array_sum(array_map(fn ($l) => $l['price'] * $l['qty'], $lines));
-            if (! $code || $code->problem($sub, $store->currency)) {
+            if ((! $code && ! $gift) || $code?->problem($sub, $store->currency)) {
                 RateLimiter::hit($tries, 600);
             }
-            if (! $code) {
+            if ($gift) {
+                // (a gift card can't buy another gift card)
+                if (collect($lines)->contains('kind', 'gift')) {
+                    return $this->problem($store, $back, ['A gift card can’t be used to buy gift cards. Please remove it from your cart, or the code.'], 422);
+                }
+            } elseif (! $code) {
                 return $this->problem($store, $back, ['The discount code “'.strtoupper(trim($data['_code'])).'” isn’t valid. Check it, or leave it empty.'], 422);
             }
-            if ($why = $code->problem($sub, $store->currency)) {
+            if ($code && ($why = $code->problem($sub, $store->currency))) {
                 return $this->problem($store, $back, [$why], 422);
             }
         }
-        $totals = Shop::totals($store, $lines, $data['_delivery'], $country, $code);
+        $totals = Shop::totals($store, $lines, $data['_delivery'], $country, $code, $gift);
         if ($totals['total'] <= 0 && $data['_pay'] === 'card') {
             return $this->problem($store, $back, ['There is nothing to pay for. Please choose another way to pay.'], 422);
         }
@@ -130,7 +142,7 @@ class ShopController extends Controller
         }
         Shop::releaseExpired($store); // unpaid card orders that ran out of time give their stock back first
         try {
-            $order = $this->placeOrder($store, $data, $lines, $totals, $back, $card, $country, $code);
+            $order = $this->placeOrder($store, $data, $lines, $totals, $back, $card, $country, $code, $gift);
         } catch (\RuntimeException $e) {
             return $this->problem($store, $back, [$e->getMessage()], 409);
         }
@@ -138,6 +150,10 @@ class ShopController extends Controller
             return $this->problem($store, $back, [$order], 409);
         }
 
+        if (! $card && $order->total === 0) { // a gift card paid for all of it
+            $order->forceFill(['paid_at' => now()])->save();
+            Shop::onPaid($order);
+        }
         if ($card) {
             if ($to = $this->toStripe($order)) {
                 return $to;
@@ -157,9 +173,9 @@ class ShopController extends Controller
      * Saves the order, one at a time per shop: its number, its stock and a use of its discount code. Returns the
      * problem (as a string) when there isn't enough stock; a code that ran out meanwhile throws and undoes it all.
      */
-    private function placeOrder(BuilderStore $store, array $data, array $lines, array $totals, ?string $back, bool $card, ?string $country, $code): BuilderOrder|string
+    private function placeOrder(BuilderStore $store, array $data, array $lines, array $totals, ?string $back, bool $card, ?string $country, $code, $gift = null): BuilderOrder|string
     {
-        return DB::transaction(function () use ($store, $data, $lines, $totals, $back, $card, $country, $code) {
+        return DB::transaction(function () use ($store, $data, $lines, $totals, $back, $card, $country, $code, $gift) {
             // one order at a time per shop: the number, the stock and the code's uses
             $locked = BuilderStore::whereKey($store->id)->lockForUpdate()->first();
             if ($problem = Shop::takeStock($locked, $lines)) {
@@ -172,6 +188,13 @@ class ShopController extends Controller
                 }
                 $fresh->increment('uses');
             }
+            if ($gift && $totals['gift_amount'] > 0) { // the gift card pays its part now (it gets it back if the order is cancelled)
+                $card_ = $locked->giftCards()->whereKey($gift->id)->lockForUpdate()->first();
+                if (! $card_ || $card_->balance < $totals['gift_amount']) {
+                    throw new \RuntimeException('This gift card has just been used. Please check your cart and try again.');
+                }
+                $card_->decrement('balance', $totals['gift_amount']);
+            }
             $locked->increment('orders_count');
 
             return $locked->orders()->create([
@@ -179,7 +202,7 @@ class ShopController extends Controller
                 'delivery' => $data['_delivery'], 'name' => trim($data['name']), 'email' => strtolower(trim($data['email'])),
                 'phone' => $data['phone'],
                 'address' => $data['_delivery'] === 'delivery' ? trim($data['address']) : null, 'country' => $country,
-                'note' => filled($data['note'] ?? null) ? trim($data['note']) : null, 'discount_code' => $code?->code,
+                'note' => filled($data['note'] ?? null) ? trim($data['note']) : null, 'discount_code' => $code?->code, 'gift_code' => $totals['gift_amount'] ? $gift?->code : null,
                 'items' => $lines, 'stock_taken' => true, 'hold_until' => $card ? now()->addMinutes(Shop::HOLD_MINUTES) : null, 'currency' => $store->currency, 'back' => $back, 'stripe_mode' => $card ? Shop::cardMode($store) : null,
             ] + $totals);
         });
@@ -247,15 +270,95 @@ class ShopController extends Controller
             $s = Stripe::checkoutOn($order->stripe_mode, $store->stripeAccount($order->stripe_mode), $order->currency, $lines,
                 $receipt.'?paid={CHECKOUT_SESSION_ID}', $receipt.'?r=cancelled',
                 ['owlvix_store' => $store->id, 'owlvix_order' => (string) $order->id], $order->email,
-                $order->discount, $order->discount_code ?? '', now()->addMinutes($left)->timestamp);
+                $order->discount + $order->gift_amount, trim(($order->discount_code ?? '').($order->gift_amount ? ' + gift card' : ''), ' +') ?: 'Discount',
+                now()->addMinutes($left)->timestamp, $order->stripe_coupon);
         } catch (\Throwable $e) {
             report($e);
 
             return null;
         }
-        $order->update(['stripe_session' => $s['id']]);
+        $order->update(['stripe_session' => $s['id'], 'stripe_coupon' => $s['coupon'] ?? null]);
 
         return redirect()->away($s['url'], 303);
+    }
+
+    /**
+     * A cash or bank order the owner has just marked paid: gift cards bought are made, and the customer is told —
+     * with their gift card codes and download links — when the order has any.
+     */
+    public static function paidNow(BuilderOrder $order, string $ownerEmail): void
+    {
+        Shop::onPaid($order);
+        if (! $order->digitalLines() || ! self::mayEmailCustomer($order->store)) {
+            return;
+        }
+        \Illuminate\Support\defer(function () use ($order, $ownerEmail) {
+            try {
+                Mail::to($order->email)->send(new \App\Mail\BuilderOrderPaid($order->fresh(), $ownerEmail));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
+    }
+
+    /** The shop's published reviews by product: average, count and the latest ones. Any page may read it. */
+    public function reviews(string $id)
+    {
+        $store = BuilderStore::whereKey($id)->whereNull('disabled_at')->first();
+        $out = [];
+        foreach ($store ? $store->reviews()->where('hidden', false)->latest()->take(500)->get()->groupBy('product_id') : [] as $pid => $list) {
+            $out[$pid] = ['avg' => round($list->avg('rating'), 1), 'count' => $list->count(), 'items' => $list->take(10)->map->toPublic()->values()];
+        }
+
+        return response()->json(['ok' => (bool) $store, 'reviews' => (object) $out], $store ? 200 : 404)
+            ->header('Access-Control-Allow-Origin', '*')->header('Cache-Control', 'public, max-age=60');
+    }
+
+    /** A buyer reviews a product from their order page, once it has been sent (or, for downloads, paid). */
+    public function review(Request $request, string $token)
+    {
+        $order = BuilderOrder::where('token', $token)->with('store')->firstOrFail();
+        $back = redirect()->to(route('shop.order', $order->token).'#review', 303);
+        if (! self::canReview($order)) {
+            return $back;
+        }
+        $v = Validator::make($request->all(), [
+            'product' => ['required', 'string', 'in:'.implode(',', array_unique(array_column($order->items, 'id')))],
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'text' => ['nullable', 'string', 'max:1500'],
+        ]);
+        if ($v->fails() || preg_match_all('#https?://|www\.#i', (string) $request->input('text')) > 1) {
+            return redirect()->to(route('shop.order', ['token' => $order->token, 'r' => 'review-error']).'#review', 303);
+        }
+        $order->store->reviews()->updateOrCreate(['builder_order_id' => $order->id, 'product_id' => $request->input('product')],
+            ['name' => $order->name, 'rating' => (int) $request->input('rating'), 'text' => trim((string) $request->input('text')) ?: null]);
+
+        return redirect()->to(route('shop.order', ['token' => $order->token, 'r' => 'reviewed']).'#review', 303);
+    }
+
+    /** Buyers review once their order is on its way (or done); downloads and gift cards once paid. */
+    public static function canReview(BuilderOrder $order): bool
+    {
+        return in_array($order->status, ['shipped', 'done'], true) || ($order->status === 'new' && $order->isPaid() && ! Shop::ships($order->items ?? []));
+    }
+
+    /** A paid order's download (a product sold as a file), a limited number of times. */
+    public function download(string $token, string $product)
+    {
+        $order = BuilderOrder::where('token', $token)->with('store')->firstOrFail();
+        $line = collect($order->items)->first(fn ($l) => $l['id'] === $product && ($l['kind'] ?? '') === 'digital');
+        abort_unless($line && $order->isPaid() && $order->status !== 'cancelled', 404);
+        $fileId = $line['file'] ?? null;
+        $file = $fileId ? $order->store->files()->find($fileId) : null;
+        abort_unless($file && \App\Models\BuilderShopFile::disk()->exists($file->path()), 404);
+        if ($order->downloads >= \App\Models\BuilderShopFile::MAX_DOWNLOADS * max(1, count($order->digitalLines()))) {
+            return redirect()->route('shop.order', ['token' => $order->token, 'r' => 'downloads'], 303);
+        }
+        $order->increment('downloads');
+
+        return \App\Models\BuilderShopFile::disk()->download($file->path(), $file->name, [
+            'Content-Type' => $file->mime, 'X-Robots-Tag' => 'noindex', 'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** Tracked stock for the shop's pages (they mark sold-out sizes and "Only 3 left"). Any page may read it. */
@@ -282,6 +385,10 @@ class ShopController extends Controller
         RateLimiter::hit($key, 600);
         $code = Shop::discount($store, $request->query('c'));
         $sub = Shop::minor($request->query('sub', 0), $store->currency) ?? 0;
+        if (! $code && ($gift = Shop::giftCard($store, $request->query('c')))) { // a gift card: its balance comes off the total
+            return $cors(response()->json(['ok' => true, 'code' => $gift->code, 'kind' => 'gift', 'label' => 'Gift card · '.Shop::format($gift->balance, $store->currency).' left',
+                'value' => Shop::zeroDecimal($store->currency) ? $gift->balance : $gift->balance / 100, 'min' => 0]));
+        }
         if (! $code) {
             return $cors(response()->json(['ok' => false, 'error' => 'That code isn’t valid.']));
         }
@@ -322,6 +429,7 @@ class ShopController extends Controller
             if (! $order->stock_taken) {
                 Shop::retake($order);
             }
+            Shop::onPaid($order); // gift cards bought are made now (the receipt email carries their codes)
             (new self)->sendEmails($order);
         }
 

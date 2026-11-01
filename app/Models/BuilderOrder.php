@@ -16,14 +16,14 @@ class BuilderOrder extends Model
     public const OWNER_STATUSES = ['new', 'shipped', 'done', 'cancelled'];
 
     protected $fillable = ['number', 'token', 'status', 'pay', 'paid_at', 'delivery', 'name', 'email', 'phone', 'address', 'country', 'note',
-        'items', 'stock_taken', 'hold_until', 'currency', 'subtotal', 'discount_code', 'discount', 'delivery_fee', 'tax', 'tax_included', 'total', 'tracking', 'shipped_at', 'stripe_mode', 'stripe_session', 'back'];
+        'items', 'stock_taken', 'hold_until', 'currency', 'subtotal', 'discount_code', 'discount', 'gift_code', 'gift_amount', 'stripe_coupon', 'downloads', 'reminded_at', 'delivery_fee', 'tax', 'tax_included', 'total', 'refunded', 'refunded_at', 'tracking', 'shipped_at', 'stripe_mode', 'stripe_session', 'back'];
 
     protected $hidden = ['token', 'stripe_session'];
 
     protected function casts(): array
     {
         return ['items' => 'array', 'paid_at' => 'datetime', 'shipped_at' => 'datetime', 'hold_until' => 'datetime', 'number' => 'integer', 'subtotal' => 'integer', 'discount' => 'integer',
-            'delivery_fee' => 'integer', 'tax' => 'integer', 'tax_included' => 'boolean', 'total' => 'integer', 'stock_taken' => 'boolean'];
+            'delivery_fee' => 'integer', 'tax' => 'integer', 'tax_included' => 'boolean', 'total' => 'integer', 'refunded' => 'integer', 'refunded_at' => 'datetime', 'gift_amount' => 'integer', 'downloads' => 'integer', 'reminded_at' => 'datetime', 'stock_taken' => 'boolean'];
     }
 
     public function store(): BelongsTo
@@ -59,6 +59,12 @@ class BuilderOrder extends Model
         return $this->country ? \App\Support\Country::name($this->country) : null;
     }
 
+    /** Lines bought as downloads or gift cards (nothing to post). */
+    public function digitalLines(): array
+    {
+        return array_values(array_filter($this->items ?? [], fn ($l) => in_array($l['kind'] ?? 'item', ['digital', 'gift'], true)));
+    }
+
     public function isPaid(): bool
     {
         return $this->paid_at !== null;
@@ -87,11 +93,16 @@ class BuilderOrder extends Model
             'subtotal' => $this->money($this->subtotal),
             'discount' => $this->discount ? '−'.$this->money($this->discount) : null,
             'discount_code' => $this->discount_code,
+            'gift' => $this->gift_amount ? '−'.$this->money($this->gift_amount) : null,
+            'gift_code' => $this->gift_code,
             'delivery_fee' => $this->delivery_fee ? $this->money($this->delivery_fee) : 'Free',
             'tax' => $this->tax ? $this->money($this->tax) : null,
             'tax_included' => $this->tax_included,
             'tracking' => $this->tracking,
             'total' => $this->money($this->total),
+            'refunded' => $this->refunded ? $this->money($this->refunded) : null,
+            // what can still be refunded, as the owner types it ("24.99"); nothing before it's paid (cash orders: once marked paid)
+            'refundable' => $this->isPaid() && $this->total > $this->refunded ? \App\Support\Shop::plain($this->total - $this->refunded, $this->currency) : null,
             'test' => $this->stripe_mode === 'test',
             'created_at' => $this->created_at?->toIso8601String(),
         ];

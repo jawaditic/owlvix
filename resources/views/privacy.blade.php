@@ -12,7 +12,7 @@
         <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'alt' => 'Owlvix owl'])</div>
         <p class="eyebrow">Legal</p>
         <h1>Privacy Policy</h1>
-        <p class="prose__updated">Last updated: 30 October 2026</p>
+        <p class="prose__updated">Last updated: 1 November 2026</p>
 
         <p>This policy explains what information Owlvix ("we", "us") collects when you use owlvix.com, why we collect it, and the choices you have. If you have any questions, email us at <a href="mailto:{{ config('mail.from.address') }}">{{ config('mail.from.address') }}</a>.</p>
 
@@ -47,7 +47,14 @@
             <li>the answers people send are stored on owlvix.com for you, the form owner, and emailed to you. You can see and download them in the builder. We keep them until you delete the form, which deletes all its answers too;</li>
             <li>to stop spam we count answers per visitor for an hour using a scrambled (hashed) version of their IP address. The IP address itself is not stored.</li>
         </ul>
-        <p>As a funnel or form owner you are responsible for telling your visitors how you use their details, and for having their permission to contact them.</p>
+        <p>If you sell with the <a href="{{ route('store-builder') }}">online store builder</a>:</p>
+        <ul>
+            <li>we keep your shop's products, prices, stock counts, delivery and payment settings and discount codes, so checkout always charges the prices you set;</li>
+            <li>when a customer orders, the name, email address, phone number, delivery address and country they enter, what they ordered and how they paid are stored on owlvix.com for you, the shop owner, and emailed to you. The customer gets a receipt by email and a private link to their order. You can see and download your orders in the builder. We keep them until you delete the shop, which deletes its orders too;</li>
+            <li>card payments are made on Stripe's own payment page, on your own Stripe account. We never see or store card numbers; we keep only your Stripe account's id (encrypted) and whether each order was paid;</li>
+            <li>to stop abuse we count orders and discount code tries per visitor for a short time using their IP address, which is not stored with the order.</li>
+        </ul>
+        <p>As a funnel, form or shop owner you are responsible for telling your visitors and customers how you use their details, for having their permission to contact them, and for the orders you take.</p>
         <p>Published pages are public and are not listed in search engines. We may remove any page that breaks the law or is used for spam, scams or phishing. Anyone can report a page with the "Report" link on it.</p>
 
         <h2>Information collected automatically</h2>
@@ -56,7 +63,7 @@
             <li><strong>Google Analytics</strong> measures how visitors use the site, for example which pages are viewed and when a quote form is sent.</li>
             <li><strong>Microsoft Clarity and Contentsquare</strong> record how pages are used (clicks, scrolling and mouse movement) so we can improve the design. What you type in our forms is hidden from these recordings.</li>
             <li><strong>Google reCAPTCHA</strong> checks that forms are sent by a person, not a bot. It loads only when you start filling in a form.</li>
-            <li><strong>Country lookup.</strong> Your browser asks get.geojs.io for your country so the phone field can show the right dialling code.</li>
+            <li><strong>Country lookup.</strong> Your browser asks get.geojs.io for your country so phone fields can show the right flag and dialling code. This also happens on pages, forms and shops made with our builders. Only your country comes back; we don't store it.</li>
         </ul>
         <p>These services are run by other companies and have their own privacy policies.</p>
 
@@ -69,7 +76,7 @@
         <p>You can block or delete cookies in your browser settings. The site still works without analytics cookies.</p>
 
         <h2>Who we share it with</h2>
-        <p>We share your information only with the services that help us run the site: our web host, our email provider, and the analytics and anti-spam services listed above. We may also share it if the law requires us to.</p>
+        <p>We share your information only with the services that help us run the site: our web host, our email provider, the analytics and anti-spam services listed above, and Stripe for card payments in shops made with our store builder. We may also share it if the law requires us to.</p>
 
         <h2>How long we keep it</h2>
         <p>We keep enquiries and project messages for as long as we need them to reply to you, work with you and keep business records. Visitor statistics are deleted after about 13 months. You can ask us to delete your enquiry at any time.</p>
