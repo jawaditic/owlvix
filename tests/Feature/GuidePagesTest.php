@@ -76,4 +76,19 @@ class GuidePagesTest extends TestCase
         $this->get(route('home'))->assertSee('href="'.route('examples').'"', false); // in the Free builders menu
         $this->assertStringContainsString('https://owlvix.com/examples', file_get_contents(public_path('llms.txt')));
     }
+
+    public function test_pages_have_share_pictures_and_tags(): void
+    {
+        $routes = array_merge(array_keys(Guides::ALL), ['guides', 'examples'], \App\Support\FreeTools::builderRoutes());
+        foreach ($routes as $route) {
+            $this->assertFileExists(public_path('images/og/'.$route.'.jpg'), $route);
+            $this->get(route($route))->assertOk()
+                ->assertSee('<meta property="og:image" content="'.asset('images/og/'.$route.'.jpg'), false)
+                ->assertSee('<meta name="twitter:card" content="summary_large_image">', false);
+        }
+        // a title with "&" is escaped once, not twice
+        $this->get('/examples')->assertSee('content="Free Website, Shop &amp; Page Designs', false)->assertDontSee('&amp;amp;', false);
+        // pages without their own picture use the main one
+        $this->get('/about')->assertSee('<meta property="og:image" content="'.asset('images/og.png').'">', false);
+    }
 }

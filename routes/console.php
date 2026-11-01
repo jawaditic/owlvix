@@ -48,3 +48,14 @@ Artisan::command('indexnow:ping {url?*}', function (array $url) {
     \App\Models\BuilderStore::whereHas('orders', fn ($q) => $q->where('status', 'unpaid'))->get()
         ->each(fn ($store) => \App\Support\Shop::releaseExpired($store));
 })->everyFiveMinutes()->name('shop-release-unpaid')->withoutOverlapping();
+
+// Data for scripts/share-images.mjs (the share pictures in public/images/og): the owl drawing and the page titles
+Artisan::command('share-images:data {dir}', function (string $dir) {
+    @mkdir($dir, 0775, true);
+    file_put_contents($dir.'/owl-dev.svg.html', view('partials.owl', ['alt' => '', 'variant' => 'dev'])->render());
+    file_put_contents($dir.'/og-pages.json', json_encode([
+        'guides' => collect(\App\Support\Guides::ALL)->map(fn ($g, $r) => ['route' => $r, 'title' => $g[2], 'path' => $g[0]])->values(),
+        'builders' => collect(\App\Support\FreeTools::builders())->map(fn ($t) => ['route' => $t['route'], 'title' => $t['name'], 'desc' => $t['desc'], 'path' => parse_url(route($t['route']), PHP_URL_PATH)])->values(),
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    $this->info('Wrote '.$dir.'/owl-dev.svg.html and og-pages.json');
+})->purpose('Write the data the share picture script needs');
