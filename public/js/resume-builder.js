@@ -94,7 +94,7 @@
             ? `<div class="grid"><aside class="side">${photo}<h1>${esc(P.name || 'Your name')}</h1>${has(P.title) ? `<p class="role">${esc(P.title)}</p>` : ''}${contacts ? `<section>${H('Contact')}<ul class="contacts">${contacts}</ul></section>` : ''}${side}</aside><main class="main">${main}</main></div>`
             : `${head}<div class="${d === 'compact' ? 'cols' : 'one'}"><main>${main}</main><aside>${side}</aside></div>`;
         const css = `@page{size:A4;margin:0}*{box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;background:${forPrint ? '#fff' : '#e2e8f0'}}
-body{font-family:${R.font};color:#1f2937;font-size:10.5pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{overflow-wrap:anywhere;font-family:${R.font};color:#1f2937;font-size:10.5pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .sheet{width:210mm;min-height:296mm;margin:${forPrint ? 0 : '0 auto'};background:#fff;-webkit-box-decoration-break:clone;box-decoration-break:clone;${forPrint ? '' : 'box-shadow:0 10px 30px rgba(15,23,42,.18);'}}
 h1{margin:0;font-size:24pt;line-height:1.1;color:#111827;letter-spacing:-.01em}.role{margin:4px 0 0;font-size:12pt;color:${c};font-weight:600}
 h2{margin:0 0 8px;font-size:10pt;letter-spacing:.12em;text-transform:uppercase;color:${c};border-bottom:1.5px solid ${c}33;padding-bottom:4px}
@@ -107,8 +107,8 @@ ul.pairs{list-style:none;margin:0;padding:0;display:grid;gap:6px}ul.pairs li{dis
 .photo{width:88px;height:88px;border-radius:50%;object-fit:cover;flex:none}.head{display:flex;gap:18px;align-items:center}
 /* classic */.d-classic .sheet{padding:18mm 18mm 14mm}.d-classic .head{padding-bottom:12px;margin-bottom:16px;border-bottom:3px solid ${c}}.d-classic .one aside section{margin-top:0}
 /* minimal */.d-minimal .sheet{padding:20mm 20mm 16mm}.d-minimal h2{border:0;color:#111827;font-size:9pt}.d-minimal .role{color:#4b5563;font-weight:500}.d-minimal .head{margin-bottom:20px}.d-minimal ul.tags li{background:none;padding:0}.d-minimal ul.tags li:not(:last-child)::after{content:' ·';color:#9ca3af}
-/* compact */.d-compact .sheet{padding:12mm 13mm;font-size:9.8pt}.d-compact .head{margin-bottom:12px;padding:12px 14px;border-radius:8px;background:${c}10}.d-compact h1{font-size:20pt}.d-compact .cols{display:grid;grid-template-columns:1fr 62mm;gap:8mm}.d-compact section{margin-bottom:12px}
-/* modern */.d-modern .sheet{padding:0}.d-modern .grid{display:grid;grid-template-columns:68mm 1fr;min-height:296mm}
+/* compact */.d-compact .sheet{padding:12mm 13mm;font-size:9.8pt}.d-compact .head{margin-bottom:12px;padding:12px 14px;border-radius:8px;background:${c}10}.d-compact h1{font-size:20pt}.d-compact .cols{display:grid;grid-template-columns:minmax(0,1fr) 62mm;gap:8mm}.d-compact section{margin-bottom:12px}
+/* modern */.d-modern .sheet{padding:0}.d-modern .grid{display:grid;grid-template-columns:68mm minmax(0,1fr);min-height:296mm}
 .d-modern .side,.d-modern .main{-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .d-modern .side{background:${c};color:${on};padding:14mm 8mm 10mm}.d-modern .side h1{color:${on};font-size:20pt}.d-modern .side .role{color:${on}d9}
 .d-modern .side h2{color:${on};border-color:${on}55;margin-top:18px}.d-modern .side ul.contacts{display:grid;gap:5px;color:${on};margin:0;font-size:9.3pt;overflow-wrap:anywhere}
@@ -116,14 +116,15 @@ ul.pairs{list-style:none;margin:0;padding:0;display:grid;gap:6px}ul.pairs li{dis
 .d-modern .main{padding:14mm 12mm 10mm}
 /* bold */.d-bold .sheet{padding:0}.d-bold .band{background:${c};color:${on};padding:11mm 14mm;display:flex;gap:18px;align-items:center}
 .d-bold .band h1{color:${on};font-size:26pt}.d-bold .band .role{color:${on}e0}.d-bold .band ul.contacts{color:${on};margin-top:10px}.d-bold .band .photo{width:96px;height:96px;border:3px solid ${on}80}
-.d-bold .grid2{display:grid;grid-template-columns:1fr 60mm;gap:9mm;padding:10mm 14mm 12mm;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.d-bold .grid2{display:grid;grid-template-columns:minmax(0,1fr) 60mm;gap:9mm;padding:10mm 14mm 12mm;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .d-bold h2{border:0;padding:0 0 0 9px;border-left:4px solid ${c};color:#111827;font-size:10.5pt;margin-bottom:10px}
 .d-bold main .item{position:relative;padding:0 0 2px 16px;margin:0 0 12px;border-left:2px solid ${c}2e}
 .d-bold main .item::before{content:'';box-sizing:border-box;position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:#fff;border:2.5px solid ${c}}
 .d-bold aside{border-left:1.5px solid #e5e7eb;padding-left:7mm}.d-bold ul.tags li{background:${c}14;color:${light ? '#111827' : c};font-weight:600}
 @media print{html,body{background:#fff}.sheet{box-shadow:none;margin:0}
 /* every printed page: the sidebar colour runs top to bottom (the page background repeats on each page) */
-html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!important}.d-modern-print body,.d-modern .sheet,.d-modern .side{background:transparent!important}}`; // one colour source in print: no seam where the sidebar box ends
+html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!important}.d-modern-print body,.d-modern .sheet,.d-modern .side{background:transparent!important}}
+main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam where the sidebar box ends
         return `<!doctype html><html lang="en"${forPrint && d === 'modern' ? ' class="d-modern-print"' : ''}><head><meta charset="utf-8"><title>${esc((P.name || 'CV') + ' — CV')}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
 <style>${css}</style></head><body class="d-${d}"><div class="sheet">${body}</div>${forPrint ? '<script>addEventListener("load",()=>(document.fonts?document.fonts.ready:Promise.resolve()).then(()=>setTimeout(()=>print(),150)))<\/script>' : '<style>a{pointer-events:none}</style>'}</body></html>`;
@@ -149,7 +150,7 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
         ? `<label${o.wide ? ' class="rb-wide"' : ''}>${label}${o.hint ? ` <small>${o.hint}</small>` : ''}<textarea data-p="${path}" rows="${o.rows || 3}" maxlength="${o.max || 1000}" placeholder="${esc(o.ph || '')}">${esc(val)}</textarea></label>`
         : `<label${o.wide ? ' class="rb-wide"' : ''}>${label}<input data-p="${path}" maxlength="${o.max || 120}" value="${esc(val)}" placeholder="${esc(o.ph || '')}"${o.type ? ` type="${o.type}"` : ''}></label>`;
     const listHtml = (key, title, render, addLabel) => `<div class="rb-list">${R[key].map((x, i) => `<div class="fb-q is-open rb-item" data-list="${key}" data-i="${i}"><div class="fb-q__head"><span class="fb-q__label">${esc(title(x)) || '<i>New entry</i>'}</span>
-        <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} title="Move this entry up">↑</button><button type="button" data-move="1" ${i < R[key].length - 1 ? '' : 'disabled'} title="Move this entry down">↓</button><button type="button" data-del class="fb-del" title="Delete this entry">✕</button></span></div>
+        <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} title="Move this entry up" aria-label="Move up">↑</button><button type="button" data-move="1" ${i < R[key].length - 1 ? '' : 'disabled'} title="Move this entry down" aria-label="Move down">↓</button><button type="button" data-del class="fb-del" title="Delete this entry" aria-label="Delete this entry">✕</button></span></div>
         <div class="fb-q__body fb-2">${render(x, `${key}.${i}`)}</div></div>`).join('')}</div>
         ${R[key].length < MAX[key] ? `<button type="button" class="btn btn--sm btn--ghost rb-add" data-add="${key}">＋ ${addLabel}</button>` : ''}`;
     const openState = {};
@@ -214,8 +215,9 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
         const t = e.target.closest('button'); if (!t) return;
         const card = t.closest('[data-list]'), key = card?.dataset.list, i = card ? +card.dataset.i : -1;
         if (t.dataset.add) { const make = { jobs: job, schools: school, languages: lang, extras: extra }[t.dataset.add]; R[t.dataset.add].push(make()); draw(t.dataset.add); changed(); $$(`[data-list="${t.dataset.add}"]`).pop()?.querySelector('input')?.focus(); }
-        else if (t.dataset.move) { const j = i + +t.dataset.move, L = R[key]; [L[i], L[j]] = [L[j], L[i]]; draw(); changed(); }
-        else if ('del' in t.dataset) { if (await ask({ icon: 'warning', title: 'Delete this entry?', confirm: 'Delete', cancel: 'Keep it', danger: true })) { R[key].splice(i, 1); draw(); changed(); } }
+        // (after the redraw the keyboard focus goes back to the moved entry, not to the top of the page)
+        else if (t.dataset.move) { const j = i + +t.dataset.move, L = R[key]; [L[i], L[j]] = [L[j], L[i]]; draw(); changed(); const at = $(`[data-list="${key}"][data-i="${j}"]`); (at?.querySelector(`[data-move="${t.dataset.move}"]:not([disabled])`) || at?.querySelector('[data-move]:not([disabled])'))?.focus(); }
+        else if ('del' in t.dataset) { if (await ask({ icon: 'warning', title: 'Delete this entry?', confirm: 'Delete', cancel: 'Keep it', danger: true })) { R[key].splice(i, 1); draw(); changed(); const at = $(`[data-list="${key}"][data-i="${Math.min(i, R[key].length - 1)}"]`); (at?.querySelector('input, textarea') || $(`[data-add="${key}"]`))?.focus(); } }
         else if (t.dataset.design) { R.design = t.dataset.design; drawLook(); changed(); track('resume_design', { design: R.design }); }
         else if ('photo' in t.dataset) $('[data-photo-file]').click();
         else if ('photoClear' in t.dataset) { R.photo = ''; draw(); changed(); }
@@ -250,7 +252,11 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
     const WZ = window.OwlWizard;
     if (WZ) {
         const EM = { classic: '📄', modern: '🗂️', bold: '⚡', minimal: '◻️', compact: '📑' };
-        const isSample = () => R.person.name === 'Alex Morgan' && R.person.email === 'alex.morgan@email.com';
+        // still the untouched example? (its name and email, and its summary, skills and jobs — edits there are theirs to keep)
+        const isSample = () => {
+            const ex = clean(sample()), jobs = r => JSON.stringify((r.jobs || []).map(j => [j.role, j.company, j.points]));
+            return R.person.name === 'Alex Morgan' && R.person.email === 'alex.morgan@email.com' && R.summary === ex.summary && R.skills === ex.skills && jobs(R) === jobs(ex);
+        };
         let fresh = isSample(), wframe = null, wt = 0;
         /** The first time they type their own details, the example's jobs and school go, so none of it ends up in their CV. */
         const own = () => { if (!fresh) return; fresh = false; R = clean({ design: R.design, color: R.color, font: R.font, person: { name: '', title: '', email: '', phone: '', place: '', web: '' }, summary: '', jobs: [job()], schools: [school()], skills: '', languages: [], extras: [] }); };
@@ -327,12 +333,17 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
                 title: 'Your CV is ready',
                 sub: 'Download it as a PDF, or keep editing to add more jobs, languages and certificates. It stays saved on this device.',
                 actions: [
-                    { label: '📄 Download PDF', cls: 'btn btn--glow', then: 'pdf', act: close => { close(); setTimeout(() => root.querySelector('[data-pdf]')?.click(), 350); } },
+                    { label: '📄 Download PDF', cls: 'btn btn--glow', then: 'pdf', act: async (close, o) => {
+                        close();
+                        // on arrival at the editor page the PDF window needs a fresh click, or the browser blocks it
+                        if (o?.replay) { if (await window.sweet({ icon: 'success', title: 'Your CV is ready', text: 'Save it as a PDF — or keep editing first.', confirm: '📄 Download PDF', cancel: 'Keep editing' })) root.querySelector('[data-pdf]')?.click(); return; }
+                        setTimeout(() => root.querySelector('[data-pdf]')?.click(), 350);
+                    } },
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
             },
             editorUrl: root.dataset.editorUrl || '', noun: 'CV',
-            hasWork: () => { try { return !!localStorage.getItem(STORE); } catch { return false; } },
+            hasWork: () => !isSample(), // (the example CV is saved too, so only a CV of their own counts)
             beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(R)); return true; } catch { return false; } },
         });
     }

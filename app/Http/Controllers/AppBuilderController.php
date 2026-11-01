@@ -205,11 +205,13 @@ class AppBuilderController extends Controller
             return $this->fail('This app is already being built. You’ll get an email when it’s ready.', 422);
         }
         $account = $this->user($request);
-        $today = BuilderAppBuild::whereIn('builder_app_id', $account->apps()->pluck('id'))->where('created_at', '>=', now()->subDay())->count();
+        // (counted from the builds and from counters that outlive them: deleting an app mustn't hand out new builds)
+        $today = max(BuilderAppBuild::whereIn('builder_app_id', $account->apps()->pluck('id'))->where('created_at', '>=', now()->subDay())->count(),
+            RateLimiter::attempts('app-builds-day:'.$account->id));
         if ($today >= AppBuilder::DAILY_BUILDS) {
             return $this->fail('You can build up to '.AppBuilder::DAILY_BUILDS.' times a day. Please try again tomorrow.', 429);
         }
-        if (AppBuilder::monthlyCount() >= config('builder.apps.monthly_limit')) {
+        if (max(AppBuilder::monthlyCount(), (int) Cache::get(AppBuilder::monthKey(), 0)) >= config('builder.apps.monthly_limit')) {
             return $this->fail('We’ve reached this month’s free builds. Please try again next month, or ask us to build it for you.', 429);
         }
 
@@ -234,6 +236,9 @@ class AppBuilderController extends Controller
         if (! $build) {
             return $this->fail('This app is already being built. You’ll get an email when it’s ready.', 422);
         }
+        RateLimiter::hit('app-builds-day:'.$account->id, 86400);
+        Cache::add(AppBuilder::monthKey(), 0, now()->addMonths(2));
+        Cache::increment(AppBuilder::monthKey());
         if ($error = AppBuilder::dispatch($build, $token)) {
             $build->update(['status' => 'failed', 'error' => $error, 'token_hash' => null, 'job' => null, 'finished_at' => now()]);
 
@@ -502,15 +507,23 @@ class AppBuilderController extends Controller
             return $this->fail($mode === 'live' ? 'Real card payments aren’t available yet.' : 'Test payments aren’t available yet.', 503);
         }
         $state = Str::random(40);
-        Cache::put('app-stripe-state:'.$state, ['app' => $app->id, 'mode' => $mode], now()->addMinutes(30));
+        // tied to this browser: Stripe's return is only taken where the connection started (a link someone else sends
+        // can't attach a stranger's Stripe account)
+        $nonce = Str::random(40);
+        Cache::put('app-stripe-state:'.$state, ['app' => $app->id, 'mode' => $mode, 'nonce' => hash('sha256', $nonce)], now()->addMinutes(30));
 
-        return response()->json(['ok' => true, 'url' => Stripe::connectUrl($mode, $state)]);
+        return response()->json(['ok' => true, 'url' => Stripe::connectUrl($mode, $state)])
+            ->withCookie(cookie('owl_stripe', $nonce, 30, '/builder/stripe', null, $request->isSecure(), true, false, 'lax'));
     }
 
     /** Stripe sends the owner back here; the account's id is kept (encrypted) and phones get the "Pay now" button. */
     public function stripeCallback(Request $request)
     {
         $state = Cache::pull('app-stripe-state:'.(string) $request->query('state'));
+        $nonce = (string) $request->cookies->get('owl_stripe', '');
+        if (is_array($state) && (! isset($state['nonce']) || $nonce === '' || ! hash_equals($state['nonce'], hash('sha256', $nonce)))) {
+            $state = null; // started in another browser: not this owner's connection
+        }
         // Shops made with the online store builder connect Stripe through this same address
         $shop = is_array($state) && isset($state['store']);
         $back = fn (string $result) => redirect(($shop ? '/online-store-builder' : '/mobile-app-builder').'?stripe='.$result);

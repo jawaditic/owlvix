@@ -228,6 +228,18 @@ Route::prefix('builder/stores')->name('builder.stores.')->middleware('builder')-
     Route::post('{id}/stripe/disconnect', 'stripeDisconnect')->where('id', '[a-z0-9]{16}')->name('stripe.disconnect');
 });
 
+// The "Made with Owlvix · Report" bar on published sites, as a frame the page's own CSS can't change
+Route::get('/report-bar/{slug}', function (string $slug) {
+    $site = \App\Models\BuilderSite::where('slug', $slug)->firstOrFail();
+
+    return response(\App\Support\BuilderHtml::barPage($site), 200, [
+        // (no frame-ancestors: published pages are sandboxed, so the browser sees them as having no origin, which no
+        // frame-ancestors value matches — not even *. It's only a "Made with Owlvix" link and the report link.)
+        'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'",
+        'X-Robots-Tag' => 'noindex', 'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->where('slug', '[a-z0-9-]{3,40}')->withoutMiddleware($stateless)->name('builder.bar');
+
 Route::get('/builder/stripe/callback', [\App\Http\Controllers\AppBuilderController::class, 'stripeCallback'])->middleware('throttle:20,1,app-stripe-back')->name('builder.stripe.callback');
 // Where a customer lands after paying in the browser (then goes back to the app)
 Route::get('/app-paid/{id}', [\App\Http\Controllers\AppBuilderController::class, 'paid'])->where('id', '[a-z0-9]{16}')->name('builder.apps.paid');

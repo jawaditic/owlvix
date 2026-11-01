@@ -10,7 +10,20 @@
 
     /* Funnels: A/B steps carry both versions — show one at random (no cookies), then report the visit */
     const html = d.documentElement;
-    const variant = html.classList.contains('ob-ab') ? (Math.random() < 0.5 ? 'a' : 'b') : 'a';
+    // (kept for the visit, per page: a reload shows the same version and isn't counted under the other one). Published
+    // pages are sandboxed, with no sessionStorage: then the tab's window.name keeps it — unless a shop cart lives there.
+    const abKey = 'ob-ab:' + location.pathname, NAME = 'ob-ab:';
+    const fromName = () => { try { return String(window.name).startsWith(NAME) ? JSON.parse(window.name.slice(NAME.length))[location.pathname] : null; } catch { return null; } };
+    const keep = v => {
+        store.set(abKey, v);
+        if (store.get(abKey) === v || !(window.name === '' || String(window.name).startsWith(NAME))) return; // kept already, or a cart is there
+        let seen = {}; try { seen = String(window.name).startsWith(NAME) ? JSON.parse(window.name.slice(NAME.length)) || {} : {}; } catch {}
+        seen[location.pathname] = v;
+        try { window.name = NAME + JSON.stringify(seen); } catch {}
+    };
+    const was = store.get(abKey) || fromName();
+    const variant = !html.classList.contains('ob-ab') ? 'a' : ['a', 'b'].includes(was) ? was : (Math.random() < 0.5 ? 'a' : 'b');
+    if (html.classList.contains('ob-ab')) keep(variant);
     if (variant === 'b') {
         html.classList.add('ob-v-b');
         $$('[data-variant=a] form').forEach(f => f.remove()); // only the visible version's form, so sign-ups count for B
@@ -232,14 +245,16 @@
         const ships = () => cart.some(l => l.kind === 'item'); // downloads and gift cards aren't posted
         const totals = () => {
             const sub = cart.reduce((n, l) => n + M(l.price) * l.qty, 0), pickup = picked('_delivery') === 'pickup' || !ships();
-            const off = !code ? 0 : code.kind === 'percent' ? Math.floor(sub * Math.min(100, code.value) / 100) : code.kind === 'amount' ? Math.min(M(code.value), sub) : 0;
-            const after = sub - off, country = form?.querySelector('[name=country]')?.value || '';
+            // gift cards are sold at face value: codes, free delivery and tax are for goods only
+            const cards = cart.reduce((n, l) => n + (l.kind === 'gift' ? M(l.price) * l.qty : 0), 0), goods = sub - cards;
+            const off = !code ? 0 : code.kind === 'percent' ? Math.floor(goods * Math.min(100, code.value) / 100) : code.kind === 'amount' ? Math.min(M(code.value), goods) : 0;
+            const after = goods - off, country = form?.querySelector('[name=country]')?.value || '';
             let zone = { fee: rules.fee, free: rules.free }, unknown = false;
             if (rules.zones.length) { zone = rules.zones.find(z => z.c.includes(country)) || (country ? rules.zones.find(z => !z.c.length) : null); unknown = !zone; }
             const fee = pickup || !zone || code?.kind === 'shipping' || (zone.free && after >= M(zone.free)) ? 0 : M(zone.fee);
             const base = after + (rules.ship ? fee : 0);
             const tax = rules.tax > 0 ? (rules.incl ? base - Math.round(base / (1 + rules.tax / 100)) : Math.round(base * rules.tax / 100)) : 0;
-            const due = after + fee + (rules.incl ? 0 : tax), gift = code?.kind === 'gift' ? Math.min(M(code.value), due) : 0; // a gift card pays what it can
+            const due = after + cards + fee + (rules.incl ? 0 : tax), gift = code?.kind === 'gift' ? Math.min(M(code.value), due) : 0; // a gift card pays what it can
             return { sub, off, fee, tax, gift, pickup, unknown: unknown && ships(), country, total: due - gift };
         };
         const draw = () => {

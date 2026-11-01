@@ -610,12 +610,34 @@ class AppContent
             'report' => $app->reportUrl(),
             'shop' => self::shopForPhones($app),
             'style' => ($s['style'] ?? []) + ['theme' => 'light', 'corners' => 'rounded', 'font' => 'modern', 'nav' => 'floating', 'motion' => 'on'],
-            'hosts' => $app->url && $webOk ? [$app->host()] : [],
+            // Links that open inside the app: the owner's website. On a shared host (sites.owlvix.com, or this app's /p/…)
+            // that means their own address only — "own" holds host + path prefixes; the whole host would let any
+            // stranger's page on it open in the app. (Older app builds only read "hosts": empty there, so they open
+            // such links in the browser — the safe side.)
+            'hosts' => $app->url && $webOk && ! self::sharedHost($app) ? [$app->host()] : [],
+            'own' => $app->url && $webOk && self::sharedHost($app) ? [self::ownPrefix($app)] : [],
             'offline' => $s['offline'],
             'tabs' => $tabs($app->content['tabs'] ?? []),
             'lang' => $s['lang'] ?? 'en',
             'translations' => (object) array_map(fn ($tr) => ['tabs' => $tabs($tr['tabs'] ?? [])] + $tr, $app->content['translations'] ?? []),
         ];
+    }
+
+    /** The app's website is on a host many people's sites share (the builder's sites domain, or this app's /p/ pages). */
+    private static function sharedHost(BuilderApp $app): bool
+    {
+        $shared = array_filter([strtolower((string) config('builder.domain')), strtolower((string) parse_url(config('app.url'), PHP_URL_HOST))]);
+
+        return in_array($app->host(), $shared, true);
+    }
+
+    /** "sites.owlvix.com/joes" or "owlvix.com/p/joes": the host and the site's own path (first one or two parts). */
+    private static function ownPrefix(BuilderApp $app): string
+    {
+        $parts = array_values(array_filter(explode('/', (string) parse_url((string) $app->url, PHP_URL_PATH))));
+        $keep = ($parts[0] ?? '') === 'p' ? array_slice($parts, 0, 2) : array_slice($parts, 0, 1);
+
+        return $app->host().($keep ? '/'.implode('/', $keep) : '');
     }
 
     /**

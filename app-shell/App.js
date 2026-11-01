@@ -232,6 +232,8 @@ function Shell() {
     const navOn = (h => { const [r, g, b] = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); return r * 0.299 + g * 0.587 + b * 0.114; })(C.primary) < 60 ? '#ffffff' : C.primary; // a very dark main colour would vanish on the bar
     const ctx = useMemo(() => {
         const hosts = Array.isArray(doc?.hosts) ? doc.hosts.filter(h => typeof h === 'string') : [];
+        // on a shared host (many people's sites): only addresses under the owner's own path, e.g. "sites.owlvix.com/joes"
+        const own = Array.isArray(doc?.own) ? doc.own.filter(p => typeof p === 'string' && p).map(p => p.toLowerCase().replace(/\/+$/, '')) : [];
         return {
             ...C,
             onPrimary: isDark(C.primary) ? '#ffffff' : '#0f172a',
@@ -240,8 +242,8 @@ function Shell() {
             externalLinks: doc?.externalLinks === 'app' ? 'app' : 'browser',
             ownSite: url => {
                 try {
-                    const host = new URL(url).hostname.toLowerCase();
-                    return hosts.some(h => host === h || host.endsWith('.' + h));
+                    const u = new URL(url), host = u.hostname.toLowerCase(), at = host + u.pathname.toLowerCase().replace(/\/+$/, '');
+                    return hosts.some(h => host === h || host.endsWith('.' + h)) || own.some(p => at === p || at.startsWith(p + '/'));
                 } catch {
                     return false;
                 }

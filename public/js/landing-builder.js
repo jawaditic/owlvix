@@ -48,8 +48,8 @@
     const DESIGN = (() => { const k = new URLSearchParams(location.search).get('design'); return k && Object.hasOwn(EXAMPLES, k) ? k : ''; })();
     let askDesign = false;
     if (DESIGN) {
-        let touched = false; try { touched = !!localStorage.getItem(STORE + '-touched'); } catch {}
-        if (P && touched) askDesign = true;
+        let touched = false; try { touched = !!localStorage.getItem(STORE + '-touched') || !!JSON.parse(localStorage.getItem(STORE + '-cloud') || '{}')?.id; } catch {}
+        if (P && touched) askDesign = true; // edited work, or a project opened from the account: ask first
         else {
             const keep = P ? Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])) : {}; P = fresh(DESIGN); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k]));
             try { sessionStorage.setItem('owlvix-design', DESIGN); } catch {} // counted by site.js (Admin → Growth)
@@ -659,8 +659,8 @@
     const linkWidget = (key, l) => {
         l = l || { to: 'contact' };
         const pageOpts = P.pages.map(p => `<option value="${esc(p.slug)}" ${l.val === p.slug ? 'selected' : ''}>${esc(p.title)}</option>`).join('');
-        return `<div class="lpb-link"><select data-link-to="${key}">${Object.entries(FUNNEL ? { ...B.FUNNEL_LINKS, ...B.LINK_TYPES } : B.LINK_TYPES).map(([k, v]) => `<option value="${k}" ${l.to === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
-            ${l.to === 'page' ? `<select data-link-val="${key}">${pageOpts}</select>` : ['url', 'whatsapp', 'phone', 'email'].includes(l.to) ? `<input data-link-val="${key}"${['whatsapp', 'phone'].includes(l.to) ? ' type="tel"' : ''} value="${esc(l.val || '')}" placeholder="${{ url: 'https://…', whatsapp: '+1 555 123 4567', phone: '+1 555 123 4567', email: 'you@example.com' }[l.to]}">` : ''}</div>`;
+        return `<div class="lpb-link"><select data-link-to="${key}" aria-label="Link goes to">${Object.entries(FUNNEL ? { ...B.FUNNEL_LINKS, ...B.LINK_TYPES } : B.LINK_TYPES).map(([k, v]) => `<option value="${k}" ${l.to === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+            ${l.to === 'page' ? `<select data-link-val="${key}" aria-label="Page">${pageOpts}</select>` : ['url', 'whatsapp', 'phone', 'email'].includes(l.to) ? `<input data-link-val="${key}" aria-label="Link address"${['whatsapp', 'phone'].includes(l.to) ? ' type="tel"' : ''} value="${esc(l.val || '')}" placeholder="${{ url: 'https://…', whatsapp: '+1 555 123 4567', phone: '+1 555 123 4567', email: 'you@example.com' }[l.to]}">` : ''}</div>`;
     };
     const fieldHtml = (f, obj, prefix) => {
         const key = prefix + f.k, v = getPath(obj, f.k);
@@ -680,13 +680,13 @@
     const listHtml = (f, w) => {
         const list = w.p[f.k] || [], pre = `${w.id}|${f.k}`;
         const cell = (it, i, [k, kind]) => {
-            const key = `${pre}.${i}.${k}`;
+            const key = `${pre}.${i}.${k}`, name = `aria-label="${esc(`${f.label || 'Item'} ${i + 1}: ${k}`)}"`; // (for screen readers: "Menu items 2: price")
             if (kind === 'img') return `<button type="button" class="lpb-thumb" data-img-pick="${key}" ${it[k] ? `style="background-image:url('${esc(it[k])}')"` : ''} title="Image">${it[k] ? '' : '＋'}</button>`;
             if (kind === 'icon') return `<button type="button" class="lpb-thumb lpb-thumb--ic" data-icon-pick="${key}" title="Icon">${B.icon(it[k] || '⭐')}</button>`;
-            if (kind === 'star') return `<label class="lpb-mini" title="Highlight"><input type="checkbox" data-f="${key}" ${it[k] ? 'checked' : ''}>★</label>`;
-            if (kind === 'number') return `<input type="number" class="lpb-num" data-f="${key}" value="${esc(it[k] ?? '')}" min="0" max="100">`;
-            if (kind === 'social') return `<select class="lpb-net" data-f="${key}">${Object.entries(B.SOCIAL).map(([n, s]) => `<option value="${n}" ${it[k] === n ? 'selected' : ''}>${s[0]}</option>`).join('')}</select>`;
-            return `<input data-f="${key}" value="${esc(it[k] ?? '')}" placeholder="${k === 'url' ? 'https://…' : ''}">`;
+            if (kind === 'star') return `<label class="lpb-mini" title="Highlight"><input type="checkbox" data-f="${key}" ${name} ${it[k] ? 'checked' : ''}>★</label>`;
+            if (kind === 'number') return `<input type="number" class="lpb-num" data-f="${key}" ${name} value="${esc(it[k] ?? '')}" min="0" max="100">`;
+            if (kind === 'social') return `<select class="lpb-net" data-f="${key}" ${name}>${Object.entries(B.SOCIAL).map(([n, s]) => `<option value="${n}" ${it[k] === n ? 'selected' : ''}>${s[0]}</option>`).join('')}</select>`;
+            return `<input data-f="${key}" ${name} value="${esc(it[k] ?? '')}" placeholder="${k === 'url' ? 'https://…' : ''}">`;
         };
         return `<div class="lpb-list"><span>${f.label}</span>${list.map((it, i) => `<div class="lpb-row">${f.fields.map(c => cell(it, i, c)).join('')}
             <button type="button" data-list="${f.k}|${i}|up" title="Move this row up" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" data-list="${f.k}|${i}|del" title="Remove this row">✕</button></div>`).join('')}
@@ -1026,7 +1026,7 @@
         if (e.target.closest('[data-page-savetpl]')) return savePageTemplate();
         if (e.target.closest('[data-page-del]')) {
             sweet({ icon: 'warning', title: `Delete the page “${page().title}”?`, text: 'All its sections go too. You can bring it back with Undo.', confirm: 'Yes, delete page', danger: true })
-                .then(ok => { if (ok) { P.pages.splice(pageIdx, 1); pageIdx = 0; sel = null; commit(); renderAll(); toast('Page deleted'); } });
+                .then(ok => { if (ok) { P.pages.splice(pageIdx, 1); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); syncVariantBadge(); toast('Page deleted'); } });
         }
     });
     const drawPage = () => {
@@ -1073,7 +1073,9 @@
         const firstSlug = first.slug;
         renameSlug('index', '__home__'); renameSlug(firstSlug, 'index'); renameSlug('__home__', renamed);
         home.slug = renamed; first.slug = 'index';
-        toast(`“${first.title}” is now the first step (the funnel's main address)`);
+        // Results are kept by step address: after this swap, the last 30 days of "index" belong to the old first step
+        if (FUNNEL && P.site.publishSlug) sweet({ icon: 'info', title: `“${first.title}” is now the first step`, text: `It takes over the funnel’s main address. Results are kept by address, so for the next 30 days “${first.title}” also shows the visits of the old first step, and “${home.title}” starts again from 0.`, confirm: 'OK', cancel: false });
+        else toast(`“${first.title}” is now the first step (the funnel's main address)`);
     };
     const funnelPanel = pg => {
         const steps = P.pages, nx = B.nextOf(pg, P);
@@ -1267,8 +1269,14 @@
     $('[data-act=undo]').addEventListener('click', doUndo);
     $('[data-act=redo]').addEventListener('click', doRedo);
     $('[data-act=preview]').addEventListener('click', () => {
+        // The page runs in a sandboxed frame (its own, empty origin): even a mistake in its HTML couldn't reach this
+        // site's storage (the sign-in token) — the preview window itself only holds the frame
         const w = window.open('', '_blank');
-        if (w) { w.document.write(B.render(P, page(), 'download', { runtime: RUNTIME })); w.document.close(); }
+        if (!w) return toast('Allow pop-ups to see the preview.');
+        w.document.write(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc((P.site.name || 'Preview') + ' — preview')}</title>
+            <style>html,body{margin:0;height:100%}iframe{display:block;width:100%;height:100%;border:0}</style></head><body><iframe sandbox="allow-scripts allow-forms allow-popups allow-modals" title="Preview"></iframe></body></html>`);
+        w.document.close();
+        w.document.querySelector('iframe').srcdoc = B.render(P, page(), 'download', { runtime: RUNTIME });
     });
 
     // Full screen
@@ -1676,6 +1684,8 @@
             throw ex;
         }
         storeInfo = r.store; P.site.shopAction = r.store.action; P.site.shop.cardReady = !!r.store.card_ready; commit();
+        // a product's sizes / colours changed shape: its new choices start sold out until the owner sets their counts
+        if (r.stock_reset?.length) sweet({ icon: 'warning', title: 'Set the stock again', text: `The sizes or colours of ${r.stock_reset.map(n => '“' + n + '”').join(', ')} changed, so their stock counts start at 0 (sold out). Select the product and set how many you have under “📦 Count stock”.`, confirm: 'OK', cancel: false });
         if (!B.payWays(P.site.shop).length) throw new Error('Card payments aren’t ready yet: connect Stripe in the Site tab (Shop & checkout), or also switch on cash on delivery or bank transfer.');
         if (!B.shopProducts(P).length) throw new Error('Your shop has no products with a price yet. Add a price to at least one product.');
     };
@@ -1983,12 +1993,18 @@
     const saveCloud = async () => {
         flush();
         const btn = root.querySelector('[data-act="cloud-save"]'); btn.disabled = true;
-        const send = async id => api('POST', '/builder/projects', { id: id || null, kind: KIND, name: P.site.name || 'Untitled', data: P });
+        const send = async (id, base) => api('POST', '/builder/projects', { id: id || null, kind: KIND, name: P.site.name || 'Untitled', data: P, base: id ? base || null : null });
         try {
             let r;
-            try { r = await send(cloud.id); }
-            catch (ex) { if (ex.status === 404 && cloud.id) r = await send(null); else throw ex; } // deleted elsewhere: save as new
-            setCloud({ id: r.project.id, saved: hashOf(JSON.stringify(P)) });
+            try { r = await send(cloud.id, cloud.at); }
+            catch (ex) {
+                if (ex.status === 404 && cloud.id) r = await send(null); // deleted elsewhere: save as new
+                else if (ex.status === 409) { // saved on another device since this copy was opened
+                    if (!(await sweet({ icon: 'warning', title: 'Changed on another device', text: `This ${NOUN} was saved from another device or tab after you opened it. Save yours over it — or keep theirs and open it again from “My ${NOUN}s”.`, confirm: 'Save mine over it', cancel: 'Keep theirs' }))) return false;
+                    r = await send(cloud.id);
+                } else throw ex;
+            }
+            setCloud({ id: r.project.id, saved: hashOf(JSON.stringify(P)), at: r.project.updated });
             toast(`Saved to your account — open it any time from “My ${NOUN}s”.`, 'success');
             track('builder_cloud_save', { kind: KIND });
             await loadCloudList();
@@ -2003,9 +2019,9 @@
             const data = B.migrate(r.project.data);
             if (KIT) data.kind = KIT;
             data.pages.forEach(pg => B.render(data, pg, 'edit'));
-            undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null;
+            undo = []; redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null; // (undo can't step back into another project: Save would write it over this one)
             if (KIT === 'store') { codesCache = []; codeEditing = null; orderFilter = ''; } // another shop's codes and orders
-            setCloud({ id: r.project.id, saved: hashOf(JSON.stringify(P)) });
+            setCloud({ id: r.project.id, saved: hashOf(JSON.stringify(P)), at: r.project.updated });
             persist(); renderAll(); syncHistory(); drawCloudList();
             toast(`Opened “${r.project.name}”`, 'success');
         } catch (ex) { toast(ex.message, 'error'); drawCloudList(); }
@@ -2185,7 +2201,8 @@
             },
             // On the builder's main page, finishing opens its editor page (same project, kept in this browser)
             editorUrl: root.dataset.editorUrl || '', noun: WHAT,
-            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched'); } catch { return false; } },
+            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch { return !!cloud.id; } },
+            skipBack: () => !!DESIGN, // opening a design from the gallery: straight to the builder
             beforeLeave: () => {
                 flush(); clearTimeout(saveTimer);
                 try { localStorage.setItem(STORE, JSON.stringify(P)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } // too big for the browser: stay here
@@ -2208,7 +2225,7 @@
         setTimeout(() => root.scrollIntoView({ block: 'start' }), 60);
         // after every deferred script has run, so sweet.js (loaded later in the page) is ready
         const ask = () => sweet({ icon: 'question', title: `Use the “${EXAMPLES[DESIGN][0]}” design?`, text: 'It replaces what you’re working on now. You can press Undo to get yours back.', confirm: 'Use this design', cancel: 'Keep mine' })
-            .then(ok => { if (ok) { useExample(DESIGN); track('builder_design', { design: DESIGN }); } });
+            .then(ok => { if (ok) { setCloud({}); useExample(DESIGN); track('builder_design', { design: DESIGN }); } }); // a new project, not saved over the open one
         if (window.sweet) ask(); else document.addEventListener('DOMContentLoaded', ask, { once: true }); // fires after all deferred scripts
     } else if (DESIGN) setTimeout(() => root.scrollIntoView({ block: 'start' }), 60);
     window.__owlBuilder = { get P() { return P; }, select, find }; // for checking things from the browser console

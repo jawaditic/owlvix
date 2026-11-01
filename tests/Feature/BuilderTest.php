@@ -120,7 +120,11 @@ class BuilderTest extends TestCase
             ->assertHeader('X-Robots-Tag', 'noindex')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
             ->assertSee('Made with', false)
-            ->assertSee(url('/p/joes-bakery/report'), false);
+            ->assertSee(route('builder.bar', 'joes-bakery'), false);
+        // the bar's frame: the report link, and only published sites may show it
+        $this->get(route('builder.bar', 'joes-bakery'))->assertOk()->assertSee(url('/p/joes-bakery/report'), false)
+            ->assertHeader('X-Robots-Tag', 'noindex');
+        $this->assertStringContainsString("default-src 'none'", $this->get(route('builder.bar', 'joes-bakery'))->headers->get('Content-Security-Policy'));
         $csp = $res->headers->get('Content-Security-Policy');
         // Scripts may run, but only owlvix's runtime file, in an opaque origin (no allow-same-origin)
         $this->assertStringStartsWith('sandbox allow-scripts allow-forms', $csp);
@@ -239,7 +243,7 @@ class BuilderTest extends TestCase
             'name' => 'Ann', 'email' => 'ann@example.com', 'message' => 'Do you deliver?', '_back' => 'https://joes.example/contact',
         ]);
 
-        $post([])->assertStatus(303)->assertRedirect(route('builder.form.sent', ['id' => $form['id'], 'back' => 'https://joes.example/contact']));
+        $post([])->assertStatus(303)->assertRedirect(\Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $form['id'], 'back' => 'https://joes.example/contact']));
         Mail::assertSent(BuilderFormMessage::class, fn ($m) => $m->hasTo('maker@example.com') && $m->hasReplyTo('ann@example.com')
             && $m->envelope()->subject === "New message from your website: Joe's Bakery");
         $this->assertSame(1, BuilderForm::first()->submissions);
@@ -259,8 +263,10 @@ class BuilderTest extends TestCase
         }
         $post([])->assertStatus(429);
 
-        $this->get('/f/'.$form['id'].'/sent?back=https://joes.example/contact')->assertOk()
+        $this->get(\Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $form['id'], 'back' => 'https://joes.example/contact']))->assertOk()
             ->assertSee('Message sent')->assertSee('href="https://joes.example/contact"', false)->assertHeader('X-Robots-Tag', 'noindex');
+        // a made-up ?back= (not signed by us) gets no button: the page can't be used to point people elsewhere
+        $this->get('/f/'.$form['id'].'/sent?back=https://evil.example/login')->assertOk()->assertDontSee('evil.example', false);
         $this->get('/f/'.$form['id'].'/sent?back=javascript:alert(1)')->assertOk()->assertDontSee('javascript:', false);
         $this->post('/f/zzzzzzzzzzzzzzzz', ['name' => 'A'])->assertNotFound();
     }
@@ -272,7 +278,7 @@ class BuilderTest extends TestCase
         Mail::fake();
         // a sign-up form has no message (or name) box at all
         $this->post('/f/'.$form['id'], ['email' => 'ann@example.com', '_back' => 'https://kite.example/'])
-            ->assertRedirect(route('builder.form.sent', ['id' => $form['id'], 'back' => 'https://kite.example/', 'signup' => 1]));
+            ->assertRedirect(\Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $form['id'], 'back' => 'https://kite.example/', 'signup' => 1]));
         Mail::assertSent(BuilderFormMessage::class, fn ($m) => $m->envelope()->subject === 'New sign-up on your website: Kite' && $m->hasReplyTo('ann@example.com')
             && str_contains($m->render(), 'ann@example.com joined your list'));
         $this->get('/f/'.$form['id'].'/sent?signup=1')->assertSee('You’re on the list');
@@ -331,7 +337,11 @@ class BuilderTest extends TestCase
     public function test_the_bar_is_added_before_the_body_ends(): void
     {
         $site = new BuilderSite(['slug' => 'abc']);
-        $this->assertStringEndsWith('</div></body></html>', BuilderHtml::withBar('<html><body><p>x</p></body></html>', $site));
-        $this->assertStringContainsString('Report', BuilderHtml::withBar('<p>no body tag</p>', $site));
+        $this->assertStringEndsWith('</iframe></body></html>', BuilderHtml::withBar('<html><body><p>x</p></body></html>', $site));
+        $this->assertStringContainsString(route('builder.bar', 'abc'), BuilderHtml::withBar('<p>no body tag</p>', $site));
+        // every rule on the frame is inline !important (beats any stylesheet), and the page CSS can't clip the page
+        $this->assertStringContainsString('display:block!important', BuilderHtml::withBar('<p>x</p>', $site));
+        $this->assertNotNull(BuilderHtml::problem('<!DOCTYPE html><html><head><title>x</title><style>body{clip-path:inset(0 0 60px 0)}</style></head><body>x</body></html>', []));
+        $this->assertNull(BuilderHtml::problem('<!DOCTYPE html><html><head><title>x</title><style>.card{clip-path:circle(50%)}</style></head><body>x</body></html>', []));
     }
 }

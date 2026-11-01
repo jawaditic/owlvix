@@ -116,12 +116,19 @@ class AppPaymentsTest extends TestCase
 
         // The owner goes to Stripe and comes back
         $this->api($token)->postJson("/builder/apps/$id/stripe/connect", ['mode' => 'live'])->assertStatus(503); // live is off
-        $url = $this->api($token)->postJson("/builder/apps/$id/stripe/connect", ['mode' => 'test'])->assertOk()->json('url');
+        $res = $this->api($token)->postJson("/builder/apps/$id/stripe/connect", ['mode' => 'test'])->assertOk();
+        $url = $res->json('url');
+        $nonce = collect($res->headers->getCookies())->firstWhere(fn ($c) => $c->getName() === 'owl_stripe')->getValue(); // this browser's ticket
         parse_str(parse_url($url, PHP_URL_QUERY), $q);
         $this->assertSame('ca_test123', $q['client_id']);
         Http::fake(['connect.stripe.com/oauth/token' => Http::response(['stripe_user_id' => 'acct_1OwnerTest'])]);
         $this->get('/builder/stripe/callback?state=wrong&code=x')->assertRedirect('/mobile-app-builder?stripe=expired');
-        $this->get('/builder/stripe/callback?state='.$q['state'].'&code=ac_123')->assertRedirect('/mobile-app-builder?stripe=connected-test');
+        // the same link opened in another browser (no ticket) attaches nothing — and uses up the link
+        $this->withUnencryptedCookie('owl_stripe', 'someone-else')->get('/builder/stripe/callback?state='.$q['state'].'&code=ac_999')->assertRedirect('/mobile-app-builder?stripe=expired');
+        $res = $this->api($token)->postJson("/builder/apps/$id/stripe/connect", ['mode' => 'test'])->assertOk();
+        $nonce = collect($res->headers->getCookies())->firstWhere(fn ($c) => $c->getName() === 'owl_stripe')->getValue();
+        parse_str(parse_url($res->json('url'), PHP_URL_QUERY), $q);
+        $this->withUnencryptedCookie('owl_stripe', $nonce)->get('/builder/stripe/callback?state='.$q['state'].'&code=ac_123')->assertRedirect('/mobile-app-builder?stripe=connected-test');
         Http::assertSent(fn ($r) => $r->url() === 'https://connect.stripe.com/oauth/token' && $r->hasHeader('Authorization', 'Bearer sk_test_abc123secretWXYZ') && $r['code'] === 'ac_123');
         $this->assertSame('acct_1OwnerTest', BuilderApp::find($id)->stripe_test_account);
         $this->assertStringNotContainsString('acct_1OwnerTest', (string) DB::table('builder_apps')->value('stripe_test_account')); // encrypted

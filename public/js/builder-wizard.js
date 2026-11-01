@@ -16,7 +16,8 @@
        editorUrl,                   // on a builder's main page: its editor page (routes/web.php). Finishing goes there; a
                                     // finish button with `then` runs again on the editor page (#then=…)
        beforeLeave: () => bool,     // save everything now; false (couldn't keep it in the browser) = stay on this page
-       hasWork: () => bool,         // there's work in this browser: coming back shows the banner with "Resume"
+       hasWork: () => bool,         // real work in this browser (edited, or saved to the account): coming back shows "Resume"
+       skipBack: () => bool,        // no "welcome back" this time (e.g. a design from the gallery is being opened)
        noun,                        // what the builder makes ("funnel", "CV"…), for the "Resume my …" button
      }) → { open(fromStart), close(), refresh() }
 
@@ -65,6 +66,7 @@
             try { kept = (await cfg.beforeLeave?.()) !== false; } catch { kept = false; }
             if (!kept) return false;
             $('[data-wz-step]', box)?.insertAdjacentHTML('beforeend', '<p class="wz-leaving" role="status">Opening the editor…</p>');
+            if (then) { try { sessionStorage.setItem('owlvix-then', new URL(cfg.editorUrl, location.href).pathname + '#' + then); } catch {} }
             location.assign(cfg.editorUrl + (then ? '#then=' + encodeURIComponent(then) : ''));
             return true;
         };
@@ -109,7 +111,7 @@
         /* ---------- the finish: a short "building" moment, then the result to look at ---------- */
         const finish = () => {
             finished = true;
-            try { localStorage.setItem(cfg.offKey, '1'); } catch {} // from now on the page opens on the builder
+            try { localStorage.setItem(cfg.offKey, '1'); localStorage.setItem(cfg.offKey + '-made', '1'); } catch {} // from now on the page opens on the builder; they've made something
             const tasks = cfg.tasks || ['Laying out your pages', 'Painting your colours', 'Adding your details', 'Polishing the details'];
             $('[data-wz-count]', box).innerHTML = '<button type="button" class="wz__done" data-wz-close>✓ Done</button>';
             $('[data-wz-bar]', box).style.width = '100%';
@@ -177,7 +179,7 @@
         };
         banner?.addEventListener('click', e => {
             if (e.target.closest('[data-wz-start]')) open();
-            else if (e.target.closest('[data-wzb-no]')) { try { localStorage.setItem(cfg.offKey, '1'); } catch {} hideBanner(); setTimeout(() => root.scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }), 60); }
+            else if (e.target.closest('[data-wzb-no]')) { try { localStorage.setItem(cfg.offKey, '1'); if (banner.classList.contains('wzb--back')) sessionStorage.setItem(cfg.offKey + '-back', '1'); } catch {} hideBanner(); setTimeout(() => root.scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }), 60); }
         });
         if (cfg.quickSlot && !cfg.quickSlot.querySelector('[data-wz-open]')) cfg.quickSlot.insertAdjacentHTML('afterbegin', `<button type="button" class="${cfg.quickClass || 'btn btn--sm btn--ghost'} wz-open" data-wz-open>✨ Quick setup</button>`);
         root.addEventListener('click', e => { if (e.target.closest('[data-wz-open]')) open(); });
@@ -188,7 +190,7 @@
             banner.hidden = false;
             root.style.display = 'none';
             document.documentElement.classList.add('wzb-on');
-            const watch = setInterval(() => { if (!alive()) clearInterval(watch); else if (cfg.hasSaved?.()) { hideBanner(); clearInterval(watch); } }, 1500);
+            const watch = setInterval(() => { if (!alive()) clearInterval(watch); else if (!banner.classList.contains('wzb--back') && cfg.hasSaved?.()) { hideBanner(); clearInterval(watch); } }, 1500);
             if (still()) return;
             const colours = ['#1ec773', '#2563eb', '#e8590c', '#be185d', '#6d28d9'];
             let c = 0;
@@ -201,16 +203,22 @@
             }, 4200);
         }
         // Arrived on the editor page from a finish button on the main page (#then=save, …): run it here
-        const then = decodeURIComponent((location.hash.match(/^#then=([a-z-]{1,20})$/) || [])[1] || '');
+        // (only when this browser's quick setup just sent them — a link someone shares can't publish or save their work)
+        const then = (location.hash.match(/^#then=([a-z-]{1,20})$/) || [])[1] || '';
         if (then) {
             try { history.replaceState(history.state, '', location.pathname + location.search); } catch {}
-            const a = cfg.done?.actions?.find(x => x.then === then);
-            if (a) setTimeout(() => a.act(() => {}), 500);
+            let handed = ''; try { handed = sessionStorage.getItem('owlvix-then') || ''; sessionStorage.removeItem('owlvix-then'); } catch {}
+            const a = !cfg.editorUrl && handed === location.pathname + '#' + then && cfg.done?.actions?.find(x => x.then === then);
+            if (a) setTimeout(() => a.act(() => {}, { replay: true }), 500); // (replay: no click behind it — downloads and the clipboard ask for one)
         }
-        let off = false; try { off = !!localStorage.getItem(cfg.offKey); } catch {}
-        // Back on a builder's main page with work in this browser: the same banner, welcoming them back, with "Resume"
-        // (to the editor page) first and the quick setup second
-        if (banner && cfg.editorUrl && (off || cfg.hasSaved?.() || cfg.hasWork?.())) { welcomeBack(banner, cfg); showBanner(); }
+        let off = false, made = false, backOff = false;
+        try { off = !!localStorage.getItem(cfg.offKey); made = !!localStorage.getItem(cfg.offKey + '-made'); backOff = !!sessionStorage.getItem(cfg.offKey + '-back'); } catch {}
+        // Back on a builder's main page with work in this browser (finished the quick setup, edited something, or a
+        // project saved to the account): the same banner, welcoming them back, with "Resume" (to the editor page) first.
+        // Not after "no thanks" alone, not when they said "edit it here" earlier this visit, and not when cfg.skipBack()
+        // (e.g. they've just picked a design from the gallery).
+        const welcome = banner && cfg.editorUrl && !backOff && !cfg.skipBack?.() && (made || cfg.hasWork?.());
+        if (welcome) { welcomeBack(banner, cfg); showBanner(); }
         else if (banner && !off && !cfg.hasSaved?.()) showBanner();
 
         return { open, close, redraw, refresh: bump, isOpen: () => !!box };

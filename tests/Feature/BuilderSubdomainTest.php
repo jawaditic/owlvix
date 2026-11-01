@@ -58,7 +58,8 @@ class BuilderSubdomainTest extends TestCase
         $res = $this->get('https://'.self::DOMAIN.'/joes-bakery')->assertOk()->assertSee('Home page');
         $this->assertStringContainsString('sandbox allow-scripts', $res->headers->get('Content-Security-Policy'));
         $this->assertSame('noindex', $res->headers->get('X-Robots-Tag'));
-        $res->assertSee(self::DOMAIN.'/joes-bakery/report', false); // report link in the bar
+        $res->assertSee(rtrim(config('app.url'), '/').'/report-bar/joes-bakery', false); // the bar: a frame from the main site…
+        $this->get(rtrim(config('app.url'), '/').'/report-bar/joes-bakery')->assertOk()->assertSee('/joes-bakery/report"', false)->assertSee(parse_url(self::DOMAIN, PHP_URL_HOST) ?: self::DOMAIN, false); // …with the report link
         $this->get('https://'.self::DOMAIN.'/joes-bakery/about')->assertOk()->assertSee('About page');
         $this->get('https://'.self::DOMAIN.'/joes-bakery/report')->assertOk();
         $this->get('https://'.self::DOMAIN.'/nobody-here')->assertStatus(301); // not a site: off to the main domain

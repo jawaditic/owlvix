@@ -12,7 +12,7 @@
         @endforeach
     </table>
     @if ($order->back)
-        <p style="margin:24px 0 0;"><a href="{{ $order->back }}" style="display:inline-block;padding:12px 22px;border-radius:999px;background:#17a85f;color:#fff;font-weight:600;text-decoration:none;">Go back to {{ $order->store->name }}</a></p>
+        <p style="margin:24px 0 0;"><a href="{{ $order->emailBackUrl() }}" style="display:inline-block;padding:12px 22px;border-radius:999px;background:#17a85f;color:#fff;font-weight:600;text-decoration:none;">Go back to {{ $order->store->name }}</a></p>
     @endif
     <p style="margin:18px 0 0;font-size:14px;color:#64748b;">Had a problem paying? Just reply to this email to reach {{ $order->store->name }}. We send this reminder only once.</p>
 @endsection

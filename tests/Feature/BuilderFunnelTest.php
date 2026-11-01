@@ -211,7 +211,8 @@ class BuilderFunnelTest extends TestCase
         $res = $beacon('{"s":"joes-funnel","p":"optin","v":"a"}')->assertNoContent();
         $this->assertSame('*', $res->headers->get('Access-Control-Allow-Origin'));
         $this->assertEmpty($res->headers->getCookies()); // no session for the beacon
-        $beacon('{"s":"joes-funnel","p":"optin","v":"a"}');
+        $beacon('{"s":"joes-funnel","p":"optin","v":"a"}'); // the same visitor again today: not counted twice
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.7'])->call('POST', '/fs', [], [], [], ['CONTENT_TYPE' => 'text/plain;charset=UTF-8'], '{"s":"joes-funnel","p":"optin","v":"a"}'); // another visitor
         $beacon('{"s":"joes-funnel","p":"optin","v":"b"}');
         $beacon('{"s":"joes-funnel","p":"thanks"}');
         // Ignored: unknown step, unknown site, junk
@@ -276,8 +277,9 @@ class BuilderFunnelTest extends TestCase
         $csv = $res->streamedContent();
         $this->assertStringContainsString("Date,Name,Email,Phone,Step,Variant\n", $csv);
         $this->assertStringContainsString('"\'=HYPERLINK(""http://evil.example"",""x"")",second@example.com', $csv);
-        $this->assertStringContainsString("First,first@example.com,\"'+44 20 1234 5678\",optin,b", $csv);
-        $this->assertSame("'-1", BuilderController::csvCell('-1'));
+        $this->assertStringContainsString("First,first@example.com,\"+44 20 1234 5678\",optin,b", $csv); // phone numbers stay readable
+        $this->assertSame('-1', BuilderController::csvCell('-1'));   // a plain number can't run as a formula
+        $this->assertSame("'-1+cmd|x", BuilderController::csvCell('-1+cmd|x'));
         $this->assertSame("'@SUM(A1)", BuilderController::csvCell('@SUM(A1)'));
         $this->assertSame('ann', BuilderController::csvCell('ann'));
 

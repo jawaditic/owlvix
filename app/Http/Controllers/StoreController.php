@@ -87,18 +87,34 @@ class StoreController extends Controller
         } else {
             $store->update($fill + ['ref' => $store->ref ?? ($data['ref'] ?? null)]);
         }
-        // stock of products (or sizes) that are gone is forgotten (under the lock orders use)
+        // Stock of products (or sizes) that are gone is forgotten (under the lock orders use). A product whose choices
+        // changed shape (e.g. sizes got colours: "tee:S" → "tee:S_red", "tee:S_blue") can't know how to split its count,
+        // so its new choices start sold out (0) — never untracked, which would oversell — and the owner is told.
         $keys = collect($store->catalog)->flatMap(fn ($p) => array_keys(Shop::keysOf($p)))->all();
-        \Illuminate\Support\Facades\DB::transaction(function () use ($store, $keys) {
+        $names = collect($store->catalog)->mapWithKeys(fn ($p) => [$p['id'] => $p['name']])->all();
+        $reshaped = [];
+        \Illuminate\Support\Facades\DB::transaction(function () use ($store, $keys, $names, &$reshaped) {
             $locked = BuilderStore::whereKey($store->id)->lockForUpdate()->first();
-            if ($locked->stock) {
-                $locked->stock = array_intersect_key($locked->stock, array_flip($keys)) ?: null;
-                $locked->save();
+            if (! $locked->stock) {
+                return;
             }
+            $old = $locked->stock;
+            $stock = array_intersect_key($old, array_flip($keys));
+            foreach (array_diff_key($old, $stock) as $gone => $n) {
+                foreach ($keys as $k) { // new keys that grew out of a tracked one ("tee" → "tee:S", "tee:S" → "tee:S_red")
+                    if (! isset($stock[$k]) && (str_starts_with($k, $gone.':') || str_starts_with($k, $gone.'_'))) {
+                        $stock[$k] = 0;
+                        $reshaped[strtok($k, ':')] = true;
+                    }
+                }
+            }
+            $locked->stock = $stock ?: null;
+            $locked->save();
         });
         $store->refresh();
 
-        return response()->json(['ok' => true, 'store' => $store->toApi()]);
+        return response()->json(['ok' => true, 'store' => $store->toApi(),
+            'stock_reset' => array_values(array_filter(array_map(fn ($id) => $names[$id] ?? null, array_keys($reshaped))))]);
     }
 
     /** The shop's orders, newest first (?status=new…, ?format=csv for all of them). */
@@ -114,14 +130,14 @@ class StoreController extends Controller
             return response()->streamDownload(function () use ($store) {
                 $out = fopen('php://output', 'w');
                 fwrite($out, "\xEF\xBB\xBF"); // so Excel reads UTF-8
-                fputcsv($out, ['Order', 'Date', 'Status', 'Paid', 'Payment', 'Delivery', 'Name', 'Email', 'Phone', 'Address', 'Country', 'Items', 'Subtotal', 'Discount', 'Code', 'Delivery fee', 'Tax', 'Total', 'Refunded', 'Tracking', 'Note'], escape: '');
+                fputcsv($out, ['Order', 'Date', 'Status', 'Paid', 'Payment', 'Delivery', 'Name', 'Email', 'Phone', 'Address', 'Country', 'Items', 'Subtotal', 'Discount', 'Code', 'Delivery fee', 'Tax', 'Gift card', 'Gift code', 'Total', 'Refunded', 'Tracking', 'Note'], escape: '');
                 $store->orders()->latest('id')->chunk(200, function ($orders) use ($out) {
                     foreach ($orders as $o) {
                         $items = implode('; ', array_map(fn ($l) => $l['qty'].' × '.$l['name'].($l['option'] ? ' ('.$l['option'].')' : ''), $o->items ?? []));
                         fputcsv($out, array_map([BuilderController::class, 'csvCell'], [$o->label(), $o->created_at?->format('Y-m-d H:i'), BuilderOrder::STATUS_LABELS[$o->status] ?? $o->status,
                             $o->isPaid() ? 'Yes' : 'No', BuilderOrder::PAY_LABELS[$o->pay] ?? $o->pay, $o->delivery === 'pickup' ? 'Pick-up' : 'Delivery', $o->name, $o->email, $o->phone,
                             $o->address, $o->country, $items, $o->money($o->subtotal), $o->discount ? $o->money($o->discount) : '', $o->discount_code, $o->money($o->delivery_fee),
-                            $o->tax ? $o->money($o->tax).($o->tax_included ? ' (included)' : '') : '', $o->money($o->total), $o->refunded ? $o->money($o->refunded) : '', $o->tracking, $o->note]), escape: '');
+                            $o->tax ? $o->money($o->tax).($o->tax_included ? ' (included)' : '') : '', $o->gift_amount ? $o->money($o->gift_amount) : '', $o->gift_code, $o->money($o->total), $o->refunded ? $o->money($o->refunded) : '', $o->tracking, $o->note]), escape: '');
                     }
                 });
                 fclose($out);
@@ -172,6 +188,9 @@ class StoreController extends Controller
         $paidNow = false;
         if ($request->has('paid') && $order->pay !== 'card') { // card orders are only marked paid by Stripe
             $paidNow = $request->boolean('paid') && ! $order->paid_at;
+            if (! $request->boolean('paid') && $order->paid_at) {
+                Shop::voidGiftCards($order); // not paid after all: the gift cards it made stop working
+            }
             $order->paid_at = $request->boolean('paid') ? ($order->paid_at ?? now()) : null;
         }
         if (($status ?? null) === 'cancelled') {
@@ -180,6 +199,7 @@ class StoreController extends Controller
         $order->save();
         if (($status ?? null) === 'cancelled') {
             Shop::giveBack($order); // its stock and its code's use can be used again
+            Shop::voidGiftCards($order); // and gift cards it made stop working
         }
         if ($paidNow && $order->status !== 'cancelled') {
             ShopController::paidNow($order, $this->user($request)->email); // gift cards made; downloads and codes emailed
@@ -245,6 +265,9 @@ class StoreController extends Controller
             return $this->fail('This order was refunded meanwhile. Please reload.', 409);
         }
         $order->refresh();
+        if ($order->refunded >= $order->total) {
+            Shop::voidGiftCards($order); // all the money went back: gift cards it made stop working
+        }
         if (ShopController::mayEmailCustomer($store)) {
             $owner = $this->user($request)->email;
             \Illuminate\Support\defer(function () use ($order, $owner, $amount) {
@@ -558,9 +581,13 @@ class StoreController extends Controller
         }
         $state = Str::random(40);
         // the same callback as the app builder: it tells the two apart by the state
-        Cache::put('app-stripe-state:'.$state, ['store' => $store->id, 'mode' => $mode], now()->addMinutes(30));
+        // tied to this browser: Stripe's return is only taken where the connection started (a link someone else sends
+        // can't attach a stranger's Stripe account)
+        $nonce = Str::random(40);
+        Cache::put('app-stripe-state:'.$state, ['store' => $store->id, 'mode' => $mode, 'nonce' => hash('sha256', $nonce)], now()->addMinutes(30));
 
-        return response()->json(['ok' => true, 'url' => Stripe::connectUrl($mode, $state)]);
+        return response()->json(['ok' => true, 'url' => Stripe::connectUrl($mode, $state)])
+            ->withCookie(cookie('owl_stripe', $nonce, 30, '/builder/stripe', null, $request->isSecure(), true, false, 'lax'));
     }
 
     public function stripeDisconnect(Request $request, string $id): JsonResponse

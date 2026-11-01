@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [\App\Http\Middleware\TrimHtmlWhitespace::class, \App\Http\Middleware\BuilderHostOnly::class]);
         // The stats beacon is sent with navigator.sendBeacon and only records a page view.
         // Builder contact forms (f/*) are posted from static pages hosted anywhere; fs is the funnel stats beacon.
+        // a random one-off value tying Stripe's return to the browser that started connecting (read as is on both routes)
+        $middleware->encryptCookies(except: ['owl_stripe']);
         $middleware->validateCsrfTokens(except: ['t', 't/b', 'f/*', 'fs', 'shop/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

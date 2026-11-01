@@ -68,7 +68,8 @@
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     # Forms made with the form builder (/form/{id}, and the answer post /f/{id} that may show it again with errors)
     # may be embedded on other sites; they send their own frame-ancestors rule
-    <If "%{REQUEST_URI} !~ m#^/(form|f)/[a-z0-9]{16}$#">
+    # (also the "Made with Owlvix · Report" bar shown on published sites: /report-bar/{slug})
+    <If "%{REQUEST_URI} !~ m#^/((form|f)/[a-z0-9]{16}|report-bar/[a-z0-9-]{3,40})$#">
         Header always set X-Frame-Options "SAMEORIGIN"
     </If>
     # HSTS: browsers always use https for owlvix.com for the next year (the site is https-only).

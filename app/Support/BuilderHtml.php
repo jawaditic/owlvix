@@ -51,7 +51,9 @@ class BuilderHtml
     /** Form fields the builder creates. Anything else (e.g. a "password" box) could be used to phish. */
     private const FIELDS = ['name', 'email', 'phone', 'message', '_hp', '_back', '_next', '_site', '_step', '_v',
         // shop checkout (online store builder): address, note, the cart, delivery / payment choice, a product's option
-        'address', 'note', '_cart', '_delivery', '_pay', '_opt', 'country', '_code', '_q', '_dial'];
+        'address', 'note', '_cart', '_delivery', '_pay', '_opt', 'country', '_code', '_q', '_dial',
+        // RSVP widget (wedding & event builder; RSVP_IDS in builder-engine.js)
+        'rname', 'remail', 'rcome', 'rguests', 'rmeal', 'rmsg'];
 
     private const PHISHY = '/pass|pwd|otp|pin\b|card|cvv|cvc|ssn|iban|login|username|secret|token/i';
 
@@ -73,7 +75,7 @@ class BuilderHtml
             ."default-src 'none'; script-src ".self::runtimeUrl().'; '
             ."connect-src {$origin}/fs {$origin}/shop/ https://get.geojs.io; "
             ."img-src data: https:; style-src 'unsafe-inline' https://fonts.googleapis.com; "
-            .'font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com/embed/ https://www.google.com/maps; '
+            .'font-src https://fonts.gstatic.com; frame-src https://www.youtube-nocookie.com/embed/ https://www.google.com/maps '.self::appOrigin().'/report-bar/; '
             ."frame-ancestors 'none'; "
             ."form-action {$formAction}; base-uri 'none'";
     }
@@ -92,12 +94,21 @@ class BuilderHtml
         if (preg_match('/<\s*('.implode('|', self::BLOCKED_TAGS).')\b/i', $html, $m)) {
             return self::tagMessage(strtolower($m[1]));
         }
-        if (preg_match('/<[^>]*\son[a-z]+\s*=/i', $html)) {
+        // (browsers also split attributes on "/", as in <img/onerror=…>, which the parser below doesn't see)
+        if (preg_match('/<[^>]*[\s\/]on[a-z]+\s*=/i', $html)) {
             return 'Pages can’t contain JavaScript event handlers (like onclick).';
         }
         // javascript: as a URL (in href/src/action…) — not merely mentioned in text like "Learn JavaScript: …"
-        if (preg_match('/<[^>]*\s(?:href|src|action|formaction|xlink:href|poster|data|background|srcset)\s*=\s*["\']?\s*(?:java|vb)script\s*:/i', $html)) {
+        if (preg_match('/<[^>]*[\s\/](?:href|src|action|formaction|xlink:href|poster|data|background|srcset)\s*=\s*["\']?\s*(?:java|vb)script\s*:/i', $html)) {
             return 'Pages can’t contain javascript: links.';
+        }
+        // The whole page clipped or masked would hide the "Made with Owlvix · Report" bar
+        if (preg_match('/(?:^|[\s,};>])(?:html|body|:root)\b[^{}<>]*\{[^}]*(?:clip-path|mask|clip\s*:)/i', $html)) {
+            return 'Pages can’t clip or mask the whole page (clip-path or mask on html / body).';
+        }
+        // The builder never writes http-equiv metas; a hidden refresh would redirect visitors (CSP can't stop it)
+        if (preg_match('/<\s*meta\b[^>]*[\s\/"\']http-equiv/i', $html)) {
+            return 'Pages can’t redirect visitors automatically (meta refresh).';
         }
 
         $doc = new \DOMDocument;
@@ -139,7 +150,7 @@ class BuilderHtml
                 $field = $el->getAttribute('name');
                 $auto = strtolower($el->getAttribute('autocomplete'));
                 $builderField = in_array($field, self::FIELDS, true)
-                    || ($type === 'radio' && preg_match('/^t[a-z0-9]{3,12}$/', $field))   // tabs widget
+                    || ($type === 'radio' && preg_match('/^t[a-z0-9]{1,24}$/i', $field))  // tabs widget ("t" + the widget id)
                     || ($type === 'range' && $field === '');                               // before/after slider
                 if ($type === 'password' || str_contains($auto, 'password') || preg_match(self::PHISHY, $field.' '.$el->getAttribute('placeholder').' '.$el->getAttribute('aria-label')) || ! $builderField) {
                     return 'Pages can’t contain password or payment fields, or form fields the builder didn’t create.';
@@ -206,21 +217,35 @@ class BuilderHtml
     /** The page with the small "Made with Owlvix" bar added before </body>. */
     public static function withBar(string $html, BuilderSite $site): string
     {
-        $builder = 'https://owlvix.com/landing-page-builder';
-        $report = e(route('builder.report', $site->slug));
-        $bar = '<div style="position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:2147483647;'
-            .'font:500 12px/1.4 -apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Arial,sans-serif;'
-            .'background:rgba(7,11,20,.88);color:#e2e8f0;padding:6px 12px;border-radius:999px;white-space:nowrap;'
-            .'box-shadow:0 4px 14px rgba(0,0,0,.25);">'
-            .'<a href="'.$builder.'" target="_blank" rel="noopener" style="color:#e2e8f0;text-decoration:none;">'
-            .'Made with <b style="color:#1ec773;">Owlvix</b> free page builder</a>'
-            .' <span style="opacity:.5;">·</span> '
-            .'<a href="'.$report.'" target="_blank" rel="noopener nofollow" style="color:#94a3b8;text-decoration:none;">Report</a>'
-            .'</div>';
+        // A frame from owlvix.com: the page's own CSS can't reach inside it (no hiding the links, no covering them with
+        // ::before/::after), and every rule on the frame itself is inline !important, which beats any stylesheet.
+        $lock = 'position:fixed!important;left:50%!important;bottom:10px!important;top:auto!important;right:auto!important;'
+            .'transform:translateX(-50%)!important;z-index:2147483647!important;display:block!important;visibility:visible!important;'
+            .'opacity:1!important;width:290px!important;height:34px!important;max-width:calc(100vw - 16px)!important;min-width:0!important;'
+            .'margin:0!important;padding:0!important;border:0!important;border-radius:999px!important;clip-path:none!important;'
+            .'mask:none!important;filter:none!important;zoom:1!important;content-visibility:visible!important;pointer-events:auto!important;'
+            .'background:transparent!important;box-shadow:0 4px 14px rgba(0,0,0,.25)!important;color-scheme:normal!important;';
+        $bar = '<iframe src="'.e(self::appOrigin().'/report-bar/'.$site->slug).'" title="Made with Owlvix — report this page" loading="eager" '
+            .'sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" style="'.$lock.'"></iframe>';
 
         $pos = strripos($html, '</body>');
 
         return $pos === false ? $html.$bar : substr_replace($html, $bar, $pos, 0);
+    }
+
+    /** What the report bar frame shows (route builder.bar): "Made with Owlvix · Report". */
+    public static function barPage(BuilderSite $site): string
+    {
+        $builder = 'https://owlvix.com/landing-page-builder';
+        $report = e(route('builder.report', $site->slug));
+
+        return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>Made with Owlvix</title>'
+            .'<style>html,body{margin:0;height:100%;background:transparent}body{display:flex;align-items:center;justify-content:center;'
+            .'font:500 12px/1.4 -apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Arial,sans-serif}'
+            .'p{margin:0;background:rgba(7,11,20,.88);color:#e2e8f0;padding:6px 12px;border-radius:999px;white-space:nowrap}'
+            .'a{color:#e2e8f0;text-decoration:none}a:hover{text-decoration:underline}b{color:#1ec773}.r{color:#94a3b8}i{opacity:.5;font-style:normal}</style></head>'
+            .'<body><p><a href="'.$builder.'" target="_blank" rel="noopener">Made with <b>Owlvix</b> free page builder</a> <i>·</i> '
+            .'<a class="r" href="'.$report.'" target="_blank" rel="noopener nofollow">Report</a></p></body></html>';
     }
 
     private static function tagMessage(string $tag): string

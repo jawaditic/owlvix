@@ -56,8 +56,8 @@ class BuilderStaticFilesTest extends TestCase
 
         $home = File::get($this->root.'/joes-bakery/index.html');
         $this->assertStringContainsString('Page index', $home);
-        $this->assertStringContainsString('Made with <b', $home); // the bar is baked in
-        $this->assertStringContainsString('/p/joes-bakery/report', $home); // report form stays on the main site
+        $this->assertStringContainsString('/report-bar/joes-bakery"', $home); // the bar (a frame from the main site) is baked in
+        $this->get('/report-bar/joes-bakery')->assertOk()->assertSee('/p/joes-bakery/report', false); // its report link: the form stays on the main site
         $this->assertStringContainsString('Page about', File::get($this->root.'/joes-bakery/about/index.html'));
 
         $ht = File::get($this->root.'/.htaccess');

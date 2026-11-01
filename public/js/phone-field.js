@@ -55,7 +55,8 @@
         });
         input.addEventListener('input', show);
         input.addEventListener('focus', () => { if (!input.value.trim()) { const c = wrap.dataset.cc || home; input.value = `+${DIAL[c]} `; } show(); });
-        input.addEventListener('blur', () => { if (/^\+\d{1,4}\s*$/.test(input.value)) input.value = ''; show(); });
+        // only the code left (nothing typed): empty the box — and say so, so a form or CV keeping its own copy empties too
+        input.addEventListener('blur', () => { if (/^\+\d{1,4}\s*$/.test(input.value)) { input.value = ''; ['input', 'change'].forEach(t => input.dispatchEvent(new Event(t, { bubbles: true }))); } show(); });
         boxes.add(show); show();
     };
     const scan = root => root.querySelectorAll?.('input[type=tel]').forEach(enhance);

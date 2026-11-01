@@ -704,10 +704,14 @@ class AppBuilderTest extends TestCase
         $check(['4821'])->assertStatus(422);
         $this->postJson('/api/app-loyalty/aaaaaaaaaaaaaaaa', ['card' => 'abcd1234efgh', 'pin' => '4821'])->assertNotFound();
         \Illuminate\Support\Facades\RateLimiter::clear('app-loyalty');
+        $here = "app-loyalty:{$r['id']}:abcd1234efgh:".sha1('127.0.0.1|'.config('app.key'));
         for ($i = 0; $i < 11; $i++) {
-            \Illuminate\Support\Facades\RateLimiter::hit("app-loyalty:{$r['id']}:abcd1234efgh", 3600);
+            \Illuminate\Support\Facades\RateLimiter::hit($here, 3600);
         }
         $check('4821')->assertStatus(429)->assertJsonPath('error', 'locked');
+        // …locked for this connection only: the shop's own phone elsewhere still works
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.5'])->postJson("/api/app-loyalty/{$r['id']}", ['card' => 'abcd1234efgh', 'pin' => '4821'])->assertOk();
+        $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1']);
 
         // Saving again with only the hash keeps the PIN; a new PIN replaces it
         $again = $this->api($token)->postJson('/builder/apps', ['id' => $r['id'], 'app' => $with(['pin' => '', 'pinHash' => $b['pinHash']] + $card)])->assertOk()->json('app.tabs.0.blocks.0');
@@ -824,7 +828,9 @@ class AppBuilderTest extends TestCase
         $this->assertTrue($r['needs_website']);
         $this->assertTrue($r['allowed']);
         $this->assertTrue($r['own_site']);
-        $this->assertSame(['sites.owlvix.test'], $this->contentFile($r['id'])['hosts']);
+        // on the shared sites host, only this site's own address opens inside the app (not every stranger's page there)
+        $this->assertSame([], $this->contentFile($r['id'])['hosts']);
+        $this->assertSame(['sites.owlvix.test/joes-bakery'], $this->contentFile($r['id'])['own']);
         $this->assertSame(['label' => 'Menu', 'icon' => 'food', 'type' => 'web', 'bar' => true, 'menu' => false, 'url' => 'https://sites.owlvix.test/joes-bakery/menu'], $r['tabs'][1]);
     }
 
@@ -912,7 +918,7 @@ class AppBuilderTest extends TestCase
         $this->assertSame("https://owlvix.test/app-data/{$id}/content.json", $job['contentUrl']);
         $this->assertSame("https://owlvix.test/api/app-loyalty/{$id}", $job['loyaltyUrl']);
         $this->assertSame($this->contentFile($id), $job['content']); // built in, so the app works offline from the start
-        $this->assertSame(['sites.owlvix.test'], $job['content']['hosts']);
+        $this->assertSame(['sites.owlvix.test/joes-bakery'], $job['content']['own']);
         $this->assertSame('#16a34a', $job['colors']['primary']);
         $this->assertNull($job['keystore']);
         $this->assertSame(BuilderApp::find($id)->keystore_password, $job['keystorePassword']);

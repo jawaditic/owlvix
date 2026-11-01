@@ -33,19 +33,19 @@
                 @endforeach
             </ul>
         @endif
-        <form method="post" action="{{ route('shop.account.logout', $store->id) }}" style="text-align:center"><button class="link" type="submit">Sign out</button></form>
+        <form method="post" action="{{ route('shop.account.logout', $store->id) }}" style="text-align:center">@csrf<button class="link" type="submit">Sign out</button></form>
     @elseif ($step === 'code')
         <p>If <b>{{ $pending }}</b> has ordered from {{ $store->name }}, we’ve emailed it a 6-digit code.</p>
-        <form method="post" action="{{ route('shop.account.verify', $store->id) }}">
+        <form method="post" action="{{ route('shop.account.verify', $store->id) }}">@csrf
             <label for="code">Code</label>
             <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required autofocus placeholder="123456">
             @if ($error)<p class="err">{{ $error }}</p>@endif
             <button class="btn" type="submit">See my orders</button>
         </form>
-        <form method="post" action="{{ route('shop.account.logout', $store->id) }}"><button class="link" type="submit">Use another email</button></form>
+        <form method="post" action="{{ route('shop.account.logout', $store->id) }}">@csrf<button class="link" type="submit">Use another email</button></form>
     @else
         <p>Enter the email you ordered with, and we’ll send you a code — no password needed.</p>
-        <form method="post" action="{{ route('shop.account.code', $store->id) }}">
+        <form method="post" action="{{ route('shop.account.code', $store->id) }}">@csrf
             <label for="email">Email</label>
             <input id="email" type="email" name="email" required maxlength="150" autocomplete="email" placeholder="you@example.com" autofocus>
             @if ($error)<p class="err">{{ $error }}</p>@endif

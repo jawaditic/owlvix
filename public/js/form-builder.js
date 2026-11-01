@@ -34,7 +34,7 @@
     try { D = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
     if (!D?.schema?.fields) D = fresh('contact');
     let openId = null; // field being edited
-    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(D)); localStorage.setItem(STORE + '-touched', '1'); } catch {} };
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(D)); } catch {} }; // (also on every redraw — so "touched" is set by real edits only, in markDirty)
     const S = () => D.schema;
 
     /* ------------------------------------------------ preview (looks like /form/{id}, not interactive) */
@@ -172,7 +172,7 @@
 
     /* ------------------------------------------------ publish */
     const note = (msg, kind) => { if (window.owlToast) return window.owlToast(msg, kind); const n = $('[data-note]'); n.textContent = msg; n.hidden = false; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 5000); };
-    const markDirty = () => { D.dirty = true; save(); syncPublish(); };
+    const markDirty = () => { D.dirty = true; save(); try { localStorage.setItem(STORE + '-touched', '1'); } catch {} syncPublish(); };
     const syncPublish = () => {
         const managed = !!(S().managed && D.id); // an RSVP form made by an event page: its questions are changed on that page
         $('[data-panel="build"]').inert = managed; $('[data-panel="build"]').classList.toggle('is-locked', managed);
@@ -340,7 +340,7 @@
                 ],
             },
             editorUrl: root.dataset.editorUrl || '', noun: 'form',
-            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched'); } catch { return false; } },
+            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched') || !!D.id; } catch { return !!D.id; } },
             beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(D)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } },
         });
     }

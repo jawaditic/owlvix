@@ -253,7 +253,9 @@
 
     /* RSVP: posts to a form-builder form whose questions match these fields (rsvpSchema keeps them in step) */
     const RSVP_IDS = { name: 'rname', email: 'remail', come: 'rcome', guests: 'rguests', meal: 'rmeal', msg: 'rmsg' };
-    const opt = v => String(v || '').trim().slice(0, 100); // the server keeps choices up to 100 characters
+    // the same as the server (SurveySchema::str): control characters out, the first 100 characters, then trimmed —
+    // so a long choice is cut identically on both sides
+    const opt = v => [...String(v || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')].slice(0, 100).join('').trim();
     const lines = v => [...new Set(String(v || '').split('\n').map(opt).filter(Boolean))].slice(0, 20);
     const rsvpYesNo = p => [opt(p.yes) || 'Yes, I will be there', opt(p.no) || 'Sorry, I can’t make it'];
     const rsvpWidget = P => P.pages.flatMap(pg => [...pg.sections, ...(pg.sectionsB || [])].flatMap(sc => sc.cols.flatMap(c => c.widgets))).find(w => w.type === 'rsvp'); // A/B version B too

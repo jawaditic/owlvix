@@ -45,6 +45,7 @@ class BuilderProjectController extends Controller
             'kind' => ['required', 'string', 'in:'.implode(',', BuilderProject::KINDS)],
             'name' => ['nullable', 'string', 'max:200'],
             'data' => ['required', 'array'],
+            'base' => ['nullable', 'string', 'max:40'], // when this copy was opened / last saved ("updated" from the server)
         ]);
         $json = json_encode($v['data'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false || strlen($json) > BuilderProject::MAX_BYTES) {
@@ -60,6 +61,10 @@ class BuilderProjectController extends Controller
             }
             if ($p->kind !== $v['kind']) {
                 return $this->fail('This project belongs to another builder.', 422);
+            }
+            // saved from another device or tab since this copy was opened: ask before writing over it (no "base": overwrite)
+            if (! empty($v['base']) && $p->updated_at?->toIso8601String() !== $v['base']) {
+                return $this->fail('This was saved from another device or tab after you opened it.', 409);
             }
         } else {
             if ($account->projects()->where('kind', $v['kind'])->count() >= BuilderProject::MAX_PER_KIND) {

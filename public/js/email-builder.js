@@ -19,7 +19,7 @@
     const ownUnsub = v => { v = String(v || '').trim(); return /^[{%*$[][^"'<>\s]?[^"'<>]{1,80}$/.test(v) ? v : link(v); };
     const align = a => (['left', 'center', 'right'].includes(a) ? a : 'left');
     const FONTS = { 'Arial, Helvetica, sans-serif': 'Arial', 'Helvetica, Arial, sans-serif': 'Helvetica', 'Verdana, Geneva, sans-serif': 'Verdana', "'Trebuchet MS', Helvetica, sans-serif": 'Trebuchet', "Georgia, 'Times New Roman', serif": 'Georgia (serif)' };
-    const UNSUB = { mailchimp: ['Mailchimp', '*|UNSUB|*'], brevo: ['Brevo (Sendinblue)', '{{ unsubscribe }}'], klaviyo: ['Klaviyo', '{% unsubscribe_url %}'], mailerlite: ['MailerLite', '{$unsubscribe}'], custom: ['My own link', ''] };
+    const UNSUB = { mailchimp: ['Mailchimp', '*|UNSUB|*'], brevo: ['Brevo (Sendinblue)', '{{ unsubscribe }}'], klaviyo: ['Klaviyo', '{% unsubscribe_url %}'], mailerlite: ['MailerLite', '{$unsubscribe}'], sendgrid: ['SendGrid', '{{{unsubscribe}}}'], custom: ['My own link', ''] };
     const SOCIAL = { facebook: ['Facebook', 'f', '#1877f2'], instagram: ['Instagram', 'IG', '#e1306c'], linkedin: ['LinkedIn', 'in', '#0a66c2'], x: ['X', 'X', '#111111'], youtube: ['YouTube', '▶', '#ff0000'], tiktok: ['TikTok', '♪', '#111111'], whatsapp: ['WhatsApp', 'WA', '#25d366'] };
 
     /** Simple formatting in text blocks: **bold**, and web addresses become links. */
@@ -211,8 +211,8 @@ ${rows}
         const n = E.blocks.length;
         $('[data-blocks]').innerHTML = E.blocks.map((b, i) => {
             const [label, icon, , fields] = B[b.type], open = b.id === openId;
-            return `<div class="fb-q${open ? ' is-open' : ''}" data-i="${i}"><div class="fb-q__head" data-toggle="${b.id}"><span class="fb-q__icon" aria-hidden="true">${esc(icon)}</span><span class="fb-q__label">${label}${summary(b) ? ` <small>· ${summary(b)}</small>` : ''}</span>
-                <span class="fb-q__tools"><button type="button" data-move="-1" title="Move this block up the email" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" title="Move this block down the email" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup title="Make a copy of this block">⧉</button><button type="button" data-del title="Delete this block" class="fb-del">✕</button></span></div>
+            return `<div class="fb-q${open ? ' is-open' : ''}" data-i="${i}"><div class="fb-q__head" data-toggle="${b.id}" role="button" tabindex="0" aria-expanded="${open}"><span class="fb-q__icon" aria-hidden="true">${esc(icon)}</span><span class="fb-q__label">${label}${summary(b) ? ` <small>· ${summary(b)}</small>` : ''}</span>
+                <span class="fb-q__tools"><button type="button" data-move="-1" title="Move this block up the email" aria-label="Move up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" title="Move this block down the email" aria-label="Move down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup title="Make a copy of this block" aria-label="Copy this block">⧉</button><button type="button" data-del title="Delete this block" aria-label="Delete this block" class="fb-del">✕</button></span></div>
                 ${open ? `<div class="fb-q__body">${fields.map(fl => fieldHtml(b, fl)).join('') || '<p class="fb-hint">Nothing to set.</p>'}</div>` : ''}</div>`;
         }).join('') || '<p class="fb-hint">Your email is empty — add a block below.</p>';
     };
@@ -266,14 +266,27 @@ ${rows}
         const lbl = card.querySelector('.fb-q__label'); lbl.innerHTML = `${B[b.type][0]}${summary(b) ? ` <small>· ${summary(b)}</small>` : ''}`;
         changed();
     });
+    // a block's header opens and closes it from the keyboard too (Enter / Space), and keeps the focus afterwards
+    root.addEventListener('keydown', e => {
+        const t = e.target.closest?.('[data-toggle]');
+        if (!t || e.target !== t || (e.key !== 'Enter' && e.key !== ' ')) return;
+        e.preventDefault();
+        const id = t.dataset.toggle; t.click();
+        root.querySelector(`[data-toggle="${CSS.escape(id)}"]`)?.focus();
+    });
+    const refocus = (id, sel) => { if (!id) return; const q = root.querySelector(`[data-toggle="${CSS.escape(id)}"]`)?.closest('.fb-q'); (q?.querySelector(sel) || q?.querySelector('[data-toggle]'))?.focus(); };
     root.addEventListener('click', async e => {
         const t = e.target.closest('button,[data-toggle]'); if (!t) return;
         const card = t.closest('[data-i]'), i = card ? +card.dataset.i : -1, L = E.blocks;
         if ((t.dataset.addBlock || 'dup' in t.dataset) && L.length >= MAX) return note(`An email can have up to ${MAX} blocks.`);
         if (t.dataset.addBlock) { const b = block(t.dataset.addBlock); const at = L.findIndex(x => x.id === openId); L.splice(at >= 0 ? at + 1 : L.length, 0, b); openId = b.id; drawBlocks(); changed(); track('email_builder_add', { type: b.type }); $('[data-blocks] .is-open')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
-        else if (t.dataset.move) { const j = i + +t.dataset.move; [L[i], L[j]] = [L[j], L[i]]; drawBlocks(); changed(); }
-        else if ('dup' in t.dataset) { const c = { ...structuredClone(L[i]), id: uid() }; L.splice(i + 1, 0, c); openId = c.id; drawBlocks(); changed(); }
-        else if ('del' in t.dataset) { L.splice(i, 1); drawBlocks(); changed(); }
+        // (after a redraw the keyboard focus goes back to the same button on the block, not to the top of the page)
+        else if (t.dataset.move) { const j = i + +t.dataset.move, id = L[i].id; [L[i], L[j]] = [L[j], L[i]]; drawBlocks(); changed(); refocus(id, `[data-move="${t.dataset.move}"]:not([disabled]), [data-move]:not([disabled])`); }
+        else if ('dup' in t.dataset) { const c = { ...structuredClone(L[i]), id: uid() }; L.splice(i + 1, 0, c); openId = c.id; drawBlocks(); changed(); refocus(c.id, '[data-dup]'); }
+        else if ('del' in t.dataset) {
+            if (!(await window.sweet({ icon: 'warning', title: 'Delete this block?', text: 'Its words and pictures go too.', confirm: 'Delete', cancel: 'Keep it', danger: true }))) return;
+            L.splice(i, 1); drawBlocks(); changed(); refocus(L[Math.min(i, L.length - 1)]?.id, '[data-toggle]');
+        }
         else if (t.dataset.toggle) { if (e.target.closest('.fb-q__tools')) return; openId = openId === t.dataset.toggle ? null : t.dataset.toggle; drawBlocks(); markPreview(); }
         else if (t.dataset.tpl) {
             if (!(await window.sweet({ icon: 'warning', title: 'Use this template?', text: 'Your current email will be replaced. Your email platform and font stay as they are.', confirm: 'Replace my email', cancel: 'Keep mine' }))) return; const { platform, unsubUrl, font } = E.settings; E = fresh(t.dataset.tpl); Object.assign(E.settings, { platform, unsubUrl, font }); openId = null; drawSettings(); syncUnsub(); drawBlocks(); changed(); track('email_builder_template', { tpl: t.dataset.tpl }); }
@@ -341,11 +354,18 @@ ${rows}
     const saveCloud = async () => {
         if (!ACC || !(await signedIn('Save your email to your account and open it on any device.'))) return false;
         const btn = root.querySelector('[data-cloud-save]'); btn.disabled = true;
-        const send = id => ACC.projects.save({ id: id || null, kind: 'email', name: E.settings.subject || 'Untitled email', data: E });
+        const send = (id, base) => ACC.projects.save({ id: id || null, kind: 'email', name: E.settings.subject || 'Untitled email', data: E, base: id ? base || null : null });
         try {
             let p;
-            try { p = await send(cloud.id); } catch (ex) { if (ex.status === 404 && cloud.id) p = await send(null); else throw ex; }
-            setCloud({ id: p.id, saved: hashOf(JSON.stringify(E)) });
+            try { p = await send(cloud.id, cloud.at); }
+            catch (ex) {
+                if (ex.status === 404 && cloud.id) p = await send(null);
+                else if (ex.status === 409) { // saved on another device since this copy was opened
+                    if (!(await window.sweet({ icon: 'warning', title: 'Changed on another device', text: 'This email was saved from another device or tab after you opened it. Save yours over it — or keep theirs and open it again from “My emails”.', confirm: 'Save mine over it', cancel: 'Keep theirs' }))) return false;
+                    p = await send(cloud.id);
+                } else throw ex;
+            }
+            setCloud({ id: p.id, saved: hashOf(JSON.stringify(E)), at: p.updated });
             note('Saved to your account — open it any time from “My emails”.', 'success'); track('email_builder_cloud_save');
             await loadCloudList(); return true;
         } catch (ex) { note(ex.message, 'error'); return false; }
@@ -360,7 +380,7 @@ ${rows}
         if (v === 'new') { if (await askLose('Start a new one')) { replaceWith(fresh('newsletter')); setCloud({}); drawCloudList(); wizard?.open(true); } else drawCloudList(); return; }
         if (v === cloud.id) return;
         if (!(await askLose('Open another'))) return drawCloudList();
-        try { const p = await ACC.projects.get(v); replaceWith(p.data); setCloud({ id: p.id, saved: hashOf(JSON.stringify(E)) }); drawCloudList(); note(`Opened “${p.name}”`, 'success'); }
+        try { const p = await ACC.projects.get(v); replaceWith(p.data); setCloud({ id: p.id, saved: hashOf(JSON.stringify(E)), at: p.updated }); drawCloudList(); note(`Opened “${p.name}”`, 'success'); }
         catch (ex) { note(ex.message, 'error'); drawCloudList(); }
     });
     if (ACC?.signedIn()) loadCloudList(); else drawCloudList();
@@ -371,7 +391,7 @@ ${rows}
     const WZ = window.OwlWizard;
     if (WZ) {
         const EM = { newsletter: '📰', sale: '🏷️', welcome: '👋', event: '🎟️', launch: '🚀' };
-        let picked = null, hadWork = false; try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}
+        let picked = null, hadWork = false, before = null; try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}
         const first = type => E.blocks.find(b => b.type === type);
         let frame = null, timer = 0;
         const drawWz = () => { if (!frame) return; frame.srcdoc = html({ preview: true }); frame.onload = () => { try { frame.contentDocument.addEventListener('click', ev => ev.preventDefault(), true); } catch {} }; };
@@ -383,7 +403,8 @@ ${rows}
                 click: (e, el, box) => {
                     if (!el.dataset.wzPick) return;
                     picked = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el);
-                    if (picked === 'keep') return;
+                    if (picked === 'keep') { if (before) { E = structuredClone(before); openId = null; upd(); } return; } // their email, as it was
+                    before ??= structuredClone(E); // (tapping templates to look at them mustn't lose the email they had)
                     const keep = { platform: E.settings.platform, unsubUrl: E.settings.unsubUrl, font: E.settings.font }, brand = first('header');
                     E = fresh(picked); Object.assign(E.settings, keep);
                     if (brand && named) Object.assign(first('header') || {}, { name: brand.name, logo: brand.logo });
@@ -449,6 +470,7 @@ ${rows}
             hasSaved: () => !!cloud.id,
             quickSlot: root.querySelector('.fb-top__actions'),
             onRestart: () => { picked = null; named = false; hadWork = false; },
+            onClose: () => { before = null; },
             steps,
             preview: { mount: side => { side.innerHTML = `<p class="wz-prev__label">Live preview</p>${WZ.phoneFrame()}`; frame = side.querySelector('[data-wz-frame]'); drawWz(); }, unmount: () => { frame = null; drawSettings(); syncUnsub(); drawBlocks(); drawPreview(); fit(); }, refresh: drawWz },
             building: 'Building your email…',
@@ -458,12 +480,12 @@ ${rows}
                 sub: 'Scroll the preview to see it. Save it to your account, then copy the HTML into your email platform — and fine-tune any block in the editor.',
                 actions: [
                     { label: '☁️ Save to my account', cls: 'btn btn--glow', then: 'save', act: close => { close(); saveCloud(); } },
-                    { label: '📋 Copy HTML', then: 'copy', act: close => { close(); root.querySelector('[data-copy]').click(); } },
+                    { label: '📋 Copy HTML', then: 'copy', act: async (close, o) => { close(); if (o?.replay && !(await window.sweet({ icon: 'success', title: 'Your email is ready', text: 'Copy the HTML, then paste it into your email platform.', confirm: '📋 Copy HTML', cancel: 'Not now' }))) return; root.querySelector('[data-copy]').click(); } }, // (copying needs a click, so on arrival it's one more tap)
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
             },
             editorUrl: root.dataset.editorUrl || '', noun: 'email',
-            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched'); } catch { return false; } },
+            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch { return !!cloud.id; } },
             beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(E)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } },
         });
     }

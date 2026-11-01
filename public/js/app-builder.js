@@ -135,7 +135,9 @@
     });
     let draftAtRisk = false; // new pictures that this browser couldn't keep
     let saveSeq = 0; // only the newest save may point the draft at IndexedDB
+    let draftUnreadable = false; // the big draft in IndexedDB couldn't be read: don't write over the way to it
     const save = () => {
+        if (draftUnreadable) return;
         const seq = ++saveSeq;
         try { localStorage.setItem(STORE, JSON.stringify(D)); draftAtRisk = false; return; } catch {}
         const copy = JSON.parse(JSON.stringify(D));
@@ -1856,7 +1858,9 @@
     document.addEventListener('click', e => { $$('[data-add-block-prev], [data-add-page]').forEach(d => { if (d.open && !d.contains(e.target)) d.open = false; }); });
     drawTemplates();
     // every section on the left starts folded; the person opens the one they need
-    (inIdb ? idb('readonly', st => st.get('draft')).then(d => { if (d?.app) { D = d; tidy(); } }).catch(() => {}) : Promise.resolve())
+    // (window.OwlAppBuilder.ready: the draft — maybe a big one in IndexedDB — and its pictures are in)
+    window.OwlAppBuilder.ready = (inIdb ? idb('readonly', st => st.get('draft')).then(d => { if (d?.app) { D = d; tidy(); } })
+        .catch(() => { draftUnreadable = true; note('Your app saved in this browser couldn’t be opened just now. Reload the page to try again — nothing has been changed.'); }) : Promise.resolve())
         .then(() => Promise.all([loadLogo(), loadSplashPic()]))
         .then(() => { drawAll(); drawMine(); if (document.fonts?.ready) document.fonts.ready.then(drawPhone); });
     drawMine(); // (shows “My apps” to sign in when signed out)

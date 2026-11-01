@@ -75,8 +75,10 @@ class AppBuilder
         if (BuilderApp::where('package', $package)->when($app, fn ($q) => $q->whereKeyNot($app->id))->exists()) {
             return 'That app ID is already used by another app. Please pick a different one.';
         }
-        if ($app && $app->version_code > 0 && $app->package !== $package) {
-            return 'The app ID can’t change after the first build — Google Play treats a new ID as a different app.';
+        // (also while the first build is running, or once it has a signing key: that build is made with the old ID)
+        if ($app && $app->package !== $package && ($app->version_code > 0 || $app->keystore !== null
+            || $app->builds()->whereIn('status', ['queued', 'building'])->exists())) {
+            return 'The app ID can’t change once a build has started — Google Play treats a new ID as a different app.';
         }
 
         // The website is optional: it's needed only for tabs that show a page of it
@@ -547,6 +549,12 @@ class AppBuilder
     }
 
     /** Builds started by GitHub this calendar month (all accounts). */
+    /** The cache key counting this month's builds (kept even when apps and their builds are deleted). */
+    public static function monthKey(): string
+    {
+        return 'app-builds-month:'.now()->format('Y-m');
+    }
+
     public static function monthlyCount(): int
     {
         return BuilderAppBuild::where('created_at', '>=', now()->startOfMonth())->count();

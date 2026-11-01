@@ -55,7 +55,7 @@ class BuilderPublicController extends Controller
         // Sent from a builder page (e.g. an RSVP form): thank them with a link back to that page
         $back = $this->safeUrl($request->input('_back')) ?? $this->refererBack($request);
         $done = $back
-            ? redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303)
+            ? redirect()->to($this->sentUrl($form->id, $back), 303)
             : redirect()->route('builder.survey', ['id' => $form->id, 'sent' => 1] + ($embed ? ['embed' => 1] : []), 303);
         if (filled($request->input('_hp'))) { // bots fill the hidden field: pretend it worked
             return $done;
@@ -81,7 +81,7 @@ class BuilderPublicController extends Controller
         DB::table('builder_forms')->where('id', $form->id)->update(['submissions' => DB::raw('submissions + 1'), 'last_submission_at' => now()]);
 
         $ownerEmail = $form->account->email;
-        \Illuminate\Support\defer(function () use ($ownerEmail, $form, $response) {
+        $this->mayEmailOwner($form) && \Illuminate\Support\defer(function () use ($ownerEmail, $form, $response) {
             try {
                 Mail::to($ownerEmail)->send(new \App\Mail\BuilderSurveyResponse($form, $response));
             } catch (\Throwable $e) {
@@ -119,7 +119,7 @@ class BuilderPublicController extends Controller
         $back = $this->safeUrl($request->input('_back'));
         // A sign-up form (waitlist, "notify me") sends no message box; a contact form must have its message filled in
         $signup = ! $request->has('message');
-        $sent = redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back] + ($signup ? ['signup' => 1] : []), 303);
+        $sent = redirect()->to($this->sentUrl($form->id, $back, $signup), 303);
 
         // Bots fill the hidden field: pretend it worked
         if (filled($request->input('_hp'))) {
@@ -184,7 +184,7 @@ class BuilderPublicController extends Controller
         $nextUrl = $this->nextUrl($request->input('_next'), $request);
         $done = $nextUrl
             ? redirect()->away($nextUrl, 303)
-            : redirect()->route('builder.form.sent', ['id' => $form->id, 'back' => $back], 303);
+            : redirect()->to($this->sentUrl($form->id, $back), 303);
 
         // Bots fill the hidden field: pretend it worked
         if (filled($request->input('_hp'))) {
@@ -242,9 +242,10 @@ class BuilderPublicController extends Controller
 
         // The owner's email and the email tools run after the visitor has been sent on — no waiting on SMTP
         $ownerEmail = $form->account->email;
-        \Illuminate\Support\defer(function () use ($ownerEmail, $form, $lead, $site, $back) {
+        $mailOwner = $this->mayEmailOwner($form);
+        \Illuminate\Support\defer(function () use ($ownerEmail, $form, $lead, $site, $back, $mailOwner) {
             try {
-                Mail::to($ownerEmail)->send(new BuilderLeadMessage($form, $lead, $site, $back));
+                $mailOwner && Mail::to($ownerEmail)->send(new BuilderLeadMessage($form, $lead, $site, $back));
             } catch (\Throwable $e) {
                 report($e); // the lead is saved either way
             }
@@ -294,7 +295,10 @@ class BuilderPublicController extends Controller
         $variant = ($in['v'] ?? 'a') === 'b' ? 'b' : 'a';
 
         $site = BuilderSite::where('slug', $in['s'])->where('status', 'live')->first(['id', 'pages']);
-        if ($site && $site->hasPage($in['p'])) {
+        // one view per visitor (hashed IP, never stored) per step and version per day: reloads, and anyone hammering the
+        // counter, don't inflate a funnel's numbers
+        $seen = 'builder-fs-seen:'.sha1($request->ip().'|'.config('app.key').'|'.$in['s'].'|'.$in['p'].'|'.$variant.'|'.now()->toDateString());
+        if ($site && $site->hasPage($in['p']) && \Illuminate\Support\Facades\Cache::add($seen, 1, now()->endOfDay())) {
             try {
                 BuilderStat::bump($site->id, $in['p'], $variant, 'views');
             } catch (\Throwable $e) {
@@ -309,7 +313,10 @@ class BuilderPublicController extends Controller
     {
         $form = $this->form($id);
 
-        return response()->view('builder.sent', ['form' => $form, 'back' => $this->safeUrl($request->query('back')), 'signup' => $request->boolean('signup')])
+        // the "Back to the site" button only for a link we made (signed): a crafted ?back= can't borrow this page
+        $back = $request->hasValidSignature() ? $this->safeUrl($request->query('back')) : null;
+
+        return response()->view('builder.sent', ['form' => $form, 'back' => $back, 'signup' => $request->boolean('signup')])
             ->header('X-Robots-Tag', 'noindex');
     }
 
@@ -379,6 +386,22 @@ class BuilderPublicController extends Controller
      * Spam limits for one form: per visitor per hour and per form per day. True when over a limit; otherwise the
      * attempt is counted. Visitors are counted by a hash of their IP; the IP itself is never stored.
      */
+    /**
+     * Survey answers and leads are saved in the account either way; their emails to the owner stop at a cap per account
+     * per day and for everyone per hour, so one busy (or abused) account can't use up the mail server for all users.
+     */
+    private function mayEmailOwner(BuilderForm $form): bool
+    {
+        $account = 'builder-owner-mail:'.$form->builder_account_id;
+        if (RateLimiter::tooManyAttempts($account, 200) || RateLimiter::tooManyAttempts('builder-owner-mail-all', 400)) {
+            return false;
+        }
+        RateLimiter::hit($account, 86400);
+        RateLimiter::hit('builder-owner-mail-all', 3600);
+
+        return true;
+    }
+
     private function overLimit(string $name, BuilderForm $form, Request $request, int $perHour, int $perDay): bool
     {
         $ipKey = $name.':'.$form->id.':'.sha1($request->ip().'|'.config('app.key'));
@@ -414,6 +437,14 @@ class BuilderPublicController extends Controller
     }
 
     /** Only http(s) addresses are linked back to. */
+    /** The "Message sent" page, with its link back to the site signed (see sent()). */
+    private function sentUrl(string $formId, ?string $back, bool $signup = false): string
+    {
+        $signup = $signup ? ['signup' => 1] : [];
+
+        return $back ? \Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $formId, 'back' => $back] + $signup) : route('builder.form.sent', ['id' => $formId] + $signup);
+    }
+
     private function safeUrl(mixed $url): ?string
     {
         if (! is_string($url) || strlen($url) > 2000 || ! preg_match('#^https?://[^\s/]+#i', $url)) {
@@ -430,6 +461,12 @@ class BuilderPublicController extends Controller
      */
     private function nextUrl(mixed $url, Request $request): ?string
     {
+        // a downloaded funnel links its steps by file name ("thank-you.html"): resolve it against the page it was sent from
+        $referer = (string) $request->headers->get('referer');
+        if (is_string($url) && preg_match('~^[a-z0-9][a-z0-9._-]*(?:/[a-z0-9._-]+)*(?:\?[^#\s]*)?$~i', $url) && preg_match('~^(https?://[^/?#]+)(/[^?#]*)?~i', $referer, $m)) {
+            $dir = preg_replace('~/[^/]*$~', '/', $m[2] ?? '/') ?: '/';
+            $url = $m[1].$dir.$url;
+        }
         $url = $this->safeUrl($url);
         if (! $url) {
             return null;

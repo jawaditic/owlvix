@@ -107,4 +107,16 @@ class BuilderOrder extends Model
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
+
+    /**
+     * Where an email may send the customer back to: the shop's page only when it's on an Owlvix address (a page on
+     * the owner's own domain can't be told apart from a made-up one), else the order's receipt page on Owlvix.
+     */
+    public function emailBackUrl(): string
+    {
+        $host = strtolower((string) parse_url((string) $this->back, PHP_URL_HOST));
+        $ours = array_filter([strtolower((string) config('builder.domain')), strtolower((string) parse_url(config('app.url'), PHP_URL_HOST))]);
+
+        return $this->back && preg_match('#^https://#i', $this->back) && in_array($host, $ours, true) ? $this->back : route('shop.order', $this->token);
+    }
 }

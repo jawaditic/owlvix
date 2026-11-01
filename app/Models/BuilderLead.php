@@ -39,8 +39,10 @@ class BuilderLead extends Model
     {
         // Leads of funnels that have been unpublished or taken down for 90+ days. Leads of live funnels, and leads not
         // linked to a site (e.g. a downloaded funnel hosted elsewhere), stay until the owner's form is deleted.
+        // A form that's still collecting (e.g. the funnel moved to a new address) keeps all its leads, old ones included.
         return static::whereIn('builder_site_id', BuilderSite::select('id')
-            ->where('status', '!=', 'live')->where('updated_at', '<', now()->subDays(self::KEEP_DAYS_AFTER_REMOVAL)));
+            ->where('status', '!=', 'live')->where('updated_at', '<', now()->subDays(self::KEEP_DAYS_AFTER_REMOVAL)))
+            ->whereNotIn('builder_form_id', static::select('builder_form_id')->where('created_at', '>=', now()->subDays(self::KEEP_DAYS_AFTER_REMOVAL)));
     }
 
     public function toApi(): array

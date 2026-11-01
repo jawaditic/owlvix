@@ -106,7 +106,7 @@ class ShopController extends Controller
             }
             $code = Shop::discount($store, $data['_code']);
             $gift = $code ? null : Shop::giftCard($store, $data['_code']); // the same box takes a gift card
-            $sub = array_sum(array_map(fn ($l) => $l['price'] * $l['qty'], $lines));
+            $sub = array_sum(array_map(fn ($l) => $l['price'] * $l['qty'], $lines)) - Shop::giftLinesTotal($lines); // (codes are for goods, not gift cards)
             if ((! $code && ! $gift) || $code?->problem($sub, $store->currency)) {
                 RateLimiter::hit($tries, 600);
             }
@@ -132,14 +132,15 @@ class ShopController extends Controller
         }
 
         $card = $data['_pay'] === 'card';
-        // unpaid card orders hold stock: a few at a time from one place, so nobody can make a shop look sold out
+        // Every new order holds stock until it's paid (card: up to an hour; cash on delivery and bank transfer: until the
+        // owner deals with it), so only a few at a time from one place — nobody can make a shop look sold out.
         $holds = 'shop-holds:'.$store->id.':'.$request->ip();
-        if ($card && RateLimiter::tooManyAttempts($holds, 3)) {
-            return $this->problem($store, $back, ['You have unpaid orders waiting. Please finish paying for one of them, or try again in an hour.'], 429);
+        if (RateLimiter::tooManyAttempts($holds, 3)) {
+            return $this->problem($store, $back, [$card
+                ? 'You have unpaid orders waiting. Please finish paying for one of them, or try again in an hour.'
+                : 'You’ve placed several orders just now. If you need to change one, message the shop — or try again in an hour.'], 429);
         }
-        if ($card) {
-            RateLimiter::hit($holds, Shop::HOLD_MINUTES * 60);
-        }
+        RateLimiter::hit($holds, Shop::HOLD_MINUTES * 60);
         Shop::releaseExpired($store); // unpaid card orders that ran out of time give their stock back first
         try {
             $order = $this->placeOrder($store, $data, $lines, $totals, $back, $card, $country, $code, $gift);
@@ -228,6 +229,10 @@ class ShopController extends Controller
     public function pay(string $token)
     {
         $order = BuilderOrder::where('token', $token)->with('store')->firstOrFail();
+        // Paid already, but the tab closed before Stripe sent them back? Then "Pay now" must not replace that payment.
+        if (! $order->isPaid() && $order->stripe_session && self::checkPaid($order)) {
+            return redirect()->route('shop.order', $order->token, 303);
+        }
         Shop::releaseExpired($order->store);
         if ($order->fresh()->status === 'cancelled' && ! $order->isPaid()) {
             return redirect()->route('shop.order', ['token' => $order->token, 'r' => 'expired'], 303);
@@ -238,6 +243,13 @@ class ShopController extends Controller
         if (! $order->store->isActive() || ! ($mode = Shop::cardMode($order->store))) {
             return redirect()->route('shop.order', ['token' => $order->token, 'r' => 'off'], 303);
         }
+        // A new payment page keeps the stock held for a while longer — but only a few times per order, so an unpaid
+        // order can't keep stock away from other customers for ever
+        $renewals = 'shop-pay-again:'.$order->id;
+        if (RateLimiter::tooManyAttempts($renewals, 3)) {
+            return redirect()->route('shop.order', ['token' => $order->token, 'r' => 'error'], 303);
+        }
+        RateLimiter::hit($renewals, 86400);
         // one open Stripe page per order (no paying twice), and a fresh hold that outlasts it
         Shop::closeStripe($order);
         $order->update(['stripe_mode' => $mode, 'hold_until' => now()->addMinutes(Shop::HOLD_MINUTES)]);
@@ -446,9 +458,7 @@ class ShopController extends Controller
         $owner = $order->store->account->email;
         $receipt = self::mayEmailCustomer($order->store);
         if ($receipt) {
-            foreach (self::receiptLimits($order->store) as $key => [$max, $secs]) {
-                RateLimiter::hit($key, $secs);
-            }
+            self::countCustomerEmail($order->store);
         }
         \Illuminate\Support\defer(function () use ($owner, $order, $receipt) {
             try {
@@ -471,6 +481,14 @@ class ShopController extends Controller
     {
         return ['shop-receipts:'.$store->id => [self::RECEIPTS_PER_DAY, 86400], 'shop-receipts-acct:'.$store->builder_account_id => [self::RECEIPTS_PER_ACCOUNT_DAY, 86400],
             'shop-receipts-all' => [self::RECEIPTS_ALL_DAY, 86400]];
+    }
+
+    /** One more customer email sent for this shop (counts towards the daily limits above). */
+    public static function countCustomerEmail(BuilderStore $store): void
+    {
+        foreach (self::receiptLimits($store) as $key => [$max, $secs]) {
+            RateLimiter::hit($key, $secs);
+        }
     }
 
     /** Customer emails (receipt, "on its way") may go out for this shop now. */

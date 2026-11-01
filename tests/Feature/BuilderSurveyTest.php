@@ -216,9 +216,9 @@ class BuilderSurveyTest extends TestCase
 
         $page = 'https://sites.owlvix.com/emma-and-james';
         $this->post($form['action'], ['rname' => 'Ann', 'rcome' => 'Yes, I will be there', 'rguests' => '2', '_back' => $page])
-            ->assertRedirect(route('builder.form.sent', ['id' => $form['id'], 'back' => $page]));
+            ->assertRedirect(\Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $form['id'], 'back' => $page]));
         $this->assertSame(['rname' => 'Ann', 'rcome' => 'Yes, I will be there', 'rguests' => '2'], BuilderResponse::sole()->answers);
-        $this->get(route('builder.form.sent', ['id' => $form['id'], 'back' => $page]))->assertOk()
+        $this->get(\Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $form['id'], 'back' => $page]))->assertOk()
             ->assertSee('Can’t wait to see you!')->assertSee('href="'.$page.'"', false);
     }
 
@@ -243,7 +243,7 @@ class BuilderSurveyTest extends TestCase
                 ->assertSee('name="_back" value="'.$page.'"', false); // fixing the error still ends back on the page
         }
         $this->post($form['action'], ['rname' => 'Ann', 'rguests' => '3', '_back' => $page])->assertRedirect();
-        $this->get(route('builder.form.sent', ['id' => $form['id'], 'back' => $page]))->assertSee('<title>Thank you</title>', false)->assertSee('Back to the page');
+        $this->get(\Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $form['id'], 'back' => $page]))->assertSee('<title>Thank you</title>', false)->assertSee('Back to the page');
     }
 
     public function test_number_answers_accept_what_number_boxes_send(): void
@@ -280,7 +280,7 @@ class BuilderSurveyTest extends TestCase
         $form = $this->publish($this->signIn());
         $answer = ['name1' => 'Ann', 'mail1' => 'ann@example.com', 'come1' => 'Yes'];
         $this->withHeader('Referer', 'https://emma-and-james.com/')->post('/f/'.$form['id'], $answer)
-            ->assertRedirect(route('builder.form.sent', ['id' => $form['id'], 'back' => 'https://emma-and-james.com/']));
+            ->assertRedirect(\Illuminate\Support\Facades\URL::signedRoute('builder.form.sent', ['id' => $form['id'], 'back' => 'https://emma-and-james.com/']));
         // Answers sent from our own form page have nowhere else to go back to
         $this->withHeader('Referer', url('/form/'.$form['id']))->post('/f/'.$form['id'], $answer)
             ->assertRedirect(route('builder.survey', ['id' => $form['id'], 'sent' => 1]));

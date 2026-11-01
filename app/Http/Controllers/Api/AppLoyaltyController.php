@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\RateLimiter;
  */
 class AppLoyaltyController extends Controller
 {
-    private const WRONG_PER_HOUR = 12; // per card, all phones together
+    private const WRONG_PER_HOUR = 12; // per card, from one connection
+
+    private const WRONG_PER_HOUR_ALL = 150; // per card, everywhere together
 
     public function check(Request $request, string $id): JsonResponse
     {
@@ -29,12 +31,16 @@ class AppLoyaltyController extends Controller
         if (! is_string($hash)) {
             return response()->json(['ok' => false, 'error' => 'bad'], 404);
         }
-        $key = "app-loyalty:{$app->id}:{$card}";
-        if (RateLimiter::tooManyAttempts($key, self::WRONG_PER_HOUR)) {
+        // Wrong PINs lock the card for that phone's connection (one person can't lock out the shop's staff), with a far
+        // higher limit for the card overall, so guessing from many places at once still stops
+        $key = "app-loyalty:{$app->id}:{$card}:".sha1($request->ip().'|'.config('app.key'));
+        $all = "app-loyalty-all:{$app->id}:{$card}";
+        if (RateLimiter::tooManyAttempts($key, self::WRONG_PER_HOUR) || RateLimiter::tooManyAttempts($all, self::WRONG_PER_HOUR_ALL)) {
             return response()->json(['ok' => false, 'error' => 'locked'], 429);
         }
         if (! hash_equals($hash, hash('sha256', $card.':'.$pin))) {
             RateLimiter::hit($key, 3600);
+            RateLimiter::hit($all, 3600);
 
             return response()->json(['ok' => false, 'error' => 'wrong'], 422);
         }

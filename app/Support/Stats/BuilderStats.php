@@ -15,13 +15,19 @@ class BuilderStats
 {
     public const EVENTS = ['open', 'design', 'save', 'publish', 'export'];
 
+    /** The gallery's design keys (EXAMPLES, FUNNELS and KITS in public/js/builder-engine.js): others count as "examples". */
+    public const DESIGNS = ['agency', 'dental', 'restaurant', 'course', 'realestate', 'services', 'salon', 'fitness', 'cleaning', 'accounting',
+        'leadmagnet', 'webinar', 'launch', 'tripwire', 'consult', 'business', 'clinic', 'trades', 'photographer', 'designer', 'developer', 'artist',
+        'creator', 'musician', 'shop', 'coach', 'wedding', 'birthday', 'conference', 'babyshower', 'cafe', 'pizzeria', 'foodtruck', 'sushi', 'curry',
+        'burger', 'bar', 'fashion', 'bakery', 'beauty', 'handmade', 'coffee', 'florist', 'pets', 'jewellery', 'maintenance', 'waitlist', 'opening'];
+
     private const SEARCH = '/(^|\.)(google|bing|duckduckgo|yahoo|ecosia|yandex|baidu|brave|startpage)\./';
 
     /** Turn what the browser sends (a path on this site, "ext:host", "design:key" or "direct") into a source. */
     public static function source(string $from): string
     {
         if (preg_match('/^design:([a-z0-9]{1,30})$/', $from, $m)) {
-            return 'design:'.$m[1];
+            return in_array($m[1], self::DESIGNS, true) ? 'design:'.$m[1] : 'examples'; // (made-up keys can't add rows)
         }
         if (str_starts_with($from, 'ext:')) {
             return preg_match(self::SEARCH, strtolower(substr($from, 4))) ? 'search' : 'other';

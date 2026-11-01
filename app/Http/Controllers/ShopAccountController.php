@@ -29,6 +29,7 @@ class ShopAccountController extends Controller
 
     public function code(Request $request, string $id)
     {
+        $this->sameSite($request);
         $store = $this->store($id);
         $email = strtolower(trim((string) $request->input('email')));
         if (! filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 150) {
@@ -43,6 +44,7 @@ class ShopAccountController extends Controller
         if ($store->orders()->where('email', $email)->exists()) {
             $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             Cache::put('shop-acct-code:'.$store->id.':'.sha1($email), ['hash' => hash('sha256', $code), 'tries' => 0], now()->addMinutes(self::CODE_MINUTES));
+            \Illuminate\Support\Facades\RateLimiter::clear('shop-acct-guess:'.$store->id.':'.sha1($email)); // a new code: 5 new guesses
             try {
                 Mail::to($email)->send(new \App\Mail\BuilderShopSignIn($store, $code));
             } catch (\Throwable $e) {
@@ -56,6 +58,7 @@ class ShopAccountController extends Controller
 
     public function verify(Request $request, string $id)
     {
+        $this->sameSite($request);
         $store = $this->store($id);
         $email = $request->session()->get($this->pendingKey($store));
         if (! $email) {
@@ -64,7 +67,11 @@ class ShopAccountController extends Controller
         $cacheKey = 'shop-acct-code:'.$store->id.':'.sha1($email);
         $saved = Cache::get($cacheKey);
         $code = preg_replace('/\D/', '', (string) $request->input('code'));
-        if (! $saved || $saved['tries'] >= 5 || ! hash_equals($saved['hash'], hash('sha256', $code))) {
+        // 5 guesses per code, counted with an atomic counter (guesses sent all at once can't slip past it)
+        $guesses = 'shop-acct-guess:'.$store->id.':'.sha1($email);
+        $tooMany = \Illuminate\Support\Facades\RateLimiter::tooManyAttempts($guesses, 5);
+        \Illuminate\Support\Facades\RateLimiter::hit($guesses, self::CODE_MINUTES * 60);
+        if (! $saved || $tooMany || $saved['tries'] >= 5 || ! hash_equals($saved['hash'], hash('sha256', $code))) {
             if ($saved) {
                 Cache::put($cacheKey, ['hash' => $saved['hash'], 'tries' => $saved['tries'] + 1], now()->addMinutes(self::CODE_MINUTES));
             }
@@ -72,6 +79,7 @@ class ShopAccountController extends Controller
             return $this->page($store, ['step' => 'code', 'pending' => $email, 'error' => $saved && $saved['tries'] < 4 ? 'That code isn’t right. Please check the email.' : 'That code has expired. Please ask for a new one.'], 422);
         }
         Cache::forget($cacheKey);
+        \Illuminate\Support\Facades\RateLimiter::clear($guesses);
         $request->session()->forget($this->pendingKey($store));
         $request->session()->regenerate();
         $request->session()->put($this->key($store), $email);
@@ -81,6 +89,7 @@ class ShopAccountController extends Controller
 
     public function logout(Request $request, string $id)
     {
+        $this->sameSite($request);
         $store = $this->store($id);
         $request->session()->forget([$this->key($store), $this->pendingKey($store)]);
 
@@ -108,5 +117,15 @@ class ShopAccountController extends Controller
         return response()->view('builder.shop-account', $data + ['store' => $store, 'email' => null, 'orders' => collect(), 'error' => null,
             'pending' => session()->get($this->pendingKey($store))], $status)
             ->header('X-Robots-Tag', 'noindex, nofollow')->header('Cache-Control', 'no-store');
+    }
+
+    /**
+     * The shop/* routes skip Laravel's CSRF check (checkout is posted from published pages on another site), but these
+     * sign-in forms are on owlvix.com and use the session, so they check the form's token themselves.
+     */
+    private function sameSite(Request $request): void
+    {
+        $token = $request->input('_token');
+        abort_unless(is_string($token) && hash_equals((string) $request->session()->token(), $token), 419);
     }
 }

@@ -359,6 +359,18 @@ class Shop
         return collect($lines)->contains(fn ($l) => ($l['kind'] ?? 'item') === 'item');
     }
 
+    /** The gift cards an order made stop working (it was cancelled, refunded or marked unpaid). Returns how many. */
+    public static function voidGiftCards(BuilderOrder $order): int
+    {
+        return BuilderGiftCard::where('builder_order_id', $order->id)->where('balance', '>', 0)->update(['balance' => 0, 'updated_at' => now()]);
+    }
+
+    /** What the gift-card lines in a cart come to (smallest unit). */
+    public static function giftLinesTotal(array $lines): int
+    {
+        return array_sum(array_map(fn ($l) => ($l['kind'] ?? 'item') === 'gift' ? $l['price'] * $l['qty'] : 0, $lines));
+    }
+
     /**
      * Subtotal, discount, delivery fee, tax and total (smallest unit) for these lines.
      *
@@ -368,12 +380,16 @@ class Shop
     {
         $s = $store->settings ?? [];
         $sub = array_sum(array_map(fn ($l) => $l['price'] * $l['qty'], $lines));
+        // Gift cards are sold at face value: discount codes, free-delivery thresholds and tax are for goods only
+        // (a card is taxed when it's spent, not when it's bought)
+        $cards = self::giftLinesTotal($lines);
+        $goods = $sub - $cards;
         $off = match ($code?->kind) {
-            'percent' => intdiv($sub * min(100, $code->value), 100),
-            'amount' => min($code->value, $sub),
+            'percent' => intdiv($goods * min(100, $code->value), 100),
+            'amount' => min($code->value, $goods),
             default => 0,
         };
-        $after = $sub - $off;
+        $after = $goods - $off;
         $fee = 0;
         if ($delivery === 'delivery' && self::ships($lines) && ($zone = self::zone($store, $country))) {
             $fee = $code?->kind === 'shipping' || ($zone['free_over'] > 0 && $after >= $zone['free_over']) ? 0 : (int) $zone['fee'];
@@ -383,7 +399,7 @@ class Shop
         $base = $after + (! empty($s['tax_ship']) ? $fee : 0);
         $tax = $rate > 0 ? ($incl ? $base - (int) round($base / (1 + $rate / 100)) : (int) round($base * $rate / 100)) : 0;
 
-        $total = $after + $fee + ($incl ? 0 : $tax);
+        $total = $after + $cards + $fee + ($incl ? 0 : $tax);
         $giftAmount = $gift ? min($gift->balance, $total) : 0; // a gift card pays what it can; the rest is paid as usual
 
         return ['subtotal' => $sub, 'discount' => $off, 'delivery_fee' => $fee, 'tax' => $tax, 'tax_included' => $incl, 'gift_amount' => $giftAmount, 'total' => $total - $giftAmount];
@@ -465,7 +481,15 @@ class Shop
                 $store->discounts()->where('code', $order->discount_code)->increment('uses');
             }
             if ($order->gift_code && $order->gift_amount && ($card = $store->giftCards()->where('code', $order->gift_code)->lockForUpdate()->first())) {
+                // Paid after it was cancelled, and the card was spent elsewhere meanwhile: take what's left, and tell the
+                // owner (on the order) what's still owed — the same money can't be spent twice
+                $short = max(0, $order->gift_amount - $card->balance);
                 $card->update(['balance' => max(0, $card->balance - $order->gift_amount)]);
+                if ($short > 0) {
+                    $line = '[Owlvix] Paid after it was cancelled. Gift card '.$order->gift_code.' had been used elsewhere meanwhile: '.$order->money($short).' of this order is still owed.';
+                    BuilderOrder::whereKey($order->id)->update(['note' => trim(($order->note ? $order->note."\n\n" : '').$line)]);
+                    $order->note = trim(($order->note ? $order->note."\n\n" : '').$line);
+                }
             }
         });
         $order->stock_taken = true;
@@ -517,6 +541,7 @@ class Shop
         if (! BuilderOrder::whereKey($order->id)->whereNull('reminded_at')->update(['reminded_at' => now()])) {
             return;
         }
+        \App\Http\Controllers\ShopController::countCustomerEmail($store); // anyone can start an order with any address
         try {
             \Illuminate\Support\Facades\Mail::to($order->email)->send(new \App\Mail\BuilderOrderReminder($order->fresh(), $store->account->email));
         } catch (\Throwable $e) {

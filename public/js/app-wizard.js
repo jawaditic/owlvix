@@ -12,6 +12,7 @@
         const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
         const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
         const OFF = 'owlvix-app-banner-off'; // set when the visitor finishes the wizard or says they'd rather use the full builder
+        const made = () => { try { return !!localStorage.getItem(OFF + '-made'); } catch { return false; } }; // finished the quick setup
         const banner = document.querySelector('[data-wz-banner]');
 
         const EMOJI = { restaurant: '🍽️', cafe: '☕', salon: '💇', gym: '🏋️', shop: '🛍️', clinic: '🩺', realestate: '🏡', events: '🎟️', agency: '💼', church: '⛪', school: '🎓', hotel: '🏨' };
@@ -86,7 +87,7 @@
             {
                 title: 'What kind of business is it?', sub: 'We’ll start you with pages made for it — you can change everything.',
                 draw: () => {
-                    const keep = B.current() || applied || kind === 'keep';
+                    const keep = B.current() || applied || kind === 'keep' || B.hasContent();
                     return `<div class="wz-grid wz-grid--types">${keep ? `<button type="button" class="wz-card" data-kind="keep" aria-pressed="${kind === 'keep'}"><span class="wz-card__em">✅</span><b>Keep my app</b><small>Update what’s there</small></button>` : ''}
                         ${B.templates.map((t, i) => `<button type="button" class="wz-card" data-kind="${t.id}" aria-pressed="${kind === t.id}" style="--i:${i + (keep ? 1 : 0)}"><span class="wz-card__em">${EMOJI[t.id] || '📱'}</span><b>${esc(t.name)}</b><small>${esc(t.note)}</small></button>`).join('')}</div>`;
                 },
@@ -171,7 +172,7 @@
             root.classList.remove('ab-reveal');
             fromBanner = !!banner && !banner.hidden; finished = false;
             hideBanner(false);
-            step = 0; kind = B.current() || applied ? 'keep' : null; drop = new Set(); // (opened again: keep what's there unless they pick another)
+            step = 0; kind = B.current() || applied || made() ? 'keep' : null; drop = new Set(); // (opened again: keep what's there unless they pick another)
             box = document.createElement('div');
             box.className = 'wz' + (still() ? ' wz--still' : '');
             box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'wz-title');
@@ -201,6 +202,7 @@
         const leave = async then => {
             if (!editorUrl || !(await B.keepDraft().catch(() => false))) return false;
             $('[data-wz-step]', box)?.insertAdjacentHTML('beforeend', '<p class="wz-leaving" role="status">Opening the editor…</p>');
+            if (then) { try { sessionStorage.setItem('owlvix-then', new URL(editorUrl, location.href).pathname + '#' + then); } catch {} }
             location.assign(editorUrl + (then ? '#then=' + then : ''));
             return true;
         };
@@ -246,7 +248,7 @@
         /* ---------- the finish: a short "building" moment, then the app to tap through ---------- */
         const finish = () => {
             finished = true;
-            try { localStorage.setItem(OFF, '1'); } catch {} // they've made their app: from now on the page opens on the builder
+            try { localStorage.setItem(OFF, '1'); localStorage.setItem(OFF + '-made', '1'); } catch {} // they've made their app: from now on the page opens on the builder
             const tasks = ['Laying out your pages', 'Painting your colours', 'Drawing your icon', 'Polishing the animations'];
             // the step counter becomes a "Done" button that closes the wizard (like ✕ or Keep editing)
             $('[data-wz-count]', box).innerHTML = '<button type="button" class="wz__done" data-wz-close>✓ Done</button>';
@@ -376,7 +378,7 @@
         };
         banner?.addEventListener('click', e => {
             if (e.target.closest('[data-wz-start]')) open();
-            else if (e.target.closest('[data-wzb-no]')) { try { localStorage.setItem(OFF, '1'); } catch {} hideBanner(); setTimeout(() => root.scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }), 60); }
+            else if (e.target.closest('[data-wzb-no]')) { try { localStorage.setItem(OFF, '1'); if (banner.classList.contains('wzb--back')) sessionStorage.setItem(OFF + '-back', '1'); } catch {} hideBanner(); setTimeout(() => root.scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }), 60); }
         });
         const actions = root.querySelector('.fb-top__actions');
         if (actions && !actions.querySelector('[data-wz-open]')) actions.insertAdjacentHTML('afterbegin', '<button type="button" class="btn btn--sm btn--ghost wz-open" data-wz-open>✨ Quick setup</button>');
@@ -406,13 +408,15 @@
             }, 4200);
         }
         // the banner shows while no saved app is open, until the visitor says no thanks
-        if (location.hash === '#then=save') { // "Save my app" pressed on the main page: do it here
+        if (location.hash === '#then=save') { // "Save my app" pressed on the main page: do it here, once the draft is in
             try { history.replaceState(history.state, '', location.pathname + location.search); } catch {}
-            setTimeout(() => B.save(), 600);
+            let handed = ''; try { handed = sessionStorage.getItem('owlvix-then') || ''; sessionStorage.removeItem('owlvix-then'); } catch {}
+            if (!editorUrl && handed === location.pathname + '#save') (B.ready || Promise.resolve()).then(() => B.save());
         }
-        let off = false; try { off = !!localStorage.getItem(OFF); } catch {}
-        // Back on the main page with an app in this browser: the same banner, welcoming them back, with "Resume" first
-        if (banner && editorUrl && (off || B.state().id)) {
+        let off = false, backOff = false; try { off = !!localStorage.getItem(OFF); backOff = !!sessionStorage.getItem(OFF + '-back'); } catch {}
+        // Back on the main page with an app of their own (made with the quick setup, or saved): the same banner,
+        // welcoming them back, with "Resume" first. Not after "no thanks" alone, nor after "edit it here" this visit.
+        if (banner && editorUrl && !backOff && (made() || B.state().id)) {
             banner.classList.add('wzb--back');
             const set = (sel, html) => { const el = banner.querySelector(sel); if (el) el.innerHTML = html; };
             set('.wzb__pill', '<i aria-hidden="true"></i>Saved in this browser');

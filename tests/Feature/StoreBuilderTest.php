@@ -79,12 +79,55 @@ class StoreBuilderTest extends TestCase
         return BuilderStore::find($id);
     }
 
+    private int $buyer = 0;
+
+    /** An order from the shop page. Cash and bank orders come from a new address each time (each order holds stock and
+     * only 3 at a time may come from one place — see the test for that limit). Card orders and code-guessing tests
+     * keep one address. */
     private function order(BuilderStore $store, array $cart, array $extra = [])
     {
+        if (($extra['_pay'] ?? 'cod') !== 'card' && ! str_starts_with((string) ($extra['_code'] ?? ''), 'GUESS')) {
+            $this->withServerVariables(['REMOTE_ADDR' => '10.0.'.intdiv(++$this->buyer, 250).'.'.($this->buyer % 250 + 1)]);
+        }
+
         return $this->post('/shop/'.$store->id, $extra + [
             'name' => 'Ann Buyer', 'email' => 'Ann@Example.com', 'phone' => '+1 555 0199', 'address' => "1 High St\nTown",
             '_delivery' => 'delivery', '_pay' => 'cod', '_cart' => json_encode($cart), '_back' => 'https://localhost/p/thread/shop',
         ]);
+    }
+
+    public function test_cash_orders_from_one_place_are_limited_too(): void
+    {
+        $store = $this->store();
+        foreach ([1, 2, 3] as $i) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])->post('/shop/'.$store->id, [
+                'name' => 'Ann', 'email' => 'ann@example.com', 'phone' => '+1 555 0199', 'address' => '1 High St', '_delivery' => 'delivery', '_pay' => 'cod',
+                '_cart' => json_encode([['id' => 'bag1', 'qty' => 1]]),
+            ])->assertRedirect();
+        }
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])->post('/shop/'.$store->id, [
+            'name' => 'Ann', 'email' => 'ann@example.com', 'phone' => '+1 555 0199', 'address' => '1 High St', '_delivery' => 'delivery', '_pay' => 'cod',
+            '_cart' => json_encode([['id' => 'bag1', 'qty' => 1]]),
+        ])->assertStatus(429)->assertSee('placed several orders');
+        $this->assertSame(3, $store->orders()->count());
+    }
+
+    public function test_stock_of_choices_that_change_shape_starts_sold_out(): void
+    {
+        $token = $this->token();
+        $store = $this->store($token);
+        $shop = $this->shop();
+        $shop['products'][0] = ['id' => 'tee1', 'name' => 'Classic tee', 'price' => '24.50', 'opt' => 'Size', 'vars' => [['id' => 'vs', 'name' => 'S', 'price' => ''], ['id' => 'vm', 'name' => 'M', 'price' => '']], 'sold' => false];
+        $this->api($token)->postJson('/builder/stores', ['id' => $store->id] + $shop)->assertOk();
+        $this->api($token)->postJson('/builder/stores/'.$store->id.'/stock', ['stock' => ['tee1:vs' => 5, 'tee1:vm' => 3]])->assertOk();
+        // the sizes get colours: "tee1:vs" becomes "tee1:vs_cr" and "tee1:vs_cb"
+        $shop['products'][0] += ['opt2' => 'Colour', 'vars2' => [['id' => 'cr', 'name' => 'Red'], ['id' => 'cb', 'name' => 'Blue']]];
+        $r = $this->api($token)->postJson('/builder/stores', ['id' => $store->id] + $shop)->assertOk();
+        $this->assertSame(['Classic tee'], $r->json('stock_reset'));
+        $stock = $store->fresh()->stock;
+        $this->assertSame(0, $stock['tee1:vs_cr']);     // tracked, sold out until the owner sets it — never unlimited
+        $this->assertSame(0, $stock['tee1:vm_cb']);
+        $this->assertArrayNotHasKey('tee1:vs', $stock);
     }
 
     private function saveKeys(): void
@@ -200,10 +243,11 @@ class StoreBuilderTest extends TestCase
         $this->assertFalse($this->api($token)->getJson('/builder/stores/'.$store->id)->json('store.card_ready')); // not connected yet
 
         // connect the owner's Stripe account (the app builder's callback, back to the store builder)
-        $url = $this->api($token)->postJson('/builder/stores/'.$store->id.'/stripe/connect', ['mode' => 'test'])->assertOk()->json('url');
-        parse_str(parse_url($url, PHP_URL_QUERY), $q);
+        $res = $this->api($token)->postJson('/builder/stores/'.$store->id.'/stripe/connect', ['mode' => 'test'])->assertOk();
+        $nonce = collect($res->headers->getCookies())->firstWhere(fn ($c) => $c->getName() === 'owl_stripe')->getValue();
+        parse_str(parse_url($res->json('url'), PHP_URL_QUERY), $q);
         Http::fake(['connect.stripe.com/oauth/token' => Http::response(['stripe_user_id' => 'acct_1ShopOwner'])]);
-        $this->get('/builder/stripe/callback?state='.$q['state'].'&code=ac_1')->assertRedirect('/online-store-builder?stripe=connected-test');
+        $this->withUnencryptedCookie('owl_stripe', $nonce)->get('/builder/stripe/callback?state='.$q['state'].'&code=ac_1')->assertRedirect('/online-store-builder?stripe=connected-test');
         $this->assertSame('acct_1ShopOwner', $store->fresh()->stripe_test_account);
         $this->assertStringNotContainsString('acct_1ShopOwner', (string) DB::table('builder_stores')->value('stripe_test_account'));
         $this->assertTrue($this->api($token)->getJson('/builder/stores/'.$store->id)->json('store.card_ready'));
@@ -689,15 +733,16 @@ class StoreBuilderTest extends TestCase
         $this->order($store, [['id' => 'ebook', 'qty' => 1]]);
         $this->get("/shop/{$store->id}/account")->assertOk()->assertSee('Send my code');
         // a stranger's address: same answer, no email
-        $this->post("/shop/{$store->id}/account/code", ['email' => 'nobody@example.com'])->assertRedirect();
+        $this->post("/shop/{$store->id}/account/code", ['email' => 'nobody@example.com'])->assertStatus(419); // no form token: refused
+        $this->withSession(['_token' => 'tok'])->post("/shop/{$store->id}/account/code", ['_token' => 'tok', 'email' => 'nobody@example.com'])->assertRedirect();
         Mail::assertNotSent(\App\Mail\BuilderShopSignIn::class);
         $this->get("/shop/{$store->id}/account")->assertSee('If <b>nobody@example.com</b> has ordered', false);
-        $this->post("/shop/{$store->id}/account/logout");
-        $this->post("/shop/{$store->id}/account/code", ['email' => 'ANN@example.com'])->assertRedirect();
+        $this->withSession(['_token' => 'tok'])->post("/shop/{$store->id}/account/logout", ['_token' => 'tok']);
+        $this->withSession(['_token' => 'tok'])->post("/shop/{$store->id}/account/code", ['_token' => 'tok', 'email' => 'ANN@example.com'])->assertRedirect();
         $code = null;
         Mail::assertSent(\App\Mail\BuilderShopSignIn::class, function ($m) use (&$code) { $code = $m->code; return $m->hasTo('ann@example.com'); });
-        $this->post("/shop/{$store->id}/account/verify", ['code' => '000000' === $code ? '111111' : '000000'])->assertStatus(422)->assertSee('isn’t right');
-        $this->post("/shop/{$store->id}/account/verify", ['code' => $code])->assertRedirect(route('shop.account', $store->id));
+        $this->withSession(['_token' => 'tok'])->post("/shop/{$store->id}/account/verify", ['_token' => 'tok', 'code' => '000000' === $code ? '111111' : '000000'])->assertStatus(422)->assertSee('isn’t right');
+        $this->withSession(['_token' => 'tok'])->post("/shop/{$store->id}/account/verify", ['_token' => 'tok', 'code' => $code])->assertRedirect(route('shop.account', $store->id));
         $this->get("/shop/{$store->id}/account")->assertSee('#1001')->assertSee('Recipe e-book')->assertSee(BuilderOrder::first()->receiptUrl(), false);
     }
 

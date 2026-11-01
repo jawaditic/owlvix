@@ -51,9 +51,11 @@ class BuilderShowcaseTest extends TestCase
         $this->withSession(['is_admin' => true])->post("/admin/builder/sites/{$site->id}/showcase", ['act' => 'approve'])->assertRedirect();
         $this->get('/examples')->assertSee('Made with Owlvix')->assertSee('Golden Crust Bakery')->assertSee('Online store')->assertSee($site->url(), false);
 
-        // publishing again without the box ticked keeps it; unticking takes it off the gallery
+        // publishing again (new content) sends it back to the admin to look at, and off the gallery until then
         $this->publish($token, ['kind' => 'store'])->assertOk();
-        $this->assertSame('yes', $site->fresh()->showcase);
+        $this->assertSame('asked', $site->fresh()->showcase);
+        $this->get('/examples')->assertDontSee('Golden Crust Bakery');
+        // unticking takes it out of the queue
         $this->publish($token, ['kind' => 'store', 'showcase' => false])->assertOk();
         $this->assertNull($site->fresh()->showcase);
         $this->get('/examples')->assertDontSee('Made with Owlvix');

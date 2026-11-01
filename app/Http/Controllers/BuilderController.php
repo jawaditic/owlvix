@@ -168,13 +168,14 @@ class BuilderController extends Controller
             return $this->fail('You’ve published a lot in the last hour. Please wait a little and try again.', 429);
         }
 
+        RateLimiter::hit('builder-publish:'.$account->id, 3600); // every attempt counts, also ones that fail the checks below
         $data = $this->check($request, [
             'slug' => ['required', 'string', 'regex:/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/'],
             'name' => ['required', 'string', 'max:100'],
             'pages' => ['required', 'array', 'min:1', 'max:10'],
             'pages.*.slug' => ['required', 'string', 'distinct', 'regex:/^[a-z0-9-]{1,40}$/', 'not_in:report'],
             'pages.*.title' => ['required', 'string', 'max:80'],
-            'pages.*.html' => ['required', 'string'],
+            'pages.*.html' => ['required', 'string', 'max:'.BuilderHtml::MAX_BYTES],
             'kind' => ['nullable', 'string', 'in:'.implode(',', array_keys(BuilderSite::KINDS))],
             'showcase' => ['sometimes', 'boolean'],
         ], [
@@ -192,6 +193,7 @@ class BuilderController extends Controller
             'pages.*.title.required' => 'Every page needs a title.',
             'pages.*.title.max' => 'Please keep page titles under 80 characters.',
             'pages.*.html.required' => 'One of your pages is empty.',
+            'pages.*.html.max' => 'One of your pages is too big (over 2.5 MB). Try smaller images.',
         ]);
         if ($data instanceof JsonResponse) {
             return $data;
@@ -224,8 +226,6 @@ class BuilderController extends Controller
                 return $this->fail('“'.$page['title'].'”: '.$problem, 422);
             }
         }
-        RateLimiter::hit('builder-publish:'.$account->id, 3600);
-
         $pages = array_map(fn ($p) => ['slug' => $p['slug'], 'title' => trim($p['title'])], array_values($data['pages']));
         $site = DB::transaction(function () use ($site, $account, $slug, $data, $pages) {
             $site ??= new BuilderSite(['slug' => $slug]);
@@ -246,6 +246,11 @@ class BuilderController extends Controller
                     $site->showcase = 'asked';
                     $site->showcase_at = now();
                 }
+            }
+            // A featured site that changes goes back to the admin to look at again (it leaves /examples until then)
+            if ($site->exists && $site->showcase === 'yes') {
+                $site->showcase = 'asked';
+                $site->showcase_at = now();
             }
             $site->save();
 
@@ -421,6 +426,10 @@ class BuilderController extends Controller
     public static function csvCell(mixed $value): string
     {
         $value = (string) $value;
+        // phone numbers ("+44 7911 123456") and plain numbers ("-5") can't run as formulas: keep them as they are
+        if (preg_match('/^[+-]?[\d\s().-]+$/', $value) && preg_match('/\d/', $value)) {
+            return $value;
+        }
 
         return $value !== '' && in_array($value[0], ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$value : $value;
     }
