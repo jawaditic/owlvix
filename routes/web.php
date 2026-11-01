@@ -68,6 +68,7 @@ Route::view('/coming-soon-page-builder', 'tools.kit-builder', ['kit' => 'soon'])
 Route::view('/event-website-builder', 'tools.kit-builder', ['kit' => 'event'])->name('event-website-builder');
 Route::view('/restaurant-menu-builder', 'tools.kit-builder', ['kit' => 'menu'])->name('menu-builder');
 Route::view('/online-store-builder', 'tools.kit-builder', ['kit' => 'store'])->name('store-builder');
+Route::view('/how-to-sell-online', 'guides.sell-online')->name('guide.sell-online');
 Route::view('/mobile-app-builder', 'tools.app-builder')->name('app-builder');
 Route::post('/tech-stack-detector', [\App\Http\Controllers\FreeToolsController::class, 'tech'])->middleware('throttle:8,1,tool-tech')->name('tech-stack.run');
 Route::post('/security-checker', [\App\Http\Controllers\FreeToolsController::class, 'security'])->middleware('throttle:8,1,tool-security')->name('security-checker.run');

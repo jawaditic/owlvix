@@ -3636,3 +3636,14 @@ h2.fb-sub { text-align: left; margin-bottom: 0; font-family: Inter, sans-serif; 
 .lpb-review p { margin: 0; color: var(--text); }
 .lpb-review small { color: var(--muted); }
 .lpb-review.is-off { opacity: .6; }
+
+/* Guides (resources/views/guides) */
+.guide__cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin: 28px 0; padding: 18px 20px; }
+.guide__cta b { display: block; font-size: 1.05rem; }
+.guide__cta span { color: var(--muted); font-size: .92rem; }
+.guide__steps { list-style: none; margin: 24px 0 0; padding: 0; counter-reset: none; }
+.guide__steps > li { margin: 0; padding: 4px 0 4px; }
+.guide__steps h2 { display: flex; align-items: center; gap: 12px; }
+.guide__n { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--green); color: #04130b; font-size: 1rem; font-weight: 800; }
+.lpb-guide-link { margin: -8px 0 0; font-size: .95rem; color: var(--muted); }
+.lpb-guide-link a { color: var(--green); font-weight: 600; }

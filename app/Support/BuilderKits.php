@@ -102,6 +102,7 @@ class BuilderKits
                 'description' => 'Build a free online store: product pages, a shopping cart and checkout with card payments (Stripe), cash on delivery or bank transfer. Orders are emailed to you.',
                 'h1' => 'Start selling with a <span class="accent">free online store</span>',
                 'lead' => 'Pick a clothing, bakery, beauty or gift shop, add your products and prices, and switch on checkout. Customers add to cart and pay by card, cash on delivery or bank transfer — every order is emailed to you.',
+                'guide' => 'guide.sell-online', // "New to selling online?" link under the hero
                 'cta' => ['Ready for a bigger store?', 'We build online stores with stock tracking, discount codes, shipping rules and your own domain. Start free: we design the first version at no cost.'],
                 'faq' => [
                     ['Is the online store builder really free?', 'Yes. Build your shop, publish it free on sites.owlvix.com and take orders. Cash on delivery and bank transfer cost nothing. Card payments go through your own Stripe account, so Stripe’s normal card fee applies.'],
