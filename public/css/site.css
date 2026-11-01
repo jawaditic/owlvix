@@ -3129,7 +3129,8 @@ html.ab-full-open { overflow: hidden; }
 .ab .live-err, .lpb-dialog .live-err { color: var(--danger-ink) !important; font-weight: 600; }
 /* ---------- Phone menu: a full-height panel; Free builders / Free tools fold open; ☰ turns into ✕ ---------- */
 @media (max-width: 760px) {
-    html.nav-open { overflow: hidden; }
+    /* lock the page on body, not html: with html locked, body (overflow-x: hidden) becomes its own scroller and the sticky header scrolls away */
+    html.nav-open body { overflow: hidden; }
     /* .nav's blur makes it the frame for fixed children, so the panel hangs below it at full screen height */
     .nav__links { gap: 0; height: calc(100dvh - 68px); overflow-y: auto; overscroll-behavior: contain; padding: 6px 16px calc(20px + env(safe-area-inset-bottom)); border-bottom: 0; }
     .nav__links.is-open { animation: nav-in .22s cubic-bezier(.2, .8, .2, 1); }
