@@ -28,6 +28,7 @@ export const FILES = [
     'js/builder-wizard.js',
     'js/builder-account.js',
     'js/phone-field.js',
+    'js/examples.js',
 ];
 
 for (const file of FILES) {

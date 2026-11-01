@@ -59,4 +59,18 @@ class GuidePagesTest extends TestCase
     {
         $this->get(route('landing-builder'))->assertOk()->assertDontSee('lpb-guide-link', false);
     }
+
+    public function test_the_example_designs_gallery(): void
+    {
+        $html = $this->get('/examples')->assertOk()
+            ->assertSee('<title>Free Website, Shop &amp; Page Designs', false)
+            ->assertSee('js/examples', false)->assertSee('js/builder-engine', false)
+            ->getContent();
+        foreach (['store', 'website', 'menu', 'event', 'portfolio', 'links', 'soon', 'landing', 'funnel'] as $kind) {
+            $this->assertStringContainsString('data-examples="'.$kind.'"', $html);
+        }
+        $this->get('/sitemap.xml')->assertSee(route('examples'), false);
+        $this->get(route('home'))->assertSee('href="'.route('examples').'"', false); // in the Free builders menu
+        $this->assertStringContainsString('https://owlvix.com/examples', file_get_contents(public_path('llms.txt')));
+    }
 }

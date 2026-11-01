@@ -43,6 +43,16 @@
         try { localStorage.setItem(STORE + '-broken', localStorage.getItem(STORE) || ''); } catch {} // keep it, just in case
         P = null;
     }
+    // ?design=key (the "Use this design" links on /examples): open on that ready design. Work someone has already
+    // edited is never replaced without asking (see the start, below).
+    const DESIGN = (() => { const k = new URLSearchParams(location.search).get('design'); return k && Object.hasOwn(EXAMPLES, k) ? k : ''; })();
+    let askDesign = false;
+    if (DESIGN) {
+        let touched = false; try { touched = !!localStorage.getItem(STORE + '-touched'); } catch {}
+        if (P && touched) askDesign = true;
+        else { const keep = P ? Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])) : {}; P = fresh(DESIGN); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); }
+        try { const u = new URL(location.href); u.searchParams.delete('design'); history.replaceState(history.state, '', u); } catch {}
+    }
     if (!P) P = fresh(FUNNEL ? 'leadmagnet' : KIT ? Object.keys(EXAMPLES)[0] : 'agency');
     let pageIdx = 0, device = 'desktop', variant = 'a'; // variant: which A/B version of the step is being edited
     let sel = null; // { kind: 'section'|'col'|'widget', id, target }
@@ -1182,7 +1192,7 @@
     }));
     sitePanel.addEventListener('click', e => {
         const exb = e.target.closest('[data-example]');
-        if (exb) { const keep = Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])); P = fresh(exb.dataset.example); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back'); return; }
+        if (exb) { useExample(exb.dataset.example); return; }
         const pick = e.target.closest('[data-img-pick]'); if (pick) { picking = pick.dataset.imgPick; return $('[data-pick-image]').click(); }
         if (e.target.closest('[data-img-clear]')) { P.site.logo = ''; commit(); refreshChrome(); drawSite(); }
         if (e.target.closest('[data-qr-publish]')) $('[data-act=publish]').click();
@@ -2148,7 +2158,7 @@
         wizard = WZ.mount({
             root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-' + KIND + '-off',
             say: [`Hoo! Want a ${WHAT}? I’ll set it up with you — it takes about 2 minutes.`, 'Pick what it’s for, and I’ll start you with a ready design.', 'You’ll see it on a phone as you go. Ready? 🚀'],
-            hasSaved: () => !!cloud.id,
+            hasSaved: () => !!cloud.id || !!DESIGN, // came to use a design from /examples: straight to the editor
             quickSlot: root.querySelector('.lpb-top .lpb-cloud'), quickClass: 'lpb-tb lpb-quick',
             onRestart: () => { picked = null; wizardNamed = false; hadWork = false; },
             steps,
@@ -2172,8 +2182,21 @@
 
     /* =========================================================== start */
     const renderAll = () => { drawPages(); renderCanvas(); drawAdd(); drawEdit(); drawSite(); drawPage(); };
+    /** Swap in one of the ready designs, keeping the account links (published site, shop); Undo brings the old one back. */
+    function useExample(key) {
+        const keep = Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]]));
+        P = fresh(key); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k]));
+        pageIdx = 0; variant = 'a'; sel = null; commit(); renderAll(); toast('Template loaded — press Undo to go back');
+    }
     renderAll(); syncHistory(); setDevice(window.innerWidth < 760 ? 'mobile' : 'desktop'); showTab('add');
     persist();
     syncVariantBadge();
+    if (askDesign) {
+        setTimeout(() => root.scrollIntoView({ block: 'start' }), 60);
+        // after every deferred script has run, so sweet.js (loaded later in the page) is ready
+        const ask = () => sweet({ icon: 'question', title: `Use the “${EXAMPLES[DESIGN][0]}” design?`, text: 'It replaces what you’re working on now. You can press Undo to get yours back.', confirm: 'Use this design', cancel: 'Keep mine' })
+            .then(ok => ok && useExample(DESIGN));
+        if (window.sweet) ask(); else document.addEventListener('DOMContentLoaded', ask, { once: true }); // fires after all deferred scripts
+    } else if (DESIGN) setTimeout(() => root.scrollIntoView({ block: 'start' }), 60);
     window.__owlBuilder = { get P() { return P; }, select, find }; // for checking things from the browser console
 })();

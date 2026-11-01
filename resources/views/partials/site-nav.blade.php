@@ -37,7 +37,7 @@
                             </a>
                         @endforeach
                     </div>
-                    <div class="nav-drop__alls"><a href="{{ route('free-tools') }}#builders" class="nav-drop__all">See all free builders →</a><a href="{{ route('guides') }}" class="nav-drop__all" @if (request()->routeIs('guides', 'guide.*')) aria-current="page" @endif>Step-by-step guides →</a></div>
+                    <div class="nav-drop__alls"><a href="{{ route('free-tools') }}#builders" class="nav-drop__all">See all free builders →</a><a href="{{ route('examples') }}" class="nav-drop__all" @if (request()->routeIs('examples')) aria-current="page" @endif>Example designs →</a><a href="{{ route('guides') }}" class="nav-drop__all" @if (request()->routeIs('guides', 'guide.*')) aria-current="page" @endif>Step-by-step guides →</a></div>
                 </div>
             </div>
             <div class="nav-drop" data-nav-drop>

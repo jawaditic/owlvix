@@ -69,6 +69,7 @@ Route::view('/event-website-builder', 'tools.kit-builder', ['kit' => 'event'])->
 Route::view('/restaurant-menu-builder', 'tools.kit-builder', ['kit' => 'menu'])->name('menu-builder');
 Route::view('/online-store-builder', 'tools.kit-builder', ['kit' => 'store'])->name('store-builder');
 Route::view('/guides', 'guides.index')->name('guides');
+Route::view('/examples', 'examples')->name('examples');
 foreach (\App\Support\Guides::ALL as $name => [$path, $view]) {
     Route::view($path, 'guides.'.$view)->name($name);
 }
