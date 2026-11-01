@@ -1,6 +1,6 @@
 {{-- The owl's banner for the page builders' quick setup (public/js/builder-wizard.js via landing-builder.js). $mode: '' (landing), funnel or a kit. --}}
 @php
-    $what = ['' => 'page', 'funnel' => 'funnel', 'website' => 'website', 'portfolio' => 'portfolio', 'links' => 'link-in-bio page', 'soon' => 'coming soon page', 'event' => 'event website', 'menu' => 'menu'][$mode ?? ''] ?? 'page';
+    $what = ['' => 'page', 'funnel' => 'funnel', 'website' => 'website', 'portfolio' => 'portfolio', 'links' => 'link-in-bio page', 'soon' => 'coming soon page', 'event' => 'event website', 'menu' => 'menu', 'store' => 'online store'][$mode ?? ''] ?? 'page';
 @endphp
 <div class="container lpb-wzb">
     @include('partials.wizard-banner', [

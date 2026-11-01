@@ -462,7 +462,8 @@ ${rows}
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
             },
-            editorUrl: root.dataset.editorUrl || '',
+            editorUrl: root.dataset.editorUrl || '', noun: 'email',
+            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched'); } catch { return false; } },
             beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(E)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } },
         });
     }

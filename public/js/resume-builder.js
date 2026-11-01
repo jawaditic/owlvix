@@ -331,7 +331,8 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
                     { label: '✏️ Keep editing', act: close => close() },
                 ],
             },
-            editorUrl: root.dataset.editorUrl || '',
+            editorUrl: root.dataset.editorUrl || '', noun: 'CV',
+            hasWork: () => { try { return !!localStorage.getItem(STORE); } catch { return false; } },
             beforeLeave: () => { try { localStorage.setItem(STORE, JSON.stringify(R)); return true; } catch { return false; } },
         });
     }

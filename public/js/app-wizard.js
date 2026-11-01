@@ -396,7 +396,9 @@
             const colours = ['#1ec773', '#2563eb', '#e8590c', '#be185d', '#6d28d9'];
             let c = 0;
             const tint = setInterval(() => { if (!live()) { clearInterval(tint); return; } c = (c + 1) % colours.length; banner.style.setProperty('--wc', colours[c]); }, 6000);
-            const lines = ['Hoo! Want your own app? I’ll help you make it — it takes about 2 minutes.', 'Pick your kind of business and I’ll set up the pages for you.', 'You’ll see your app on the phone as you go. Ready? 🚀'];
+            const lines = banner.classList.contains('wzb--back')
+                ? ['Hoo! Welcome back — your app is right where you left it.', 'Press Resume to carry on in the editor.', 'Want a fresh start? The quick setup is right here too.']
+                : ['Hoo! Want your own app? I’ll help you make it — it takes about 2 minutes.', 'Pick your kind of business and I’ll set up the pages for you.', 'You’ll see your app on the phone as you go. Ready? 🚀'];
             let n = 0; const say = banner.querySelector('[data-wzb-say]');
             const timer = setInterval(() => {
                 if (!live() || !say) { clearInterval(timer); return; }
@@ -409,7 +411,23 @@
             setTimeout(() => B.save(), 600);
         }
         let off = false; try { off = !!localStorage.getItem(OFF); } catch {}
-        if (banner && !off && !B.state().id) showBanner();
+        // Back on the main page with an app in this browser: the same banner, welcoming them back, with "Resume" first
+        if (banner && editorUrl && (off || B.state().id)) {
+            banner.classList.add('wzb--back');
+            const set = (sel, html) => { const el = banner.querySelector(sel); if (el) el.innerHTML = html; };
+            set('.wzb__pill', '<i aria-hidden="true"></i>Saved in this browser');
+            set('h2', 'Welcome back! <span class="accent">Your app is waiting</span>');
+            set('.wzb__text > p', 'Pick up right where you left off — everything you made is still here. Or run the quick setup again to start fresh.');
+            banner.querySelector('.wzb__steps')?.setAttribute('hidden', '');
+            const go = banner.querySelector('[data-wz-start]');
+            if (go) {
+                go.insertAdjacentHTML('beforebegin', `<a class="btn btn--glow wzb__go" href="${esc(editorUrl)}" data-wz-resume>▶ Resume my app</a>`);
+                go.className = 'btn btn--ghost wzb__again'; go.textContent = '✨ Quick setup again';
+            }
+            const no = banner.querySelector('[data-wzb-no]'); if (no) no.textContent = 'or edit it here on this page →';
+            const say = banner.querySelector('[data-wzb-say]'); if (say) say.textContent = 'Hoo! Welcome back — your app is right where you left it.';
+            showBanner();
+        } else if (banner && !off && !B.state().id) showBanner();
     };
     if (window.OwlAppBuilder) start(); else document.addEventListener('owl-app-builder-ready', start);
 })();

@@ -2184,7 +2184,8 @@
                 ],
             },
             // On the builder's main page, finishing opens its editor page (same project, kept in this browser)
-            editorUrl: root.dataset.editorUrl || '',
+            editorUrl: root.dataset.editorUrl || '', noun: WHAT,
+            hasWork: () => { try { return !!localStorage.getItem(STORE + '-touched'); } catch { return false; } },
             beforeLeave: () => {
                 flush(); clearTimeout(saveTimer);
                 try { localStorage.setItem(STORE, JSON.stringify(P)); localStorage.setItem(STORE + '-touched', '1'); return true; } catch { return false; } // too big for the browser: stay here

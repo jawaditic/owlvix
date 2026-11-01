@@ -16,6 +16,8 @@
        editorUrl,                   // on a builder's main page: its editor page (routes/web.php). Finishing goes there; a
                                     // finish button with `then` runs again on the editor page (#then=…)
        beforeLeave: () => bool,     // save everything now; false (couldn't keep it in the browser) = stay on this page
+       hasWork: () => bool,         // there's work in this browser: coming back shows the banner with "Resume"
+       noun,                        // what the builder makes ("funnel", "CV"…), for the "Resume my …" button
      }) → { open(fromStart), close(), refresh() }
 
    Answers go straight into the builder, so the full builder shows the same project afterwards, and running the
@@ -206,9 +208,32 @@
             if (a) setTimeout(() => a.act(() => {}), 500);
         }
         let off = false; try { off = !!localStorage.getItem(cfg.offKey); } catch {}
-        if (banner && !off && !cfg.hasSaved?.()) showBanner();
+        // Back on a builder's main page with work in this browser: the same banner, welcoming them back, with "Resume"
+        // (to the editor page) first and the quick setup second
+        if (banner && cfg.editorUrl && (off || cfg.hasSaved?.() || cfg.hasWork?.())) { welcomeBack(banner, cfg); showBanner(); }
+        else if (banner && !off && !cfg.hasSaved?.()) showBanner();
 
         return { open, close, redraw, refresh: bump, isOpen: () => !!box };
+    };
+
+    /** Turns the owl's invitation into "welcome back": a Resume button to the editor page, the quick setup as a second choice. */
+    const welcomeBack = (banner, cfg) => {
+        const noun = cfg.noun || 'work';
+        banner.classList.add('wzb--back');
+        const set = (sel, html) => { const el = $(sel, banner); if (el) el.innerHTML = html; };
+        set('.wzb__pill', '<i aria-hidden="true"></i>Saved in this browser');
+        set('h2', `Welcome back! <span class="accent">Your ${esc(noun)} is waiting</span>`);
+        set('.wzb__text > p', `Pick up right where you left off — everything you made is still here. Or run the quick setup again to start fresh.`);
+        $('.wzb__steps', banner)?.setAttribute('hidden', '');
+        const go = $('[data-wz-start]', banner);
+        if (go) {
+            go.insertAdjacentHTML('beforebegin', `<a class="btn btn--glow wzb__go" href="${esc(cfg.editorUrl)}" data-wz-resume>▶ Resume my ${esc(noun)}</a>`);
+            go.className = 'btn btn--ghost wzb__again';
+            go.textContent = '✨ Quick setup again';
+        }
+        const no = $('[data-wzb-no]', banner); if (no) no.textContent = 'or edit it here on this page →';
+        cfg.say = [`Hoo! Welcome back — your ${noun} is right where you left it.`, 'Press Resume to carry on in the editor.', 'Want a fresh start? The quick setup is right here too.'];
+        const say = $('[data-wzb-say]', banner); if (say) say.textContent = cfg.say[0];
     };
 
     /* ---------- shared helpers for the steps ---------- */
