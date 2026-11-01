@@ -850,4 +850,62 @@
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && on) hide(); });
         addEventListener('scroll', () => { if (on) hide(); }, true);
     })();
+    /* ---------- Toasts ---------- */
+    // window.owlToast(message, kind): a small message that slides in at the top right (top, full width, on phones).
+    // kind: 'error' (red), 'success' (green) or 'info' (blue); guessed from the words when left out. It closes by
+    // itself (errors stay longer), waits while the pointer is on it, and has a ✕. Screen readers hear it.
+    (() => {
+        let wrap = null;
+        const ICON = { error: '!', success: '✓', info: 'i' };
+        const guess = m => /^(✓|✅|🎉|🔔)|\b(added|saved|copied|sent|deleted|disconnected|checked|downloaded|published|connected)\b/i.test(m) && !/couldn|can.?t|failed|error/i.test(m) ? 'success'
+            : /^please\b|couldn|could not|can.?t|cannot|failed|error|blocked|too many|too big|too large|not allowed|invalid|wrong|missing|needs?\b|up to \d|^the pin|full\b|try again|isn.?t|doesn.?t|didn.?t|no longer/i.test(m) ? 'error' : 'info';
+        window.owlToast = (message, kind) => {
+            const text = String(message || '').trim(); if (!text) return;
+            kind = ICON[kind] ? kind : guess(text);
+            if (!wrap || !wrap.isConnected) { wrap = document.createElement('div'); wrap.className = 'ow-toasts'; document.body.append(wrap); }
+            // the same message again: just restart its timer
+            const same = [...wrap.children].find(t => t.dataset.text === text);
+            if (same) { same.restart(); same.classList.remove('is-bump'); void same.offsetWidth; same.classList.add('is-bump'); return; }
+            const t = document.createElement('div');
+            t.className = `ow-toast ow-toast--${kind}`; t.dataset.text = text;
+            t.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+            t.innerHTML = `<span class="ow-toast__icon" aria-hidden="true">${ICON[kind]}</span><p></p><button type="button" class="ow-toast__x" aria-label="Close message">✕</button><i class="ow-toast__bar" aria-hidden="true"></i>`;
+            t.querySelector('p').textContent = text;
+            const ms = kind === 'error' ? 9000 : 5500;
+            let timer, left = ms, started;
+            const close = () => { clearTimeout(timer); t.classList.add('is-out'); setTimeout(() => t.remove(), 260); };
+            const run = () => { started = Date.now(); clearTimeout(timer); timer = setTimeout(close, left); t.style.setProperty('--ms', `${left}ms`); t.classList.remove('is-paused'); };
+            t.restart = () => { left = ms; t.querySelector('.ow-toast__bar').style.animation = 'none'; void t.offsetWidth; t.querySelector('.ow-toast__bar').style.animation = ''; run(); };
+            t.addEventListener('mouseenter', () => { clearTimeout(timer); left -= Date.now() - started; t.classList.add('is-paused'); });
+            t.addEventListener('mouseleave', run);
+            t.querySelector('.ow-toast__x').addEventListener('click', close);
+            wrap.append(t);
+            while (wrap.children.length > 4) wrap.firstElementChild.remove();
+            run();
+        };
+    })();
+    /* ---------- Page messages become toasts ---------- */
+    // Tool errors, form alerts, "sent"/"copied" notes and the builders' notes all show as a toast at the top right
+    // instead of a line on the page. Watched here so each page's own code stays as it is: when one of these
+    // shows (or its words change) its text goes to owlToast and the line hides again. Messages inside a popup
+    // (dialog) stay where they are: a toast would be behind the popup.
+    (() => {
+        const SEL = '.speed-error, .seo-email__msg, [data-copied], .fb-note, .lpb-toast, .alert--err, .alert--ok';
+        const kindOf = el => el.matches('.speed-error, .alert--err') ? 'error' : el.matches('.alert--ok') || el.dataset.ok === '1' ? 'success' : undefined;
+        const take = el => {
+            if (!el.matches?.(SEL) || el.hidden || el.closest('dialog')) return;
+            const text = el.textContent.trim(); if (!text) return;
+            el.hidden = true;
+            window.owlToast?.(text, kindOf(el));
+        };
+        document.querySelectorAll(SEL).forEach(take);
+        new MutationObserver(list => {
+            const seen = new Set();
+            for (const m of list) {
+                const el = m.type === 'characterData' ? m.target.parentElement : m.target;
+                const hit = el?.closest?.(SEL); if (hit && !seen.has(hit)) { seen.add(hit); take(hit); }
+                m.addedNodes?.forEach(n => { if (n.nodeType === 1) [n, ...n.querySelectorAll(SEL)].forEach(x => { if (!seen.has(x)) { seen.add(x); take(x); } }); });
+            }
+        }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
+    })();
 })();

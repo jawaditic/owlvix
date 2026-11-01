@@ -22,7 +22,7 @@
     /* =========================================================== small helpers */
     const $ = (s, el = root) => el.querySelector(s);
     const $$ = (s, el = root) => [...el.querySelectorAll(s)];
-    const toast = msg => { const t = $('[data-toast]'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2600); };
+    const toast = (msg, kind) => { if (window.owlToast) return window.owlToast(msg, kind); const t = $('[data-toast]'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2600); };
     const track = (e, d = {}) => window.track?.(e, d);
     const svg = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
     const ICON = {

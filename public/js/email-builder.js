@@ -275,7 +275,7 @@ ${rows}
     });
 
     /* ------------------------------------------------ export */
-    const note = msg => { const n = $('[data-note]'); n.textContent = msg; n.hidden = false; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 4500); };
+    const note = (msg, kind) => { if (window.owlToast) return window.owlToast(msg, kind); const n = $('[data-note]'); n.textContent = msg; n.hidden = false; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 4500); };
     /** Problems found? Show them (styled dialog) and let the user go back or export anyway. */
     const ready = async () => {
         const p = issues(); if (!p.length) return true;

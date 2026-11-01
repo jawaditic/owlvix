@@ -171,7 +171,7 @@
     };
 
     /* ------------------------------------------------ publish */
-    const note = msg => { const n = $('[data-note]'); n.textContent = msg; n.hidden = false; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 5000); };
+    const note = (msg, kind) => { if (window.owlToast) return window.owlToast(msg, kind); const n = $('[data-note]'); n.textContent = msg; n.hidden = false; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 5000); };
     const markDirty = () => { D.dirty = true; save(); syncPublish(); };
     const syncPublish = () => {
         const managed = !!(S().managed && D.id); // an RSVP form made by an event page: its questions are changed on that page
@@ -194,7 +194,7 @@
             note(first ? '🎉 Your form is live! Share the link or embed it on your site.' : 'Changes saved.');
             track(first ? 'form_builder_publish' : 'form_builder_save', { fields: S().fields.length });
             if (first) showTab('share');
-        } catch (ex) { note(ex.message); if (ex.status === 401) signIn(publish); }
+        } catch (ex) { note(ex.message, 'error'); if (ex.status === 401) signIn(publish); }
         finally { syncPublish(); }
     };
     $('[data-publish]').addEventListener('click', publish);
@@ -227,7 +227,7 @@
         if (e.target.closest('[data-delete]')) {
             if (!await ask('Delete this form?', 'Its link stops working and all answers are deleted. This cannot be undone.', 'Delete form', true)) return;
             try { await api('POST', `/builder/surveys/${D.id}/delete`); D.id = null; D.dirty = true; delete S().managed; /* now a copy you can publish as your own form */ save(); await loadForms().catch(() => {}); syncPublish(); drawShare(); note('Form deleted. Your questions are still here if you want to publish it again.'); }
-            catch (ex) { note(ex.message); }
+            catch (ex) { note(ex.message, 'error'); }
         }
     });
 

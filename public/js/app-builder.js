@@ -813,7 +813,7 @@
     const useLogo = async file => {
         if (!file) return;
         try { D.icon.image = await readLogo(file); D.icon.mode = 'image'; await loadLogo(); drawSettings(); drawPhone(); markDirty(true); track('app_builder_logo'); }
-        catch (ex) { note(ex.message); }
+        catch (ex) { note(ex.message, 'error'); }
     };
     /* Drop a logo on the upload box */
     const drop = $('[data-icon-file-wrap]');
@@ -823,7 +823,7 @@
     const useSplash = async file => {
         if (!file) return;
         try { D.splash.image = await readLogo(file); D.splash.mode = 'image'; await loadSplashPic(); showSplash(); markDirty(true); track('app_builder_splash'); }
-        catch (ex) { note(ex.message); }
+        catch (ex) { note(ex.message, 'error'); }
     };
     const sdrop = $('[data-splash-file-wrap]');
     ['dragenter', 'dragover'].forEach(ev => sdrop.addEventListener(ev, e => { e.preventDefault(); sdrop.classList.add('is-over'); }));
@@ -846,7 +846,7 @@
                 D.splash.bgImage = shrink(img, 1920, 'image/jpeg', 0.85).url; D.splash.bgDirty = true;
             }
             previewIntro = true; showSplash(); markDirty(); track('app_builder_intro', { kind: D.splash.bg });
-        } catch (ex) { note(ex.message); }
+        } catch (ex) { note(ex.message, 'error'); }
     };
     const bdrop = $('[data-bg-file-wrap]');
     ['dragenter', 'dragover'].forEach(ev => bdrop.addEventListener(ev, e => { e.preventDefault(); bdrop.classList.add('is-over'); }));
@@ -894,7 +894,7 @@
                     if (path === 'images') (b.images ||= []).push(img); else setPath(b, path, img);
                 }
                 drawBlocks(); drawPhone(); markDirty(); track('app_builder_picture', { block: b.type });
-            } catch (ex) { note(ex.message); }
+            } catch (ex) { note(ex.message, 'error'); }
             return;
         }
         if (e.target.matches('[data-icon-file]')) {
@@ -1241,7 +1241,7 @@
                 const r = await api('POST', `/builder/apps/${D.id}/stripe/disconnect`, { mode });
                 apps = apps.map(y => (y.id === r.app.id ? r.app : y)); drawPay(); note('Stripe disconnected.');
             }
-        } catch (ex) { note(ex.message); if (ex.status === 401) signIn(drawPay); } finally { btn.disabled = false; }
+        } catch (ex) { note(ex.message, 'error'); if (ex.status === 401) signIn(drawPay); } finally { btn.disabled = false; }
     });
     const drawMine = () => {
         const sel = $('[data-mine]');
@@ -1256,7 +1256,8 @@
     };
 
     /* ------------------------------------------------ save */
-    const note = msg => { const n = $('[data-note]'); n.hidden = false; n.textContent = ''; requestAnimationFrame(() => { n.textContent = msg; }); clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 7000); };
+    // messages show as a toast at the top right (site.js); errors in red
+    const note = (msg, kind) => { if (window.owlToast) return window.owlToast(msg, kind); const n = $('[data-note]'); n.hidden = false; n.textContent = msg; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 7000); };
     const syncSave = () => {
         const b = $('[data-save]');
         b.textContent = saving ? 'Saving…' : D.id ? (D.dirty ? 'Save changes' : 'Saved ✓') : 'Save app';
@@ -1313,7 +1314,7 @@
         if (iconLoading) { note('Still loading your app’s icon and splash — try again in a moment.'); return false; }
         if (!$('[data-panel="design"]').hidden && checkAll(root)) { note('Please fix the field marked in red, then save again.'); return false; }
         const problem = check();
-        if (problem) { showTab('design'); note(problem); return false; }
+        if (problem) { showTab('design'); note(problem, 'error'); return false; }
         if (!token) { signIn(() => saveApp().then(ok => ok && !$('[data-panel="build"]').hidden && drawBuild())); return false; }
         saving = true; syncSave();
         const seqAtStart = editSeq, editing = D, sent = new Set();
@@ -1341,7 +1342,7 @@
             apps = [...(apps || []).filter(x => x.id !== r.app.id), r.app]; drawMine(); drawSettings();
             if (D.splash.bg === 'video' && bgVideo) {
                 try { await uploadVideo(); }
-                catch (ex) { D.dirty = true; save(); note(ex.message); return false; }
+                catch (ex) { D.dirty = true; save(); note(ex.message, 'error'); return false; }
             }
             D.splash.hasVideo = D.splash.bg === 'video' && (current()?.settings?.splash?.bg === 'video' || D.splash.hasVideo); drawSettings();
             note(first ? 'App saved! Now open “Build & download” to make your Android app.'
@@ -1349,7 +1350,7 @@
                 : r.app.version_code ? 'Saved — phones with your app will show the changes within a minute. No new build needed.' : 'Changes saved.');
             track(first ? 'app_builder_create' : 'app_builder_save', { tabs: A().tabs.length });
             return true;
-        } catch (ex) { note(ex.message); if (ex.status === 401) signIn(saveApp); return false; }
+        } catch (ex) { note(ex.message, 'error'); if (ex.status === 401) signIn(saveApp); return false; }
         finally { saving = false; syncSave(); }
     };
     $('[data-save]').addEventListener('click', saveApp);
@@ -1735,7 +1736,7 @@
         if (t.dataset.copyfrom) { const src = $(t.dataset.copyfrom); try { await navigator.clipboard.writeText(src.value); t.textContent = 'Copied ✓'; } catch { src.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }
         if (t.dataset.act?.startsWith('kit-')) { kitAction(t); return; }
-        if (t.dataset.act === 'push-send') { t.disabled = true; try { await sendPush(current()); } catch (ex) { note(ex.message); } finally { t.disabled = false; drawBuild(); } return; }
+        if (t.dataset.act === 'push-send') { t.disabled = true; try { await sendPush(current()); } catch (ex) { note(ex.message, 'error'); } finally { t.disabled = false; drawBuild(); } return; }
         const x = current();
         if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copied ✓'; } catch { t.previousElementSibling?.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }
@@ -1764,7 +1765,7 @@
                 save(); drawMine(); drawBlocks(); drawPhone(); syncSave();
                 note('App deleted. Your design is still here if you want to save it again (pictures need adding again).');
             }
-        } catch (ex) { note(ex.message); if (ex.status === 401) signIn(drawBuild); }
+        } catch (ex) { note(ex.message, 'error'); if (ex.status === 401) signIn(drawBuild); }
         finally { t.disabled = false; drawBuild(); }
     });
 

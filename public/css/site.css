@@ -3172,3 +3172,25 @@ html.ab-full-open { overflow: hidden; }
     .nav__toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 }
 @media (max-width: 760px) and (prefers-reduced-motion: reduce) { .nav__links.is-open, .nav-drop.is-open .nav-drop__menu { animation: none; } .nav__toggle span { transition: none; } }
+
+/* ---------- Toasts (window.owlToast in site.js): top right, under the header; across the top on phones ---------- */
+.ow-toasts { position: fixed; top: 84px; right: 18px; z-index: 9600; display: grid; gap: 10px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+.ow-toast { position: relative; display: grid; grid-template-columns: 30px 1fr 28px; align-items: start; gap: 10px; padding: 12px 10px 14px 12px; overflow: hidden; pointer-events: auto;
+    border-radius: 14px; background: var(--card); color: var(--text); border: 1px solid var(--card-border); border-left: 4px solid var(--tc); box-shadow: 0 18px 40px -16px rgba(var(--shadow-rgb, 15, 23, 42), .45);
+    animation: ow-toast-in .32s cubic-bezier(.2, .8, .2, 1); }
+.ow-toast--error { --tc: #dc2626; } .ow-toast--success { --tc: #16a34a; } .ow-toast--info { --tc: #2563eb; }
+.ow-toast__icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--tc); color: #fff; font: 800 .9rem/1 Inter, sans-serif; }
+.ow-toast p { margin: 4px 0 0; font-size: .9rem; font-weight: 600; line-height: 1.4; }
+.ow-toast__x { width: 28px; height: 28px; border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; font-size: .85rem; }
+.ow-toast__x:hover { background: rgba(var(--tint-rgb, 15, 23, 42), .06); color: var(--text); }
+.ow-toast__bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--tc); opacity: .35; transform-origin: left; animation: ow-toast-bar var(--ms, 5000ms) linear forwards; }
+.ow-toast.is-paused .ow-toast__bar { animation-play-state: paused; }
+.ow-toast.is-out { animation: ow-toast-out .26s ease-in forwards; }
+.ow-toast.is-bump { animation: ow-toast-bump .3s; }
+@keyframes ow-toast-in { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes ow-toast-out { to { opacity: 0; transform: translateX(40px); } }
+@keyframes ow-toast-bump { 50% { transform: scale(1.03); } }
+@keyframes ow-toast-bar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+html.ab-full-open .ow-toasts, html.wz-open .ow-toasts { top: 16px; } /* full screen: no header above */
+@media (max-width: 760px) { .ow-toasts { top: 76px; right: 16px; left: 16px; width: auto; } }
+@media (prefers-reduced-motion: reduce) { .ow-toast, .ow-toast.is-out, .ow-toast.is-bump { animation: none; } .ow-toast__bar { display: none; } }
