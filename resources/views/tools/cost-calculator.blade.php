@@ -77,7 +77,7 @@
             </div>
         </form>
 
-        <aside class="calc__result">
+        <div class="calc__result">
             <div class="calc-result card">
                 <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'dev', 'alt' => 'Owlvix owl calculating'])</span>
                 <p class="eyebrow">Your estimate</p>
@@ -90,7 +90,7 @@
                 </a>
                 <p class="calc-result__note">An estimate based on typical projects — your free quote gives the exact fixed price within one business day.</p>
             </div>
-        </aside>
+        </div>
     </div>
 </section>
 

@@ -1604,10 +1604,12 @@
             </div>
             <div class="ab-kit__shots" data-kit-shots></div>
             <h3 class="ab-sub">2. Texts</h3>
-            <label>Short description <small data-kit-count="short">${kitText.short.length}/80</small><textarea data-kit="short" rows="2" maxlength="80">${esc(kitText.short)}</textarea></label>
-            <button type="button" class="btn btn--sm btn--ghost" data-copyfrom='[data-kit="short"]'>Copy</button>
-            <label>Full description <small data-kit-count="full">${kitText.full.length}/4000</small><textarea data-kit="full" rows="8" maxlength="4000">${esc(kitText.full)}</textarea></label>
-            <button type="button" class="btn btn--sm btn--ghost" data-copyfrom='[data-kit="full"]'>Copy</button>
+            <div class="ab-kit__field"><div class="ab-kit__head"><label for="ab-kit-short">Short description</label><small data-kit-count="short">${kitText.short.length}/80</small>
+                <button type="button" class="ab-copy" data-copyfrom='[data-kit="short"]' title="Copy the short description to paste in Play Console"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><span>Copy</span></button></div>
+                <textarea id="ab-kit-short" data-kit="short" rows="2" maxlength="80">${esc(kitText.short)}</textarea></div>
+            <div class="ab-kit__field"><div class="ab-kit__head"><label for="ab-kit-full">Full description</label><small data-kit-count="full">${kitText.full.length}/4000</small>
+                <button type="button" class="ab-copy" data-copyfrom='[data-kit="full"]' title="Copy the full description to paste in Play Console"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><span>Copy</span></button></div>
+                <textarea id="ab-kit-full" data-kit="full" rows="8" maxlength="4000">${esc(kitText.full)}</textarea></div>
             <h3 class="ab-sub">3. Privacy policy</h3>
             <p class="fb-hint">Paste this link in Play Console → App content → Privacy policy. Add your business name and email under Design → More settings.</p>
             <div class="fb-copyrow"><input readonly value="${esc(x.privacy_url)}"><button type="button" class="btn btn--sm" data-copy="${esc(x.privacy_url)}">Copy</button></div>
@@ -1733,7 +1735,7 @@
     };
     $('[data-build]').addEventListener('click', async e => {
         const t = e.target.closest('[data-act],[data-copy],[data-copyfrom],[data-dl]'); if (!t) return;
-        if (t.dataset.copyfrom) { const src = $(t.dataset.copyfrom); try { await navigator.clipboard.writeText(src.value); t.textContent = 'Copied ✓'; } catch { src.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
+        if (t.dataset.copyfrom) { const src = $(t.dataset.copyfrom), lbl = t.querySelector('span') || t; try { await navigator.clipboard.writeText(src.value); lbl.textContent = 'Copied ✓'; t.classList.add('is-done'); } catch { src.select(); } setTimeout(() => { lbl.textContent = 'Copy'; t.classList.remove('is-done'); }, 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }
         if (t.dataset.act?.startsWith('kit-')) { kitAction(t); return; }
         if (t.dataset.act === 'push-send') { t.disabled = true; try { await sendPush(current()); } catch (ex) { note(ex.message, 'error'); } finally { t.disabled = false; drawBuild(); } return; }

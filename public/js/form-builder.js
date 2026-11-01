@@ -28,7 +28,7 @@
             fields: [f('text', 'Name', { required: true }), f('phone', 'Phone', { required: true }), f('text', 'Delivery address', { required: true }), f('checkbox', 'What would you like?', { required: true, options: ['Small bouquet — $25', 'Large bouquet — $45', 'Plant in a pot — $30'] }), f('date', 'Delivery date'), f('textarea', 'Card message (optional)')] })],
         blank: ['Blank form', () => ({ title: 'Untitled form', intro: '', button: 'Send', thanks: 'Thanks! Your answers have been sent.', fields: [f('text', 'Your name')] })],
     };
-    const fresh = key => ({ id: null, schema: { color: '#16a34a', ...TEMPLATES[key][1]() } });
+    const fresh = key => ({ id: null, schema: { color: '#15803d', ...TEMPLATES[key][1]() } });
 
     let D;
     try { D = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
@@ -51,7 +51,7 @@
             else input = `<div class="fbp-in">${esc(q.placeholder || { date: 'dd / mm / yyyy' }[q.type] || '')}</div>`;
             return `<div class="fbp-q${q.id === openId ? ' is-on' : ''}" data-goto="${q.id}"><b>${esc(q.label)}${star(q)}</b>${help}${input}</div>`;
         }).join('');
-        $('[data-preview]').style.setProperty('--fc', /^#[0-9a-f]{6}$/i.test(s.color) ? s.color : '#16a34a');
+        $('[data-preview]').style.setProperty('--fc', /^#[0-9a-f]{6}$/i.test(s.color) ? s.color : '#15803d');
         $('[data-preview]').innerHTML = `<h2>${esc(s.title)}</h2>${s.intro ? `<p class="fbp-intro">${esc(s.intro)}</p>` : ''}${body}<span class="fbp-btn">${esc(s.button || 'Send')}</span>`;
     };
 

@@ -68,9 +68,9 @@
                             </div>
                             <label>Thank-you message<input data-set="thanks" maxlength="300"></label>
                         </details>
-                        <h3 class="fb-sub">Questions</h3>
+                        <h2 class="fb-sub">Questions</h2>
                         <div class="fb-fields" data-fields></div>
-                        <h3 class="fb-sub">Add a question</h3>
+                        <h2 class="fb-sub">Add a question</h2>
                         <div class="fb-add" data-add-types></div>
                     </div>
                     <div class="fb-prev-wrap">

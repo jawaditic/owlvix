@@ -21,7 +21,7 @@
 @endsection
 
 @section('content')
-@include('partials.tool-page', ['name' => 'Email & DNS checker', 'h1' => 'Why are my emails <span class="accent">going to spam?</span>', 'lead' => 'Check your domain\'s SPF, DKIM, DMARC and mail records — and get the exact record to add for every issue.', 'action' => route('email-check.run'), 'icon' => 'mail', 'button' => 'Check my email setup', 'placeholder' => 'example.com or you@example.com', 'label' => 'Domain or email address'])
+@include('partials.tool-page', ['name' => 'Email & DNS checker', 'h1' => 'Why are my emails <span class="accent">going to spam?</span>', 'lead' => 'Check your domain\'s SPF, DKIM, DMARC and mail records — and get the exact record to add for every issue.', 'action' => route('email-check.run'), 'icon' => 'mail', 'button' => 'Check my email setup', 'placeholder' => 'example.com or an email', 'label' => 'Domain or email address'])
 
 <section class="speed-report" hidden data-tool-report aria-live="polite">
     <div class="container">

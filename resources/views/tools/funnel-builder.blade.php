@@ -49,11 +49,11 @@
             <button type="button" data-device="mobile" aria-pressed="false" title="Preview on a phone">📱</button>
         </div>
         <div class="lpb-top__group">
-            <button type="button" class="lpb-tb" data-act="undo" title="Undo (Ctrl/Cmd+Z)">↩ Undo</button>
-            <button type="button" class="lpb-tb" data-act="redo" title="Redo (Ctrl/Cmd+Shift+Z)">↪ Redo</button>
-            <button type="button" class="lpb-tb" data-act="preview" title="Open a preview in a new tab">👁 Preview</button>
-            <button type="button" class="lpb-tb" data-act="open" title="Open a saved project">📂 Open</button>
-            <button type="button" class="lpb-tb" data-act="save" title="Download a project file to keep editing later">💾 Save project</button>
+            <button type="button" class="lpb-tb" data-act="undo" title="Undo (Ctrl/Cmd+Z)">↩<span class="lpb-tb__t"> Undo</span></button>
+            <button type="button" class="lpb-tb" data-act="redo" title="Redo (Ctrl/Cmd+Shift+Z)">↪<span class="lpb-tb__t"> Redo</span></button>
+            <button type="button" class="lpb-tb" data-act="preview" title="Open a preview in a new tab">👁<span class="lpb-tb__t"> Preview</span></button>
+            <button type="button" class="lpb-tb" data-act="open" title="Open a saved project">📂<span class="lpb-tb__t"> Open</span></button>
+            <button type="button" class="lpb-tb" data-act="save" title="Download a project file to keep editing later">💾<span class="lpb-tb__t"> Save project</span></button>
         </div>
         <div class="lpb-top__group">
             <button type="button" class="btn btn--sm btn--ghost" data-act="download">Download ↓</button>
@@ -61,13 +61,13 @@
             <button type="button" class="lpb-tb lpb-full-btn" data-act="fullscreen" title="Full screen (Esc to exit)" aria-pressed="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true" class="i-enter"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
                 <svg viewBox="0 0 24 24" aria-hidden="true" class="i-exit"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
-                <span>Full screen</span>
+                <span class="lpb-tb__t">Full screen</span>
             </button>
         </div>
     </div>
 
     <div class="lpb-body">
-        <aside class="lpb-side">
+        <div class="lpb-side">
             <div class="lpb-tabs" role="tablist">
                 <button type="button" role="tab" data-tab="add" aria-selected="true">＋ Add</button>
                 <button type="button" role="tab" data-tab="edit" aria-selected="false">Edit</button>
@@ -92,7 +92,7 @@
             <div class="lpb-panel" data-tab-panel="site"><div data-site-panel></div></div>
             <div class="lpb-panel" data-tab-panel="results"><div data-results-panel></div></div>
             <p class="lpb-autosave" data-autosave>Saved on this device</p>
-        </aside>
+        </div>
         <div class="lpb-canvas">
             <div class="lpb-screen" data-device="desktop">
                 <iframe data-lpb-frame title="Your page — click text or images to edit"></iframe>

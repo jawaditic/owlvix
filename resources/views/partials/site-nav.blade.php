@@ -66,6 +66,7 @@
             @php
                 $more = array_filter([
                     ['href' => $h('work'), 'icon' => 'eye', 'name' => 'Work', 'desc' => 'Projects we have built', 'on' => false, 'narrow' => true], // only when Work leaves the bar
+                    ['href' => $h('pricing'), 'icon' => 'tag', 'name' => 'Pricing', 'desc' => 'Start free, pay per milestone', 'on' => false, 'narrow' => true], // only when Pricing leaves the bar
                     ['href' => $h('process'), 'icon' => 'refresh', 'name' => 'Process', 'desc' => 'How we work, step by step', 'on' => false],
                     count(\App\Support\Testimonials::data()['reviews']) ? ['href' => $h('reviews'), 'icon' => 'star', 'name' => 'Reviews', 'desc' => 'What our clients say', 'on' => false] : null,
                     ['href' => $h('faq'), 'icon' => 'chat', 'name' => 'FAQ', 'desc' => 'Answers to common questions', 'on' => false],

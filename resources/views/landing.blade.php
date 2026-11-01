@@ -210,7 +210,7 @@
                                 <a href="#contact" class="btn btn--ghost btn--block" data-service="{{ $s['service'] }}">Get a quote for this</a>
                                 @foreach ((array) ($s['page'] ?? []) as $slug)
                                     @if (config('service_pages.'.$slug))
-                                        <a href="{{ route('service.'.$slug) }}" class="lp-service__more">{{ config('service_pages.'.$slug.'.name') }} in detail →</a>
+                                        <a href="{{ route('service.'.$slug) }}" class="lp-service__more">{{ config('service_pages.'.$slug.'.name') }} <span class="nowrap">in detail →</span></a>
                                     @endif
                                 @endforeach
                             </div>

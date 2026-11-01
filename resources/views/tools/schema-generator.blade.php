@@ -166,14 +166,18 @@
         }
         const json = JSON.stringify(Object.assign({ '@@context': 'https://schema.org' }, clean(data)), null, 2).replace(/<\//g, '<\\/');
         S('code').textContent = `<script type="application/ld+json">\n${json}\n<\/script>`;
-        const issues = missing.map(m => `<li data-status="fail">✕ Add ${esc(m.toLowerCase())} — Google needs it.</li>`);
+        // before anything is typed: one calm hint instead of a column of red warnings
+        const issues = !touched[type] && missing.length ? ['<li data-status="todo">Fill in the fields marked * — they are the ones Google needs.</li>']
+            : missing.map(m => `<li data-status="fail">✕ Add ${esc(m.toLowerCase())} — Google needs it.</li>`);
         if (type === 'faq') issues.push('<li>! Google no longer shows FAQ rich results, but this still helps search engines and AI assistants understand your answers.</li>');
         S('issues').innerHTML = issues.join('') || '<li data-status="pass">✓ All the required details are filled in.</li>';
     };
 
+    const touched = {};
     document.querySelectorAll('[name=schema_type]').forEach(r => r.addEventListener('change', () => { type = r.value; draw(); }));
     form.addEventListener('input', e => {
         const el = e.target, v = values[type];
+        touched[type] = true;
         if (el.dataset.k) v[el.dataset.k] = el.value;
         if (el.dataset.li !== undefined) v.rows[el.dataset.li][el.dataset.part] = el.value;
         build();

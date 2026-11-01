@@ -141,7 +141,7 @@
     const DESIGNS = { classic: 'Classic', photo: 'Photo left', band: 'Colour bar', compact: 'Compact', centered: 'Centred', minimal: 'Minimal' };
     const SOCIAL = { linkedin: ['LinkedIn', 'in', '#0a66c2'], x: ['X', 'X', '#111111'], facebook: ['Facebook', 'f', '#1877f2'], instagram: ['Instagram', 'IG', '#e1306c'], youtube: ['YouTube', '▶', '#ff0000'], tiktok: ['TikTok', '♪', '#111111'], whatsapp: ['WhatsApp', 'WA', '#25d366'], calendly: ['Booking page', '📅', '#006bff'] };
     const DEFAULTS = { design: 'classic', name: 'Sarah Johnson', title: 'Marketing Manager', company: 'Northwind Consulting', dept: '', phone: '+1 555 123 4567', mobile: '', email: 'sarah@northwind.com', website: 'northwind.com', address: '', photo: '', logo: '',
-        color: '#16a34a', ink: '#1f2937', font: 'Arial, Helvetica, sans-serif', size: '14', shape: 'round', cta: '', ctaUrl: '', signoff: '', legal: '', social: { linkedin: '', x: '', facebook: '', instagram: '', youtube: '', tiktok: '', whatsapp: '', calendly: '' } };
+        color: '#15803d', ink: '#1f2937', font: 'Arial, Helvetica, sans-serif', size: '14', shape: 'round', cta: '', ctaUrl: '', signoff: '', legal: '', social: { linkedin: '', x: '', facebook: '', instagram: '', youtube: '', tiktok: '', whatsapp: '', calendly: '' } };
     let S;
     try { S = { ...DEFAULTS, ...JSON.parse(localStorage.getItem(STORE) || '{}') }; S.social = { ...DEFAULTS.social, ...(S.social || {}) }; } catch { S = structuredClone(DEFAULTS); }
     if (!DESIGNS[S.design]) S.design = 'classic';
@@ -162,7 +162,7 @@
 
     /* ------------------------------------------------ signature HTML (tables + inline styles only) */
     const build = () => {
-        const c = hex(S.color, '#16a34a'), ink = hex(S.ink, '#1f2937'), f = S.font, fs = +S.size || 14, muted = '#6b7280';
+        const c = hex(S.color, '#15803d'), ink = hex(S.ink, '#1f2937'), f = S.font, fs = +S.size || 14, muted = '#6b7280';
         const t = (txt, st = '') => `<span style="font-family:${f};font-size:${fs}px;color:${ink};${st}">${esc(txt)}</span>`;
         const a = (href, txt, st = '') => `<a href="${esc(href)}" style="font-family:${f};font-size:${fs}px;color:${ink};text-decoration:none;${st}">${esc(txt)}</a>`;
         const radius = { round: '50%', rounded: '12px', square: '0' }[S.shape] || '50%';

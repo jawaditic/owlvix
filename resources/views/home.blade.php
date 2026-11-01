@@ -172,7 +172,7 @@
                     </article>
                 </div>
                 @include('partials.more-services', ['hire' => false])
-                <p class="promise">Clean code you own <i>•</i> Regular updates <i>•</i> On-time delivery</p>
+                <p class="promise"><span>Clean code you own</span> <i aria-hidden="true">•</i> <span>Regular updates</span> <i aria-hidden="true">•</i> <span>On-time delivery</span></p>
                 <p class="services__more"><a href="{{ route('landing') }}" class="btn btn--ghost">Explore our development services in detail</a></p>
             </div>
         </section>

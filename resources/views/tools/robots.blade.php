@@ -20,7 +20,7 @@
 @endsection
 
 @section('content')
-@include('partials.tool-page', ['name' => 'Robots.txt checker', 'h1' => 'Can Google and <span class="accent">AI bots</span> read your site?', 'lead' => 'Check your robots.txt, sitemap and noindex tags — and see which search engines and AI assistants are allowed in.', 'action' => route('robots-check.run'), 'icon' => 'book', 'button' => 'Check my site', 'placeholder' => 'example.com or a full page address'])
+@include('partials.tool-page', ['name' => 'Robots.txt checker', 'h1' => 'Can Google and <span class="accent">AI bots</span> read your site?', 'lead' => 'Check your robots.txt, sitemap and noindex tags — and see which search engines and AI assistants are allowed in.', 'action' => route('robots-check.run'), 'icon' => 'book', 'button' => 'Check my site', 'placeholder' => 'example.com or a page'])
 
 <section class="speed-report" hidden data-tool-report aria-live="polite">
     <div class="container">

@@ -81,7 +81,7 @@
             </div>
         </form>
 
-        <aside class="calc__result">
+        <div class="calc__result">
             <div class="calc-result card">
                 <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'dev', 'alt' => 'Owlvix owl calculating'])</span>
                 <p class="eyebrow">Every month you can expect</p>
@@ -104,7 +104,7 @@
                 </a>
                 <p class="calc-result__note">Estimates only — real results depend on your offer, targeting and landing page.</p>
             </div>
-        </aside>
+        </div>
     </div>
 </section>
 

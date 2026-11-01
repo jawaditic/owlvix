@@ -495,15 +495,15 @@
     const drawAdd = () => {
         const q = ($('[data-add-search]')?.value || '').toLowerCase().trim();
         const match = l => !q || l.toLowerCase().includes(q);
-        const group = (title, inner) => (inner ? `<h4>${title}</h4><div class="lpb-add-grid">${inner}</div>` : '');
+        const group = (title, inner) => (inner ? `<h2 class="lpb-ph">${title}</h2><div class="lpb-add-grid">${inner}</div>` : '');
         const widgets = gr => Object.values(W).filter(d => d.group === gr && match(d.label)).map(d => tile(`new:${d.type}`, `<b class="lpb-glyph">${esc(d.icon)}</b>`, d.label)).join('');
         const layouts = Object.entries(B.LAYOUTS).filter(([, v]) => match(v[2] + ' columns layout')).map(([k, v]) => tile(`layout:${k}`, `<i class="lpb-lay" style="grid-template-columns:${v[0]}">${'<i></i>'.repeat(v[1])}</i>`, v[2])).join('');
         const secT = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0])).map(([k, v]) => `<button type="button" class="lpb-tpl-row" draggable="true" data-drag="tpl:${k}">${esc(v[0])}<span>＋</span></button>`).join('');
         const pageT = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0] + ' page')).map(([k, v]) => `<button type="button" class="lpb-tpl-row" data-page-tpl="${k}">📄 ${esc(v[0])}<span>＋ New page</span></button>`).join('');
         const mine = myTemplates().map((t, i) => (match(t.name) ? `<div class="lpb-tpl-row lpb-tpl-mine" draggable="true" data-drag="tpl:my-${i}">⭐ ${esc(t.name)}<button type="button" data-tpl-del="${i}" title="Remove">✕</button></div>` : '')).join('');
         const html = (FUNNEL ? group('Funnel widgets', widgets('funnel')) : '') + group('Layout — columns', layouts) + group('Basic widgets', widgets('basic')) + group('Pro widgets', widgets('pro')) + group('Ready sections', widgets('section'))
-            + (secT ? `<h4>Section templates</h4><div class="lpb-tpl-list">${secT}</div>` : '') + (pageT ? `<h4>Page templates</h4><div class="lpb-tpl-list">${pageT}</div>` : '')
-            + (!q || mine ? `<h4>My templates</h4><div class="lpb-tpl-list">${mine || '<p class="lpb-hint">Select a section and press ★ on its toolbar to save it here.</p>'}</div>` : '');
+            + (secT ? `<h2 class="lpb-ph">Section templates</h2><div class="lpb-tpl-list">${secT}</div>` : '') + (pageT ? `<h2 class="lpb-ph">Page templates</h2><div class="lpb-tpl-list">${pageT}</div>` : '')
+            + (!q || mine ? `<h2 class="lpb-ph">My templates</h2><div class="lpb-tpl-list">${mine || '<p class="lpb-hint">Select a section and press ★ on its toolbar to save it here.</p>'}</div>` : '');
         $('[data-add-list]').innerHTML = html || '<p class="lpb-hint">Nothing matches your search.</p>';
     };
     $('[data-add-search]').addEventListener('input', drawAdd);
@@ -992,10 +992,10 @@
     const fit = () => { const w = { desktop: 1280, tablet: 820 }[device]; screen.style.setProperty('--s', w ? Math.min(1, screen.clientWidth / w).toFixed(4) : 1); screen.style.setProperty('--w', (w || 390) + 'px'); };
     const setDevice = d => {
         device = d; screen.dataset.device = d;
-        $$('[data-device]').forEach(b => b.setAttribute('aria-pressed', b.dataset.device === d ? 'true' : 'false'));
+        $$('button[data-device]').forEach(b => b.setAttribute('aria-pressed', b.dataset.device === d ? 'true' : 'false'));
         fit(); if ($('[data-tab-panel=edit]').classList.contains('is-active') && editTab === 'style') drawEdit();
     };
-    $$('[data-device]').forEach(b => b.addEventListener('click', () => setDevice(b.dataset.device)));
+    $$('button[data-device]').forEach(b => b.addEventListener('click', () => setDevice(b.dataset.device)));
     new ResizeObserver(fit).observe(screen);
     $('[data-act=undo]').addEventListener('click', doUndo);
     $('[data-act=redo]').addEventListener('click', doRedo);

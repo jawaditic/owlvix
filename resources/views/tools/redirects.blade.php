@@ -19,7 +19,7 @@
 @endsection
 
 @section('content')
-@include('partials.tool-page', ['name' => 'Redirect checker', 'h1' => 'Redirect &amp; <span class="accent">HTTP header</span> checker', 'lead' => 'Follow any address step by step — every redirect, status code and header, plus a check that all versions of your domain end in one place.', 'action' => route('redirect-check.run'), 'icon' => 'refresh', 'button' => 'Check redirects', 'placeholder' => 'example.com or http://example.com/old-page'])
+@include('partials.tool-page', ['name' => 'Redirect checker', 'h1' => 'Redirect &amp; <span class="accent">HTTP header</span> checker', 'lead' => 'Follow any address step by step — every redirect, status code and header, plus a check that all versions of your domain end in one place.', 'action' => route('redirect-check.run'), 'icon' => 'refresh', 'button' => 'Check redirects', 'placeholder' => 'example.com/old-page'])
 
 <section class="speed-report" hidden data-tool-report aria-live="polite">
     <div class="container">

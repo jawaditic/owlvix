@@ -21,14 +21,14 @@
                 @csrf
                 <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
                 @if ($standalone ?? false)
-                    <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="Your website, e.g. example.com" required maxlength="500" aria-label="Your website" value="{{ is_string(request('url')) ? request('url') : '' }}">
+                    <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="Your website (example.com)" required maxlength="500" aria-label="Your website" value="{{ is_string(request('url')) ? request('url') : '' }}">
                 @else
                     <input type="hidden" name="url">
                     <p class="audit-card__for">Audit for <strong data-audit-site>your site</strong></p>
                 @endif
                 <input type="text" name="name" placeholder="Your name" required maxlength="100" autocomplete="name" aria-label="Your name">
                 <input type="email" name="email" placeholder="you@company.com" required maxlength="150" autocomplete="email" aria-label="Your email">
-                <textarea name="notes" rows="3" maxlength="1000" placeholder="Anything we should focus on? (optional) — e.g. a keyword, a competitor, or a drop in traffic" aria-label="Notes"></textarea>
+                <textarea name="notes" rows="4" maxlength="1000" placeholder="Anything we should focus on? (optional) — e.g. a keyword, a competitor, or a drop in traffic" aria-label="Notes"></textarea>
                 <button type="submit" class="btn btn--glow btn--block">Request my full audit
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>

@@ -10,7 +10,7 @@
 <section class="hero speed-hero">
     <div class="container container--narrow">
         <nav class="crumbs" aria-label="Breadcrumb">
-            <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><span aria-current="page">SEO audit</span>
+            <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">SEO audit</span>
         </nav>
         <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free · Delivered in 2 business days</span>
         <h1>Free <span class="accent">SEO audit</span></h1>

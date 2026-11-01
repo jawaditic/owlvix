@@ -68,9 +68,9 @@
                         <label>Unsubscribe link for<select data-set="platform"></select></label>
                         <label data-unsub-url hidden>Your unsubscribe link<input data-set="unsubUrl" maxlength="500" placeholder="https://…" inputmode="url"></label>
                     </details>
-                    <h3 class="fb-sub">Blocks <small class="fb-hint">— click one in the preview to edit it</small></h3>
+                    <h2 class="fb-sub">Blocks <small class="fb-hint">— click one in the preview to edit it</small></h2>
                     <div class="fb-fields" data-blocks></div>
-                    <h3 class="fb-sub">Add a block</h3>
+                    <h2 class="fb-sub">Add a block</h2>
                     <div class="fb-add" data-add></div>
                 </div>
                 <div class="fb-prev-wrap">

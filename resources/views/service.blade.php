@@ -174,7 +174,7 @@
                         <h2>{{ $p['cost']['heading'] }}</h2>
                         <p>{{ $p['cost']['text'] }}</p>
                     </div>
-                    <aside class="cost-card">
+                    <div class="cost-card">
                         <span class="badge badge--blue">Start free</span>
                         <p class="cost-card__price"><strong>$0</strong> to start</p>
                         <p class="cost-card__sub">Then pay per milestone — only after you approve it.</p>
@@ -186,7 +186,7 @@
                         </ul>
                         <a href="#quote-form" class="btn btn--glow btn--block">Get my fixed price</a>
                         <a href="{{ route('home') }}#pricing" class="btn btn--ghost btn--block" data-pricing>See how we charge</a>
-                    </aside>
+                    </div>
                 </div>
             </div>
         </section>
@@ -196,7 +196,7 @@
         <section class="section" id="work">
             <div class="container">
                 <p class="eyebrow">Our work</p>
-                <h2>{{ $p['name'] }} projects</h2>
+                <h2>Projects we've built</h2>
                 <div class="work">
                     @foreach ($projects as $pr)
                         <article class="work-card">

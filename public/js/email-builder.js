@@ -242,6 +242,12 @@ ${rows}
         Object.assign(frame.style, { width: '680px', height: sc.clientHeight / k + 'px', transform: `scale(${k})`, transformOrigin: 'top left' });
     };
     addEventListener('resize', fit);
+    // phones: start on the phone view, where the email shows at its real size (the desktop view would shrink it to half)
+    if (innerWidth < 640) {
+        device = 'mobile';
+        $$('.eb-devices [data-device]').forEach(x => x.setAttribute('aria-pressed', x.dataset.device === 'mobile' ? 'true' : 'false'));
+        $('.eb-screen').dataset.device = 'mobile';
+    }
     const markPreview = () => { const d = frame.contentDocument; if (!d) return; d.querySelectorAll('[data-b].is-on').forEach(el => el.classList.remove('is-on')); d.querySelector(`[data-b="${openId}"]`)?.classList.add('is-on'); };
     const changed = () => { save(); drawPreview(); };
 

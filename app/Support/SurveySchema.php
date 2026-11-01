@@ -41,7 +41,7 @@ class SurveySchema
             'intro' => self::str($in['intro'] ?? '', 1000),
             'button' => self::str($in['button'] ?? '', 40) ?: 'Send',
             'thanks' => self::str($in['thanks'] ?? '', 300) ?: 'Thanks! Your answers have been sent.',
-            'color' => is_string($in['color'] ?? null) && preg_match('/^#[0-9a-f]{6}$/i', $in['color']) ? strtolower($in['color']) : '#16a34a',
+            'color' => is_string($in['color'] ?? null) && preg_match('/^#[0-9a-f]{6}$/i', $in['color']) ? strtolower($in['color']) : '#15803d',
             'managed' => ! empty($in['managed']), // made by a builder page (e.g. an RSVP form): edited there, not in the form builder
             'fields' => [],
         ];
