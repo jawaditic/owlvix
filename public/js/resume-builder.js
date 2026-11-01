@@ -259,5 +259,94 @@ html.d-modern-print{background:linear-gradient(90deg,${c} 68mm,#fff 68mm)!import
         R = clean({ design: R.design, color: R.color, font: R.font, person: {}, jobs: [job()], schools: [school()], languages: [], extras: [] }); draw(); drawLook(); changed();
     });
 
+
+    /* ------------------------------------------------ quick setup wizard (public/js/builder-wizard.js) — everything stays on this device */
+    const WZ = window.OwlWizard;
+    if (WZ) {
+        const EM = { classic: '📄', modern: '🗂️', bold: '⚡', minimal: '◻️', compact: '📑' };
+        const isSample = () => R.person.name === 'Alex Morgan' && R.person.email === 'alex.morgan@email.com';
+        let fresh = isSample(), wframe = null, wt = 0;
+        /** The first time they type their own details, the example's jobs and school go, so none of it ends up in their CV. */
+        const own = () => { if (!fresh) return; fresh = false; R = clean({ design: R.design, color: R.color, font: R.font, person: { name: '', title: '', email: '', phone: '', place: '', web: '' }, summary: '', jobs: [job()], schools: [school()], skills: '', languages: [], extras: [] }); };
+        const drawW = () => { if (!wframe) return; wframe.srcdoc = page(); };
+        const upd = () => { save(); clearTimeout(wt); wt = setTimeout(drawW, 150); };
+        const field = (k, label, ph, src = R.person, type = 'text', max = 120) => `<label class="wz-field">${label}<input data-wz="${k}" type="${type}" maxlength="${max}" value="${esc(fresh ? '' : src[k] || '')}" placeholder="${esc(ph)}"></label>`;
+        const j0 = () => R.jobs[0] || (R.jobs[0] = job()), s0 = () => R.schools[0] || (R.schools[0] = school());
+        const steps = [
+            {
+                title: 'Pick a design', sub: 'All five pass applicant tracking systems (ATS). You can switch any time.',
+                draw: () => WZ.cards(Object.entries(DESIGNS).map(([k, v]) => [k, EM[k] || '📄', v]), R.design),
+                click: (e, el, box) => { if (!el.dataset.wzPick) return; R.design = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el); upd(); },
+            },
+            {
+                title: 'Your details', sub: 'At the top of your CV. They stay on this device — nothing is uploaded.',
+                draw: () => `<div class="wz-2">${field('name', 'Full name', 'e.g. Sara Khan')}${field('title', 'Job title', 'e.g. Customer Service Lead')}
+                    ${field('email', 'Email', 'you@email.com', R.person, 'email')}${field('phone', 'Phone', '+44 7700 900123', R.person, 'tel')}
+                    ${field('place', 'City, country', 'e.g. Manchester, UK')}${field('web', 'LinkedIn or website', 'linkedin.com/in/you')}</div>`,
+                input: (e, el) => { own(); R.person[el.dataset.wz] = el.value; upd(); },
+                ok: () => (R.person.name.trim() && !isSample() ? '' : 'Please type your name.'),
+            },
+            {
+                title: 'Your latest job', sub: 'Start with what you do now (or did last). Add more jobs in the editor.',
+                draw: () => { const j = j0(); return `<div class="wz-2">${field('role', 'Job title', 'e.g. Sales Assistant', j)}${field('company', 'Company', 'e.g. Northwind Ltd', j)}
+                    ${field('from', 'From', 'e.g. 2022', j, 'text', 20)}${field('to', 'To', j.now ? 'Present' : 'e.g. 2024', j, 'text', 20)}</div>
+                    <label class="wz-check"><input type="checkbox" data-wz-now ${j.now ? 'checked' : ''}> I work here now</label>
+                    <label class="wz-field">What you achieved <small>— one per line, numbers help</small><textarea data-wz="points" rows="3" maxlength="1500" placeholder="Served 80+ customers a day with a 4.9★ rating&#10;Trained 3 new team members">${esc(fresh ? '' : j.points)}</textarea></label>`; },
+                input: (e, el) => { if (!el.dataset.wz) return; own(); j0()[el.dataset.wz] = el.value; upd(); },
+                change: (e, el, box) => { if (!el.matches('[data-wz-now]')) return; own(); j0().now = el.checked; const to = box.querySelector('[data-wz="to"]'); if (to) to.placeholder = el.checked ? 'Present' : 'e.g. 2024'; upd(); },
+            },
+            {
+                title: 'Education and skills', sub: 'Your highest qualification, and the skills employers search for.',
+                draw: () => { const s = s0(); return `<div class="wz-2">${field('degree', 'Degree or qualification', 'e.g. BSc Computer Science', s)}${field('school', 'School or university', 'e.g. University of Leeds', s)}
+                    ${field('sfrom', 'From', 'e.g. 2018', { sfrom: s.from }, 'text', 20)}${field('sto', 'To', 'e.g. 2021', { sto: s.to }, 'text', 20)}</div>
+                    <label class="wz-field">Skills <small>— separate with commas</small><textarea data-wz="skills" rows="2" maxlength="1000" placeholder="Customer service, Excel, Team leadership">${esc(fresh ? '' : R.skills)}</textarea></label>`; },
+                input: (e, el) => {
+                    const k = el.dataset.wz; if (!k) return; own();
+                    if (k === 'skills') R.skills = el.value; else if (k === 'sfrom') s0().from = el.value; else if (k === 'sto') s0().to = el.value; else s0()[k] = el.value;
+                    upd();
+                },
+            },
+            {
+                title: 'A short profile', sub: '2–3 sentences: who you are, what you’re good at and what you want next.',
+                draw: () => `<label class="wz-field">About you<textarea data-wz="summary" rows="4" maxlength="1200" placeholder="Friendly customer service lead with 5 years in retail…">${esc(fresh ? '' : R.summary)}</textarea></label>`,
+                input: (e, el) => { if (el.dataset.wz !== 'summary') return; own(); R.summary = el.value; upd(); },
+            },
+            {
+                title: 'Colour and font', sub: 'Keep it calm — one accent colour reads as professional.',
+                draw: () => WZ.palette(R.color) + `<div class="wz-look"><b>Font</b><div class="wz-chips">${Object.entries(FONTS).map(([k, v]) => `<button type="button" data-wz-font="${esc(k)}" aria-pressed="${R.font === k}">${esc(v)}</button>`).join('')}</div></div>`,
+                click: (e, el, box) => {
+                    if (el.dataset.pal) { R.color = el.dataset.pal; WZ.press(box, '[data-pal]', el); box.querySelector('[data-wz-color]').value = el.dataset.pal; }
+                    else if (el.dataset.wzFont) { R.font = el.dataset.wzFont; WZ.press(box, '[data-wz-font]', el); }
+                    else return;
+                    upd();
+                },
+                input: (e, el, box) => { if (!el.matches('[data-wz-color]')) return; R.color = el.value; box.querySelectorAll('[data-pal]').forEach(x => x.setAttribute('aria-pressed', 'false')); upd(); },
+            },
+        ];
+        WZ.mount({
+            root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-resume-off',
+            say: ['Hoo! Need a CV? I’ll write it with you — it takes about 3 minutes.', 'Your details stay on this device. Nothing is uploaded.', 'You’ll see your CV take shape as you go. Ready? 🚀'],
+            hasSaved: () => !isSample(),
+            quickSlot: root.querySelector('.fb-top__actions'),
+            onRestart: () => { fresh = isSample(); },
+            steps,
+            preview: {
+                mount: side => { side.innerHTML = '<p class="wz-prev__label">Live preview</p><div class="wz-paper wz-prev"><iframe title="Your CV" data-wz-frame></iframe></div>'; wframe = side.querySelector('[data-wz-frame]'); drawW(); },
+                unmount: () => { wframe = null; draw(); drawLook(); preview(); },
+                refresh: drawW,
+            },
+            building: 'Building your CV…',
+            tasks: ['Laying out your details', 'Setting your design', 'Checking it for ATS', 'Getting it ready to print'],
+            done: {
+                title: 'Your CV is ready',
+                sub: 'Download it as a PDF, or keep editing to add more jobs, languages and certificates. It stays saved on this device.',
+                actions: [
+                    { label: '📄 Download PDF', cls: 'btn btn--glow', act: close => { close(); setTimeout(() => root.querySelector('[data-pdf]')?.click(), 350); } },
+                    { label: '✏️ Keep editing', act: close => close() },
+                ],
+            },
+        });
+    }
+
     draw(); drawLook(); preview();
 })();

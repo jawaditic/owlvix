@@ -38,6 +38,13 @@
 
 <section class="calc-wrap">
     <div class="container">
+        @include('partials.wizard-banner', [
+            'say' => 'Hoo! Need a form? I’ll set it up with you — it takes about 2 minutes.',
+            'title' => 'Let’s make <span class="accent">your form</span> together',
+            'sub' => 'Pick what it’s for, choose your questions and colours, and watch the form come together as you go. Answers are emailed to you.',
+            'steps' => [['Pick what', 'it’s for'], ['Questions', '& colours'], ['Preview, then', 'publish it']],
+            'go' => '🚀 Start my form',
+        ])
         <div class="fb card" data-fb>
             <div class="fb-top">
                 <div class="fb-tabs" role="tablist">
@@ -98,5 +105,6 @@
 
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'The form builder, explained'])
 
+<script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/form-builder.js') }}" defer></script>
 @endsection

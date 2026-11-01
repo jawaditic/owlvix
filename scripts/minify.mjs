@@ -25,6 +25,8 @@ export const FILES = [
     'js/app-builder.js',
     'js/app-templates.js',
     'js/app-wizard.js',
+    'js/builder-wizard.js',
+    'js/builder-account.js',
 ];
 
 for (const file of FILES) {

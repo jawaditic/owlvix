@@ -93,7 +93,7 @@
         return d?.settings ? { settings, blocks } : f; // an emptied email keeps its settings
     };
     let E; try { E = clean(JSON.parse(localStorage.getItem(STORE) || 'null')); } catch { E = fresh('newsletter'); }
-    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(E)); } catch {} };
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(E)); localStorage.setItem(STORE + '-touched', '1'); } catch {} try { cloudStatus(); } catch { /* (before the account code has loaded) */ } };
     let openId = null;
 
     /* ------------------------------------------------ the email HTML */
@@ -308,6 +308,162 @@ ${rows}
         how.querySelectorAll('[data-how]').forEach(x => x.setAttribute('aria-selected', x === t ? 'true' : 'false'));
         how.querySelectorAll('[data-how-panel]').forEach(p => (p.hidden = p.dataset.howPanel !== t.dataset.how));
     });
+
+
+    /* ------------------------------------------------ saved to the account ("My emails", Save) — like the app builder */
+    const ACC = window.OwlAccount;
+    const CLOUD_KEY = STORE + '-cloud';
+    const hashOf = str => { let h = 5381; for (let i = 0; i < str.length; i++) h = (h * 33 ^ str.charCodeAt(i)) >>> 0; return h.toString(36) + ':' + str.length; };
+    let cloud = {}; try { cloud = JSON.parse(localStorage.getItem(CLOUD_KEY) || '{}') || {}; } catch {}
+    let cloudList = null;
+    function setCloud(c) { cloud = c || {}; try { localStorage.setItem(CLOUD_KEY, JSON.stringify(cloud)); } catch {} cloudStatus(); }
+    function unsaved() { return !cloud.id || cloud.saved !== hashOf(JSON.stringify(E)); }
+    function cloudStatus() {
+        const st = root.querySelector('[data-cloud-status]'), btn = root.querySelector('[data-cloud-save]');
+        if (!st || !btn || typeof E === 'undefined') return;
+        const dirty = unsaved();
+        st.textContent = !cloud.id ? 'Not saved yet — your email is kept in this browser. Save it to your account to open it anywhere.'
+            : dirty ? 'Unsaved changes — press Save to update your account copy.' : 'Saved to your account ✓';
+        st.dataset.state = !cloud.id ? 'new' : dirty ? 'dirty' : 'saved';
+        btn.textContent = !cloud.id ? '☁️ Save' : dirty ? '☁️ Save changes' : 'Saved ✓';
+        btn.classList.toggle('btn--glow', dirty); btn.classList.toggle('btn--ghost', !dirty);
+    }
+    const drawCloudList = () => {
+        const sel = root.querySelector('[data-cloud-list]'), signin = root.querySelector('[data-cloud-signin]');
+        const on = !!ACC?.signedIn() && cloudList !== null;
+        sel.hidden = !on; signin.hidden = on;
+        if (!on) return;
+        sel.innerHTML = `<option value="">🗂 My emails (${cloudList.length})</option>` + cloudList.map(x => `<option value="${esc(x.id)}" ${x.id === cloud.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('') + '<option value="new">＋ New email</option>';
+        if (!cloudList.some(x => x.id === cloud.id)) sel.value = '';
+    };
+    const loadCloudList = async () => { try { cloudList = await ACC.projects.list('email'); } catch (ex) { cloudList = null; if (ex.status !== 401) note(ex.message, 'error'); } drawCloudList(); };
+    const signedIn = async why => ACC.signedIn() || ACC.signIn(why);
+    const saveCloud = async () => {
+        if (!ACC || !(await signedIn('Save your email to your account and open it on any device.'))) return false;
+        const btn = root.querySelector('[data-cloud-save]'); btn.disabled = true;
+        const send = id => ACC.projects.save({ id: id || null, kind: 'email', name: E.settings.subject || 'Untitled email', data: E });
+        try {
+            let p;
+            try { p = await send(cloud.id); } catch (ex) { if (ex.status === 404 && cloud.id) p = await send(null); else throw ex; }
+            setCloud({ id: p.id, saved: hashOf(JSON.stringify(E)) });
+            note('Saved to your account — open it any time from “My emails”.', 'success'); track('email_builder_cloud_save');
+            await loadCloudList(); return true;
+        } catch (ex) { note(ex.message, 'error'); return false; }
+        finally { btn.disabled = false; }
+    };
+    const replaceWith = d => { E = clean(d); openId = null; save(); drawSettings(); syncUnsub(); drawBlocks(); drawPreview(); fit(); };
+    const askLose = async what => !unsaved() || !!(await window.sweet({ icon: 'warning', title: 'Unsaved changes', text: `This email has changes that aren’t saved to your account. ${what} anyway?`, confirm: what, cancel: 'Go back' }));
+    root.querySelector('[data-cloud-save]').addEventListener('click', () => { if (!unsaved()) return note('Already saved — nothing new to save.', 'info'); saveCloud(); });
+    root.querySelector('[data-cloud-signin]').addEventListener('click', async () => { if (await signedIn('See the emails you saved, on any device.')) loadCloudList(); });
+    root.querySelector('[data-cloud-list]').addEventListener('change', async e => {
+        const v = e.target.value; if (!v) return;
+        if (v === 'new') { if (await askLose('Start a new one')) { replaceWith(fresh('newsletter')); setCloud({}); drawCloudList(); wizard?.open(true); } else drawCloudList(); return; }
+        if (v === cloud.id) return;
+        if (!(await askLose('Open another'))) return drawCloudList();
+        try { const p = await ACC.projects.get(v); replaceWith(p.data); setCloud({ id: p.id, saved: hashOf(JSON.stringify(E)) }); drawCloudList(); note(`Opened “${p.name}”`, 'success'); }
+        catch (ex) { note(ex.message, 'error'); drawCloudList(); }
+    });
+    if (ACC?.signedIn()) loadCloudList(); else drawCloudList();
+    cloudStatus();
+
+    /* ------------------------------------------------ quick setup wizard (public/js/builder-wizard.js) */
+    let wizard = null;
+    const WZ = window.OwlWizard;
+    if (WZ) {
+        const EM = { newsletter: '📰', sale: '🏷️', welcome: '👋', event: '🎟️', launch: '🚀' };
+        let picked = null, hadWork = false; try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}
+        const first = type => E.blocks.find(b => b.type === type);
+        let frame = null, timer = 0;
+        const drawWz = () => { if (!frame) return; frame.srcdoc = html({ preview: true }); frame.onload = () => { try { frame.contentDocument.addEventListener('click', ev => ev.preventDefault(), true); } catch {} }; };
+        const upd = () => { save(); drawPreview(); clearTimeout(timer); timer = setTimeout(drawWz, 120); };
+        const steps = [
+            {
+                title: 'What is this email for?', sub: 'We’ll start you with a ready email made for it — you can change every block.',
+                draw: () => WZ.cards([...(hadWork ? [['keep', '✅', 'Keep my email', 'Update what’s there']] : []), ...Object.entries(T).map(([k, v]) => [k, EM[k] || '✉️', v[0]])], picked),
+                click: (e, el, box) => {
+                    if (!el.dataset.wzPick) return;
+                    picked = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el);
+                    if (picked === 'keep') return;
+                    const keep = { platform: E.settings.platform, unsubUrl: E.settings.unsubUrl, font: E.settings.font }, brand = first('header');
+                    E = fresh(picked); Object.assign(E.settings, keep);
+                    if (brand && named) Object.assign(first('header') || {}, { name: brand.name, logo: brand.logo });
+                    openId = null; upd();
+                },
+                ok: () => (picked ? '' : 'Pick the closest one — you can change everything later.'),
+            },
+            {
+                title: 'Your brand', sub: 'Shown at the top of the email and in the footer.',
+                draw: () => { const h = first('header') || {}, f = first('footer') || {}; return `<label class="wz-field">Brand or business name<input data-wz="name" maxlength="80" value="${esc(h.name || '')}" placeholder="e.g. Bean There Café"></label>
+                    <label class="wz-field">Logo address <small>— optional, a link to your logo starting with https://</small><input data-wz="logo" type="url" maxlength="500" value="${esc(h.logo || '')}" placeholder="https://yoursite.com/logo.png"></label>
+                    <div class="wz-2"><label class="wz-field">Company name (footer)<input data-wz="company" maxlength="120" value="${esc(f.company || '')}"></label>
+                    <label class="wz-field">Address (footer — the law asks for it)<input data-wz="address" maxlength="200" value="${esc(f.address || '')}"></label></div>`; },
+                input: (e, el) => {
+                    const k = el.dataset.wz, h = first('header'), f = first('footer');
+                    if ((k === 'name' || k === 'logo') && h) { h[k] = k === 'logo' ? el.value.trim() : el.value; named = true; }
+                    if ((k === 'company' || k === 'address') && f) f[k] = el.value;
+                    upd();
+                },
+                ok: () => { const h = first('header'); return h && !h.name.trim() && !h.logo.trim() ? 'Add your brand name (or a logo).' : ''; },
+            },
+            {
+                title: 'Subject and main message', sub: 'The subject decides if people open it; the first lines decide if they read on.',
+                draw: () => { const hd = first('heading'), tx = first('text'), bt = first('button'); return `<label class="wz-field">Subject line<input data-wz="subject" maxlength="150" value="${esc(E.settings.subject)}"></label>
+                    <label class="wz-field">Preview text <small>— shown after the subject in the inbox</small><input data-wz="preheader" maxlength="200" value="${esc(E.settings.preheader)}"></label>
+                    ${hd ? `<label class="wz-field">Headline<input data-wz="heading" maxlength="150" value="${esc(hd.text)}"></label>` : ''}
+                    ${tx ? `<label class="wz-field">First paragraph<textarea data-wz="text" rows="3" maxlength="1500">${esc(tx.text)}</textarea></label>` : ''}
+                    ${bt ? `<div class="wz-2"><label class="wz-field">Button<input data-wz="btn" maxlength="60" value="${esc(bt.text)}"></label><label class="wz-field">Button link<input data-wz="url" maxlength="500" value="${esc(bt.url)}" placeholder="https://yoursite.com"></label></div>` : ''}`; },
+                input: (e, el) => {
+                    const k = el.dataset.wz;
+                    if (k === 'subject' || k === 'preheader') E.settings[k] = el.value;
+                    else if (k === 'heading') first('heading').text = el.value;
+                    else if (k === 'text') first('text').text = el.value;
+                    else if (k === 'btn') first('button').text = el.value;
+                    else if (k === 'url') first('button').url = el.value.trim();
+                    drawSettings(); upd();
+                },
+                ok: () => (E.settings.subject.trim() ? '' : 'Please write a subject line.'),
+            },
+            {
+                title: 'Pick your colours', sub: 'Buttons, links and headings use your main colour.',
+                draw: () => WZ.palette(E.settings.color) + `<div class="wz-look"><b>Background</b><div class="wz-chips">${[['#f1f5f9', 'Soft grey'], ['#ffffff', 'White'], ['#fdf6ec', 'Cream'], ['#0f172a', 'Dark']].map(([c, l]) => `<button type="button" data-wz-bg="${c}" aria-pressed="${E.settings.bg === c}">${l}</button>`).join('')}</div></div>`,
+                click: (e, el, box) => {
+                    if (el.dataset.pal) { E.settings.color = el.dataset.pal; WZ.press(box, '[data-pal]', el); box.querySelector('[data-wz-color]').value = el.dataset.pal; }
+                    else if (el.dataset.wzBg) { E.settings.bg = el.dataset.wzBg; WZ.press(box, '[data-wz-bg]', el); }
+                    else return;
+                    drawSettings(); upd();
+                },
+                input: (e, el, box) => { if (!el.matches('[data-wz-color]')) return; E.settings.color = el.value; box.querySelectorAll('[data-pal]').forEach(x => x.setAttribute('aria-pressed', 'false')); drawSettings(); upd(); },
+            },
+            {
+                title: 'Where will you send it?', sub: 'We add the unsubscribe link in the format your email platform needs.',
+                draw: () => `<div class="wz-chips wz-chips--big">${Object.entries(UNSUB).map(([k, v]) => `<button type="button" data-wz-plat="${k}" aria-pressed="${E.settings.platform === k}">${esc(v[0])}</button>`).join('')}</div>
+                    <label class="wz-field" data-wz-own ${E.settings.platform === 'custom' ? '' : 'hidden'}>Your unsubscribe link<input data-wz="unsub" maxlength="500" value="${esc(E.settings.unsubUrl)}" placeholder="https://… or your platform’s tag"></label>`,
+                click: (e, el, box) => { if (!el.dataset.wzPlat) return; E.settings.platform = el.dataset.wzPlat; WZ.press(box, '[data-wz-plat]', el); box.querySelector('[data-wz-own]').hidden = E.settings.platform !== 'custom'; drawSettings(); syncUnsub(); upd(); },
+                input: (e, el) => { if (el.dataset.wz === 'unsub') { E.settings.unsubUrl = el.value; drawSettings(); upd(); } },
+            },
+        ];
+        let named = false;
+        wizard = WZ.mount({
+            root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-email-off',
+            say: ['Hoo! Need an email for your customers? I’ll set it up with you — it takes about 2 minutes.', 'Pick what it’s for, and I’ll start you with a ready email.', 'You’ll see it on a phone as you go. Ready? 🚀'],
+            hasSaved: () => !!cloud.id,
+            quickSlot: root.querySelector('.fb-top__actions'),
+            onRestart: () => { picked = null; named = false; hadWork = false; },
+            steps,
+            preview: { mount: side => { side.innerHTML = `<p class="wz-prev__label">Live preview</p>${WZ.phoneFrame()}`; frame = side.querySelector('[data-wz-frame]'); drawWz(); }, unmount: () => { frame = null; drawSettings(); syncUnsub(); drawBlocks(); drawPreview(); fit(); }, refresh: drawWz },
+            building: 'Building your email…',
+            tasks: ['Laying out your blocks', 'Painting your colours', 'Adding your unsubscribe link', 'Checking it for phones and Outlook'],
+            done: {
+                title: 'Your email is ready',
+                sub: 'Scroll the preview to see it. Save it to your account, then copy the HTML into your email platform — and fine-tune any block in the editor.',
+                actions: [
+                    { label: '☁️ Save to my account', cls: 'btn btn--glow', act: close => { close(); saveCloud(); } },
+                    { label: '📋 Copy HTML', act: close => { close(); root.querySelector('[data-copy]').click(); } },
+                    { label: '✏️ Keep editing', act: close => close() },
+                ],
+            },
+        });
+    }
 
     drawSettings(); syncUnsub(); drawBlocks(); drawPreview(); fit();
 })();

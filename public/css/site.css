@@ -3350,3 +3350,66 @@ html { overflow-x: clip; } /* the tilted background grid never widens the page *
 @media (max-width: 360px) { .fb-top > .fb-tabs button { font-size: .8rem; padding-inline: 4px; } }
 h2.fb-sub { text-align: left; margin-bottom: 0; font-family: Inter, sans-serif; font-weight: 700; }
 @media (max-width: 560px) { .fb:not(.ab) .fb-top__actions > .btn { flex: 1; white-space: nowrap; padding-inline: 12px; } }
+
+/* ===================== Quick setup wizard for the page, email, form and resume builders (builder-wizard.js) ===================== */
+.lpb-wzb { margin-bottom: 18px; }
+.wz--builder .wz__side { align-content: start; padding-top: 6px; }
+.wz-prev__label { margin: 0 0 8px; text-align: center; color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+/* a phone-shaped frame around the live page (the page is drawn 390px wide and scaled down) */
+.wz-site { --pw: 300px; position: relative; width: var(--pw); height: min(600px, calc(100dvh - 160px)); margin: 0 auto; padding: 10px; border-radius: 36px; background: #0f172a;
+    box-shadow: 0 30px 60px -30px rgba(15, 23, 42, .7), inset 0 0 0 2px #334155; overflow: hidden; }
+.wz-site__bar { position: absolute; top: 14px; left: 50%; z-index: 2; width: 70px; height: 6px; border-radius: 6px; background: #0f172a; transform: translateX(-50%); }
+/* the screen clips the page to the phone's inner curve (the page itself is drawn larger and scaled down) */
+.wz-site__screen { position: relative; height: 100%; border-radius: 27px; overflow: hidden; background: #fff; isolation: isolate; clip-path: inset(0 round 27px); } /* (clip-path: Chrome doesn't always clip a scaled iframe by border-radius alone) */
+.wz-site iframe { display: block; width: 390px; height: calc(100% / .718); border: 0; border-radius: 38px; background: #fff; transform: scale(.718); transform-origin: top left; } /* 38px × .718 ≈ the screen's 27px curve */
+.wz-site.wz-bump { animation: wz-bump .6s; }
+@media (max-width: 900px) { .wz-site { --pw: 280px; height: 560px; } .wz-site__screen { border-radius: 26px; clip-path: inset(0 round 26px); } .wz-site iframe { transform: scale(.667); height: calc(100% / .667); border-radius: 39px; } }
+.wz-logo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+.wz-logo__img { max-width: 160px; max-height: 64px; padding: 8px; border-radius: 12px; border: 1px solid var(--card-border); background: #fff; object-fit: contain; }
+.wz-logo__none { display: grid; place-items: center; width: 96px; height: 64px; border-radius: 12px; border: 1.5px dashed var(--card-border); color: var(--muted); font-size: .8rem; }
+.wz-logo .wz-upload { flex: 1; min-width: 200px; }
+.wz-page small { color: var(--muted); font-weight: 500; font-size: .78rem; margin-left: auto; }
+.wz-page input:disabled { opacity: .5; }
+
+/* Page builders: saved to the account */
+.lpb-cloud-status { margin: 0; padding: 6px 14px; border-bottom: 1px solid var(--card-border); font-size: .82rem; color: var(--muted); }
+.lpb-cloud-status[data-state="dirty"] { color: #b45309; }
+:root:not([data-theme="light"]) .lpb-cloud-status[data-state="dirty"] { color: #fbbf24; }
+.lpb-cloud-status[data-state="saved"] { color: var(--green-ink); }
+.lpb-mine { max-width: 200px; }
+.lpb-quick { color: var(--green); }
+@media (max-width: 760px) {
+    .lpb-top .lpb-quick { grid-column: span 2; grid-row: 4; border-color: rgba(30, 199, 115, .45) !important; }
+    .lpb-top [data-cloud-list], .lpb-top [data-cloud-signin] { grid-column: span 2; grid-row: 4; max-width: none; width: 100%; }
+    .lpb-top .lpb-cloud-save { grid-column: span 2; grid-row: 4; width: 100%; min-height: 40px; }
+    .lpb-top [data-cloud-signin] .lpb-tb__t { position: static; width: auto; height: auto; clip: auto; }
+    .lpb-cloud-status { text-align: center; }
+}
+/* page builders on wide screens: the file and history tools are icons (their names show as hints), so the toolbar keeps to one line */
+@media (min-width: 761px) { .lpb-top [data-act="undo"] .lpb-tb__t, .lpb-top [data-act="redo"] .lpb-tb__t, .lpb-top [data-act="open"] .lpb-tb__t, .lpb-top [data-act="save"] .lpb-tb__t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; } }
+/* the wizard's fields (it sits outside the builders, so it brings its own field style) */
+.wz--builder .wz-field input:not([type="color"]):not([type="checkbox"]):not([type="file"]), .wz--builder .wz-field textarea, .wz--builder .wz-field select {
+    width: 100%; padding: 11px 13px; border-radius: 12px; border: 1px solid var(--card-border); background: var(--field); color: var(--text); font: 500 .95rem/1.4 Inter, sans-serif; }
+.wz--builder .wz-field textarea { resize: vertical; }
+.wz--builder .wz-field input:focus, .wz--builder .wz-field textarea:focus, .wz--builder .wz-field select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(30, 199, 115, .2); }
+.wz-field small { display: inline; color: var(--muted); font-weight: 500; font-size: .8rem; }
+@media (min-width: 761px) and (max-width: 1500px) {
+    .lpb-top .lpb-full-btn .lpb-tb__t, .lpb-top [data-cloud-signin] .lpb-tb__t { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+.wz-chips--big button { padding: 11px 16px; font-size: .92rem; }
+/* form wizard: the question list and the form preview */
+.wz-q { grid-template-columns: 22px 36px 1fr auto; }
+.wz-req { padding: 5px 12px; border-radius: 999px; border: 1.5px solid var(--card-border); background: var(--card); color: var(--muted); font: 600 .78rem Inter, sans-serif; cursor: pointer; }
+.wz-req[aria-pressed="true"] { border-color: var(--green); color: var(--green); background: rgba(30, 199, 115, .1); }
+.wz-form { width: 100%; max-width: 360px; margin: 0 auto; padding: 0; border: 0; background: none; box-shadow: none; }
+.wz-form .fb-prev { max-height: min(600px, calc(100dvh - 160px)); }
+.wz-form .fb-prev.wz-bump { animation: wz-bump .6s; }
+/* resume wizard: the A4 page, scaled down beside the steps */
+.wz-paper { width: 318px; height: 450px; margin: 0 auto; overflow: hidden; border-radius: 6px; background: #fff; box-shadow: 0 24px 50px -24px rgba(15, 23, 42, .55), 0 0 0 1px rgba(15, 23, 42, .08); }
+.wz-paper iframe { width: 794px; height: 1123px; border: 0; transform: scale(.4); transform-origin: top left; background: #fff; }
+.wz-paper.wz-bump { animation: wz-bump .6s; }
+.wz-check { display: flex; align-items: center; gap: 8px; margin: -2px 0 12px; font-weight: 600; font-size: .9rem; }
+.wz-check input { width: 18px; height: 18px; accent-color: var(--green); }
+@media (max-width: 760px) { .lpb-top .lpb-quick { white-space: nowrap; font-size: .8rem; padding: 0 6px; } }
+/* the editor's phone view: the page follows the frame's inner curve (34px outer − 10px border), at any zoom */
+.lpb-screen[data-device="mobile"] iframe { border-radius: calc(24px / var(--s, 1)); }

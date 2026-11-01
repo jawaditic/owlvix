@@ -150,6 +150,13 @@ Route::prefix('builder')->name('builder.')->controller(\App\Http\Controllers\Bui
         Route::post('surveys/{id}/delete', 'deleteSurvey')->where('id', '[a-z0-9]{16}')->name('surveys.delete');
     });
 });
+// Page builders and the email builder: projects saved to the account ("My sites", Save, Open)
+Route::prefix('builder/projects')->name('builder.projects.')->middleware('builder')->controller(\App\Http\Controllers\BuilderProjectController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::post('/', 'save')->middleware('throttle:30,1,builder-project-save')->name('save');
+    Route::get('{id}', 'show')->where('id', '[a-z0-9]{16}')->name('show');
+    Route::post('{id}/delete', 'destroy')->where('id', '[a-z0-9]{16}')->name('delete');
+});
 // Mobile app builder: your apps, website check and Android builds (public/js/app-builder.js)
 Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->controller(\App\Http\Controllers\AppBuilderController::class)->group(function () {
     Route::get('/', 'index')->name('index');

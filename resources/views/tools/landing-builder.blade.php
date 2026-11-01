@@ -65,5 +65,6 @@
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'The page builder, explained'])
 
 <script src="{{ \App\Support\Asset::url('js/builder-engine.js') }}" defer></script>
+<script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/landing-builder.js') }}" defer></script>
 @endsection

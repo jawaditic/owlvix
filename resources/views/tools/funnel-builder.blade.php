@@ -35,6 +35,7 @@
     </div>
 </section>
 
+@include('tools.partials.page-wizard-banner', ['mode' => 'funnel'])
 <section class="lpb-app" data-lpb data-mode="funnel" data-stats-url="{{ url('/fs') }}" data-runtime="{{ \App\Support\BuilderHtml::runtimeUrl() }}" data-site-base="{{ \App\Models\BuilderSite::base() }}" data-qr="{{ \App\Support\Asset::url('js/qr.js') }}">
     <div class="lpb-top">
         <div class="lpb-top__group">
@@ -52,8 +53,15 @@
             <button type="button" class="lpb-tb" data-act="undo" title="Undo (Ctrl/Cmd+Z)">↩<span class="lpb-tb__t"> Undo</span></button>
             <button type="button" class="lpb-tb" data-act="redo" title="Redo (Ctrl/Cmd+Shift+Z)">↪<span class="lpb-tb__t"> Redo</span></button>
             <button type="button" class="lpb-tb" data-act="preview" title="Open a preview in a new tab">👁<span class="lpb-tb__t"> Preview</span></button>
-            <button type="button" class="lpb-tb" data-act="open" title="Open a saved project">📂<span class="lpb-tb__t"> Open</span></button>
-            <button type="button" class="lpb-tb" data-act="save" title="Download a project file to keep editing later">💾<span class="lpb-tb__t"> Save project</span></button>
+            <button type="button" class="lpb-tb" data-act="open" title="Open a project file from this device">📂<span class="lpb-tb__t"> Open file</span></button>
+            <button type="button" class="lpb-tb" data-act="save" title="Download a project file to this device">💾<span class="lpb-tb__t"> Save file</span></button>
+        </div>
+        {{-- saved to the account, like the app builder: "My funnels" and Save --}}
+        <div class="lpb-top__group lpb-cloud">
+            <label class="sr-only" for="lpb-mine">Open one of my saved funnels</label>
+            <select id="lpb-mine" class="lpb-select lpb-mine" data-cloud-list hidden></select>
+            <button type="button" class="lpb-tb lpb-cloud-in" data-cloud-signin title="Sign in to see the funnels you saved">🗂<span class="lpb-tb__t"> My funnels</span></button>
+            <button type="button" class="btn btn--sm btn--ghost lpb-cloud-save" data-act="cloud-save">☁️ Save</button>
         </div>
         <div class="lpb-top__group">
             <button type="button" class="btn btn--sm btn--ghost" data-act="download">Download ↓</button>
@@ -65,6 +73,7 @@
             </button>
         </div>
     </div>
+    <p class="lpb-cloud-status" data-cloud-status></p>
 
     <div class="lpb-body">
         <div class="lpb-side">
@@ -137,5 +146,6 @@
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'Sales funnels, explained'])
 
 <script src="{{ \App\Support\Asset::url('js/builder-engine.js') }}" defer></script>
+<script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/landing-builder.js') }}" defer></script>
 @endsection

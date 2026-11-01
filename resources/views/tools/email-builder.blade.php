@@ -19,6 +19,7 @@
 @section('no-auto-quote', '1')
 
 @section('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
 @include('tools.partials.schema', ['name' => 'Owlvix Email Template Builder', 'url' => route('email-builder'), 'category' => 'DesignApplication', 'faq' => $faq])
 @endsection
 
@@ -29,7 +30,7 @@
             <a href="{{ route('home') }}">Home</a><span aria-hidden="true">›</span><a href="{{ route('free-tools') }}">Free tools</a><span aria-hidden="true">›</span><span aria-current="page">Email template builder</span>
         </nav>
         <div class="page-owl">@include('partials.live-owl', ['width' => 120, 'variant' => 'desk', 'alt' => 'Owlvix owl writing an email'])</div>
-        <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · Nothing is uploaded</span>
+        <span class="pill"><span class="pill__dot" aria-hidden="true"></span>Free tool · No sign-up to start</span>
         <h1>Design <span class="accent">newsletters &amp; emails</span> that look great everywhere</h1>
         <p class="lead">Start from a template, change the words, pictures and colours, then copy the HTML into Mailchimp, Brevo or Klaviyo. Works in Outlook, Gmail and on phones.</p>
     </div>
@@ -37,6 +38,13 @@
 
 <section class="calc-wrap">
     <div class="container">
+        @include('partials.wizard-banner', [
+            'say' => 'Hoo! Need an email for your customers? I’ll set it up with you — it takes about 2 minutes.',
+            'title' => 'Let’s write <span class="accent">your email</span> together',
+            'sub' => 'Pick what it’s for, add your brand and words, and watch the email come together as you go. Works in Mailchimp, Brevo, Klaviyo and more.',
+            'steps' => [['Pick what', 'it’s for'], ['Brand, words', '& colours'], ['Preview, then', 'save it']],
+            'go' => '🚀 Start my email',
+        ])
         <div class="fb eb card" data-eb>
             <div class="fb-top">
                 <div class="fb-tpls"><span>Start from:</span><div data-templates></div></div>
@@ -47,8 +55,14 @@
                     </div>
                     <button type="button" class="btn btn--sm btn--ghost" data-download>Download .html</button>
                     <button type="button" class="btn btn--sm btn--glow" data-copy>Copy HTML</button>
+                    {{-- saved to the account, like the app builder: "My emails" and Save --}}
+                    <label class="sr-only" for="eb-mine">Open one of my saved emails</label>
+                    <select id="eb-mine" class="fb-mine" data-cloud-list hidden></select>
+                    <button type="button" class="btn btn--sm btn--ghost" data-cloud-signin>🗂 My emails</button>
+                    <button type="button" class="btn btn--sm btn--ghost" data-cloud-save>☁️ Save</button>
                 </div>
             </div>
+            <p class="fb-status" data-cloud-status></p>
             <p class="fb-note" data-note role="status" hidden></p>
 
             <div class="fb-layout eb-layout">
@@ -104,5 +118,7 @@
 
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'Email templates, explained'])
 
+<script src="{{ \App\Support\Asset::url('js/builder-account.js') }}" defer></script>
+<script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/email-builder.js') }}" defer></script>
 @endsection

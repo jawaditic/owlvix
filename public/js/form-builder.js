@@ -34,7 +34,7 @@
     try { D = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
     if (!D?.schema?.fields) D = fresh('contact');
     let openId = null; // field being edited
-    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(D)); } catch {} };
+    const save = () => { try { localStorage.setItem(STORE, JSON.stringify(D)); localStorage.setItem(STORE + '-touched', '1'); } catch {} };
     const S = () => D.schema;
 
     /* ------------------------------------------------ preview (looks like /form/{id}, not interactive) */
@@ -255,6 +255,92 @@
             });
         } catch (ex) { box.innerHTML = `<p class="fb-hint">${esc(ex.message)}</p>`; }
     };
+
+
+    /* ------------------------------------------------ quick setup wizard (public/js/builder-wizard.js) */
+    let wizard = null;
+    const WZ = window.OwlWizard;
+    if (WZ) {
+        const EM = { contact: '✉️', feedback: '💬', rsvp: '💌', job: '🧑‍💼', quote: '🧾', order: '🛒', blank: '📝' };
+        const ADD = [['text', 'Your name', '👤'], ['email', 'Email', '@'], ['phone', 'Phone', '☎'], ['textarea', 'Message', '¶'], ['date', 'Date', '📅'], ['rating', 'How would you rate us?', '★'], ['radio', 'Pick one', '◉']];
+        let picked = null, hadWork = false; try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!D.id; } catch {}
+        let side = null;
+        const copyPreview = () => { if (!side) return; const src = $('[data-preview]'); side.style.setProperty('--fc', src.style.getPropertyValue('--fc')); side.innerHTML = src.innerHTML; };
+        const upd = () => { markDirty(); drawSettings(); drawFields(); copyPreview(); };
+        const steps = [
+            {
+                title: 'What kind of form is it?', sub: 'We’ll start you with the questions it usually needs — you can change every one.',
+                draw: () => WZ.cards([...(hadWork ? [['keep', '✅', 'Keep my form', 'Update what’s there']] : []), ...Object.entries(TEMPLATES).map(([k, v]) => [k, EM[k] || '📝', v[0]])], picked),
+                click: (e, el, box) => {
+                    if (!el.dataset.wzPick) return;
+                    picked = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el);
+                    if (picked === 'keep') return;
+                    const keepId = D.id, color = S().color; D = fresh(picked); D.id = keepId; S().color = color; openId = null; upd();
+                },
+                ok: () => (picked ? '' : 'Pick the closest one — you can change everything later.'),
+            },
+            {
+                title: 'Title and a short intro', sub: 'Tell people what the form is for and what happens after they send it.',
+                draw: () => `<label class="wz-field">Title<input data-wz="title" maxlength="120" value="${esc(S().title)}"></label>
+                    <label class="wz-field">Intro <small>— optional</small><textarea data-wz="intro" rows="3" maxlength="600">${esc(S().intro)}</textarea></label>`,
+                input: (e, el) => { const k = el.dataset.wz; if (k) { S()[k] = el.value; upd(); } },
+                ok: () => (S().title.trim() ? '' : 'Please give your form a title.'),
+            },
+            {
+                title: 'Your questions', sub: 'Untick the ones you don’t need, add common ones, and choose which must be answered.',
+                draw: () => `<div class="wz-pages">${S().fields.map((q, i) => `<div class="wz-page wz-q" style="--i:${i}"><input type="checkbox" data-wz-q="${q.id}" checked aria-label="Keep “${esc(q.label)}”"><span class="wz-page__ic">${esc(TYPES[q.type]?.[1] || '?')}</span><b>${esc(q.label)}</b>${q.type === 'heading' ? '' : `<button type="button" class="wz-req" data-wz-req="${q.id}" aria-pressed="${!!q.required}">${q.required ? 'Required' : 'Optional'}</button>`}</div>`).join('')}</div>
+                    <div class="wz-add"><b>Add a question</b><div class="wz-chips wz-add__chips">${ADD.map(([t, l, ic], i) => `<button type="button" data-wz-addq="${i}" style="--i:${i}">${ic} ${esc(l)}</button>`).join('')}</div></div>`,
+                change: (e, el) => {
+                    if (!el.dataset.wzQ) return;
+                    if (!el.checked) { if (S().fields.length <= 1) { el.checked = true; return note('Keep at least one question.', 'error'); } S().fields = S().fields.filter(q => q.id !== el.dataset.wzQ); upd(); wizard.redraw(); }
+                },
+                click: (e, el) => {
+                    if (el.dataset.wzReq) { const q = S().fields.find(x => x.id === el.dataset.wzReq); q.required = !q.required; el.setAttribute('aria-pressed', String(q.required)); el.textContent = q.required ? 'Required' : 'Optional'; upd(); }
+                    else if (el.dataset.wzAddq !== undefined) {
+                        if (S().fields.length >= 30) return note('A form can have up to 30 questions.', 'error');
+                        const [t, l] = ADD[+el.dataset.wzAddq]; S().fields.push(f(t, l)); upd(); wizard.redraw();
+                    }
+                },
+            },
+            {
+                title: 'Colour and button', sub: 'The top border and the button use your colour.',
+                draw: () => WZ.palette(S().color) + `<label class="wz-field">Button text<input data-wz="button" maxlength="40" value="${esc(S().button)}"></label>`,
+                click: (e, el, box) => { if (!el.dataset.pal) return; S().color = el.dataset.pal; WZ.press(box, '[data-pal]', el); box.querySelector('[data-wz-color]').value = el.dataset.pal; upd(); },
+                input: (e, el, box) => {
+                    if (el.matches('[data-wz-color]')) { S().color = el.value; box.querySelectorAll('[data-pal]').forEach(x => x.setAttribute('aria-pressed', 'false')); upd(); }
+                    else if (el.dataset.wz === 'button') { S().button = el.value; upd(); }
+                },
+            },
+            {
+                title: 'After they send it', sub: 'The message people see once their answers are in. Answers are also emailed to you.',
+                draw: () => `<label class="wz-field">Thank-you message<textarea data-wz="thanks" rows="3" maxlength="400">${esc(S().thanks)}</textarea></label>`,
+                input: (e, el) => { if (el.dataset.wz === 'thanks') { S().thanks = el.value; upd(); } },
+            },
+        ];
+        wizard = WZ.mount({
+            root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-form-off',
+            say: ['Hoo! Need a form? I’ll set it up with you — it takes about 2 minutes.', 'Pick what it’s for, and I’ll add the right questions.', 'You’ll see the form as you go. Ready? 🚀'],
+            hasSaved: () => !!D.id,
+            quickSlot: root.querySelector('.fb-top__actions'),
+            onRestart: () => { picked = null; hadWork = false; },
+            steps,
+            preview: {
+                mount: s => { s.innerHTML = '<p class="wz-prev__label">Live preview</p><div class="fb wz-form"><div class="fb-prev wz-prev" data-wz-form></div></div>'; side = s.querySelector('[data-wz-form]'); copyPreview(); },
+                unmount: () => { side = null; drawSettings(); drawFields(); syncPublish(); },
+                refresh: copyPreview,
+            },
+            building: 'Building your form…',
+            tasks: ['Adding your questions', 'Painting your colours', 'Setting up email alerts', 'Getting it ready to share'],
+            done: {
+                title: 'Your form is ready',
+                sub: 'Publish it to get a link to share and a code for your website. Answers are emailed to you and saved in the Responses tab.',
+                actions: [
+                    { label: '🚀 Publish my form', cls: 'btn btn--glow', act: close => { close(); publish(); } },
+                    { label: '✏️ Keep editing', act: close => close() },
+                ],
+            },
+        });
+    }
 
     /* ------------------------------------------------ start */
     drawSettings(); drawFields(); syncPublish();

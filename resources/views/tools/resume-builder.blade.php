@@ -36,6 +36,14 @@
 
 <section class="calc-wrap">
     <div class="container">
+        @include('partials.wizard-banner', [
+            'say' => 'Hoo! Need a CV? I’ll write it with you — it takes about 3 minutes.',
+            'title' => 'Let’s write <span class="accent">your CV</span> together',
+            'sub' => 'Answer a few easy questions and watch your CV take shape as you go. Your details stay on this device — nothing is uploaded.',
+            'steps' => [['Pick a', 'design'], ['Your details', '& experience'], ['Preview, then', 'download PDF']],
+            'go' => '🚀 Start my CV',
+            'pill' => 'Quick setup · about 3 minutes',
+        ])
         <div class="fb rb card" data-rb>
             <div class="fb-top">
                 <div class="fb-tpls"><span>Design:</span><div data-designs></div></div>
@@ -71,5 +79,6 @@
 
 @include('tools.partials.faq', ['faq' => $faq, 'title' => 'CVs and resumes, explained'])
 
+<script src="{{ \App\Support\Asset::url('js/builder-wizard.js') }}" defer></script>
 <script src="{{ \App\Support\Asset::url('js/resume-builder.js') }}" defer></script>
 @endsection

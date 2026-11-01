@@ -74,6 +74,7 @@
     const persist = () => {
         clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
+            cloudStatus();
             try { localStorage.setItem(STORE, JSON.stringify(P)); $('[data-autosave]').textContent = 'Saved on this device'; }
             catch { $('[data-autosave]').textContent = 'Too big to auto-save — use “Save project”'; }
         }, 400);
@@ -85,6 +86,7 @@
         let total = undo.reduce((n, u) => n + u.length, 0);
         while (undo.length > 80 || (undo.length > 5 && total > 60e6)) total -= undo.shift().length; // photos make snapshots big
         redo = []; last = now; persist(); syncHistory();
+        try { localStorage.setItem(STORE + '-touched', '1'); } catch {} // a real edit: the quick setup offers to keep this work
     };
     const restore = snap => {
         const fonts = JSON.stringify([P.site.fonts, P.pages.length]);
@@ -106,6 +108,7 @@
     const frame = $('[data-lpb-frame]'), screen = $('.lpb-screen');
     const doc = () => frame.contentDocument;
     const EDITOR_CSS = `
+.nav,.ob-bar{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 [data-s],[data-w],[data-c]{position:relative}
 [data-s]:hover{box-shadow:inset 0 0 0 2px rgba(79,124,255,.35)}
 [data-c]:hover{outline:1px dashed rgba(79,124,255,.45);outline-offset:4px}
@@ -1077,7 +1080,7 @@
             if ((data.kind === 'funnel') !== FUNNEL) throw new Error(); // funnels open only in the funnel builder
             if (KIT) data.kind = KIT; // any other site opens in any builder and becomes this builder's project
             data.pages.forEach(pg => B.render(data, pg, 'edit')); // must draw without errors before it replaces anything
-            undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null; persist(); renderAll(); syncHistory();
+            undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null; setCloud({}); persist(); renderAll(); syncHistory();
             toast('Project opened');
         } catch { toast(FUNNEL ? 'That file is not an Owlvix funnel project.' : 'That file is not an Owlvix website project.'); }
     });
@@ -1337,6 +1340,230 @@
                 });
                 toast('Connections saved'); track('funnel_integrations'); drawResults();
             } catch (ex) { err.textContent = ex.message; err.hidden = false; }
+        });
+    }
+
+
+    /* =========================================================== saved to the account ("My sites", Save) */
+    // Like the app builder: the whole editable project is saved to the visitor's builder account
+    // (BuilderProjectController), listed under "My sites" and opened again on any device. The browser copy
+    // (localStorage) and project files keep working as before.
+    const KIND = FUNNEL ? 'funnel' : KIT || 'landing';
+    const NOUN = FUNNEL ? 'funnel' : KIT === 'links' ? 'page' : KIT === 'soon' ? 'page' : KIT === 'menu' ? 'menu' : 'site';
+    const CLOUD_KEY = STORE + '-cloud';
+    const hashOf = str => { let h = 5381; for (let i = 0; i < str.length; i++) h = (h * 33 ^ str.charCodeAt(i)) >>> 0; return h.toString(36) + ':' + str.length; };
+    let cloud = {}; try { cloud = JSON.parse(localStorage.getItem(CLOUD_KEY) || '{}') || {}; } catch {}
+    let cloudList = null; // this account's saved projects of this builder (null: not loaded)
+    function setCloud(c) { cloud = c || {}; try { localStorage.setItem(CLOUD_KEY, JSON.stringify(cloud)); } catch {} cloudStatus(); }
+    const unsaved = () => !cloud.id || cloud.saved !== hashOf(JSON.stringify(P));
+    /** The line under the toolbar and the Save button: not saved yet / unsaved changes / saved. */
+    function cloudStatus() {
+        const st = root.querySelector('[data-cloud-status]'), btn = root.querySelector('[data-act="cloud-save"]');
+        if (!st || !btn || typeof P === 'undefined' || !P) return;
+        const dirty = unsaved();
+        st.textContent = !cloud.id ? `Not saved yet — your ${NOUN} is kept in this browser. Save it to your account to open it anywhere.`
+            : dirty ? 'Unsaved changes — press Save to update your account copy.' : `Saved to your account ✓`;
+        st.dataset.state = !cloud.id ? 'new' : dirty ? 'dirty' : 'saved';
+        btn.textContent = !cloud.id ? '☁️ Save' : dirty ? '☁️ Save changes' : 'Saved ✓';
+        btn.classList.toggle('btn--glow', dirty); btn.classList.toggle('btn--ghost', !dirty);
+    }
+    const drawCloudList = () => {
+        const sel = root.querySelector('[data-cloud-list]'), signin = root.querySelector('[data-cloud-signin]');
+        if (!sel) return;
+        const signedIn = !!token && cloudList !== null;
+        sel.hidden = !signedIn; signin.hidden = signedIn;
+        if (!signedIn) return;
+        sel.innerHTML = `<option value="">🗂 My ${NOUN}s (${cloudList.length})</option>`
+            + cloudList.map(x => `<option value="${esc(x.id)}" ${x.id === cloud.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')
+            + `<option value="new">＋ New ${NOUN}</option>`;
+        if (!cloudList.some(x => x.id === cloud.id)) sel.value = '';
+    };
+    const loadCloudList = async () => {
+        try { cloudList = (await api('GET', '/builder/projects?kind=' + KIND)).projects || []; }
+        catch (ex) { cloudList = null; if (ex.status !== 401) toast(ex.message, 'error'); }
+        drawCloudList();
+    };
+    const saveCloud = async () => {
+        flush();
+        const btn = root.querySelector('[data-act="cloud-save"]'); btn.disabled = true;
+        const send = async id => api('POST', '/builder/projects', { id: id || null, kind: KIND, name: P.site.name || 'Untitled', data: P });
+        try {
+            let r;
+            try { r = await send(cloud.id); }
+            catch (ex) { if (ex.status === 404 && cloud.id) r = await send(null); else throw ex; } // deleted elsewhere: save as new
+            setCloud({ id: r.project.id, saved: hashOf(JSON.stringify(P)) });
+            toast(`Saved to your account — open it any time from “My ${NOUN}s”.`, 'success');
+            track('builder_cloud_save', { kind: KIND });
+            await loadCloudList();
+            return true;
+        } catch (ex) { toast(ex.message, 'error'); if (ex.status === 401) signIn(saveCloud); return false; }
+        finally { btn.disabled = false; }
+    };
+    const askLoseChanges = async what => !unsaved() || !!(await sweet({ icon: 'warning', title: 'Unsaved changes', text: `Your ${NOUN} has changes that aren’t saved to your account. ${what} anyway? (They stay in the undo history until you leave the page.)`, confirm: what, cancel: 'Go back' }));
+    const openCloud = async id => {
+        try {
+            const r = await api('GET', '/builder/projects/' + id);
+            const data = B.migrate(r.project.data);
+            if (KIT) data.kind = KIT;
+            data.pages.forEach(pg => B.render(data, pg, 'edit'));
+            undo.push(JSON.stringify(P)); redo = []; P = data; last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null;
+            setCloud({ id: r.project.id, saved: hashOf(JSON.stringify(P)) });
+            persist(); renderAll(); syncHistory(); drawCloudList();
+            toast(`Opened “${r.project.name}”`, 'success');
+        } catch (ex) { toast(ex.message, 'error'); drawCloudList(); }
+    };
+    /** A fresh project of this builder (its first example), then the quick setup from the start. */
+    const newProjectStart = () => {
+        const keep = Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]]));
+        undo.push(JSON.stringify(P)); redo = [];
+        P = fresh(Object.keys(EXAMPLES)[0]); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k]));
+        last = JSON.stringify(P); pageIdx = 0; variant = 'a'; sel = null;
+        setCloud({}); persist(); renderAll(); syncHistory(); drawCloudList();
+        wizard?.open(true);
+    };
+    root.addEventListener('click', e => {
+        if (e.target.closest('[data-act="cloud-save"]')) { if (!unsaved()) return toast('Already saved — nothing new to save.', 'info'); needAccount(async () => { if (dlg.open) dlg.close(); await saveCloud(); }); }
+        else if (e.target.closest('[data-cloud-signin]')) needAccount(async () => { dlg.close(); await loadCloudList(); root.querySelector('[data-cloud-list]')?.focus(); });
+    });
+    root.querySelector('[data-cloud-list]')?.addEventListener('change', async e => {
+        const v = e.target.value; if (!v) return;
+        if (v === 'new') { if (await askLoseChanges('Start a new one')) newProjectStart(); else drawCloudList(); return; }
+        if (v === cloud.id) return;
+        if (await askLoseChanges('Open another')) openCloud(v); else drawCloudList();
+    });
+    if (token) loadCloudList();
+
+
+    /* =========================================================== quick setup wizard (public/js/builder-wizard.js) */
+    // The owl's banner on a first visit, then a few short steps: what it is, name and logo, the main words, colours,
+    // the look and (for several pages) which pages to keep — with the page on a phone beside them. Answers go
+    // straight into the project, so the full editor shows the same thing afterwards.
+    let wizard = null;
+    const WZ = window.OwlWizard;
+    if (WZ) {
+        const EM = { agency: '💼', dental: '🦷', restaurant: '🍽️', course: '🎓', realestate: '🏡', services: '🔧', business: '💼', clinic: '🩺', trades: '🔧',
+            photographer: '📷', designer: '🎨', developer: '💻', artist: '🖌️', creator: '🎬', musician: '🎸', shop: '🛍️', coach: '🧭',
+            wedding: '💍', birthday: '🎂', conference: '🎤', babyshower: '🍼', cafe: '☕', pizzeria: '🍕', foodtruck: '🚚',
+            launch: '🚀', maintenance: '🛠️', waitlist: '📱', opening: '🏪', leadmagnet: '🧲', webinar: '🖥️', tripwire: '🏷️', consult: '📞' };
+        const WHAT = FUNNEL ? 'funnel' : { website: 'website', portfolio: 'portfolio', links: 'link-in-bio page', soon: 'coming soon page', event: 'event website', menu: 'menu' }[KIT] || 'page';
+        let picked = null, hadWork = false;
+        try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}
+        const widgets = () => P.pages[0].sections.flatMap(sec => sec.cols.flatMap(c => c.widgets));
+        /** The words people see first: the top section's headline, text and button. */
+        const main = () => {
+            const ws = widgets(), hero = ws.find(w => w.type === 'hero');
+            if (hero) return { eyebrow: hero.p.eyebrow !== undefined ? [hero.p, 'eyebrow'] : null, title: [hero.p, 'title'], text: [hero.p, 'text', 'plain'], btn: hero.p.btn !== undefined ? [hero.p, 'btn'] : null };
+            const h = ws.find(w => w.type === 'heading' && w.p.tag === 'h1') || ws.find(w => w.type === 'heading');
+            const t = ws.find(w => w.type === 'text'), b = ws.find(w => w.type === 'button');
+            return { title: h ? [h.p, 'text'] : null, text: t ? [t.p, 'html', 'html'] : null, btn: b ? [b.p, 'text'] : null };
+        };
+        const plain = html => { const d = document.createElement('div'); d.innerHTML = html || ''; return d.textContent.trim(); };
+        const val = ref => (ref ? (ref[2] === 'html' ? plain(ref[0][ref[1]]) : ref[0][ref[1]] || '') : '');
+        const set = (ref, v) => { if (!ref) return; ref[0][ref[1]] = ref[2] === 'html' ? v.split(/\n+/).filter(Boolean).map(l => `<p>${esc(l)}</p>`).join('') || '<p></p>' : v; };
+        let previewFrame = null, previewTimer = 0;
+        const changed = () => { commitSoon(); clearTimeout(previewTimer); previewTimer = setTimeout(drawPreview, 120); };
+        const drawPreview = () => {
+            if (!previewFrame) return;
+            const y = previewFrame.contentDocument?.scrollingElement?.scrollTop || 0;
+            // (no header blur here: Chrome draws it past the phone's rounded corners)
+            previewFrame.srcdoc = B.render(P, P.pages[0], 'download', { runtime: RUNTIME, extraHead: '<style>.nav,.ob-bar{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}</style>' });
+            previewFrame.onload = () => { try { previewFrame.contentDocument.scrollingElement.scrollTop = y; previewFrame.contentDocument.addEventListener('click', ev => ev.preventDefault(), true); } catch {} };
+        };
+        const LOOKS = [
+            ['theme', 'Light or dark', [['light', '☀️ Light'], ['dark', '🌙 Dark']]],
+            ['fontPair', 'Fonts', [['Poppins|Inter', 'Modern'], ['Playfair Display|Lato', 'Elegant'], ['Montserrat|Open Sans', 'Bold'], ['DM Sans|DM Sans', 'Simple']]],
+            ['radius', 'Corners', [['round', 'Rounded'], ['soft', 'Soft'], ['sharp', 'Square']]],
+            ['buttons', 'Buttons', [['pill', 'Pill'], ['rounded', 'Rounded'], ['square', 'Square']]],
+        ];
+        let drop = new Set();
+        const steps = [
+            {
+                title: `What kind of ${WHAT} is it?`, sub: 'We’ll start you with a ready design made for it — you can change everything.',
+                draw: () => WZ.cards([...(hadWork ? [['keep', '✅', `Keep my ${NOUN}`, 'Update what’s there']] : []), ...Object.entries(EXAMPLES).map(([k, v]) => [k, EM[k] || '✨', v[0]])], picked),
+                click: (e, el, box) => {
+                    if (!el.dataset.wzPick) return;
+                    picked = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el);
+                    if (picked === 'keep') return;
+                    const keep = Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])), name = P.site.name, logo = P.site.logo;
+                    P = fresh(picked); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k]));
+                    if (wizardNamed) { P.site.name = name; P.site.logo = logo; } // a new design keeps the name and logo they already gave
+                    pageIdx = 0; variant = 'a'; sel = null; drop = new Set(); changed();
+                },
+                ok: () => (picked ? '' : 'Pick the closest one — you can change everything later.'),
+            },
+            {
+                title: `Name your ${NOUN}`, sub: 'It shows in the header, the browser tab and the footer.',
+                draw: () => `<label class="wz-field">Name<input data-wz="name" maxlength="60" value="${esc(P.site.name)}" placeholder="e.g. Bean There Café"></label>
+                    <div class="wz-logo">${P.site.logo ? `<img src="${esc(P.site.logo)}" alt="" class="wz-logo__img">` : '<span class="wz-logo__none">No logo</span>'}
+                        <label class="wz-upload"><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-wz-file class="sr-only"><span>⬆️ ${P.site.logo ? 'Change logo' : 'Upload a logo (optional)'}</span><small>PNG, JPG or SVG — a wide logo looks best.</small></label>
+                        ${P.site.logo ? '<button type="button" class="ab-link" data-wz-nologo>Remove logo</button>' : ''}</div>`,
+                input: (e, el) => { if (el.dataset.wz === 'name') { P.site.name = el.value; wizardNamed = true; changed(); } },
+                change: async (e, el, box) => {
+                    if (!el.matches('[data-wz-file]') || !el.files[0]) return;
+                    try { P.site.logo = await readImage(el.files[0], 600, true); wizardNamed = true; changed(); wizard.redraw(); } catch { toast('That picture could not be read — try a PNG or JPG.', 'error'); }
+                },
+                click: (e, el) => { if (el.matches('[data-wz-nologo]')) { P.site.logo = ''; changed(); wizard.redraw(); } },
+                ok: () => (P.site.name.trim() ? '' : `Please give your ${NOUN} a name.`),
+            },
+            {
+                title: 'Your main message', sub: 'The first words visitors read. Say what you offer and what to do next.',
+                skip: () => { const m = main(); return !m.title && !m.text && !m.btn; },
+                draw: () => { const m = main(); return `${m.eyebrow ? `<label class="wz-field">Small label above it <small>— e.g. what you do, in a few words</small><input data-wz="eyebrow" maxlength="80" value="${esc(val(m.eyebrow))}"></label>` : ''}${m.title ? `<label class="wz-field">Headline<input data-wz="title" maxlength="120" value="${esc(val(m.title))}"></label>` : ''}
+                    ${m.text ? `<label class="wz-field">A line or two about it<textarea data-wz="text" rows="3" maxlength="400">${esc(val(m.text))}</textarea></label>` : ''}
+                    ${m.btn ? `<label class="wz-field">Button<input data-wz="btn" maxlength="40" value="${esc(val(m.btn))}"></label>` : ''}`; },
+                input: (e, el) => { const m = main(), k = el.dataset.wz; if (m[k]) { set(m[k], el.value); changed(); } },
+            },
+            {
+                title: 'Pick your colours', sub: 'Buttons, links and highlights use your main colour.',
+                draw: () => WZ.palette(P.site.colors.primary),
+                click: (e, el, box) => { if (!el.dataset.pal) return; P.site.colors.primary = el.dataset.pal; WZ.press(box, '[data-pal]', el); box.querySelector('[data-wz-color]').value = el.dataset.pal; syncGlobals(); changed(); },
+                input: (e, el, box) => { if (!el.matches('[data-wz-color]')) return; P.site.colors.primary = el.value; box.querySelectorAll('[data-pal]').forEach(x => x.setAttribute('aria-pressed', 'false')); syncGlobals(); changed(); },
+            },
+            {
+                title: 'Make it look yours', sub: 'Watch the preview change as you pick.',
+                draw: () => LOOKS.map(([k, label, opts]) => {
+                    const cur = k === 'fontPair' ? `${P.site.fonts.heading}|${P.site.fonts.body}` : P.site[k];
+                    return `<div class="wz-look"><b>${label}</b><div class="wz-chips">${opts.map(([v, l]) => `<button type="button" data-wz-look="${k}:${esc(v)}" aria-pressed="${cur === v}">${l}</button>`).join('')}</div></div>`;
+                }).join(''),
+                click: (e, el, box) => {
+                    if (!el.dataset.wzLook) return;
+                    const [k, v] = el.dataset.wzLook.split(/:(.*)/s);
+                    if (k === 'fontPair') { const [h, b] = v.split('|'); P.site.fonts.heading = h; P.site.fonts.body = b; } else P.site[k] = v;
+                    el.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === el)));
+                    changed();
+                },
+            },
+            {
+                title: 'Choose your pages', sub: 'Untick the pages you don’t need. You can add pages any time in the editor.',
+                skip: () => FUNNEL || P.pages.length < 2,
+                draw: () => `<div class="wz-pages">${P.pages.map((pg, i) => `<label class="wz-page${drop.has(i) ? ' is-off' : ''}" style="--i:${i}"><input type="checkbox" data-wz-page="${i}" ${drop.has(i) ? '' : 'checked'} ${i === 0 ? 'disabled' : ''}><span class="wz-page__ic">${i === 0 ? '🏠' : '📄'}</span><b>${esc(pg.title)}</b>${i === 0 ? '<small>Home page — always kept</small>' : ''}</label>`).join('')}</div>`,
+                change: (e, el) => { if (!el.dataset.wzPage) return; const i = +el.dataset.wzPage; if (el.checked) drop.delete(i); else drop.add(i); el.closest('.wz-page').classList.toggle('is-off', !el.checked); },
+                leave: () => { if (drop.size) { P.pages = P.pages.filter((pg, i) => !drop.has(i)); drop = new Set(); pageIdx = 0; changed(); } },
+            },
+        ];
+        let wizardNamed = false;
+        wizard = WZ.mount({
+            root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-' + KIND + '-off',
+            say: [`Hoo! Want a ${WHAT}? I’ll set it up with you — it takes about 2 minutes.`, 'Pick what it’s for, and I’ll start you with a ready design.', 'You’ll see it on a phone as you go. Ready? 🚀'],
+            hasSaved: () => !!cloud.id,
+            quickSlot: root.querySelector('.lpb-top .lpb-cloud'), quickClass: 'lpb-tb lpb-quick',
+            onRestart: () => { picked = null; wizardNamed = false; hadWork = false; },
+            steps,
+            preview: {
+                mount: side => { side.innerHTML = `<p class="wz-prev__label">Live preview</p>${WZ.phoneFrame()}`; previewFrame = side.querySelector('[data-wz-frame]'); drawPreview(); },
+                unmount: () => { previewFrame = null; flush(); renderAll(); syncHistory(); },
+                refresh: drawPreview,
+            },
+            building: `Building your ${WHAT}…`,
+            tasks: ['Laying out your sections', 'Painting your colours', 'Setting your fonts', 'Polishing for phones'],
+            done: {
+                title: `Your ${WHAT} is ready`,
+                sub: `Scroll the preview to see it. Save it to your account to open it anywhere, then publish it or download it when you’re happy — everything can still be changed in the editor.`,
+                actions: [
+                    { label: '☁️ Save to my account', cls: 'btn btn--glow', act: close => { close(); needAccount(async () => { if (dlg.open) dlg.close(); await saveCloud(); }); } },
+                    { label: '✏️ Keep editing', act: close => close() },
+                ],
+            },
         });
     }
 
