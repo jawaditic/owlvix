@@ -13,4 +13,10 @@ class TrafficController extends Controller
     {
         return view('admin.traffic', TrafficStats::build(TrafficStats::days($request->input('days'))));
     }
+
+    /** Admin → Growth: which guides and gallery designs bring people into the free builders, and how far they get. */
+    public function growth(Request $request)
+    {
+        return view('admin.growth', \App\Support\Stats\BuilderStats::build(\App\Support\Stats\BuilderStats::days($request->input('days'))));
+    }
 }

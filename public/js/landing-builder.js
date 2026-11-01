@@ -50,7 +50,10 @@
     if (DESIGN) {
         let touched = false; try { touched = !!localStorage.getItem(STORE + '-touched'); } catch {}
         if (P && touched) askDesign = true;
-        else { const keep = P ? Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])) : {}; P = fresh(DESIGN); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k])); }
+        else {
+            const keep = P ? Object.fromEntries(B.ACCOUNT_KEYS.map(k => [k, P.site[k]])) : {}; P = fresh(DESIGN); Object.keys(keep).forEach(k => keep[k] && (P.site[k] = keep[k]));
+            try { sessionStorage.setItem('owlvix-design', DESIGN); } catch {} // counted by site.js (Admin → Growth)
+        }
         try { const u = new URL(location.href); u.searchParams.delete('design'); history.replaceState(history.state, '', u); } catch {}
     }
     if (!P) P = fresh(FUNNEL ? 'leadmagnet' : KIT ? Object.keys(EXAMPLES)[0] : 'agency');
@@ -2195,7 +2198,7 @@
         setTimeout(() => root.scrollIntoView({ block: 'start' }), 60);
         // after every deferred script has run, so sweet.js (loaded later in the page) is ready
         const ask = () => sweet({ icon: 'question', title: `Use the “${EXAMPLES[DESIGN][0]}” design?`, text: 'It replaces what you’re working on now. You can press Undo to get yours back.', confirm: 'Use this design', cancel: 'Keep mine' })
-            .then(ok => ok && useExample(DESIGN));
+            .then(ok => { if (ok) { useExample(DESIGN); track('builder_design', { design: DESIGN }); } });
         if (window.sweet) ask(); else document.addEventListener('DOMContentLoaded', ask, { once: true }); // fires after all deferred scripts
     } else if (DESIGN) setTimeout(() => root.scrollIntoView({ block: 'start' }), 60);
     window.__owlBuilder = { get P() { return P; }, select, find }; // for checking things from the browser console

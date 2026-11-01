@@ -811,6 +811,47 @@
         };
         lookupCountry().then(c => send(/^[a-z]{2}$/.test(c) ? c : ''), () => send(''));
     })();
+    /* ---------- Free builder steps (Admin → Growth) ---------- */
+    // On a builder page: one message per step (opened, used a gallery design, saved, published, downloaded) per
+    // browser session, with where the visitor came from (a guide, the gallery, search…). Counts only, nothing personal.
+    (() => {
+        const builder = document.querySelector('meta[name="owl-builder"]')?.content;
+        if (!builder) return;
+        const KEY = 'owlvix-b:' + builder;
+        let st = {};
+        try { st = JSON.parse(sessionStorage.getItem(KEY) || '{}') || {}; } catch (e) {}
+        const save = () => { try { sessionStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+        if (!st.from) {
+            let from = 'direct';
+            try { if (document.referrer) { const r = new URL(document.referrer); from = r.host === location.host ? r.pathname : 'ext:' + r.hostname; } } catch (e) {}
+            st = { from, sent: [] };
+        }
+        st.sent = Array.isArray(st.sent) ? st.sent : [];
+        const send = ev => {
+            if (st.sent.includes(ev)) return;
+            st.sent.push(ev); save();
+            const body = new URLSearchParams({ builder, event: ev, from: st.from });
+            if (!navigator.sendBeacon?.('/t/b', body)) fetch('/t/b', { method: 'POST', body, keepalive: true }).catch(() => {});
+        };
+        const design = d => { if (/^[a-z0-9]{1,30}$/.test(d)) { st.from = 'design:' + d; save(); send('design'); } };
+        let picked = '';
+        try { picked = sessionStorage.getItem('owlvix-design') || ''; sessionStorage.removeItem('owlvix-design'); } catch (e) {}
+        if (picked && /^[a-z0-9]{1,30}$/.test(picked)) { st.from = 'design:' + picked; save(); }
+        send('open');
+        if (picked) design(picked);
+        // The builders already report their steps through window.track(); listen in for the ones we count
+        const STEPS = {
+            builder_publish: 'publish', form_builder_publish: 'publish', app_builder_build: 'publish',
+            builder_cloud_save: 'save', email_builder_cloud_save: 'save', app_builder_create: 'save', app_builder_save: 'save', form_builder_save: 'save',
+            builder_download: 'export', email_builder_copy: 'export', email_builder_download: 'export', resume_pdf: 'export', app_builder_download: 'export',
+        };
+        const prev = window.track || (() => {});
+        window.track = (name, params) => {
+            try { prev(name, params); } catch (e) {}
+            if (name === 'builder_design') design(String(params?.design || ''));
+            else if (STEPS[name]) send(STEPS[name]);
+        };
+    })();
     /* ---------- Tooltips ---------- */
     // Buttons with no words (an icon or symbol like ↑ ✕ ⧉ 🖥) explain themselves with a small dark label on hover
     // or keyboard focus. The label comes from data-tip, then title, then aria-label. Buttons with words don't need

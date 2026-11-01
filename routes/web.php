@@ -125,6 +125,9 @@ Route::get('/thanks/{message}', function (\App\Models\ContactMessage $message) {
 Route::post('/t', [\App\Http\Controllers\TrackController::class, 'store'])
     ->middleware('throttle:60,1,track')
     ->name('track');
+Route::post('/t/b', [\App\Http\Controllers\TrackController::class, 'builder'])
+    ->middleware('throttle:60,1,track-builder')
+    ->name('track.builder');
 
 Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:5,1,contact')
@@ -277,6 +280,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('messages/{message}', [MessageController::class, 'destroy'])->name('messages.destroy');
 
         Route::get('traffic', [\App\Http\Controllers\Admin\TrafficController::class, 'index'])->name('traffic');
+        Route::get('growth', [\App\Http\Controllers\Admin\TrafficController::class, 'growth'])->name('growth');
 
         // Exit survey answers
         Route::get('feedback', [\App\Http\Controllers\Admin\FeedbackController::class, 'index'])->name('feedback.index');

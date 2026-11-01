@@ -10,6 +10,7 @@
     <meta name="robots" content="@yield('robots', 'index, follow')">
     <meta name="theme-color" content="#070b14" media="(prefers-color-scheme: dark)">
     <meta name="theme-color" content="#f5f7fb" media="(prefers-color-scheme: light)">
+    @if (in_array(Route::currentRouteName(), \App\Support\FreeTools::builderRoutes(), true))<meta name="owl-builder" content="{{ Route::currentRouteName() }}">@endif
     @include('partials.head-assets')
     @yield('head')
 </head>

@@ -56,6 +56,24 @@ class TrackController extends Controller
         return response()->noContent();
     }
 
+    /** One step in a free builder (Admin → Growth): opened, used a gallery design, saved, published or downloaded. */
+    public function builder(Request $request)
+    {
+        $ua = (string) $request->userAgent();
+        if ($ua === '' || preg_match(self::BOTS, $ua) || $request->session()->get('is_admin')) {
+            return response()->noContent();
+        }
+
+        $data = $request->validate([
+            'builder' => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Support\FreeTools::builderRoutes())],
+            'event' => ['required', 'string', \Illuminate\Validation\Rule::in(\App\Support\Stats\BuilderStats::EVENTS)],
+            'from' => ['nullable', 'string', 'max:300'],
+        ]);
+        \App\Support\Stats\BuilderStats::record($data['builder'], $data['event'], \App\Support\Stats\BuilderStats::source((string) ($data['from'] ?? '')));
+
+        return response()->noContent();
+    }
+
     private function host(?string $url): ?string
     {
         $host = $url ? parse_url($url, PHP_URL_HOST) : null;
