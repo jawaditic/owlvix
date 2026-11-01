@@ -86,7 +86,7 @@ class BuilderKits
                 'title' => 'Free Restaurant Menu Maker with QR Code — Digital Menu Builder',
                 'description' => 'Make a free digital menu for your restaurant, café or takeaway: prices, specials, opening hours and map — plus a QR code and printable table cards. Order buttons for WhatsApp.',
                 'h1' => 'Your <span class="accent">menu online</span>, with a QR code for every table',
-                'lead' => 'Pick a restaurant, café, pizza or food truck menu, change the dishes and prices, publish — then print QR table cards so guests can scan and see your menu on their phone.',
+                'lead' => 'Pick a restaurant, café, pizza, food truck, sushi, curry, burger or bar menu, change the dishes and prices, publish — then print QR table cards so guests can scan and see your menu on their phone.',
                 'cta' => ['Want online ordering too?', 'We build restaurant websites and ordering apps with payments, delivery zones and a kitchen screen. Start free: we design the first version at no cost.'],
                 'faq' => [
                     ['Is the menu maker really free?', 'Yes. Build your menu, publish it free on sites.owlvix.com and print as many QR codes as you like. No payment and no watermark on your menu.'],
@@ -101,7 +101,7 @@ class BuilderKits
                 'title' => 'Free Online Store Builder — Sell Online with Cart & Checkout',
                 'description' => 'Build a free online store: product pages, a shopping cart and checkout with card payments (Stripe), cash on delivery or bank transfer. Orders are emailed to you.',
                 'h1' => 'Start selling with a <span class="accent">free online store</span>',
-                'lead' => 'Pick a clothing, bakery, beauty or gift shop, add your products and prices, and switch on checkout. Customers add to cart and pay by card, cash on delivery or bank transfer — every order is emailed to you.',
+                'lead' => 'Pick a clothing, bakery, beauty, gift, coffee, flower, pet or jewellery shop, add your products and prices, and switch on checkout. Customers add to cart and pay by card, cash on delivery or bank transfer — every order is emailed to you.',
                 'cta' => ['Ready for a bigger store?', 'We build online stores with stock tracking, discount codes, shipping rules and your own domain. Start free: we design the first version at no cost.'],
                 'faq' => [
                     ['Is the online store builder really free?', 'Yes. Build your shop, publish it free on sites.owlvix.com and take orders. Cash on delivery and bank transfer cost nothing. Card payments go through your own Stripe account, so Stripe’s normal card fee applies.'],

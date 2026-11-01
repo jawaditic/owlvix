@@ -2040,7 +2040,8 @@
         const EM = { agency: '💼', dental: '🦷', restaurant: '🍽️', course: '🎓', realestate: '🏡', services: '🔧', business: '💼', clinic: '🩺', trades: '🔧',
             photographer: '📷', designer: '🎨', developer: '💻', artist: '🖌️', creator: '🎬', musician: '🎸', shop: '🛍️', coach: '🧭',
             wedding: '💍', birthday: '🎂', conference: '🎤', babyshower: '🍼', cafe: '☕', pizzeria: '🍕', foodtruck: '🚚',
-            launch: '🚀', maintenance: '🛠️', waitlist: '📱', opening: '🏪', fashion: '👕', bakery: '🥐', beauty: '🧴', handmade: '🏺', leadmagnet: '🧲', webinar: '🖥️', tripwire: '🏷️', consult: '📞' };
+            launch: '🚀', maintenance: '🛠️', waitlist: '📱', opening: '🏪', fashion: '👕', bakery: '🥐', beauty: '🧴', handmade: '🏺', leadmagnet: '🧲', webinar: '🖥️', tripwire: '🏷️', consult: '📞',
+            salon: '💇', fitness: '🏋️', cleaning: '🧽', accounting: '📊', sushi: '🍣', curry: '🍛', burger: '🍔', bar: '🍸', coffee: '☕', florist: '💐', pets: '🐾', jewellery: '💍' };
         const WHAT = FUNNEL ? 'funnel' : { website: 'website', portfolio: 'portfolio', links: 'link-in-bio page', soon: 'coming soon page', event: 'event website', menu: 'menu', store: 'online store' }[KIT] || 'page';
         let picked = null, hadWork = false;
         try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}

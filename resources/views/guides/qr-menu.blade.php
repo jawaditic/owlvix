@@ -23,7 +23,7 @@
         '<strong>Optional:</strong> a few good photos of your best dishes and your place.',
     ],
     'steps' => [
-        ['Pick a menu design', 'Open the free menu builder and choose the one closest to you — restaurant, café, pizza takeaway or food truck. You can change every colour, font and photo later, so pick by layout, not colour.',
+        ['Pick a menu design', 'Open the free menu builder and choose the one closest to you — restaurant, café, pizza takeaway, food truck, sushi, curry house, burger joint or bar. You can change every colour, font and photo later, so pick by layout, not colour.',
             'the quick setup asks for your name, type of place and colours, and fills the menu in for you to edit.'],
         ['Write your sections and dishes', 'Add sections the way guests think: starters, mains, pizzas, drinks, desserts. Under each, add the dish name, a short line about it and the price.',
             'keep descriptions to one line — what’s in it and how it’s cooked. “Slow-cooked lamb, rosemary, garlic mash” sells better than a paragraph.'],

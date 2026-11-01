@@ -27,7 +27,7 @@
             'round prices (say 24 instead of 23.70) feel easier, and a “free delivery over 50” offer nudges people to add one more item.'],
         ['Take clear product photos', 'Use daylight from a window, a plain background and the same angle for every product. Square photos look tidiest in a shop grid. Add a second or third photo for details, the back or the product in use.',
             'shoot a little wider than you need and crop to a square. The builder shrinks photos for you, so your shop stays fast on phones.'],
-        ['Build your shop', 'Open the free online store builder, pick a ready shop (clothing, bakery, beauty or handmade) and change the words, photos and prices. Add sizes or colours, sale prices, categories and how many you have in stock.',
+        ['Build your shop', 'Open the free online store builder, pick a ready shop (clothing, bakery, beauty, handmade, coffee, flowers, pets or jewellery) and change the words, photos and prices. Add sizes or colours, sale prices, categories and how many you have in stock.',
             'write one short line on each card (what it is, what makes it good) and put the longer details on the product’s own page — sizes, care, what’s in the box.'],
         ['Choose how customers pay', 'Switch on checkout, then choose cash on delivery, bank transfer, card payments through your own Stripe account — or all three. Card money goes straight to your Stripe account.',
             'offering two ways to pay — card and cash on delivery, for example — usually gets more orders than one. Test card payments in Stripe’s test mode before going live.'],

@@ -27,7 +27,7 @@
 @endphp
 
 @section('title', 'Free Website, Shop & Page Designs — Examples You Can Use')
-@section('description', '40 free ready-made designs: online stores, business websites, restaurant menus, wedding sites, portfolios, link in bio pages, landing pages and sales funnels. Preview any design and use it in one click.')
+@section('description', 'Over 50 free ready-made designs: online stores, business websites, restaurant menus, wedding sites, portfolios, link in bio pages, landing pages and sales funnels. Preview any design and use it in one click.')
 @section('canonical', route('examples'))
 @section('no-auto-quote', '1')
 
