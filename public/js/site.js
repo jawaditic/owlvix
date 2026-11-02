@@ -845,7 +845,7 @@
         const STEPS = {
             builder_publish: 'publish', form_builder_publish: 'publish', app_builder_build: 'publish',
             builder_cloud_save: 'save', email_builder_cloud_save: 'save', app_builder_create: 'save', app_builder_save: 'save', form_builder_save: 'save', invoice_new: 'save', qr_new: 'save',
-            builder_download: 'export', email_builder_copy: 'export', email_builder_download: 'export', resume_pdf: 'export', invoice_pdf: 'export', qr_download: 'export', card_pdf: 'export', card_png: 'export', app_builder_download: 'export',
+            builder_download: 'export', email_builder_copy: 'export', email_builder_download: 'export', resume_pdf: 'export', invoice_pdf: 'export', qr_download: 'export', card_pdf: 'export', card_png: 'export', booking_publish: 'publish', app_builder_download: 'export',
         };
         const prev = window.track || (() => {});
         window.track = (name, params) => {

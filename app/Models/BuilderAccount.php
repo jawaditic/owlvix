@@ -43,6 +43,11 @@ class BuilderAccount extends Model
         return $this->hasMany(BuilderStore::class);
     }
 
+    public function bookingPages(): HasMany
+    {
+        return $this->hasMany(BuilderBookingPage::class);
+    }
+
     public function forms(): HasMany
     {
         return $this->hasMany(BuilderForm::class);

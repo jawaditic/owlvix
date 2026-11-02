@@ -61,6 +61,7 @@ Route::view('/resume-builder', 'tools.resume-builder')->name('resume-builder');
 Route::view('/invoice-generator', 'tools.invoice-generator')->name('invoice-generator');
 Route::view('/qr-code-generator', 'tools.qr-code-generator')->name('qr-code-generator');
 Route::view('/business-card-maker', 'tools.business-card-maker')->name('business-card-maker');
+Route::view('/booking-page-builder', 'tools.booking-page-builder')->name('booking-page-builder');
 Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
 Route::view('/funnel-builder', 'tools.funnel-builder')->name('funnel-builder');
 // More free builders: the same editor with its own starting templates (App\Support\BuilderKits)
@@ -96,6 +97,7 @@ foreach ([
     'invoice-generator' => ['/invoice-generator', 'tools.invoice-generator', []],
     'qr-code-generator' => ['/qr-code-generator', 'tools.qr-code-generator', []],
     'business-card-maker' => ['/business-card-maker', 'tools.business-card-maker', []],
+    'booking-page-builder' => ['/booking-page-builder', 'tools.booking-page-builder', []],
     'app-builder' => ['/mobile-app-builder', 'tools.app-builder', []],
 ] as $name => [$path, $view, $data]) {
     Route::view($path.'/editor', $view, $data + ['editor' => true])->name($name.'.editor');
@@ -210,6 +212,14 @@ Route::prefix('builder/apps')->name('builder.apps.')->middleware('builder')->con
 });
 // Stripe sends the owner back here after they connect their account (see App\Support\Stripe)
 // Online store builder: the editor's shop, orders and Stripe connection (signed in)
+// Booking page builder: the owner's booking pages and their bookings
+Route::prefix('builder/bookings')->name('builder.bookings.')->middleware('builder')->controller(\App\Http\Controllers\BookingController::class)->group(function () {
+    Route::get('/', 'index')->name('index');
+    Route::post('/', 'save')->middleware('throttle:60,1,booking-save')->name('save');
+    Route::post('{id}/delete', 'destroy')->where('id', '[a-z0-9]{16}')->name('delete');
+    Route::get('{id}/list', 'bookings')->where('id', '[a-z0-9]{16}')->name('list');
+    Route::post('{id}/cancel/{booking}', 'cancel')->where(['id' => '[a-z0-9]{16}', 'booking' => '[0-9]{1,12}'])->name('cancel');
+});
 Route::prefix('builder/stores')->name('builder.stores.')->middleware('builder')->controller(\App\Http\Controllers\StoreController::class)->group(function () {
     Route::get('/', 'index')->name('index');
     Route::post('/', 'save')->middleware('throttle:60,1,store-save')->name('save');
@@ -281,6 +291,15 @@ Route::post('/shop/order/{token}/pay', [\App\Http\Controllers\ShopController::cl
 Route::post('/f/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'submit'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.form.submit');
 // Forms made with the form builder: the page people fill in (also embedded in other sites in an iframe)
 Route::get('/form/{id}', [\App\Http\Controllers\BuilderPublicController::class, 'survey'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.survey');
+// Booking pages made with the booking page builder (also embedded in other sites in an iframe), and the client's own booking page
+Route::controller(\App\Http\Controllers\BookingPublicController::class)->withoutMiddleware($stateless)->group(function () {
+    Route::get('/book/{id}', 'show')->where('id', '[a-z0-9]{16}')->name('booking.page');
+    Route::get('/book/{id}/slots', 'slots')->where('id', '[a-z0-9]{16}')->middleware('throttle:120,1,booking-slots')->name('booking.slots');
+    Route::post('/book/{id}', 'book')->where('id', '[a-z0-9]{16}')->middleware('throttle:20,1,booking-make')->name('booking.make');
+    Route::get('/book/manage/{token}', 'manage')->where('token', '[A-Za-z0-9]{40}')->name('booking.manage');
+    Route::get('/book/manage/{token}/calendar.ics', 'ics')->where('token', '[A-Za-z0-9]{40}')->name('booking.ics');
+    Route::post('/book/manage/{token}/cancel', 'cancel')->where('token', '[A-Za-z0-9]{40}')->middleware('throttle:20,1,booking-cancel')->name('booking.cancel');
+});
 Route::get('/f/{id}/sent', [\App\Http\Controllers\BuilderPublicController::class, 'sent'])->where('id', '[a-z0-9]{16}')->withoutMiddleware($stateless)->name('builder.form.sent');
 // Published builder sites (served with a sandboxing CSP; the page HTML is left exactly as published).
 // With BUILDER_DOMAIN set they live on their own subdomain (https://sites.owlvix.com/{name}) — those routes are

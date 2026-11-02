@@ -49,6 +49,14 @@ Artisan::command('indexnow:ping {url?*}', function (array $url) {
         ->each(fn ($store) => \App\Support\Shop::releaseExpired($store));
 })->everyFiveMinutes()->name('shop-release-unpaid')->withoutOverlapping();
 
+// Booking page builder: a reminder email to the client about a day before their booking (once; only for bookings
+// made at least 12 hours ahead — people who book for this afternoon don't need one).
+\Illuminate\Support\Facades\Schedule::call(function () {
+    \App\Models\BuilderBooking::where('status', 'confirmed')->whereNull('reminded_at')
+        ->whereBetween('starts_at', [now()->addHours(2), now()->addHours(24)])->with('page.account')->limit(100)->get()
+        ->each(fn ($b) => \App\Support\BookingReminders::send($b));
+})->everyFifteenMinutes()->name('booking-reminders')->withoutOverlapping();
+
 // Data for scripts/share-images.mjs (the share pictures in public/images/og): the owl drawing and the page titles
 Artisan::command('share-images:data {dir}', function (string $dir) {
     @mkdir($dir, 0775, true);

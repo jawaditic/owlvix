@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Builder contact forms (f/*) are posted from static pages hosted anywhere; fs is the funnel stats beacon.
         // a random one-off value tying Stripe's return to the browser that started connecting (read as is on both routes)
         $middleware->encryptCookies(except: ['owl_stripe']);
-        $middleware->validateCsrfTokens(except: ['t', 't/b', 'f/*', 'fs', 'shop/*']);
+        $middleware->validateCsrfTokens(except: ['t', 't/b', 'f/*', 'fs', 'shop/*', 'book/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // JSON errors (validation, not found, too many requests) for the mobile app's /api routes, and for any

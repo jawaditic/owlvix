@@ -33,6 +33,7 @@ class FreeTools
             ['route' => 'invoice-generator', 'group' => 'builder', 'name' => 'Invoice generator', 'desc' => 'Invoices, quotes & receipts — tax, logo, free PDF', 'icon' => 'clipboard', 'tone' => ''],
             ['route' => 'qr-code-generator', 'group' => 'builder', 'name' => 'QR code generator', 'desc' => 'Logo, colours & Wi-Fi codes — never expire', 'icon' => 'qr', 'tone' => 'is-blue'],
             ['route' => 'business-card-maker', 'group' => 'builder', 'name' => 'Business card maker', 'desc' => 'Print-ready PDF, QR code & 10-per-sheet', 'icon' => 'card', 'tone' => ''],
+            ['route' => 'booking-page-builder', 'group' => 'builder', 'name' => 'Booking page builder', 'desc' => 'Online appointments — clients pick a time', 'icon' => 'calendar', 'tone' => 'is-blue'],
             ['route' => 'email-builder', 'group' => 'builder', 'name' => 'Email & newsletter builder', 'desc' => 'Mailchimp-ready HTML emails', 'icon' => 'mail', 'tone' => ''],
             ['route' => 'form-builder', 'group' => 'builder', 'name' => 'Form & survey builder', 'desc' => 'Surveys, RSVPs, order forms — answers by email', 'icon' => 'clipboard', 'tone' => 'is-blue'],
             ['route' => 'email-signature', 'group' => 'build', 'name' => 'Email signature generator', 'desc' => 'Gmail & Outlook signatures — 6 designs, copy & paste', 'icon' => 'mail', 'tone' => ''],

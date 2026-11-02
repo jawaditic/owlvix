@@ -29,6 +29,8 @@ export const FILES = [
     'js/invoice-builder.js',
     'js/qr-builder.js',
     'js/card-builder.js',
+    'js/booking-page.js',
+    'js/booking-builder.js',
     'js/app-builder.js',
     'js/app-templates.js',
     'js/app-wizard.js',
