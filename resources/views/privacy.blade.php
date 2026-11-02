@@ -54,6 +54,7 @@
             <li>card payments are made on Stripe's own payment page, on your own Stripe account. We never see or store card numbers; we keep only your Stripe account's id (encrypted) and whether each order was paid;</li>
             <li>to stop abuse we count orders and discount code tries per visitor for a short time using their IP address, which is not stored with the order.</li>
         </ul>
+        <p>To report a page, shop or app made with our builders that looks like a scam, phishing or spam, use the "Report" link on it or email <a href="mailto:{{ config('mail.senders.abuse') }}">{{ config('mail.senders.abuse') }}</a>.</p>
         <p>As a funnel, form or shop owner you are responsible for telling your visitors and customers how you use their details, for having their permission to contact them, and for the orders you take.</p>
         <p>Published pages are public and are not listed in search engines. We may remove any page that breaks the law or is used for spam, scams or phishing. Anyone can report a page with the "Report" link on it.</p>
 

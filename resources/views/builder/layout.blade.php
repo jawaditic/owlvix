@@ -25,6 +25,8 @@
         textarea, input { width: 100%; margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; }
         textarea { min-height: 120px; resize: vertical; }
         .hp { position: absolute; left: -9999px; }
+        p.small { font-size: .88rem; margin-top: 14px; }
+        p.small a { color: inherit; }
         .error { color: var(--error); font-size: .9rem; margin: -8px 0 12px; }
         .credit { margin-top: 18px; font-size: .8rem; color: var(--muted); }
         .credit a { color: inherit; }

@@ -22,5 +22,6 @@
             <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
             <button type="submit" class="btn">Send report</button>
         </form>
+        <p class="small">Or email <a href="mailto:{{ config('mail.senders.abuse') }}">{{ config('mail.senders.abuse') }}</a>.</p>
     @endif
 @endsection

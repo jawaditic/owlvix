@@ -119,6 +119,7 @@ return [
     'senders' => [
         'noreply' => env('MAIL_NOREPLY_ADDRESS', 'noreply@owlvix.com'), // sign-in codes, app built, form and lead alerts, reports
         'orders' => env('MAIL_ORDERS_ADDRESS', 'orders@owlvix.com'),    // emails to shop customers
+        'abuse' => env('MAIL_ABUSE_ADDRESS', 'abuse@owlvix.com'),       // where people report harmful sites and apps (nothing sends from it)
     ],
 
 ];

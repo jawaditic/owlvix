@@ -28,4 +28,13 @@ class MailSendersTest extends TestCase
             $this->assertStringContainsString("config('mail.senders.", file_get_contents($file), basename($file));
         }
     }
+
+    public function test_abuse_address_is_published(): void
+    {
+        $this->get('/privacy')->assertOk()->assertSee('abuse@owlvix.com');
+        $this->assertStringContainsString('mailto:abuse@owlvix.com', file_get_contents(public_path('.well-known/security.txt')));
+        foreach (['builder/report.blade.php', 'builder/report-app.blade.php'] as $view) {
+            $this->assertStringContainsString("mail.senders.abuse", file_get_contents(resource_path('views/'.$view)));
+        }
+    }
 }
