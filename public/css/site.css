@@ -3040,6 +3040,19 @@ button .oi, .btn .oi { margin-inline-end: .1em; }
     .qb-stage { padding: 18px; min-height: 0; }
 }
 
+/* Business card maker (public/js/card-builder.js) */
+.cb-stage { display: grid; gap: 8px; padding: 18px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--field); }
+.cb-side { margin: 4px 0 0; font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.cb-card svg { display: block; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 14px 30px -14px rgba(15, 23, 42, .45), 0 0 0 1px rgba(15, 23, 42, .08); }
+.cb-get { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cb-home { display: inline-flex; gap: 4px; align-items: center; }
+.cb-home select { width: auto; padding: 6px 8px; }
+.cb-note { margin: 0; font-size: .82rem; color: var(--muted); }
+.cb-logo .cb-note { display: block; margin-top: 4px; }
+.cb-logo img { border-radius: 10px; object-fit: contain; background: #fff; }
+.cb-wz-prev { display: grid; gap: 12px; width: 300px; max-width: 100%; margin: 0 auto; }
+.cb-wz-prev svg { width: 100%; height: auto; display: block; border-radius: 5px; box-shadow: 0 18px 40px -20px rgba(15, 23, 42, .55), 0 0 0 1px rgba(15, 23, 42, .08); }
+
 /* Mobile app builder: payment settings (cash, card, bank, card online through Stripe) */
 .ab-pay { display: grid; gap: 10px; }
 .ab-pay label small { font-weight: 400; color: var(--muted); }

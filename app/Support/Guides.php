@@ -23,6 +23,7 @@ class Guides
         'guide.newsletter' => ['/how-to-make-an-email-newsletter', 'newsletter', 'How to make an email newsletter', 'email-builder', 'First newsletter?', 'What to send, a simple design, images, Mailchimp or Brevo, and testing before you send.'],
         'guide.invoice' => ['/how-to-make-an-invoice', 'invoice', 'How to make an invoice and get paid on time', 'invoice-generator', 'First invoice?', 'What to put on it, numbering, tax, payment terms and chasing late payments.'],
         'guide.qr' => ['/how-to-make-a-qr-code', 'qr', 'How to make a QR code that people actually scan', 'qr-code-generator', 'First QR code?', 'Static vs dynamic, logos and colours, print sizes and testing before you print.'],
+        'guide.business-card' => ['/how-to-design-a-business-card', 'business-card', 'How to design a business card people keep', 'business-card-maker', 'First business cards?', 'What to put on them, sizes, bleed, QR codes and printing at home or at a print shop.'],
         'guide.android-app' => ['/how-to-make-an-app-without-coding', 'android-app', 'How to make an Android app without coding', 'app-builder', 'Never made an app?', 'Planning your screens, building them from blocks, testing on your phone and Google Play.'],
     ];
 
