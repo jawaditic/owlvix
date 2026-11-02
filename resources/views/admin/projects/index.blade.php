@@ -7,7 +7,7 @@
             <h1>Portfolio</h1>
             <p class="muted">Projects in “Our work” on the homepage, in this order. The first 8 show straight away; the rest appear with “Show all”.</p>
         </div>
-        <a href="{{ route('admin.projects.create') }}" class="btn">+ Add project</a>
+        <a href="{{ route('admin.projects.create') }}" class="btn">{!! \App\Support\Icons::i('plus') !!} Add project</a>
     </div>
 
     <form method="GET" class="filters">
@@ -24,25 +24,25 @@
             <article class="t-row p-row {{ $p->is_published ? '' : 'is-hidden' }}">
                 <div class="t-row__order">
                     <form method="POST" action="{{ route('admin.projects.move', [$p, 'up']) }}">@csrf
-                        <button type="submit" class="icon-btn" aria-label="Move up" @disabled($loop->first || request('category'))>▲</button>
+                        <button type="submit" class="icon-btn" aria-label="Move up" @disabled($loop->first || request('category'))>{!! \App\Support\Icons::i('arrow-up') !!}</button>
                     </form>
                     <form method="POST" action="{{ route('admin.projects.move', [$p, 'down']) }}">@csrf
-                        <button type="submit" class="icon-btn" aria-label="Move down" @disabled($loop->last || request('category'))>▼</button>
+                        <button type="submit" class="icon-btn" aria-label="Move down" @disabled($loop->last || request('category'))>{!! \App\Support\Icons::i('arrow-down') !!}</button>
                     </form>
                 </div>
                 <img src="{{ $p->imageUrl() }}" alt="" class="p-row__thumb" loading="lazy">
                 <div class="t-row__main">
                     <p class="t-row__who"><strong>{{ $p->title }}</strong> <span class="muted">{{ $p->categoryLabel() }}</span></p>
                     <p class="p-row__links">
-                        @if ($p->url)<a href="{{ $p->url }}" target="_blank" rel="noopener">Website ↗</a>@endif
-                        @if ($p->ios_url)<a href="{{ $p->ios_url }}" target="_blank" rel="noopener">App Store ↗</a>@endif
-                        @if ($p->android_url)<a href="{{ $p->android_url }}" target="_blank" rel="noopener">Google Play ↗</a>@endif
+                        @if ($p->url)<a href="{{ $p->url }}" target="_blank" rel="noopener">Website {!! \App\Support\Icons::i('external') !!}</a>@endif
+                        @if ($p->ios_url)<a href="{{ $p->ios_url }}" target="_blank" rel="noopener">App Store {!! \App\Support\Icons::i('external') !!}</a>@endif
+                        @if ($p->android_url)<a href="{{ $p->android_url }}" target="_blank" rel="noopener">Google Play {!! \App\Support\Icons::i('external') !!}</a>@endif
                         @unless ($p->url || $p->ios_url || $p->android_url)<span class="muted">No link</span>@endunless
                     </p>
                 </div>
                 <div class="t-row__actions">
                     <form method="POST" action="{{ route('admin.projects.toggle', $p) }}">@csrf
-                        <button type="submit" class="chip {{ $p->is_published ? 'chip--on' : '' }}" title="Show on the website">{{ $p->is_published ? '● On site' : '○ Hidden' }}</button>
+                        <button type="submit" class="chip {{ $p->is_published ? 'chip--on' : '' }}" title="Show on the website">{!! $p->is_published ? \App\Support\Icons::i('eye').' On site' : \App\Support\Icons::i('lock').' Hidden' !!}</button>
                     </form>
                     <a href="{{ route('admin.projects.edit', $p) }}" class="btn btn--ghost btn--sm">Edit</a>
                 </div>

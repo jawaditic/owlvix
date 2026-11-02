@@ -45,7 +45,7 @@
             'title' => 'Let’s write <span class="accent">your CV</span> together',
             'sub' => 'Answer a few easy questions and watch your CV take shape as you go. Your details stay on this device — nothing is uploaded.',
             'steps' => [['Pick a', 'design'], ['Your details', '& experience'], ['Preview, then', 'download PDF']],
-            'go' => '🚀 Start my CV',
+            'go' => 'Start my CV',
             'pill' => 'Quick setup · about 3 minutes',
         ])
         @endunless

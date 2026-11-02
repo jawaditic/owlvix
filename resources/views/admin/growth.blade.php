@@ -46,7 +46,7 @@
         <header class="chart-card__head"><div><h2>Where builders come from</h2><p class="muted">Guides first, then the example designs. “Visitors” is people who read that page; “Opened” is how many went on to a builder.</p></div></header>
         <div class="growth-table">
             <table>
-                <thead><tr><th scope="col">Source</th><th scope="col">Visitors</th>@foreach ($cols as $c)<th scope="col">{{ $c }}</th>@endforeach<th scope="col">Visitor → builder</th></tr></thead>
+                <thead><tr><th scope="col">Source</th><th scope="col">Visitors</th>@foreach ($cols as $c)<th scope="col">{{ $c }}</th>@endforeach<th scope="col">Visitor {!! \App\Support\Icons::i('arrow-right') !!} builder</th></tr></thead>
                 <tbody>
                     @foreach ($bySource as $s)
                         <tr>

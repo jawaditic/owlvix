@@ -71,15 +71,15 @@
     @if ($responses->hasPages())
         <nav class="pager">
             @if ($responses->onFirstPage())
-                <span class="btn btn--ghost is-disabled">← Newer</span>
+                <span class="btn btn--ghost is-disabled">{!! \App\Support\Icons::i('arrow-left') !!} Newer</span>
             @else
-                <a class="btn btn--ghost" href="{{ $responses->previousPageUrl() }}">← Newer</a>
+                <a class="btn btn--ghost" href="{{ $responses->previousPageUrl() }}">{!! \App\Support\Icons::i('arrow-left') !!} Newer</a>
             @endif
             <span class="muted">Page {{ $responses->currentPage() }} of {{ $responses->lastPage() }}</span>
             @if ($responses->hasMorePages())
-                <a class="btn btn--ghost" href="{{ $responses->nextPageUrl() }}">Older →</a>
+                <a class="btn btn--ghost" href="{{ $responses->nextPageUrl() }}">Older {!! \App\Support\Icons::i('arrow-right') !!}</a>
             @else
-                <span class="btn btn--ghost is-disabled">Older →</span>
+                <span class="btn btn--ghost is-disabled">Older {!! \App\Support\Icons::i('arrow-right') !!}</span>
             @endif
         </nav>
     @endif

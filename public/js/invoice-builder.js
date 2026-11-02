@@ -9,6 +9,8 @@
     const $ = (s, el = root) => el.querySelector(s), $$ = (s, el = root) => [...el.querySelectorAll(s)];
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const hex = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : d);
+    /** One of our icons (icons.js), as inline SVG. */
+    const ic = (v, o) => (window.OwlIcon ? window.OwlIcon(v, o) : '');
     const uid = () => (Math.random().toString(36).slice(2) + '00000000').slice(0, 8);
     const track = (e, d = {}) => window.track?.(e, d);
     /** Styled dialog (window.sweet). If its script hasn't loaded after a short wait, questions answer "no" (nothing is
@@ -245,7 +247,7 @@ table.sum tr.due th,table.sum tr.due td{background:${c};color:${on};font-weight:
             ${K[2] ? `<label class="fb-check"><input type="checkbox" data-p="paid" ${I.paid ? 'checked' : ''}> Paid — show a “Paid” stamp</label>` : ''}
         </details>
         <details class="fb-settings" data-sec="from" open><summary>From (you)</summary>
-            <div class="rb-photo ib-logo">${I.logo ? `<img src="${I.logo}" alt="Your logo">` : '<span aria-hidden="true">🏷️</span>'}<div><button type="button" class="btn btn--sm btn--ghost" data-logo>${I.logo ? 'Change logo' : 'Add your logo (optional)'}</button>${I.logo ? '<button type="button" class="rb-link" data-logo-clear>Remove</button>' : ''}</div></div>
+            <div class="rb-photo ib-logo">${I.logo ? `<img src="${I.logo}" alt="Your logo">` : `<span aria-hidden="true">${ic('tag')}</span>`}<div><button type="button" class="btn btn--sm btn--ghost" data-logo>${I.logo ? 'Change logo' : 'Add your logo (optional)'}</button>${I.logo ? '<button type="button" class="rb-link" data-logo-clear>Remove</button>' : ''}</div></div>
             <div class="fb-2">${fld('from.name', 'Business or your name', F.name)}${fld('from.email', 'Email', F.email, { type: 'email' })}${fld('from.phone', 'Phone', F.phone, { max: 60 })}
             <div class="rb-dates">${fld('from.taxLabel', 'Tax ID name', F.taxLabel, { max: 30, ph: 'VAT no.' })}${fld('from.taxId', 'Number', F.taxId, { max: 60 })}</div>
             ${fld('from.address', 'Address', F.address, { area: true, rows: 3, max: 400, wide: true })}</div>
@@ -260,9 +262,9 @@ table.sum tr.due th,table.sum tr.due td{background:${c};color:${on};font-weight:
                 <label><span class="ib-cap">Qty</span><input data-p="items.${i}.qty" type="number" step="any" min="0" inputmode="decimal" value="${esc(x.qty)}" aria-label="Item ${i + 1} quantity"></label>
                 <label><span class="ib-cap">Price</span><input data-p="items.${i}.price" type="number" step="any" min="0" inputmode="decimal" value="${esc(x.price)}" placeholder="0" aria-label="Item ${i + 1} price"></label>
                 <output class="ib-line" data-line="${i}">${money(T.lines[i], I.currency)}</output>
-                <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} aria-label="Move item ${i + 1} up" title="Move up">↑</button><button type="button" data-move="1" ${i < I.items.length - 1 ? '' : 'disabled'} aria-label="Move item ${i + 1} down" title="Move down">↓</button><button type="button" data-del class="fb-del" aria-label="Delete item ${i + 1}" title="Delete">✕</button></span>
+                <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} aria-label="Move item ${i + 1} up" title="Move up">${ic('arrow-up')}</button><button type="button" data-move="1" ${i < I.items.length - 1 ? '' : 'disabled'} aria-label="Move item ${i + 1} down" title="Move down">${ic('arrow-down')}</button><button type="button" data-del class="fb-del" aria-label="Delete item ${i + 1}" title="Delete">${ic('close')}</button></span>
             </div>`).join('')}</div>
-            ${I.items.length < MAX_ITEMS ? '<button type="button" class="btn btn--sm btn--ghost rb-add" data-add="items">＋ Add an item</button>' : ''}
+            ${I.items.length < MAX_ITEMS ? `<button type="button" class="btn btn--sm btn--ghost rb-add" data-add="items">${ic('plus')} Add an item</button>` : ''}
         </details>
         <details class="fb-settings" data-sec="totals" open><summary>Discount, tax &amp; totals</summary>
             <div class="fb-2">
@@ -298,7 +300,7 @@ table.sum tr.due th,table.sum tr.due td{background:${c};color:${on};font-weight:
         box.hidden = !mine.length;
         $('[data-mine-count]').textContent = mine.length;
         $('[data-mine-list]').innerHTML = mine.map(x => `<li${x.id === I.id ? ' class="is-open"' : ''}><span><b>${esc(x.number || KINDS[x.kind][0])}</b> ${esc(x.to.name || 'No client')}<small>${esc([KINDS[x.kind][0], showDate(x.issued), money(totals(x).total, x.currency), x.paid ? 'paid' : ''].filter(Boolean).join(' · '))}</small></span>
-            <span class="ib-mine__btns"><button type="button" class="btn btn--sm btn--ghost" data-open="${x.id}"${x.id === I.id ? ' disabled' : ''}>${x.id === I.id ? 'Open now' : 'Open'}</button><button type="button" class="fb-del" data-forget="${x.id}" aria-label="Delete ${esc(x.number || 'this invoice')} from this device" title="Delete">✕</button></span></li>`).join('');
+            <span class="ib-mine__btns"><button type="button" class="btn btn--sm btn--ghost" data-open="${x.id}"${x.id === I.id ? ' disabled' : ''}>${x.id === I.id ? 'Open now' : 'Open'}</button><button type="button" class="fb-del" data-forget="${x.id}" aria-label="Delete ${esc(x.number || 'this invoice')} from this device" title="Delete">${ic('close')}</button></span></li>`).join('');
     };
 
     /* ------------------------------------------------ preview: a real A4 page, scaled to fit */
@@ -409,7 +411,7 @@ table.sum tr.due th,table.sum tr.due td{background:${c};color:${on};font-weight:
     /* ------------------------------------------------ quick setup wizard (public/js/builder-wizard.js) — everything stays on this device */
     const WZ = window.OwlWizard;
     if (WZ) {
-        const EM = { classic: '🧾', modern: '🎨', bold: '⚡', minimal: '◻️' };
+        const EM = { classic: 'receipt', modern: 'palette', bold: 'bolt', minimal: 'note' };
         let fresh = isSample(), wframe = null, wt = 0;
         /** The first time they type their own details, the example goes, so none of it ends up on their invoice. */
         const own = () => { if (!fresh) return; fresh = false; I = blank({ design: I.design, color: I.color, font: I.font, kind: I.kind, currency: I.currency, items: [item(), item(), item()].map(x => ({ ...x, qty: '' })) }); I.items[0].qty = '1'; setKind(I.kind); };
@@ -424,7 +426,7 @@ table.sum tr.due th,table.sum tr.due td{background:${c};color:${on};font-weight:
             {
                 title: 'What are you making?', sub: 'Pick the type and a design. You can change both any time.',
                 draw: () => `<div class="wz-look"><b>Type</b><div class="wz-chips">${['invoice', 'quote', 'receipt', 'tax', 'estimate', 'proforma'].map(k => `<button type="button" data-wz-kind="${k}" aria-pressed="${I.kind === k}">${KINDS[k][0]}</button>`).join('')}</div></div>`
-                    + WZ.cards(Object.entries(DESIGNS).map(([k, v]) => [k, EM[k] || '🧾', v]), I.design),
+                    + WZ.cards(Object.entries(DESIGNS).map(([k, v]) => [k, EM[k] || 'receipt', v]), I.design),
                 click: (e, el, box) => {
                     if (el.dataset.wzKind) { setKind(el.dataset.wzKind); WZ.press(box, '[data-wz-kind]', el); }
                     else if (el.dataset.wzPick) { I.design = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el); }
@@ -473,7 +475,7 @@ table.sum tr.due th,table.sum tr.due td{background:${c};color:${on};font-weight:
         ];
         WZ.mount({
             root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-invoice-off',
-            say: ['Hoo! Need an invoice? I’ll make it with you — about 2 minutes.', 'Your details stay on this device. Nothing is uploaded.', 'Watch it fill in as you type. Ready? 🚀'],
+            say: ['Hoo! Need an invoice? I’ll make it with you — about 2 minutes.', 'Your details stay on this device. Nothing is uploaded.', 'Watch it fill in as you type. Ready?'],
             hasSaved: () => !isSample(),
             quickSlot: root.querySelector('.fb-top__actions'),
             onRestart: () => { fresh = isSample(); },
@@ -489,13 +491,13 @@ table.sum tr.due th,table.sum tr.due td{background:${c};color:${on};font-weight:
                 title: 'Your invoice is ready',
                 sub: 'Download it as a PDF to send, or keep editing. Next time, “New invoice” keeps your business details and numbers it for you.',
                 actions: [
-                    { label: '📄 Download PDF', cls: 'btn btn--glow', then: 'pdf', act: async (close, o) => {
+                    { label: 'Download PDF', icon: 'download', cls: 'btn btn--glow', then: 'pdf', act: async (close, o) => {
                         close();
                         // on arrival at the editor page the PDF window needs a fresh click, or the browser blocks it
-                        if (o?.replay) { if (await window.sweet({ icon: 'success', title: 'Your invoice is ready', text: 'Save it as a PDF — or keep editing first.', confirm: '📄 Download PDF', cancel: 'Keep editing' })) root.querySelector('[data-pdf]')?.click(); return; }
+                        if (o?.replay) { if (await window.sweet({ icon: 'success', title: 'Your invoice is ready', text: 'Save it as a PDF — or keep editing first.', confirm: 'Download PDF', cancel: 'Keep editing' })) root.querySelector('[data-pdf]')?.click(); return; }
                         setTimeout(() => root.querySelector('[data-pdf]')?.click(), 350);
                     } },
-                    { label: '✏️ Keep editing', act: close => close() },
+                    { label: 'Keep editing', icon: 'pen', act: close => close() },
                 ],
             },
             editorUrl: root.dataset.editorUrl || '', noun: 'invoice',

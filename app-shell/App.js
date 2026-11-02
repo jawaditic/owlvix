@@ -376,7 +376,7 @@ function Shell() {
                         </ScrollView>
                         {languages.length > 1 && (
                             <View style={styles.langs} accessibilityRole="radiogroup" accessibilityLabel={t('language')}>
-                                <Text style={styles.langTitle}>🌐 {t('language')}</Text>
+                                <View style={styles.langHead}><Icon name="globe" color={T.muted} size={16} /><Text style={styles.langTitle}>{t('language')}</Text></View>
                                 <View style={styles.langRow}>
                                     {languages.map(l => (
                                         <Pressable key={l} onPress={() => { pickLanguage(l); setMenu(false); }} accessibilityRole="radio" accessibilityState={{ selected: l === lang }}
@@ -484,6 +484,7 @@ const makeStyles = (t, r, f, h) => StyleSheet.create({
     drawerItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 12, paddingVertical: 13, borderRadius: r(12) },
     drawerText: { fontFamily: f, flex: 1, fontSize: 16, fontWeight: '600', color: t.ink },
     langs: { paddingHorizontal: 12, paddingTop: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border },
+    langHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     langTitle: { fontFamily: f, fontSize: 13, fontWeight: '700', color: t.muted },
     langRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
     langChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: r(999), borderWidth: 1, borderColor: t.border },

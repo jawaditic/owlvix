@@ -1,6 +1,6 @@
 {{-- The owl's invitation to a builder's quick setup wizard (public/js/builder-wizard.js), shown on a first visit until
      the visitor starts it or picks the full builder. Same look as the mobile app builder's banner.
-     Params: $say (first owl line), $title (HTML), $sub, $steps (three [line1, line2]), $go (button), $pill, $skip --}}
+     Params: $say (first owl line), $title (HTML), $sub, $steps (three [line1, line2]), $go (button words), $goIcon (an icon name, default rocket), $pill, $skip --}}
 <div class="wzb" data-wz-banner hidden>
     <div class="wzb__sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
     <div class="wzb__owl">
@@ -17,8 +17,8 @@
             @endforeach
         </ol>
         <div class="wzb__actions">
-            <button type="button" class="btn btn--glow wzb__go" data-wz-start>{{ $go }}</button>
-            <button type="button" class="wzb__no" data-wzb-no>{{ $skip ?? 'or use the full builder →' }}</button>
+            <button type="button" class="btn btn--glow wzb__go" data-wz-start>{!! \App\Support\Icons::i($goIcon ?? 'rocket') !!} {{ $go }}</button>
+            <button type="button" class="wzb__no" data-wzb-no>{{ $skip ?? 'or use the full builder' }} {!! \App\Support\Icons::i('arrow-right') !!}</button>
         </div>
     </div>
     <div class="wzb__phone" aria-hidden="true">

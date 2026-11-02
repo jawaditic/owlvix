@@ -8,7 +8,7 @@ import { t } from './i18n';
 import { onLook } from './theme';
 import Svg, { Path } from 'react-native-svg';
 import { action, image, str } from './content';
-import ICONS from './icons.json';
+import { Icon } from './icons';
 import { BookingBlock } from './booking';
 import { KenBurns, Press, Ring, Wiggle } from './anim';
 import { LoyaltyBlock } from './loyalty';
@@ -20,13 +20,7 @@ export const isDark = hex => {
     return r * 0.299 + g * 0.587 + b * 0.114 < 150;
 };
 
-export function Icon({ name, color, size = 24, width = 1.8 }) {
-    return (
-        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round">
-            <Path d={Object.prototype.hasOwnProperty.call(ICONS, name) ? ICONS[name] : ICONS.home} />
-        </Svg>
-    );
-}
+export { Icon }; // drawn in icons.js; other screens import it from here
 
 const Chevron = () => (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -145,7 +139,7 @@ function Gallery({ b, ctx }) {
                         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })} showsHorizontalScrollIndicator={false}
                         renderItem={({ item }) => <Image source={{ uri: item.uri }} style={{ width, height: '100%' }} resizeMode="contain" />} />
                     <Pressable onPress={() => setOpen(-1)} style={[styles.close, { top: (ctx.insets?.top || 32) + 12 }]} accessibilityRole="button" accessibilityLabel={t('close')}>
-                        <Text style={styles.closeText}>✕</Text>
+                        <Icon name="close" color="#fff" size={22} width={2.2} />
                     </Pressable>
                 </View>
             </Modal>
@@ -442,7 +436,6 @@ const makeStyles = (t, r, f, h) => StyleSheet.create({
     grid: { flexDirection: 'row', flexWrap: 'wrap' },
     viewer: { flex: 1, backgroundColor: '#000' },
     close: { position: 'absolute', top: 12, right: 16, width: 44, height: 44, borderRadius: r(22), backgroundColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
-    closeText: { fontFamily: f, color: '#fff', fontSize: 20, fontWeight: '700' },
     video: { width: '100%', aspectRatio: 16 / 9, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', borderRadius: r(16), overflow: 'hidden' },
     play: { width: 64, height: 64, borderRadius: r(32), backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center', paddingLeft: 4 },
     category: { fontFamily: h, fontSize: 19, fontWeight: '600', color: t.ink, marginTop: 10, marginBottom: 10 },

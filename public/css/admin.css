@@ -476,3 +476,7 @@ a.content-tile:hover { border-color: rgba(30, 199, 115, .6); }
 .growth-table th:first-child { text-align: left; font-weight: 500; white-space: normal; min-width: 220px; }
 .growth-table thead th { color: var(--muted); font-weight: 500; font-size: .8rem; }
 .growth-table tbody tr:hover { background: var(--grid); }
+
+/* Owlvix's own inline icons (App\Support\Icons::i, window.OwlIcon) */
+.oi { width: 1.1em; height: 1.1em; vertical-align: -.18em; flex: none; display: inline-block; }
+.t-row__stars { display: inline-flex; gap: 2px; align-items: center; }

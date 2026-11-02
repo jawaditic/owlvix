@@ -205,7 +205,7 @@
             const res = await fetch(ef.action, { method: 'POST', body: fd, headers: { Accept: 'application/json' } });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json.ok) throw new Error(json.error || json.errors?.email?.[0] || json.message || 'Could not send. Please try again.');
-            msg.textContent = '✓ Sent! Check your inbox (and spam folder) in a minute.'; msg.dataset.ok = '1';
+            msg.textContent = 'Sent! Check your inbox (and spam folder) in a minute.'; msg.dataset.ok = '1';
             ef.querySelectorAll('input').forEach(i => i.disabled = true);
             window.track?.('generate_lead', { form: 'seo_checker' });
         } catch (err) { msg.textContent = err.message; msg.dataset.ok = ''; btn.disabled = false; }
@@ -213,7 +213,7 @@
     });
 
     $('[data-seo-share]').addEventListener('click', async e => {
-        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied ✓'; } catch { window.sweet({ icon: 'info', title: 'Copy this link', text: 'Select the link and copy it.', input: { value: location.href, readonly: true, max: 2000 }, confirm: 'Done', cancel: false }); }
+        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied'; } catch { window.sweet({ icon: 'info', title: 'Copy this link', text: 'Select the link and copy it.', input: { value: location.href, readonly: true, max: 2000 }, confirm: 'Done', cancel: false }); }
     });
     $('[data-seo-quote]').addEventListener('click', () => {
         if (!last) return;

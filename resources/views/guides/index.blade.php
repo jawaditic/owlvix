@@ -41,7 +41,7 @@
                 </a>
             @endforeach
         </div>
-        <p class="guides-hub__more">Want to jump straight in? <a href="{{ route('free-tools') }}#builders">See all free builders →</a></p>
+        <p class="guides-hub__more">Want to jump straight in? <a href="{{ route('free-tools') }}#builders">See all free builders {!! \App\Support\Icons::i('arrow-right') !!}</a></p>
     </div>
 </section>
 @endsection

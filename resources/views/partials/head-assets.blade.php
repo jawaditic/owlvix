@@ -8,5 +8,6 @@
 <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
 <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/theme.css') }}">
 <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/site.css') }}">
+<script src="{{ \App\Support\Asset::url('js/icons.js') }}" defer></script>{{-- window.OwlIcon: our own icons, ready before the builders start --}}
 <noscript><style>[data-reviews].is-loading > * { visibility: visible; } [data-reviews].is-loading::after { display: none; }</style></noscript>
 @include('partials.analytics')

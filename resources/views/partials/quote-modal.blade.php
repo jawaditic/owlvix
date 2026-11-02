@@ -17,7 +17,7 @@
             @php($t = \App\Support\Testimonials::data())
             <div class="quote-proof">
                 <a href="{{ $t['profile_url'] }}" class="quote-proof__rating" target="_blank" rel="noopener">
-                    <span aria-hidden="true">★★★★★</span> @include('partials.rating-summary', ['t' => $t])
+                    <span aria-hidden="true">@include('partials.icon', ['n' => 'star-solid', 'times' => 5])</span> @include('partials.rating-summary', ['t' => $t])
                 </a>
                 <ul class="quote-proof__services" aria-label="What we build">
                     @foreach (['Web apps', 'Mobile apps', 'AI chatbots', 'AI agents', 'Websites', 'Shopify'] as $svc)

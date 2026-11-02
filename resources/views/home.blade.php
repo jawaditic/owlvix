@@ -136,37 +136,37 @@
                         <span class="svc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="d" x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
                         <h3>Custom Web Apps</h3>
                         <p>Dashboards, portals, SaaS products and booking systems built with Laravel, React and Vue.</p>
-                        <a href="{{ route('service.web-app-development') }}" class="card__more">Learn more about web apps →</a>
+                        <a href="{{ route('service.web-app-development') }}" class="card__more">Learn more about web apps @include('partials.icon', ['n' => 'arrow-right'])</a>
                     </article>
                     <article class="card">
                         <span class="svc-icon is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="d" x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>
                         <h3>Mobile Apps</h3>
                         <p>iOS and Android apps that share one codebase and talk to your existing systems.</p>
-                        <a href="{{ route('service.mobile-app-development') }}" class="card__more">Learn more about mobile apps →</a>
+                        <a href="{{ route('service.mobile-app-development') }}" class="card__more">Learn more about mobile apps @include('partials.icon', ['n' => 'arrow-right'])</a>
                     </article>
                     <article class="card">
                         <span class="svc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="d" d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg></span>
                         <h3>AI Chatbots</h3>
                         <p>Website and customer support bots trained on your own documents, FAQs and products.</p>
-                        <a href="{{ route('service.ai-chatbot-development') }}" class="card__more">Learn more about AI chatbots →</a>
+                        <a href="{{ route('service.ai-chatbot-development') }}" class="card__more">Learn more about AI chatbots @include('partials.icon', ['n' => 'arrow-right'])</a>
                     </article>
                     <article class="card">
                         <span class="svc-icon is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path class="d" d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
                         <h3>AI Agents & Automation</h3>
                         <p>Hand repetitive tasks and workflows to AI that follows your rules and reports back.</p>
-                        <a href="{{ route('service.ai-agent-development') }}" class="card__more">Learn more about AI agents →</a>
+                        <a href="{{ route('service.ai-agent-development') }}" class="card__more">Learn more about AI agents @include('partials.icon', ['n' => 'arrow-right'])</a>
                     </article>
                     <article class="card">
                         <span class="svc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 7H6a4 4 0 0 0 0 8h3M15 7h3a4 4 0 0 1 0 8h-3M8 11h8"/></svg></span>
                         <h3>API Integrations</h3>
                         <p>Connect OpenAI, Claude, Gemini, payments, CRMs and ERPs to the tools you already use.</p>
-                        <a href="{{ route('service.api-integration-services') }}" class="card__more">Learn more about integrations →</a>
+                        <a href="{{ route('service.api-integration-services') }}" class="card__more">Learn more about integrations @include('partials.icon', ['n' => 'arrow-right'])</a>
                     </article>
                     <article class="card">
                         <span class="svc-icon is-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><rect class="d" x="3" y="4" width="18" height="7" rx="2"/><rect class="d" x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/></svg></span>
                         <h3>Hosting & Support</h3>
                         <p>Setup, deployment, monitoring and fixes after launch — you're never left on your own.</p>
-                        <a href="{{ route('service.hosting-and-support') }}" class="card__more">Learn more about support →</a>
+                        <a href="{{ route('service.hosting-and-support') }}" class="card__more">Learn more about support @include('partials.icon', ['n' => 'arrow-right'])</a>
                     </article>
                 </div>
                 @include('partials.more-services', ['hire' => false])
@@ -206,9 +206,9 @@
                                 @if ($p->summary)<p>{{ $p->summary }}</p>@endif
                                 @if ($p->url || $p->ios_url || $p->android_url)
                                     <div class="work-card__links">
-                                        @if ($p->url)<a href="{{ $p->url }}" target="_blank" rel="noopener nofollow">View site ↗</a>@endif
-                                        @if ($p->ios_url)<a href="{{ $p->ios_url }}" target="_blank" rel="noopener nofollow">App Store ↗</a>@endif
-                                        @if ($p->android_url)<a href="{{ $p->android_url }}" target="_blank" rel="noopener nofollow">Google Play ↗</a>@endif
+                                        @if ($p->url)<a href="{{ $p->url }}" target="_blank" rel="noopener nofollow">View site @include('partials.icon', ['n' => 'external'])</a>@endif
+                                        @if ($p->ios_url)<a href="{{ $p->ios_url }}" target="_blank" rel="noopener nofollow">App Store @include('partials.icon', ['n' => 'external'])</a>@endif
+                                        @if ($p->android_url)<a href="{{ $p->android_url }}" target="_blank" rel="noopener nofollow">Google Play @include('partials.icon', ['n' => 'external'])</a>@endif
                                     </div>
                                 @endif
                             </div>

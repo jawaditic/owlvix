@@ -32,6 +32,10 @@
         edit: svg('<path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/>'), save: svg('<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>'),
         cols: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/>'),
     };
+    /** Owlvix's own icon set (public/js/icons.js, loaded in <head>) → inline <svg>, for HTML strings only. */
+    const oi = (name, o) => (window.OwlIcon ? window.OwlIcon(name, o) : '');
+    /** Block glyphs from the engine: an icon name → our icon; anything else (H, ¶, 123…) as text. */
+    const glyph = v => (window.OwlIcon?.names?.includes(v) ? oi(v) : esc(v));
 
     /* Styled dialogs in place of confirm()/prompt(): the shared js/sweet.js. sweet({icon,title,text,confirm,cancel,danger,input,html}) → Promise */
     const sweet = opts => window.sweet(opts);
@@ -89,7 +93,7 @@
         saveTimer = setTimeout(() => {
             cloudStatus();
             try { localStorage.setItem(STORE, JSON.stringify(P)); $('[data-autosave]').textContent = 'Saved on this device'; }
-            catch { $('[data-autosave]').textContent = 'Too big to keep in this browser — save it to your account (☁️ Save)'; }
+            catch { $('[data-autosave]').textContent = 'Too big to keep in this browser — save it to your account with the Save button'; }
         }, 400);
     };
     const commit = () => {
@@ -332,7 +336,7 @@
         rtEl = el;
         doc().body.insertAdjacentHTML('beforeend', `<div class="ed-rt" contenteditable="false">
             <button data-rt="bold" title="Bold"><b>B</b></button><button data-rt="italic" title="Italic"><i>I</i></button><button data-rt="underline" title="Underline"><u>U</u></button>
-            <button data-rt="link" title="Turn the selected text into a link">🔗</button><button data-rt="insertUnorderedList" title="Bullet list">••</button><button data-rt="insertOrderedList" title="Numbered list">1.</button><button data-rt="removeFormat" title="Clear formatting">⌫</button></div>`);
+            <button data-rt="link" title="Turn the selected text into a link">${oi('link')}</button><button data-rt="insertUnorderedList" title="Bullet list" aria-label="Bullet list">${oi('list')}</button><button data-rt="insertOrderedList" title="Numbered list" aria-label="Numbered list">${oi('list-ordered')}</button><button data-rt="removeFormat" title="Clear formatting" aria-label="Clear formatting">${oi('eraser')}</button></div>`);
         positionRt();
     };
     const hideRt = () => { doc()?.querySelectorAll('.ed-rt').forEach(t => t.remove()); rtEl = null; };
@@ -414,8 +418,8 @@
         } catch { toast('Sorry, that image could not be read. Try a JPG or PNG.'); }
     });
     const pickIcon = async (id, path) => {
-        const html = `<div class="icon-grid">${Object.keys(B.ICONS).map(k => `<button type="button" data-pick="i:${k}" title="${k}">${B.icon('i:' + k)}</button>`).join('')}</div><p class="sweet__text">…or type any emoji:</p>`;
-        const v = await sweet({ icon: 'info', title: 'Choose an icon', html, input: { value: '', placeholder: '⭐ 🚀 ✅ 💡', max: 4 }, confirm: 'Use emoji' });
+        const html = `<div class="icon-grid">${Object.keys(B.ICONS).map(k => `<button type="button" data-pick="i:${k}" title="${k}">${B.icon('i:' + k)}</button>`).join('')}</div><p class="sweet__text">…or type a letter, number or short text instead:</p>`;
+        const v = await sweet({ icon: 'info', title: 'Choose an icon', html, input: { value: '', placeholder: 'e.g. 1 or A', max: 4 }, confirm: 'Use this' });
         if (!v) return;
         const [obj] = ownerOf(`${id}|${path}`); if (!obj) return;
         setPath(obj, path, v); commit(); refreshEl(id); drawEdit();
@@ -521,7 +525,7 @@
         const name = await sweet({ icon: 'question', title: 'Save page as my template', text: `Saves all ${pg.sections.length} sections of “${pg.title}” with your words, pictures and styles. Reuse it any time as a new page. Saved in this browser.`, input: { value: pg.title, max: 40 }, confirm: 'Save page template' });
         if (!name) return;
         const list = myPageTemplates(); list.unshift({ name, secs: clone(pg.sections) });
-        try { localStorage.setItem(PAGE_TPL, JSON.stringify(list.slice(0, 20))); toast('Page saved to My templates (Add tab → My templates)', 'success'); drawAdd(); }
+        try { localStorage.setItem(PAGE_TPL, JSON.stringify(list.slice(0, 20))); toast('Page saved to My templates (Add tab, under My templates)', 'success'); drawAdd(); }
         catch { toast('No space left to save templates in this browser — remove photos or old templates.', 'error'); }
     };
     const tile = (drag, icon, label) => `<button type="button" class="lpb-add" draggable="true" data-drag="${drag}"><span>${icon}</span>${esc(label)}</button>`;
@@ -529,20 +533,20 @@
         const q = ($('[data-add-search]')?.value || '').toLowerCase().trim();
         const match = l => !q || l.toLowerCase().includes(q);
         const group = (title, inner) => (inner ? `<h2 class="lpb-ph">${title}</h2><div class="lpb-add-grid">${inner}</div>` : '');
-        const widgets = gr => Object.values(W).filter(d => d.group === gr && match(d.label)).map(d => tile(`new:${d.type}`, `<b class="lpb-glyph">${esc(d.icon)}</b>`, d.label)).join('');
+        const widgets = gr => Object.values(W).filter(d => d.group === gr && match(d.label)).map(d => tile(`new:${d.type}`, `<b class="lpb-glyph">${glyph(d.icon)}</b>`, d.label)).join('');
         const layouts = Object.entries(B.LAYOUTS).filter(([, v]) => match(v[2] + ' columns layout')).map(([k, v]) => tile(`layout:${k}`, `<i class="lpb-lay" style="grid-template-columns:${v[0]}">${'<i></i>'.repeat(v[1])}</i>`, v[2])).join('');
         const thumb = key => `<span class="lpb-tthumb" data-thumb="${key}" aria-hidden="true"></span>`;
         const SHOW = q ? Infinity : 6; // the side panel shows a few; "View all" opens every one
-        const secT = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0])).slice(0, SHOW).map(([k, v]) => `<button type="button" class="lpb-tpl-row lpb-tpl-card" draggable="true" data-drag="tpl:${k}">${thumb('sec:' + k)}<span class="lpb-tpl-name">${esc(v[0])}<span>＋</span></span></button>`).join('');
-        const pageT = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0] + ' page')).slice(0, q ? Infinity : 4).map(([k, v]) => `<button type="button" class="lpb-tpl-row lpb-tpl-card" data-page-tpl="${k}">${thumb('page:' + k)}<span class="lpb-tpl-name">📄 ${esc(v[0])}<span>＋ New page</span></span></button>`).join('');
-        const mine = myTemplates().map((t, i) => (match(t.name) ? `<div class="lpb-tpl-row lpb-tpl-card lpb-tpl-mine" draggable="true" data-drag="tpl:my-${i}">${thumb('sec:my-' + i)}<span class="lpb-tpl-name">⭐ ${esc(t.name)}<button type="button" data-tpl-del="${i}" title="Remove this template">✕</button></span></div>` : '')).join('');
-        const minePages = FUNNEL ? '' : myPageTemplates().map((t, i) => (match(t.name + ' page') ? `<div class="lpb-tpl-row lpb-tpl-card lpb-tpl-mine" role="button" tabindex="0" data-my-page="${i}">${thumb('mypage:' + i)}<span class="lpb-tpl-name">📄 ${esc(t.name)} <small>${t.secs?.length || 0} sections</small><button type="button" data-pagetpl-del="${i}" title="Remove this page template">✕</button></span></div>` : '')).join('');
+        const secT = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0])).slice(0, SHOW).map(([k, v]) => `<button type="button" class="lpb-tpl-row lpb-tpl-card" draggable="true" data-drag="tpl:${k}">${thumb('sec:' + k)}<span class="lpb-tpl-name">${esc(v[0])}<span>${oi('plus')}</span></span></button>`).join('');
+        const pageT = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0] + ' page')).slice(0, q ? Infinity : 4).map(([k, v]) => `<button type="button" class="lpb-tpl-row lpb-tpl-card" data-page-tpl="${k}">${thumb('page:' + k)}<span class="lpb-tpl-name">${oi('doc')} ${esc(v[0])}<span>${oi('plus')} New page</span></span></button>`).join('');
+        const mine = myTemplates().map((t, i) => (match(t.name) ? `<div class="lpb-tpl-row lpb-tpl-card lpb-tpl-mine" draggable="true" data-drag="tpl:my-${i}">${thumb('sec:my-' + i)}<span class="lpb-tpl-name">${oi('star')} ${esc(t.name)}<button type="button" data-tpl-del="${i}" title="Remove this template" aria-label="Remove this template">${oi('close')}</button></span></div>` : '')).join('');
+        const minePages = FUNNEL ? '' : myPageTemplates().map((t, i) => (match(t.name + ' page') ? `<div class="lpb-tpl-row lpb-tpl-card lpb-tpl-mine" role="button" tabindex="0" data-my-page="${i}">${thumb('mypage:' + i)}<span class="lpb-tpl-name">${oi('doc')} ${esc(t.name)} <small>${t.secs?.length || 0} sections</small><button type="button" data-pagetpl-del="${i}" title="Remove this page template" aria-label="Remove this page template">${oi('close')}</button></span></div>` : '')).join('');
         // after the last card too, so people who scrolled through the list don't have to go back up
-        const more = (kind, label) => { const n = Object.keys(kind === 'sec' ? B.TEMPLATES.sections : B.TEMPLATES.pages).length; return q ? '' : `<button type="button" class="lpb-viewall lpb-viewall--end" data-tpl-all="${kind}">View all ${n} ${label} →</button>`; };
+        const more = (kind, label) => { const n = Object.keys(kind === 'sec' ? B.TEMPLATES.sections : B.TEMPLATES.pages).length; return q ? '' : `<button type="button" class="lpb-viewall lpb-viewall--end" data-tpl-all="${kind}">View all ${n} ${label} ${oi('arrow-right')}</button>`; };
         const html = (FUNNEL ? group('Funnel widgets', widgets('funnel')) : '') + (KIT === 'store' ? group('Shop', widgets('shop')) : '') + group('Layout — columns', layouts) + group('Basic widgets', widgets('basic')) + group('Pro widgets', widgets('pro')) + group('Ready sections', widgets('section'))
             + (secT ? `<h2 class="lpb-ph lpb-ph--row">Section templates <button type="button" class="lpb-viewall" data-tpl-all="sec">View all (${Object.keys(B.TEMPLATES.sections).length})</button></h2><div class="lpb-tpl-list">${secT}</div>${more('sec', 'section templates')}` : '')
             + (pageT ? `<h2 class="lpb-ph lpb-ph--row">Page templates <button type="button" class="lpb-viewall" data-tpl-all="page">View all (${Object.keys(B.TEMPLATES.pages).length})</button></h2><div class="lpb-tpl-list">${pageT}</div>${more('page', 'page templates')}` : '')
-            + (!q || mine || minePages ? `<h2 class="lpb-ph">My templates</h2><div class="lpb-tpl-list">${mine + minePages || `<p class="lpb-hint">Select a section and press ★ on its toolbar to save it here${FUNNEL ? '' : ' — or save a whole page from the Page tab'}.</p>`}</div>` : '');
+            + (!q || mine || minePages ? `<h2 class="lpb-ph">My templates</h2><div class="lpb-tpl-list">${mine + minePages || `<p class="lpb-hint">Select a section and press ${oi('star')} on its toolbar to save it here${FUNNEL ? '' : ' — or save a whole page from the Page tab'}.</p>`}</div>` : '');
         $('[data-add-list]').innerHTML = html || '<p class="lpb-hint">Nothing matches your search.</p>';
         $$('[data-thumb]', $('[data-add-list]')).forEach(el => thumbs.observe(el));
     };
@@ -559,13 +563,13 @@
         if (!cats.includes(galCat)) galCat = '';
         gal.querySelector('[data-gal-cats]').innerHTML = cats.length ? ['', ...cats].map(c => `<button type="button" data-gal-cat="${esc(c)}" aria-pressed="${c === galCat}">${esc(c || 'All')}</button>`).join('') : '';
         const inCat = v => !galCat || v[2] === galCat;
-        const card = (key, label, act, extra = '') => `<button type="button" class="lpb-gal-card" ${act}><span class="lpb-tthumb lpb-tthumb--big" data-thumb="${key}" aria-hidden="true"></span><span class="lpb-gal-name">${esc(label)}${extra}</span></button>`;
+        const card = (key, label, act, extra = '', pre = '') => `<button type="button" class="lpb-gal-card" ${act}><span class="lpb-tthumb lpb-tthumb--big" data-thumb="${key}" aria-hidden="true"></span><span class="lpb-gal-name">${pre}${esc(label)}${extra}</span></button>`;
         let cards = '';
-        if (galTab === 'sec') cards = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0]) && inCat(v)).map(([k, v]) => card('sec:' + k, v[0], `data-gal-add="tpl:${k}"`, '<i>＋ Add</i>')).join('');
-        else if (galTab === 'page') cards = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0]) && inCat(v)).map(([k, v]) => card('page:' + k, v[0], `data-gal-page="${k}"`, '<i>＋ New page</i>')).join('');
-        else cards = myTemplates().map((t, i) => (match(t.name) ? card('sec:my-' + i, t.name, `data-gal-add="tpl:my-${i}"`, '<i>＋ Add</i>') : '')).join('')
-            + (FUNNEL ? '' : myPageTemplates().map((t, i) => (match(t.name) ? card('mypage:' + i, '📄 ' + t.name, `data-gal-mypage="${i}"`, '<i>＋ New page</i>') : '')).join(''));
-        const empty = galTab === 'mine' && !q ? `No saved templates yet — select a section on your page and press ★ on its toolbar${FUNNEL ? '' : ', or save a whole page from the Page tab'}.` : 'Nothing matches your search.';
+        if (galTab === 'sec') cards = Object.entries(B.TEMPLATES.sections).filter(([, v]) => match(v[0]) && inCat(v)).map(([k, v]) => card('sec:' + k, v[0], `data-gal-add="tpl:${k}"`, `<i>${oi('plus')} Add</i>`)).join('');
+        else if (galTab === 'page') cards = Object.entries(B.TEMPLATES.pages).filter(([, v]) => match(v[0]) && inCat(v)).map(([k, v]) => card('page:' + k, v[0], `data-gal-page="${k}"`, `<i>${oi('plus')} New page</i>`)).join('');
+        else cards = myTemplates().map((t, i) => (match(t.name) ? card('sec:my-' + i, t.name, `data-gal-add="tpl:my-${i}"`, `<i>${oi('plus')} Add</i>`) : '')).join('')
+            + (FUNNEL ? '' : myPageTemplates().map((t, i) => (match(t.name) ? card('mypage:' + i, t.name, `data-gal-mypage="${i}"`, `<i>${oi('plus')} New page</i>`, oi('doc') + ' ') : '')).join(''));
+        const empty = galTab === 'mine' && !q ? `No saved templates yet — select a section on your page and press ${oi('star')} on its toolbar${FUNNEL ? '' : ', or save a whole page from the Page tab'}.` : 'Nothing matches your search.';
         gal.querySelector('[data-gal-grid]').innerHTML = cards || `<p class="lpb-hint">${empty}</p>`;
         gal.querySelectorAll('[data-thumb]').forEach(el => thumbs.observe(el));
     };
@@ -577,7 +581,7 @@
             gal.innerHTML = `<div class="lpb-gal-head"><h2>Templates</h2>
                     <div class="lpb-gal-tabs" role="tablist"><button type="button" role="tab" data-gal-tab="sec">Sections</button><button type="button" role="tab" data-gal-tab="page">Pages</button><button type="button" role="tab" data-gal-tab="mine">My templates</button></div>
                     <input type="search" data-gal-q placeholder="Search templates…" aria-label="Search templates">
-                    <button type="button" class="lpb-gal-x" data-gal-close aria-label="Close">✕</button></div>
+                    <button type="button" class="lpb-gal-x" data-gal-close aria-label="Close">${oi('close')}</button></div>
                 <div class="lpb-gal-cats" data-gal-cats></div>
                 <div class="lpb-gal-grid" data-gal-grid></div>`;
             (root.closest('.lpb-app.is-full') ? root : document.body).appendChild(gal);
@@ -672,7 +676,7 @@
             case 'bool': return `<label class="lpb-check"><input type="checkbox" data-f="${key}" ${v ? 'checked' : ''}> ${f.label}</label>`;
             case 'select': return `<label>${f.label}<select data-f="${key}">${Object.entries(f.options).map(([k, l]) => `<option value="${k}" ${v === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
             case 'link': return `<label>${f.label}${linkWidget(key, v)}</label>`;
-            case 'icon': return `<div class="lpb-imgf"><span>${f.label}</span><button type="button" class="lpb-iconbtn" data-icon-pick="${key}">${B.icon(v || '⭐')} Change icon</button></div>`;
+            case 'icon': return `<div class="lpb-imgf"><span>${f.label}</span><button type="button" class="lpb-iconbtn" data-icon-pick="${key}">${B.icon(v || 'i:star')} Change icon</button></div>`;
             case 'img': return `<div class="lpb-imgf"><span>${f.label}</span>${v ? `<img src="${esc(v)}" alt="">` : ''}<div><button type="button" class="btn btn--sm btn--ghost" data-img-pick="${key}">${v ? 'Change' : 'Upload'}</button>${v ? `<button type="button" class="btn btn--sm btn--ghost" data-img-clear="${key}">Remove</button>` : ''}</div></div>`;
             default: return '';
         }
@@ -681,15 +685,15 @@
         const list = w.p[f.k] || [], pre = `${w.id}|${f.k}`;
         const cell = (it, i, [k, kind]) => {
             const key = `${pre}.${i}.${k}`, name = `aria-label="${esc(`${f.label || 'Item'} ${i + 1}: ${k}`)}"`; // (for screen readers: "Menu items 2: price")
-            if (kind === 'img') return `<button type="button" class="lpb-thumb" data-img-pick="${key}" ${it[k] ? `style="background-image:url('${esc(it[k])}')"` : ''} title="Image">${it[k] ? '' : '＋'}</button>`;
-            if (kind === 'icon') return `<button type="button" class="lpb-thumb lpb-thumb--ic" data-icon-pick="${key}" title="Icon">${B.icon(it[k] || '⭐')}</button>`;
-            if (kind === 'star') return `<label class="lpb-mini" title="Highlight"><input type="checkbox" data-f="${key}" ${name} ${it[k] ? 'checked' : ''}>★</label>`;
+            if (kind === 'img') return `<button type="button" class="lpb-thumb" data-img-pick="${key}" ${it[k] ? `style="background-image:url('${esc(it[k])}')"` : ''} title="Image" aria-label="Image">${it[k] ? '' : oi('plus')}</button>`;
+            if (kind === 'icon') return `<button type="button" class="lpb-thumb lpb-thumb--ic" data-icon-pick="${key}" title="Icon">${B.icon(it[k] || 'i:star')}</button>`;
+            if (kind === 'star') return `<label class="lpb-mini" title="Highlight"><input type="checkbox" data-f="${key}" ${name} ${it[k] ? 'checked' : ''}>${oi('star-solid')}</label>`;
             if (kind === 'number') return `<input type="number" class="lpb-num" data-f="${key}" ${name} value="${esc(it[k] ?? '')}" min="0" max="100">`;
             if (kind === 'social') return `<select class="lpb-net" data-f="${key}" ${name}>${Object.entries(B.SOCIAL).map(([n, s]) => `<option value="${n}" ${it[k] === n ? 'selected' : ''}>${s[0]}</option>`).join('')}</select>`;
             return `<input data-f="${key}" ${name} value="${esc(it[k] ?? '')}" placeholder="${k === 'url' ? 'https://…' : ''}">`;
         };
         return `<div class="lpb-list"><span>${f.label}</span>${list.map((it, i) => `<div class="lpb-row">${f.fields.map(c => cell(it, i, c)).join('')}
-            <button type="button" data-list="${f.k}|${i}|up" title="Move this row up" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" data-list="${f.k}|${i}|del" title="Remove this row">✕</button></div>`).join('')}
+            <button type="button" data-list="${f.k}|${i}|up" title="Move this row up" aria-label="Move this row up" ${i === 0 ? 'disabled' : ''}>${oi('arrow-up')}</button><button type="button" data-list="${f.k}|${i}|del" title="Remove this row" aria-label="Remove this row">${oi('close')}</button></div>`).join('')}
             ${list.length < f.max ? `<button type="button" class="btn btn--sm btn--ghost" data-list="${f.k}|-1|add">+ Add</button>` : ''}</div>`;
     };
 
@@ -697,7 +701,7 @@
     const styleObj = (id, target = '_') => { const f = find(id); f.obj.st ||= {}; f.obj.st[target] ||= {}; ['d', 't', 'm'].forEach(k => (f.obj.st[target][k] ||= {})); return f.obj.st[target]; };
     const sv = (st, k) => st[DEV()][k] ?? '';
     const inherited = (st, k) => (DEV() === 'm' ? st.t[k] ?? st.d[k] : DEV() === 't' ? st.d[k] : '') ?? '';
-    const devBadge = () => `<span class="lpb-devtag" title="Style for this screen size">${{ desktop: '🖥', tablet: '▭', mobile: '📱' }[device]}</span>`;
+    const devBadge = () => `<span class="lpb-devtag" title="Style for this screen size">${device === 'desktop' ? oi('monitor') : device === 'tablet' ? oi('phone', { cls: 'oi--tablet' }) : oi('phone')}</span>`;
     const ctl = {
         range: (st, k, label, min, max, step = 1, unit = 'px') => `<label class="lpb-ctl">${label} ${devBadge()}<span class="lpb-range"><input type="range" data-sty="${k}" min="${min}" max="${max}" step="${step}" value="${esc(sv(st, k) || inherited(st, k) || min)}"><input type="number" data-sty="${k}" min="${min}" max="${max}" step="${step}" value="${esc(sv(st, k))}" placeholder="${esc(inherited(st, k) || unit)}"></span></label>`,
         select: (st, k, label, opts) => `<label class="lpb-ctl">${label} ${devBadge()}<select data-sty="${k}">${Object.entries(opts).map(([v, l]) => `<option value="${v}" ${String(sv(st, k)) === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`,
@@ -705,7 +709,7 @@
         color: (st, k, label) => {
             const v = sv(st, k);
             return `<div class="lpb-ctl">${label} ${devBadge()}<span class="lpb-colorctl">${B.GLOBAL.map(gl => `<button type="button" class="lpb-sw ${v === 'g:' + gl ? 'is-on' : ''}" style="--sw:var(--g-${gl})" data-sty-val="${k}|g:${gl}" title="Global ${gl} colour"></button>`).join('')}
-                <input type="color" data-sty="${k}" value="${/^#/.test(v) ? v : '#000000'}" title="Custom colour"><button type="button" class="lpb-clear" data-sty-val="${k}|" title="Clear this colour (use the default)">✕</button></span></div>`;
+                <input type="color" data-sty="${k}" value="${/^#/.test(v) ? v : '#000000'}" title="Custom colour"><button type="button" class="lpb-clear" data-sty-val="${k}|" title="Clear this colour (use the default)" aria-label="Clear this colour">${oi('close')}</button></span></div>`;
         },
         box: (st, label, keys) => `<div class="lpb-ctl">${label} ${devBadge()}<span class="lpb-box">${keys.map(([k, l]) => `<label><input type="number" data-sty="${k}" value="${esc(sv(st, k))}" placeholder="${esc(inherited(st, k) || '–')}"><small>${l}</small></label>`).join('')}</span></div>`,
     };
@@ -760,7 +764,7 @@
         if (!B.isFull(f.sec) && f.kind !== 'section') c.push(`<button type="button" data-crumb="${f.col.id}" class="${f.kind === 'col' ? 'is-on' : ''}">Column</button>`);
         if (f.kind === 'widget') c.push(`<button type="button" data-crumb="${f.obj.id}" class="${sel.target === '_' ? 'is-on' : ''}">${esc(W[f.obj.type].label)}</button>`);
         if (f.kind === 'widget' && sel.target !== '_') c.push(`<button type="button" class="is-on">${esc(sel.target.replace(/^items\.\*\./, ''))}</button>`);
-        return `<nav class="lpb-crumbs">${c.join('<i>›</i>')}</nav>`;
+        return `<nav class="lpb-crumbs">${c.join(`<i>${oi('chevron-right')}</i>`)}</nav>`;
     };
     const openAcc = {};
     const drawEdit = () => {
@@ -775,7 +779,7 @@
                     <label>Content width<select data-sec="width"><option value="boxed" ${o.width !== 'full' ? 'selected' : ''}>Boxed (centred)</option><option value="full" ${o.width === 'full' ? 'selected' : ''}>Full width</option></select></label>
                     <label>Background preset<select data-sec="bg">${Object.entries(BG).map(([k, l]) => `<option value="${k}" ${o.bg === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
                     <p class="lpb-hint">Image, gradient and overlay backgrounds are in the Style tab.</p>`;
-                if (B.isFull(o)) { const w = o.cols[0].widgets[0]; out += `<button type="button" class="btn btn--sm btn--ghost" data-crumb="${w.id}">Edit the ${esc(W[w.type].label.toLowerCase())} content →</button>`; }
+                if (B.isFull(o)) { const w = o.cols[0].widgets[0]; out += `<button type="button" class="btn btn--sm btn--ghost" data-crumb="${w.id}">Edit the ${esc(W[w.type].label.toLowerCase())} content ${oi('arrow-right')}</button>`; }
             } else if (f.kind === 'col') {
                 out += `<p class="lpb-hint">Drag widgets into this column, or pick one in the Add tab. Background, padding and alignment are in the Style tab.</p>
                     <div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--ghost" data-col-act="add">+ Add a column</button>${f.sec.cols.length > 1 ? '<button type="button" class="btn btn--sm btn--ghost lpb-danger" data-col-act="del">Delete column</button>' : ''}</div>`;
@@ -814,29 +818,29 @@
         return `<div class="lpb-list lpb-prods"><span>${f.label} <small>(${list.length})</small></span><datalist id="lpb-cats-${esc(w.id)}">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>${list.map((it, i) => {
             const k = n => `items.${i}.${n}`, pr = B.money(it.price, cur), vals = it.vals || [], imgs = it.images || [];
             return `<details class="lpb-prod" data-prod="${esc(it.pid || '')}"${openProd.has(it.pid) ? ' open' : ''}><summary>
-                <span class="lpb-thumb" ${it.image ? `style="background-image:url('${esc(it.image)}')"` : ''} aria-hidden="true">${it.image ? '' : '🛍'}</span>
+                <span class="lpb-thumb" ${it.image ? `style="background-image:url('${esc(it.image)}')"` : ''} aria-hidden="true">${it.image ? '' : oi('bag')}</span>
                 <span class="lpb-prod__t"><b>${esc(it.name || 'Untitled product')}</b><small${pr ? '' : ' class="lpb-err-t"'}>${pr ? esc(pr) : 'No price yet'}${it.cat ? ' · ' + esc(it.cat) : ''}${it.sold ? ' · Sold out' : ''}</small></span></summary>
                 <div class="lpb-prod__body">${fieldHtml(B.F.img(k('image'), 'Main photo'), w.p, pre)}
-                <div class="lpb-pimgs"><span>More photos <small>(shown on the product’s page)</small></span><div>${imgs.map((src, j) => `<span class="lpb-pimg" style="background-image:url('${esc(src)}')"><button type="button" data-pimg-del="${i}|${j}" aria-label="Remove this photo">✕</button></span>`).join('')}${imgs.length < 5 ? `<button type="button" class="lpb-pimg lpb-pimg--add" data-img-pick="${pre}${k('images')}.${imgs.length}" aria-label="Add a photo">＋</button>` : ''}</div></div>
+                <div class="lpb-pimgs"><span>More photos <small>(shown on the product’s page)</small></span><div>${imgs.map((src, j) => `<span class="lpb-pimg" style="background-image:url('${esc(src)}')"><button type="button" data-pimg-del="${i}|${j}" aria-label="Remove this photo">${oi('close')}</button></span>`).join('')}${imgs.length < 5 ? `<button type="button" class="lpb-pimg lpb-pimg--add" data-img-pick="${pre}${k('images')}.${imgs.length}" aria-label="Add a photo">${oi('plus')}</button>` : ''}</div></div>
                 ${fieldHtml(B.F.text(k('name'), 'Name'), w.p, pre)}
                 <div class="lpb-2">${fieldHtml(B.F.text(k('price'), 'Price', '24.99'), w.p, pre)}${fieldHtml(B.F.text(k('old'), 'Old price (shows a sale)', 'optional'), w.p, pre)}</div>
                 ${fieldHtml(B.F.area(k('desc'), 'Short description (on the card)'), w.p, pre)}
                 <div class="lpb-2"><label>Category<input data-f="${pre}${k('cat')}" value="${esc(it.cat || '')}" list="lpb-cats-${esc(w.id)}" maxlength="40" placeholder="e.g. Tops"></label>${fieldHtml(B.F.text(k('badge'), 'Label on photo', 'New, Sale…'), w.p, pre)}</div>
-                <label>Type<select data-f="${pre}${k('kind')}" data-redraw-prod><option value="item" ${it.kind !== 'digital' && it.kind !== 'gift' ? 'selected' : ''}>📦 Item to post or collect</option><option value="digital" ${it.kind === 'digital' ? 'selected' : ''}>⬇️ Digital download (a file)</option><option value="gift" ${it.kind === 'gift' ? 'selected' : ''}>🎁 Gift card</option></select></label>
-                ${it.kind === 'digital' ? fileHtml(it, i) : it.kind === 'gift' ? '<p class="lpb-hint">🎁 A gift card is worth its price. Once it’s paid, the buyer gets a code by email to spend in your shop (in the discount box at checkout). See the cards you sold in the Orders tab → Codes.</p>' : ''}
+                <label>Type<select data-f="${pre}${k('kind')}" data-redraw-prod><option value="item" ${it.kind !== 'digital' && it.kind !== 'gift' ? 'selected' : ''}>Item to post or collect</option><option value="digital" ${it.kind === 'digital' ? 'selected' : ''}>Digital download (a file)</option><option value="gift" ${it.kind === 'gift' ? 'selected' : ''}>Gift card</option></select></label>
+                ${it.kind === 'digital' ? fileHtml(it, i) : it.kind === 'gift' ? `<p class="lpb-hint">${oi('gift')} A gift card is worth its price. Once it’s paid, the buyer gets a code by email to spend in your shop (in the discount box at checkout). See the cards you sold in the Orders tab, under Codes.</p>` : ''}
                 ${it.kind === 'gift' ? '' : `<div class="lpb-vals"><b>Sizes, colours…</b><label>Choice name<input data-f="${pre}${k('optName')}" value="${esc(it.optName || '')}" maxlength="30" placeholder="Size, Colour, Scent…"></label>
-                    ${vals.map((v, j) => `<div class="lpb-vals__row"><input data-f="${pre}${k(`vals.${j}.v`)}" value="${esc(v.v || '')}" maxlength="60" placeholder="e.g. M" aria-label="Choice ${j + 1}"><input data-f="${pre}${k(`vals.${j}.price`)}" value="${esc(v.price || '')}" inputmode="decimal" maxlength="12" placeholder="${esc(pr || 'Price')}" aria-label="Price of choice ${j + 1} (empty: same as the product)"><button type="button" data-vals="${i}|${j}|del" aria-label="Remove">✕</button></div>`).join('')}
-                    <button type="button" class="btn btn--sm btn--ghost" data-vals="${i}|-1|add" ${vals.length >= 30 ? 'disabled' : ''}>＋ Add a ${esc(String(it.optName || 'choice').toLowerCase())}</button>
+                    ${vals.map((v, j) => `<div class="lpb-vals__row"><input data-f="${pre}${k(`vals.${j}.v`)}" value="${esc(v.v || '')}" maxlength="60" placeholder="e.g. M" aria-label="Choice ${j + 1}"><input data-f="${pre}${k(`vals.${j}.price`)}" value="${esc(v.price || '')}" inputmode="decimal" maxlength="12" placeholder="${esc(pr || 'Price')}" aria-label="Price of choice ${j + 1} (empty: same as the product)"><button type="button" data-vals="${i}|${j}|del" aria-label="Remove">${oi('close')}</button></div>`).join('')}
+                    <button type="button" class="btn btn--sm btn--ghost" data-vals="${i}|-1|add" ${vals.length >= 30 ? 'disabled' : ''}>${oi('plus')} Add a ${esc(String(it.optName || 'choice').toLowerCase())}</button>
                     <p class="lpb-hint">${vals.length ? 'Leave a price empty to use the product’s price.' : 'Optional — add sizes or colours customers pick from, each with its own price if you like.'}</p></div>
                 ${vals.length ? `<div class="lpb-vals"><b>Second choice <small>(optional — e.g. colour with each size)</small></b><label>Choice name<input data-f="${pre}${k('opt2Name')}" value="${esc(it.opt2Name || '')}" maxlength="30" placeholder="Colour, Material…"></label>
-                    ${(it.vals2 || []).map((v, j) => `<div class="lpb-vals__row lpb-vals__row--2"><input data-f="${pre}${k(`vals2.${j}.v`)}" value="${esc(v.v || '')}" maxlength="60" placeholder="e.g. Red" aria-label="Second choice ${j + 1}"><button type="button" data-vals2="${i}|${j}|del" aria-label="Remove">✕</button></div>`).join('')}
-                    <button type="button" class="btn btn--sm btn--ghost" data-vals2="${i}|-1|add" ${(it.vals2 || []).length >= 30 ? 'disabled' : ''}>＋ Add a ${esc(String(it.opt2Name || 'choice').toLowerCase())}</button>
+                    ${(it.vals2 || []).map((v, j) => `<div class="lpb-vals__row lpb-vals__row--2"><input data-f="${pre}${k(`vals2.${j}.v`)}" value="${esc(v.v || '')}" maxlength="60" placeholder="e.g. Red" aria-label="Second choice ${j + 1}"><button type="button" data-vals2="${i}|${j}|del" aria-label="Remove">${oi('close')}</button></div>`).join('')}
+                    <button type="button" class="btn btn--sm btn--ghost" data-vals2="${i}|-1|add" ${(it.vals2 || []).length >= 30 ? 'disabled' : ''}>${oi('plus')} Add a ${esc(String(it.opt2Name || 'choice').toLowerCase())}</button>
                     ${(it.vals2 || []).length ? '<p class="lpb-hint">Customers pick one of each. Stock can be counted for every combination.</p>' : ''}</div>` : ''}`}
                 ${fieldHtml(B.F.area(k('long'), 'Product page text (optional)'), w.p, pre)}
                 ${stockHtml(it, i)}
                 ${fieldHtml(B.F.bool(k('sold'), 'Sold out'), w.p, pre)}
-                <div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--ghost" data-list="items|${i}|up" ${i === 0 ? 'disabled' : ''}>↑ Move up</button><button type="button" class="btn btn--sm btn--ghost" data-list="items|${i}|dup" ${list.length >= f.max ? 'disabled' : ''}>Duplicate</button><button type="button" class="btn btn--sm btn--ghost lpb-danger" data-list="items|${i}|del">Remove</button></div></div></details>`;
-        }).join('')}${list.length < f.max ? '<button type="button" class="btn btn--sm btn--glow" data-list="items|-1|add">＋ Add a product</button>' : `<p class="lpb-hint">Up to ${f.max} products in one section — add another Products section for more.</p>`}</div>`;
+                <div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--ghost" data-list="items|${i}|up" ${i === 0 ? 'disabled' : ''}>${oi('arrow-up')} Move up</button><button type="button" class="btn btn--sm btn--ghost" data-list="items|${i}|dup" ${list.length >= f.max ? 'disabled' : ''}>Duplicate</button><button type="button" class="btn btn--sm btn--ghost lpb-danger" data-list="items|${i}|del">Remove</button></div></div></details>`;
+        }).join('')}${list.length < f.max ? `<button type="button" class="btn btn--sm btn--glow" data-list="items|-1|add">${oi('plus')} Add a product</button>` : `<p class="lpb-hint">Up to ${f.max} products in one section — add another Products section for more.</p>`}</div>`;
     };
     /* ----- files sold as downloads: uploaded to owlvix, kept privately, handed only to buyers of paid orders */
     let storeFiles = [], filesLoaded = '', uploadingFor = null;
@@ -847,12 +851,12 @@
         drawEdit();
     };
     const fileHtml = (it, i) => {
-        if (!P.site.shopId || !token) return '<p class="lpb-hint">⬇️ Switch on checkout (and sign in) to upload the file you sell.</p>';
+        if (!P.site.shopId || !token) return `<p class="lpb-hint">${oi('download')} Switch on checkout (and sign in) to upload the file you sell.</p>`;
         loadFiles();
         const mb = n => (n < 1048576 ? Math.max(1, Math.round(n / 1024)) + ' KB' : (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB');
-        return `<div class="lpb-file"><b>⬇️ The file buyers get</b>
+        return `<div class="lpb-file"><b>${oi('download')} The file buyers get</b>
             ${storeFiles.length ? `<select data-file-pick="${i}" aria-label="File"><option value="">Choose a file…</option>${storeFiles.map(x2 => `<option value="${esc(x2.id)}" ${it.file === x2.id ? 'selected' : ''}>${esc(x2.name)} · ${mb(x2.size)}</option>`).join('')}</select>` : ''}
-            <button type="button" class="btn btn--sm btn--ghost" data-file-upload="${i}">⬆️ Upload a file</button>
+            <button type="button" class="btn btn--sm btn--ghost" data-file-upload="${i}">${oi('upload')} Upload a file</button>
             <p class="lpb-hint">${it.file ? 'Buyers can download it from their order page once they’ve paid (up to 10 times).' : 'PDF, audio, video, images, documents or a .zip — up to 25 MB. Buyers download it once they’ve paid.'}</p></div>`;
     };
     $('[data-pick-file]')?.addEventListener('change', async e => {
@@ -872,11 +876,11 @@
     /* ----- stock counts: kept by owlvix (orders lower them), saved as soon as they're typed */
     const trackOpen = new Set();
     const stockHtml = (it, i) => {
-        if (!P.site.shopId) return '<div class="lpb-stock"><b>📦 Stock</b><p class="lpb-hint">Switch on checkout to count stock — products sell out by themselves.</p></div>';
-        if (!token) return '<div class="lpb-stock"><b>📦 Stock</b><p class="lpb-hint">Sign in to count stock.</p></div>';
-        if (!store()) { if (storeError) return `<div class="lpb-stock"><b>📦 Stock</b>${storeRetry()}</div>`; if (!storeLoading) loadStore().then(r => (r || storeError) && drawEdit()); return '<div class="lpb-stock"><b>📦 Stock</b><p class="lpb-hint">Loading…</p></div>'; }
+        if (!P.site.shopId) return `<div class="lpb-stock"><b>${oi('box')} Stock</b><p class="lpb-hint">Switch on checkout to count stock — products sell out by themselves.</p></div>`;
+        if (!token) return `<div class="lpb-stock"><b>${oi('box')} Stock</b><p class="lpb-hint">Sign in to count stock.</p></div>`;
+        if (!store()) { if (storeError) return `<div class="lpb-stock"><b>${oi('box')} Stock</b>${storeRetry()}</div>`; if (!storeLoading) loadStore().then(r => (r || storeError) && drawEdit()); return `<div class="lpb-stock"><b>${oi('box')} Stock</b><p class="lpb-hint">Loading…</p></div>`; }
         const st = store().stock || {}, keys = B.stockKeys(it), tracked = keys.some(([key]) => key in st) || trackOpen.has(it.pid);
-        return `<div class="lpb-stock"><label class="lpb-check"><input type="checkbox" data-stock-track="${i}" ${tracked ? 'checked' : ''}> 📦 Count stock</label>
+        return `<div class="lpb-stock"><label class="lpb-check"><input type="checkbox" data-stock-track="${i}" ${tracked ? 'checked' : ''}> ${oi('box')} Count stock</label>
             ${tracked ? `${keys.map(([key, label]) => `<label class="lpb-stock__row"><span>${esc(label || 'In stock')}</span><input type="number" min="0" max="1000000" step="1" inputmode="numeric" data-stock-key="${esc(key)}" value="${esc(st[key] ?? '')}" placeholder="0"></label>`).join('')}
             <p class="lpb-hint">Orders take from these counts (cancelled orders give it back). At 0 it shows as sold out — changes reach your live shop straight away.</p>` : ''}</div>`;
     };
@@ -1010,9 +1014,9 @@
         nav.innerHTML = secs.map((s, i) => {
             const full = B.isFull(s), label = full ? W[s.cols[0].widgets[0].type].label : `${s.cols.length} column${s.cols.length > 1 ? 's' : ''}`;
             const on = sel && find(sel.id)?.sec.id === s.id && (sel.kind === 'section' || full);
-            const colsHtml = full ? '' : `<ul>${s.cols.map((c, ci) => `<li><button type="button" data-nav="${c.id}" class="${sel?.id === c.id ? 'is-sel' : ''}">▤ Column ${ci + 1}</button>${c.widgets.length ? `<ul>${c.widgets.map(w => `<li><button type="button" data-nav="${w.id}" class="${sel?.id === w.id ? 'is-sel' : ''}">${esc(W[w.type].label)}</button></li>`).join('')}</ul>` : ''}</li>`).join('')}</ul>`;
-            return `<li><div class="lpb-nav-row"><button type="button" data-nav="${full ? s.cols[0].widgets[0].id : s.id}" class="${on ? 'is-sel' : ''}">▦ ${esc(label)}</button>
-                <button type="button" data-nav-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move this section up the page">↑</button><button type="button" data-nav-mv="${i}|1" ${i === secs.length - 1 ? 'disabled' : ''} title="Move this section down the page">↓</button></div>${colsHtml}</li>`;
+            const colsHtml = full ? '' : `<ul>${s.cols.map((c, ci) => `<li><button type="button" data-nav="${c.id}" class="${sel?.id === c.id ? 'is-sel' : ''}">${oi('dot')} Column ${ci + 1}</button>${c.widgets.length ? `<ul>${c.widgets.map(w => `<li><button type="button" data-nav="${w.id}" class="${sel?.id === w.id ? 'is-sel' : ''}">${esc(W[w.type].label)}</button></li>`).join('')}</ul>` : ''}</li>`).join('')}</ul>`;
+            return `<li><div class="lpb-nav-row"><button type="button" data-nav="${full ? s.cols[0].widgets[0].id : s.id}" class="${on ? 'is-sel' : ''}">${oi('grid')} ${esc(label)}</button>
+                <button type="button" data-nav-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move this section up the page" aria-label="Move this section up the page">${oi('arrow-up')}</button><button type="button" data-nav-mv="${i}|1" ${i === secs.length - 1 ? 'disabled' : ''} title="Move this section down the page" aria-label="Move this section down the page">${oi('arrow-down')}</button></div>${colsHtml}</li>`;
         }).join('') || '<li class="lpb-hint">This page is empty — add something from the Add tab.</li>';
     };
     const pagePanel = $('[data-tab-panel=page]');
@@ -1033,7 +1037,7 @@
         const pg = page(), pop = pg.popup ||= B.defaultsPopup();
         const keep = {}; $$('[data-page-panel] .lpb-acc').forEach(d => (keep[d.querySelector('summary').textContent] = d.open));
         const funnelHtml = FUNNEL ? funnelPanel(pg) : '';
-        $('[data-page-panel]').innerHTML = funnelHtml + (FUNNEL ? '' : `<button type="button" class="btn btn--sm btn--ghost lpb-savepage" data-page-savetpl>⭐ Save this page as my template</button>`) + `
+        $('[data-page-panel]').innerHTML = funnelHtml + (FUNNEL ? '' : `<button type="button" class="btn btn--sm btn--ghost lpb-savepage" data-page-savetpl>${oi('star')} Save this page as my template</button>`) + `
             <details class="lpb-acc" ${FUNNEL ? '' : 'open'}><summary>Navigator</summary><ol class="lpb-nav" data-navigator></ol></details>
             <details class="lpb-acc"><summary>Page settings</summary>
             <label>Page name (in the menu)<input data-pg="title" value="${esc(pg.title)}" maxlength="40"></label>
@@ -1081,8 +1085,8 @@
         const steps = P.pages, nx = B.nextOf(pg, P);
         return `<details class="lpb-acc" open><summary>Funnel steps</summary><ol class="lpb-flow">${steps.map((p, i) => `<li class="${i === pageIdx ? 'is-on' : ''}">
                 <button type="button" data-step-go="${i}"><b>${i + 1}</b><span>${esc(p.title)}<small>${esc(B.STEP_TYPES[p.type] || 'Page')}${p.ab?.on ? ' · A/B' : ''}</small></span></button>
-                <span class="lpb-flow__mv"><button type="button" data-step-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move this step earlier in the funnel">↑</button><button type="button" data-step-mv="${i}|1" ${i === steps.length - 1 ? 'disabled' : ''} title="Move this step later in the funnel">↓</button></span></li>`).join('<li class="lpb-flow__arrow" aria-hidden="true">↓</li>')}</ol>
-            <button type="button" class="btn btn--sm btn--ghost" data-act-step>＋ Add step</button></details>
+                <span class="lpb-flow__mv"><button type="button" data-step-mv="${i}|-1" ${i === 0 ? 'disabled' : ''} title="Move this step earlier in the funnel" aria-label="Move this step earlier in the funnel">${oi('arrow-up')}</button><button type="button" data-step-mv="${i}|1" ${i === steps.length - 1 ? 'disabled' : ''} title="Move this step later in the funnel" aria-label="Move this step later in the funnel">${oi('arrow-down')}</button></span></li>`).join(`<li class="lpb-flow__arrow" aria-hidden="true">${oi('arrow-down')}</li>`)}</ol>
+            <button type="button" class="btn btn--sm btn--ghost" data-act-step>${oi('plus')} Add step</button></details>
             <details class="lpb-acc" open><summary>This step</summary>
             <label>Step type<select data-pg="type">${Object.entries(B.STEP_TYPES).map(([k, l]) => `<option value="${k}" ${pg.type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
             <label>After this step, go to<select data-pg="next"><option value="">${nx && !pg.next ? 'The following step (' + esc(nx.title) + ')' : 'The following step'}</option>${steps.filter(p => p.id !== pg.id).map(p => `<option value="${esc(p.slug)}" ${pg.next === p.slug ? 'selected' : ''}>${esc(p.title)}</option>`).join('')}</select></label>
@@ -1464,14 +1468,14 @@
         finally { btnEl.disabled = false; }
     });
     const formPanel = () => P.site.formAction
-        ? `<div class="lpb-form-ok">✅ Contact form is active. Messages are emailed to ${esc(account?.email || 'your sign-in email')}.</div>`
-        : `<div class="lpb-form-off"><b>📨 Working contact form</b><p>Visitors' messages are emailed to you — it works wherever you put the page. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-form>Activate contact form</button></div>`;
+        ? `<div class="lpb-form-ok">${oi('check')} Contact form is active. Messages are emailed to ${esc(account?.email || 'your sign-in email')}.</div>`
+        : `<div class="lpb-form-off"><b>${oi('mail')} Working contact form</b><p>Visitors' messages are emailed to you — it works wherever you put the page. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-form>Activate contact form</button></div>`;
     const leadPanel = () => P.site.leadAction
-        ? `<div class="lpb-form-ok">✅ Collecting leads. Each one is emailed to ${esc(account?.email || 'you')} and saved — see them in the <b>Results</b> tab.</div>`
-        : `<div class="lpb-form-off"><b>📥 Collect leads</b><p>Sign-ups are emailed to you, saved in your Results tab (download as CSV) and can go to Mailchimp, Brevo or a webhook. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-leads>Switch on lead collection</button></div>`;
+        ? `<div class="lpb-form-ok">${oi('check')} Collecting leads. Each one is emailed to ${esc(account?.email || 'you')} and saved — see them in the <b>Results</b> tab.</div>`
+        : `<div class="lpb-form-off"><b>${oi('inbox')} Collect leads</b><p>Sign-ups are emailed to you, saved in your Results tab (download as CSV) and can go to Mailchimp, Brevo or a webhook. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-leads>Switch on lead collection</button></div>`;
     const rsvpPanel = () => P.site.rsvpAction
-        ? `<div class="lpb-form-ok">✅ RSVPs are on. Each reply is emailed to ${esc(account?.email || 'you')}. See every reply and download them in the <a href="/form-builder" target="_blank" rel="noopener">form builder</a> (Responses tab).</div>`
-        : `<div class="lpb-form-off"><b>💌 Collect RSVPs</b><p>Guests' replies are emailed to you and saved in a list you can download — wherever you put the page. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-rsvp>Switch on RSVPs</button></div>`;
+        ? `<div class="lpb-form-ok">${oi('check')} RSVPs are on. Each reply is emailed to ${esc(account?.email || 'you')}. See every reply and download them in the <a href="/form-builder" target="_blank" rel="noopener">form builder</a> (Responses tab).</div>`
+        : `<div class="lpb-form-off"><b>${oi('mail')} Collect RSVPs</b><p>Guests' replies are emailed to you and saved in a list you can download — wherever you put the page. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-rsvp>Switch on RSVPs</button></div>`;
     let activating = false;
     /** Create the RSVP form (a form-builder form) whose questions match the RSVP widget. */
     const activateRsvp = () => needAccount(async () => {
@@ -1550,7 +1554,7 @@
         try { r = await api('POST', '/builder/publish', { slug, name: P.site.name || 'My website', pages, kind: KIND, ...(showcase === undefined ? {} : { showcase: !!showcase }) }); }
         catch (ex) { P.site.publishSlug = previous; throw ex; }
         commit(); await loadAccount().catch(() => {});
-        openDialog(`<h3>🎉 Your site is live</h3><p><a class="lpb-live" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//, ''))}</a></p>
+        openDialog(`<h3>${oi('party')} Your site is live</h3><p><a class="lpb-live" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url.replace(/^https?:\/\//, ''))}</a></p>
             <p>Share the link anywhere. Changed something? Publish again to update it.</p><p>Want it on your own domain, found on Google, with analytics and speed tuning? We can set that up.</p>
             <div class="lpb-dialog-actions"><a class="btn btn--glow" href="${esc(r.url)}" target="_blank" rel="noopener">Open my site</a><button type="button" class="btn btn--ghost" data-lpb-quote-open>Put it on my domain</button></div>
             <div data-qr-box></div>`);
@@ -1685,7 +1689,7 @@
         }
         storeInfo = r.store; P.site.shopAction = r.store.action; P.site.shop.cardReady = !!r.store.card_ready; commit();
         // a product's sizes / colours changed shape: its new choices start sold out until the owner sets their counts
-        if (r.stock_reset?.length) sweet({ icon: 'warning', title: 'Set the stock again', text: `The sizes or colours of ${r.stock_reset.map(n => '“' + n + '”').join(', ')} changed, so their stock counts start at 0 (sold out). Select the product and set how many you have under “📦 Count stock”.`, confirm: 'OK', cancel: false });
+        if (r.stock_reset?.length) sweet({ icon: 'warning', title: 'Set the stock again', text: `The sizes or colours of ${r.stock_reset.map(n => '“' + n + '”').join(', ')} changed, so their stock counts start at 0 (sold out). Select the product and set how many you have under “Count stock”.`, confirm: 'OK', cancel: false });
         if (!B.payWays(P.site.shop).length) throw new Error('Card payments aren’t ready yet: connect Stripe in the Site tab (Shop & checkout), or also switch on cash on delivery or bank transfer.');
         if (!B.shopProducts(P).length) throw new Error('Your shop has no products with a price yet. Add a price to at least one product.');
     };
@@ -1697,8 +1701,8 @@
         return true;
     };
     const shopPanel = () => P.site.shopAction
-        ? `<div class="lpb-form-ok">✅ Checkout is on. Orders are emailed to ${esc(account?.email || 'you')} and listed in the <b>Orders</b> tab. Delivery and payment settings are in the <b>Site</b> tab.</div>`
-        : '<div class="lpb-form-off"><b>🛒 Switch on checkout</b><p>Customers add products to a cart and order — by card, cash on delivery or bank transfer. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-shop>Switch on checkout</button></div>';
+        ? `<div class="lpb-form-ok">${oi('check')} Checkout is on. Orders are emailed to ${esc(account?.email || 'you')} and listed in the <b>Orders</b> tab. Delivery and payment settings are in the <b>Site</b> tab.</div>`
+        : `<div class="lpb-form-off"><b>${oi('cart')} Switch on checkout</b><p>Customers add products to a cart and order — by card, cash on delivery or bank transfer. Free: sign in with your email to switch it on.</p><button type="button" class="btn btn--sm btn--glow" data-activate-shop>Switch on checkout</button></div>`;
     const stripeBox = () => {
         const sh = P.site.shop;
         if (!sh.card) return '';
@@ -1709,18 +1713,18 @@
         if (!modes.length) return '<p class="lpb-hint">Card payments aren’t available yet — use cash on delivery or bank transfer for now.</p>';
         const m = modes.includes(sh.mode) ? sh.mode : modes[0], c = st[m].connected;
         return `${modes.length > 1 ? `<label>Card payments<select data-site="shop.mode"><option value="test" ${m === 'test' ? 'selected' : ''}>Test mode — test cards, no real money</option><option value="live" ${m === 'live' ? 'selected' : ''}>Live — real payments</option></select></label>` : ''}
-            ${c ? `<div class="lpb-form-ok">✅ Stripe is connected${m === 'test' ? ' (test mode)' : ''}. Card payments go straight to your Stripe account.${sh.cardReady ? '' : ' <b>Publish again</b> so customers can pay by card.'}</div><button type="button" class="lpb-link-btn" data-stripe-off="${m}">Disconnect Stripe</button>`
+            ${c ? `<div class="lpb-form-ok">${oi('check')} Stripe is connected${m === 'test' ? ' (test mode)' : ''}. Card payments go straight to your Stripe account.${sh.cardReady ? '' : ' <b>Publish again</b> so customers can pay by card.'}</div><button type="button" class="lpb-link-btn" data-stripe-off="${m}">Disconnect Stripe</button>`
                 : `<button type="button" class="btn btn--sm btn--glow" data-stripe-on="${m}">Connect Stripe${m === 'test' ? ' (test mode)' : ''}</button><p class="lpb-hint">You sign in to Stripe (or open a free account), then come back here. Owlvix never sees your Stripe password. Stripe’s normal card fees apply.</p>`}`;
     };
     const shopSettings = () => {
         const sh = P.site.shop;
         return `<details class="lpb-acc" open><summary>Shop &amp; checkout</summary>
-            ${P.site.shopAction ? `<div class="lpb-form-ok">✅ Checkout is on. Orders are emailed to ${esc(account?.email || 'you')} and listed in the <b>Orders</b> tab.</div>` : '<div class="lpb-form-off"><b>🛒 Checkout is off</b><p>Switch it on so customers can add to cart and order. Free — sign in with your email.</p><button type="button" class="btn btn--sm btn--glow" data-activate-shop>Switch on checkout</button></div>'}
+            ${P.site.shopAction ? `<div class="lpb-form-ok">${oi('check')} Checkout is on. Orders are emailed to ${esc(account?.email || 'you')} and listed in the <b>Orders</b> tab.</div>` : `<div class="lpb-form-off"><b>${oi('cart')} Checkout is off</b><p>Switch it on so customers can add to cart and order. Free — sign in with your email.</p><button type="button" class="btn btn--sm btn--glow" data-activate-shop>Switch on checkout</button></div>`}
             <label>Currency<select data-site="shop.currency">${currencyOptions(sh.currency)}</select></label>
             <h4>Delivery</h4>
             <label class="lpb-check"><input type="checkbox" data-site="shop.delivery" ${sh.delivery ? 'checked' : ''}> I deliver orders</label>
             ${!sh.delivery ? '' : (sh.zones || []).length ? zonesHtml(sh) : `<div class="lpb-2"><label>Delivery fee<input data-site="shop.fee" inputmode="decimal" maxlength="12" value="${esc(sh.fee)}" placeholder="0 = free"></label><label>Free delivery over<input data-site="shop.freeOver" inputmode="decimal" maxlength="12" value="${esc(sh.freeOver)}" placeholder="Never"></label></div>
-                <button type="button" class="lpb-link-btn" data-zones-on>🌍 Charge different prices by country</button>`}
+                <button type="button" class="lpb-link-btn" data-zones-on>${oi('globe')} Charge different prices by country</button>`}
             <label class="lpb-check"><input type="checkbox" data-site="shop.pickup" ${sh.pickup ? 'checked' : ''}> Customers can pick up</label>
             ${sh.pickup ? `<label>Where and when<input data-site="shop.pickupText" maxlength="200" value="${esc(sh.pickupText)}" placeholder="12 Market Street, 9 am – 5 pm"></label>` : ''}
             <h4>Payment</h4>
@@ -1735,7 +1739,7 @@
                 <p class="lpb-hint">${sh.taxIncl !== false ? 'Checkout shows how much tax the total includes.' : 'Tax is added to the total at checkout.'}</p>` : ''}
             <h4>Discount codes</h4>
             <label class="lpb-check"><input type="checkbox" data-site="shop.codes" ${sh.codes ? 'checked' : ''}> Customers can enter a discount code</label>
-            ${sh.codes ? '<p class="lpb-hint">Make your codes (like SAVE10) in the <b>Orders</b> tab → Discount codes. They’re kept on our side, never in your pages.</p>' : ''}
+            ${sh.codes ? '<p class="lpb-hint">Make your codes (like SAVE10) in the <b>Orders</b> tab, under Discount codes. They’re kept on our side, never in your pages.</p>' : ''}
             <h4>Unfinished orders</h4>
             <label class="lpb-check"><input type="checkbox" data-site="shop.remind" ${sh.remind !== false ? 'checked' : ''}> Remind people who start paying by card but don’t finish (one email)</label>
             <h4>Order form</h4>
@@ -1747,11 +1751,11 @@
     };
     /* shipping zones: a price per group of countries; a zone with no countries covers everywhere else */
     const zonesHtml = sh => `<div class="lpb-zones">${sh.zones.map((z, zi) => `<div class="lpb-zone">
-            <div class="lpb-zone__top"><input data-site="shop.zones.${zi}.name" value="${esc(z.name || '')}" maxlength="60" placeholder="Zone name, e.g. Europe" aria-label="Zone name"><button type="button" data-zone-del="${zi}" aria-label="Remove this zone">✕</button></div>
-            <div class="lpb-zone__cs">${(z.countries || []).length ? z.countries.map(c => `<span class="lpb-cchip">${esc(B.countryName(c))}<button type="button" data-zone-c="${zi}|${c}" aria-label="Remove ${esc(B.countryName(c))}">×</button></span>`).join('') : '<span class="lpb-hint">🌍 Everywhere else — every country not in another zone</span>'}</div>
-            <select data-zone-add="${zi}" aria-label="Add a country to this zone"><option value="">＋ Add a country…</option>${B.COUNTRIES.map(c => [c, B.countryName(c)]).sort((a, b) => a[1].localeCompare(b[1])).filter(([c]) => !(z.countries || []).includes(c)).map(([c, l]) => `<option value="${c}">${esc(l)}</option>`).join('')}</select>
+            <div class="lpb-zone__top"><input data-site="shop.zones.${zi}.name" value="${esc(z.name || '')}" maxlength="60" placeholder="Zone name, e.g. Europe" aria-label="Zone name"><button type="button" data-zone-del="${zi}" aria-label="Remove this zone">${oi('close')}</button></div>
+            <div class="lpb-zone__cs">${(z.countries || []).length ? z.countries.map(c => `<span class="lpb-cchip">${esc(B.countryName(c))}<button type="button" data-zone-c="${zi}|${c}" aria-label="Remove ${esc(B.countryName(c))}">${oi('close')}</button></span>`).join('') : `<span class="lpb-hint">${oi('globe')} Everywhere else — every country not in another zone</span>`}</div>
+            <select data-zone-add="${zi}" aria-label="Add a country to this zone"><option value="">Add a country…</option>${B.COUNTRIES.map(c => [c, B.countryName(c)]).sort((a, b) => a[1].localeCompare(b[1])).filter(([c]) => !(z.countries || []).includes(c)).map(([c, l]) => `<option value="${c}">${esc(l)}</option>`).join('')}</select>
             <div class="lpb-2"><label>Delivery fee<input data-site="shop.zones.${zi}.fee" inputmode="decimal" maxlength="12" value="${esc(z.fee || '')}" placeholder="0 = free"></label><label>Free over<input data-site="shop.zones.${zi}.freeOver" inputmode="decimal" maxlength="12" value="${esc(z.freeOver || '')}" placeholder="Never"></label></div></div>`).join('')}
-        ${sh.zones.length < 20 ? '<button type="button" class="btn btn--sm btn--ghost" data-zone-new>＋ Add a zone</button>' : ''}
+        ${sh.zones.length < 20 ? `<button type="button" class="btn btn--sm btn--ghost" data-zone-new>${oi('plus')} Add a zone</button>` : ''}
         <p class="lpb-hint">Customers pick their country at checkout.${sh.zones.some(z => !(z.countries || []).length) ? '' : ' Countries in no zone can’t order delivery — add a zone with no countries to cover everywhere else.'}</p>
         <button type="button" class="lpb-link-btn" data-zones-off>Use one delivery price everywhere</button></div>`;
     const stripeConnect = async mode => {
@@ -1791,7 +1795,7 @@
         catch (ex) { box.innerHTML = seg + `<p class="lpb-err">${esc(ex.message)}</p>`; return; }
         const max = Math.max(0, ...r.per_day.map(d => d.value));
         const fmtDay = day => new Date(day + 'T12:00:00').toLocaleDateString([], { day: 'numeric', month: 'short' });
-        const change = r.change === null ? '' : `<small class="${r.change >= 0 ? 'is-up' : 'is-down'}">${r.change >= 0 ? '▲' : '▼'} ${Math.abs(r.change)}% vs the ${salesDays} days before</small>`;
+        const change = r.change === null ? '' : `<small class="${r.change >= 0 ? 'is-up' : 'is-down'}">${oi(r.change >= 0 ? 'arrow-up' : 'arrow-down')} ${Math.abs(r.change)}% vs the ${salesDays} days before</small>`;
         // one bar a day, anchored to the baseline; hover or focus shows the day and its takings
         const bars = r.per_day.map(d => `<span class="lpb-bar" tabindex="0" style="--h:${max ? Math.max(d.value ? 4 : 0, Math.round(d.value / max * 100)) : 0}%" data-tip="${esc(fmtDay(d.day))} · ${esc(d.label)}" aria-label="${esc(fmtDay(d.day))}: ${esc(d.label)}"></span>`).join('');
         box.innerHTML = seg + `<div class="lpb-sales">
@@ -1823,7 +1827,7 @@
             <span><button type="button" class="lpb-link-btn" data-code-edit="${d2.id}">Edit</button> <button type="button" class="lpb-link-btn lpb-danger" data-code-del="${d2.id}">Delete</button></span></div>`).join('');
         box.innerHTML = seg + (P.site.shop.codes ? '' : '<p class="lpb-hint">The code box is off at checkout — it switches on when you save a code (then publish again).</p>')
             + (rows || (c ? '' : '<div class="lpb-empty-edit"><b>No codes yet</b><p>Make a code like SAVE10 for 10% off, $5 off, or free delivery — with a minimum order, end date or number of uses if you like.</p></div>'))
-            + (form || '<button type="button" class="btn btn--sm btn--glow" data-code-new>＋ New discount code</button>');
+            + (form || `<button type="button" class="btn btn--sm btn--glow" data-code-new>${oi('plus')} New discount code</button>`);
         // gift cards sold (made when a gift card product is paid for)
         try {
             const cards = (await api('GET', `/builder/stores/${P.site.shopId}/gift-cards`)).cards;
@@ -1837,7 +1841,7 @@
         let list;
         try { list = (await api('GET', `/builder/stores/${P.site.shopId}/reviews`)).reviews; }
         catch (ex) { box.innerHTML = seg + `<p class="lpb-err">${esc(ex.message)}</p>`; return; }
-        box.innerHTML = seg + (list.length ? list.map(r => `<div class="lpb-review${r.hidden ? ' is-off' : ''}"><div><b>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</b> ${esc(r.product)}</div>
+        box.innerHTML = seg + (list.length ? list.map(r => `<div class="lpb-review${r.hidden ? ' is-off' : ''}"><div><b aria-label="${r.rating} of 5 stars">${oi('star-solid').repeat(r.rating)}${oi('star-outline').repeat(5 - r.rating)}</b> ${esc(r.product)}</div>
                 ${r.text ? `<p>${esc(r.text)}</p>` : ''}<small>${esc(r.name)} · ${esc(new Date(r.date).toLocaleDateString())}${r.hidden ? ' · hidden' : ''}</small>
                 <span><button type="button" class="lpb-link-btn" data-review="${r.id}|${r.hidden ? 'show' : 'hide'}">${r.hidden ? 'Show on the shop' : 'Hide'}</button> <button type="button" class="lpb-link-btn lpb-danger" data-review="${r.id}|delete">Delete</button></span></div>`).join('')
             : '<div class="lpb-empty-edit"><b>No reviews yet</b><p>Buyers can review what they bought from their order page once you mark the order as sent (downloads and gift cards: once paid). Stars show on your shop by themselves.</p></div>');
@@ -1868,12 +1872,12 @@
                 <tr class="is-sum"><td>${o.delivery === 'pickup' ? 'Pick-up' : 'Delivery'}</td><td>${esc(o.delivery_fee)}</td></tr>${o.tax && !o.tax_included ? `<tr class="is-sum"><td>Tax</td><td>${esc(o.tax)}</td></tr>` : ''}
                 <tr class="is-total"><td>Total${o.tax && o.tax_included ? ` <small>incl. ${esc(o.tax)} tax</small>` : ''}</td><td>${esc(o.total)}</td></tr>${o.refunded ? `<tr class="is-refund"><td>Refunded</td><td>−${esc(o.refunded)}</td></tr>` : ''}</table>
                 <p><a href="mailto:${esc(o.email)}">${esc(o.email)}</a>${o.phone ? ` · <a href="tel:${esc(o.phone.replace(/[^\d+]/g, ''))}">${esc(o.phone)}</a>` : ''}</p>
-                ${o.address ? `<p class="lpb-order__addr">${esc(o.address)}${o.country ? '\n' + esc(o.country) : ''}</p>` : '<p class="lpb-hint">Picking it up.</p>'}${o.tracking ? `<p>🚚 Tracking: ${/^https?:\/\//i.test(o.tracking) ? `<a href="${esc(o.tracking)}" target="_blank" rel="noopener nofollow">${esc(o.tracking)}</a>` : esc(o.tracking)}</p>` : ''}${o.note ? `<p class="lpb-order__note">“${esc(o.note)}”</p>` : ''}
+                ${o.address ? `<p class="lpb-order__addr">${esc(o.address)}${o.country ? '\n' + esc(o.country) : ''}</p>` : '<p class="lpb-hint">Picking it up.</p>'}${o.tracking ? `<p>${oi('truck')} Tracking: ${/^https?:\/\//i.test(o.tracking) ? `<a href="${esc(o.tracking)}" target="_blank" rel="noopener nofollow">${esc(o.tracking)}</a>` : esc(o.tracking)}</p>` : ''}${o.note ? `<p class="lpb-order__note">“${esc(o.note)}”</p>` : ''}
                 ${o.status === 'unpaid' ? `<p class="lpb-hint">The customer started paying by card but Stripe hasn’t confirmed it yet.</p><div class="lpb-block-actions"><button type="button" class="btn btn--sm btn--glow" data-order-check="${o.number}">Check payment</button><button type="button" class="btn btn--sm btn--ghost lpb-danger" data-order-set="${o.number}|cancelled">Cancel order</button></div>`
                     : o.status === 'cancelled' ? '<p class="lpb-hint">Cancelled — its stock went back.</p>' : `<label>Status<select data-order-status="${o.number}">${['new', 'shipped', 'done', 'cancelled'].map(k => `<option value="${k}" ${o.status === k ? 'selected' : ''}>${ORDER_STATUS[k]}</option>`).join('')}</select></label>
                     ${o.pay !== 'card' ? `<label class="lpb-check"><input type="checkbox" data-order-paid="${o.number}" ${o.paid ? 'checked' : ''}> Paid</label>` : ''}
-                    ${o.refundable ? `<button type="button" class="btn btn--sm btn--ghost" data-order-refund="${o.number}|${esc(o.refundable)}|${o.pay}">↩ Refund${o.refunded ? ' more' : ''}…</button>` : ''}`}</div></details>`;
-        box.innerHTML = seg + `<div class="lpb-orders-top"><div class="lpb-chips">${chips}</div><button type="button" class="lpb-tb" data-orders-refresh title="Check for new orders">↻</button></div>
+                    ${o.refundable ? `<button type="button" class="btn btn--sm btn--ghost" data-order-refund="${o.number}|${esc(o.refundable)}|${o.pay}">${oi('undo')} Refund${o.refunded ? ' more' : ''}…</button>` : ''}`}</div></details>`;
+        box.innerHTML = seg + `<div class="lpb-orders-top"><div class="lpb-chips">${chips}</div><button type="button" class="lpb-tb" data-orders-refresh title="Check for new orders" aria-label="Check for new orders">${oi('refresh')}</button></div>
             ${r.orders.length ? r.orders.map(row).join('') : `<div class="lpb-empty-edit"><b>${orderFilter ? 'No orders here' : 'No orders yet'}</b><p>${orderFilter ? 'Try another filter.' : 'Orders appear here (and in your email) as soon as a customer checks out. Publish your shop and share the link!'}</p></div>`}
             ${r.total ? '<button type="button" class="btn btn--sm btn--ghost" data-orders-csv>Download all orders (CSV)</button>' : ''}`;
     };
@@ -1969,9 +1973,9 @@
         if (!st || !btn || typeof P === 'undefined' || !P) return;
         const dirty = unsaved();
         st.textContent = !cloud.id ? `Not saved yet — your ${NOUN} is kept in this browser. Save it to your account to open it anywhere.`
-            : dirty ? 'Unsaved changes — press Save to update your account copy.' : `Saved to your account ✓`;
+            : dirty ? 'Unsaved changes — press Save to update your account copy.' : 'Saved to your account';
         st.dataset.state = !cloud.id ? 'new' : dirty ? 'dirty' : 'saved';
-        btn.textContent = !cloud.id ? '☁️ Save' : dirty ? '☁️ Save changes' : 'Saved ✓';
+        btn.innerHTML = !cloud.id ? `${oi('cloud')} Save` : dirty ? `${oi('cloud')} Save changes` : `${oi('tick')} Saved`; // constant strings only
         btn.classList.toggle('btn--glow', dirty); btn.classList.toggle('btn--ghost', !dirty);
     }
     const drawCloudList = () => {
@@ -1980,9 +1984,9 @@
         const signedIn = !!token && cloudList !== null;
         sel.hidden = !signedIn; signin.hidden = signedIn;
         if (!signedIn) return;
-        sel.innerHTML = `<option value="">🗂 My ${NOUN}s (${cloudList.length})</option>`
+        sel.innerHTML = `<option value="">My ${NOUN}s (${cloudList.length})</option>`
             + cloudList.map(x => `<option value="${esc(x.id)}" ${x.id === cloud.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')
-            + `<option value="new">＋ New ${NOUN}</option>`;
+            + `<option value="new">New ${NOUN}…</option>`;
         if (!cloudList.some(x => x.id === cloud.id)) sel.value = '';
     };
     const loadCloudList = async () => {
@@ -2055,11 +2059,11 @@
     let wizard = null;
     const WZ = window.OwlWizard;
     if (WZ) {
-        const EM = { agency: '💼', dental: '🦷', restaurant: '🍽️', course: '🎓', realestate: '🏡', services: '🔧', business: '💼', clinic: '🩺', trades: '🔧',
-            photographer: '📷', designer: '🎨', developer: '💻', artist: '🖌️', creator: '🎬', musician: '🎸', shop: '🛍️', coach: '🧭',
-            wedding: '💍', birthday: '🎂', conference: '🎤', babyshower: '🍼', cafe: '☕', pizzeria: '🍕', foodtruck: '🚚',
-            launch: '🚀', maintenance: '🛠️', waitlist: '📱', opening: '🏪', fashion: '👕', bakery: '🥐', beauty: '🧴', handmade: '🏺', leadmagnet: '🧲', webinar: '🖥️', tripwire: '🏷️', consult: '📞',
-            salon: '💇', fitness: '🏋️', cleaning: '🧽', accounting: '📊', sushi: '🍣', curry: '🍛', burger: '🍔', bar: '🍸', coffee: '☕', florist: '💐', pets: '🐾', jewellery: '💍' };
+        const EM = { agency: 'briefcase', dental: 'tooth', restaurant: 'food', course: 'graduation', realestate: 'home', services: 'wrench', business: 'briefcase', clinic: 'health', trades: 'wrench',
+            photographer: 'camera', designer: 'palette', developer: 'monitor', artist: 'pen', creator: 'film', musician: 'music', shop: 'bag', coach: 'compass',
+            wedding: 'gem', birthday: 'cake', conference: 'mic', babyshower: 'bottle', cafe: 'coffee', pizzeria: 'pizza', foodtruck: 'truck',
+            launch: 'rocket', maintenance: 'wrench', waitlist: 'phone', opening: 'store', fashion: 'shirt', bakery: 'bakery', beauty: 'bottle', handmade: 'vase', leadmagnet: 'magnet', webinar: 'monitor', tripwire: 'tag', consult: 'call',
+            salon: 'scissors', fitness: 'dumbbell', cleaning: 'sparkle', accounting: 'chart', sushi: 'bowl', curry: 'bowl', burger: 'burger', bar: 'cocktail', coffee: 'coffee', florist: 'flower', pets: 'paw', jewellery: 'gem' };
         const WHAT = FUNNEL ? 'funnel' : { website: 'website', portfolio: 'portfolio', links: 'link-in-bio page', soon: 'coming soon page', event: 'event website', menu: 'menu', store: 'online store' }[KIT] || 'page';
         let picked = null, hadWork = false;
         try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}
@@ -2085,7 +2089,7 @@
             previewFrame.onload = () => { try { previewFrame.contentDocument.scrollingElement.scrollTop = y; previewFrame.contentDocument.addEventListener('click', ev => ev.preventDefault(), true); } catch {} };
         };
         const LOOKS = [
-            ['theme', 'Light or dark', [['light', '☀️ Light'], ['dark', '🌙 Dark']]],
+            ['theme', 'Light or dark', [['light', `${oi('sun')} Light`], ['dark', `${oi('moon')} Dark`]]],
             ['fontPair', 'Fonts', [['Poppins|Inter', 'Modern'], ['Playfair Display|Lato', 'Elegant'], ['Montserrat|Open Sans', 'Bold'], ['DM Sans|DM Sans', 'Simple']]],
             ['radius', 'Corners', [['round', 'Rounded'], ['soft', 'Soft'], ['sharp', 'Square']]],
             ['buttons', 'Buttons', [['pill', 'Pill'], ['rounded', 'Rounded'], ['square', 'Square']]],
@@ -2094,7 +2098,7 @@
         const steps = [
             {
                 title: `What kind of ${WHAT} is it?`, sub: 'We’ll start you with a ready design made for it — you can change everything.',
-                draw: () => WZ.cards([...(hadWork ? [['keep', '✅', `Keep my ${NOUN}`, 'Update what’s there']] : []), ...Object.entries(EXAMPLES).map(([k, v]) => [k, EM[k] || '✨', v[0]])], picked),
+                draw: () => WZ.cards([...(hadWork ? [['keep', 'check', `Keep my ${NOUN}`, 'Update what’s there']] : []), ...Object.entries(EXAMPLES).map(([k, v]) => [k, EM[k] || 'sparkle', v[0]])], picked),
                 click: (e, el, box) => {
                     if (!el.dataset.wzPick) return;
                     picked = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el);
@@ -2110,7 +2114,7 @@
                 title: `Name your ${NOUN}`, sub: 'It shows in the header, the browser tab and the footer.',
                 draw: () => `<label class="wz-field">Name<input data-wz="name" maxlength="60" value="${esc(P.site.name)}" placeholder="e.g. Bean There Café"></label>
                     <div class="wz-logo">${P.site.logo ? `<img src="${esc(P.site.logo)}" alt="" class="wz-logo__img">` : '<span class="wz-logo__none">No logo</span>'}
-                        <label class="wz-upload"><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-wz-file class="sr-only"><span>⬆️ ${P.site.logo ? 'Change logo' : 'Upload a logo (optional)'}</span><small>PNG, JPG or SVG — a wide logo looks best.</small></label>
+                        <label class="wz-upload"><input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" data-wz-file class="sr-only"><span>${oi('upload')} ${P.site.logo ? 'Change logo' : 'Upload a logo (optional)'}</span><small>PNG, JPG or SVG — a wide logo looks best.</small></label>
                         ${P.site.logo ? '<button type="button" class="ab-link" data-wz-nologo>Remove logo</button>' : ''}</div>`,
                 input: (e, el) => { if (el.dataset.wz === 'name') { P.site.name = el.value; wizardNamed = true; changed(); } },
                 change: async (e, el, box) => {
@@ -2134,9 +2138,9 @@
                 draw: () => {
                     const sh = P.site.shop, chip = (k, label) => `<button type="button" data-wz-shop-t="${k}" aria-pressed="${!!sh[k]}">${label}</button>`;
                     return `<label class="wz-field">Currency<select data-wz-shop="currency">${currencyOptions(sh.currency)}</select></label>
-                        <div class="wz-look"><b>Getting it to customers</b><div class="wz-chips">${chip('delivery', '🚚 I deliver')}${chip('pickup', '🏪 Customers can pick up')}</div></div>
+                        <div class="wz-look"><b>Getting it to customers</b><div class="wz-chips">${chip('delivery', `${oi('truck')} I deliver`)}${chip('pickup', `${oi('store')} Customers can pick up`)}</div></div>
                         ${sh.delivery ? `<label class="wz-field">Delivery fee <small>— 0 for free delivery</small><input data-wz-shop="fee" inputmode="decimal" maxlength="12" value="${esc(sh.fee)}"></label>` : ''}
-                        <div class="wz-look"><b>How customers pay</b><div class="wz-chips">${chip('cod', '💵 Cash on delivery')}${chip('bank', '🏦 Bank transfer')}</div></div>`;
+                        <div class="wz-look"><b>How customers pay</b><div class="wz-chips">${chip('cod', `${oi('cash')} Cash on delivery`)}${chip('bank', `${oi('bank')} Bank transfer`)}</div></div>`;
                 },
                 input: (e, el) => { if (el.dataset.wzShop) { P.site.shop[el.dataset.wzShop] = el.value; changed(); } },
                 change: (e, el) => { if (el.dataset.wzShop) { P.site.shop[el.dataset.wzShop] = el.value; changed(); } },
@@ -2171,7 +2175,7 @@
             {
                 title: 'Choose your pages', sub: 'Untick the pages you don’t need. You can add pages any time in the editor.',
                 skip: () => FUNNEL || P.pages.length < 2,
-                draw: () => `<div class="wz-pages">${P.pages.map((pg, i) => `<label class="wz-page${drop.has(i) ? ' is-off' : ''}" style="--i:${i}"><input type="checkbox" data-wz-page="${i}" ${drop.has(i) ? '' : 'checked'} ${i === 0 ? 'disabled' : ''}><span class="wz-page__ic">${i === 0 ? '🏠' : '📄'}</span><b>${esc(pg.title)}</b>${i === 0 ? '<small>Home page — always kept</small>' : ''}</label>`).join('')}</div>`,
+                draw: () => `<div class="wz-pages">${P.pages.map((pg, i) => `<label class="wz-page${drop.has(i) ? ' is-off' : ''}" style="--i:${i}"><input type="checkbox" data-wz-page="${i}" ${drop.has(i) ? '' : 'checked'} ${i === 0 ? 'disabled' : ''}><span class="wz-page__ic">${oi(i === 0 ? 'home' : 'doc')}</span><b>${esc(pg.title)}</b>${i === 0 ? '<small>Home page — always kept</small>' : ''}</label>`).join('')}</div>`,
                 change: (e, el) => { if (!el.dataset.wzPage) return; const i = +el.dataset.wzPage; if (el.checked) drop.delete(i); else drop.add(i); el.closest('.wz-page').classList.toggle('is-off', !el.checked); },
                 leave: () => { if (drop.size) { P.pages = P.pages.filter((pg, i) => !drop.has(i)); drop = new Set(); pageIdx = 0; changed(); } },
             },
@@ -2179,7 +2183,7 @@
         let wizardNamed = false;
         wizard = WZ.mount({
             root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-' + KIND + '-off',
-            say: [`Hoo! Want a ${WHAT}? I’ll set it up with you — it takes about 2 minutes.`, 'Pick what it’s for, and I’ll start you with a ready design.', 'You’ll see it on a phone as you go. Ready? 🚀'],
+            say: [`Hoo! Want a ${WHAT}? I’ll set it up with you — it takes about 2 minutes.`, 'Pick what it’s for, and I’ll start you with a ready design.', 'You’ll see it on a phone as you go. Ready?'],
             hasSaved: () => !!cloud.id || !!DESIGN, // came to use a design from /examples: straight to the editor
             quickSlot: root.querySelector('.lpb-top .lpb-cloud'), quickClass: 'lpb-tb lpb-quick',
             onRestart: () => { picked = null; wizardNamed = false; hadWork = false; },
@@ -2195,8 +2199,8 @@
                 title: `Your ${WHAT} is ready`,
                 sub: `Scroll the preview to see it. Save it to your account to open it anywhere, then publish it or download it when you’re happy — everything can still be changed in the editor.`,
                 actions: [
-                    { label: '☁️ Save to my account', cls: 'btn btn--glow', then: 'save', act: close => { close(); needAccount(async () => { if (dlg.open) dlg.close(); await saveCloud(); }); } },
-                    { label: '✏️ Keep editing', act: close => close() },
+                    { label: 'Save to my account', icon: 'cloud', cls: 'btn btn--glow', then: 'save', act: close => { close(); needAccount(async () => { if (dlg.open) dlg.close(); await saveCloud(); }); } },
+                    { label: 'Keep editing', icon: 'pen', act: close => close() },
                 ],
             },
             // On the builder's main page, finishing opens its editor page (same project, kept in this browser)

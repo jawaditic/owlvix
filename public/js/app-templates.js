@@ -32,7 +32,7 @@
             tabs: [
                 screen('Home', 'home', [
                     hero('Wood-fired kitchen', 'Seasonal plates, fresh pasta and the best pizza in town.', 'See the menu', tab(1)),
-                    notice('🔥 Tuesday: 2-for-1 pizzas, all evening.', 'warning'),
+                    notice('Tuesday: 2-for-1 pizzas, all evening.', 'warning'),
                     cards('Why guests love us', [['food', 'Fresh daily', 'Made from scratch every morning.'], ['heart', 'Family run', 'Since 2009.'], ['star', '4.8 rating', 'Over 900 reviews.'], ['cart', 'Takeaway', 'Order ahead and collect.']]),
                     btn('Book a table', tel('+1 555 0100')),
                     reviews('What guests say', [['The best margherita outside Naples. Staff are lovely too.', 'Sophie R.'], ['Cosy, quick and great value. We come every week!', 'Daniel K.']]),
@@ -74,7 +74,7 @@
                     reviews('Client love', [['Best balayage I’ve ever had. I felt so looked after.', 'Amira'], ['Quick, friendly and my nails lasted three weeks!', 'Jess']]),
                 ]),
                 screen('Prices', 'tag', [
-                    notice('New clients: 20% off your first visit 💖', 'success'),
+                    notice('New clients: 20% off your first visit!', 'success'),
                     list('Hair', [['Cut & finish', '', 'from $45'], ['Full colour', '', 'from $85'], ['Balayage', '', 'from $140']]),
                     list('Nails', [['Gel manicure', '', '$35'], ['Gel pedicure', '', '$45']]),
                     list('Skin', [['Signature facial', '60 minutes', '$70']]),

@@ -67,7 +67,7 @@
                         @if ($m->service)<em>{{ $m->service }}</em>@endif
                         @if ($m->budget && $m->budget !== 'Not sure yet')<em>{{ $m->budget }}</em>@endif
                         <em class="src src--{{ $m->source }}">{{ $m->sourceLabel(true) }}</em>
-                        @if ($m->replies_count)<em class="replied">✓ Replied</em>@endif
+                        @if ($m->replies_count)<em class="replied">{!! \App\Support\Icons::i('tick') !!} Replied</em>@endif
                     </span>
                     <span class="preview">{{ \Illuminate\Support\Str::limit($m->messageText(), 140) }}</span>
                 </span>
@@ -84,15 +84,15 @@
     @if ($messages->hasPages())
         <nav class="pager">
             @if ($messages->onFirstPage())
-                <span class="btn btn--ghost is-disabled">← Newer</span>
+                <span class="btn btn--ghost is-disabled">{!! \App\Support\Icons::i('arrow-left') !!} Newer</span>
             @else
-                <a class="btn btn--ghost" href="{{ $messages->previousPageUrl() }}">← Newer</a>
+                <a class="btn btn--ghost" href="{{ $messages->previousPageUrl() }}">{!! \App\Support\Icons::i('arrow-left') !!} Newer</a>
             @endif
             <span class="muted">Page {{ $messages->currentPage() }} of {{ $messages->lastPage() }}</span>
             @if ($messages->hasMorePages())
-                <a class="btn btn--ghost" href="{{ $messages->nextPageUrl() }}">Older →</a>
+                <a class="btn btn--ghost" href="{{ $messages->nextPageUrl() }}">Older {!! \App\Support\Icons::i('arrow-right') !!}</a>
             @else
-                <span class="btn btn--ghost is-disabled">Older →</span>
+                <span class="btn btn--ghost is-disabled">Older {!! \App\Support\Icons::i('arrow-right') !!}</span>
             @endif
         </nav>
     @endif

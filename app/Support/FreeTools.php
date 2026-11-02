@@ -31,6 +31,7 @@ class FreeTools
             ['route' => 'app-builder', 'group' => 'builder', 'name' => 'Mobile app builder', 'desc' => 'Make a native Android app, no code', 'icon' => 'phone', 'tone' => ''],
             ['route' => 'resume-builder', 'group' => 'builder', 'name' => 'Resume / CV builder', 'desc' => '5 designs, free PDF, ATS tips', 'icon' => 'doc', 'tone' => 'is-blue'],
             ['route' => 'invoice-generator', 'group' => 'builder', 'name' => 'Invoice generator', 'desc' => 'Invoices, quotes & receipts — tax, logo, free PDF', 'icon' => 'clipboard', 'tone' => ''],
+            ['route' => 'qr-code-generator', 'group' => 'builder', 'name' => 'QR code generator', 'desc' => 'Logo, colours & Wi-Fi codes — never expire', 'icon' => 'qr', 'tone' => 'is-blue'],
             ['route' => 'email-builder', 'group' => 'builder', 'name' => 'Email & newsletter builder', 'desc' => 'Mailchimp-ready HTML emails', 'icon' => 'mail', 'tone' => ''],
             ['route' => 'form-builder', 'group' => 'builder', 'name' => 'Form & survey builder', 'desc' => 'Surveys, RSVPs, order forms — answers by email', 'icon' => 'clipboard', 'tone' => 'is-blue'],
             ['route' => 'email-signature', 'group' => 'build', 'name' => 'Email signature generator', 'desc' => 'Gmail & Outlook signatures — 6 designs, copy & paste', 'icon' => 'mail', 'tone' => ''],

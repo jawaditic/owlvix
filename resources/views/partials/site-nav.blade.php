@@ -37,7 +37,7 @@
                             </a>
                         @endforeach
                     </div>
-                    <div class="nav-drop__alls"><a href="{{ route('free-tools') }}#builders" class="nav-drop__all">See all free builders →</a><a href="{{ route('examples') }}" class="nav-drop__all" @if (request()->routeIs('examples')) aria-current="page" @endif>Example designs →</a><a href="{{ route('guides') }}" class="nav-drop__all" @if (request()->routeIs('guides', 'guide.*')) aria-current="page" @endif>Step-by-step guides →</a></div>
+                    <div class="nav-drop__alls"><a href="{{ route('free-tools') }}#builders" class="nav-drop__all">See all free builders {!! \App\Support\Icons::i('arrow-right') !!}</a><a href="{{ route('examples') }}" class="nav-drop__all" @if (request()->routeIs('examples')) aria-current="page" @endif>Example designs {!! \App\Support\Icons::i('arrow-right') !!}</a><a href="{{ route('guides') }}" class="nav-drop__all" @if (request()->routeIs('guides', 'guide.*')) aria-current="page" @endif>Step-by-step guides {!! \App\Support\Icons::i('arrow-right') !!}</a></div>
                 </div>
             </div>
             <div class="nav-drop" data-nav-drop>
@@ -59,7 +59,7 @@
                         <span class="svc-icon" aria-hidden="true">{!! \App\Support\Icons::svg('sparkle') !!}</span>
                         <span><strong>Full SEO audit <em class="nav-drop__tag">Free</em></strong><small>Whole-site report by our team, in 2 days</small></span>
                     </a>
-                    <a href="{{ route('free-tools') }}" class="nav-drop__all">See all free tools →</a>
+                    <a href="{{ route('free-tools') }}" class="nav-drop__all">See all free tools {!! \App\Support\Icons::i('arrow-right') !!}</a>
                 </div>
             </div>
             {{-- More (☰): the less-used links. A dropdown on desktop; in the phone menu they show as plain links. --}}

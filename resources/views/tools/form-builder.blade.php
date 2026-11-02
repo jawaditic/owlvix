@@ -46,20 +46,20 @@
             'title' => 'Let’s make <span class="accent">your form</span> together',
             'sub' => 'Pick what it’s for, choose your questions and colours, and watch the form come together as you go. Answers are emailed to you.',
             'steps' => [['Pick what', 'it’s for'], ['Questions', '& colours'], ['Preview, then', 'publish it']],
-            'go' => '🚀 Start my form',
+            'go' => 'Start my form',
         ])
         @endunless
         <div class="fb card" data-fb @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif>
             <div class="fb-top">
                 <div class="fb-tabs" role="tablist">
-                    <button type="button" role="tab" data-tab="build" aria-selected="true">✏️ Build</button>
-                    <button type="button" role="tab" data-tab="share" aria-selected="false">🔗 Share</button>
-                    <button type="button" role="tab" data-tab="responses" aria-selected="false">📊 Responses</button>
+                    <button type="button" role="tab" data-tab="build" aria-selected="true">{!! \App\Support\Icons::i('pen') !!} Build</button>
+                    <button type="button" role="tab" data-tab="share" aria-selected="false">{!! \App\Support\Icons::i('link') !!} Share</button>
+                    <button type="button" role="tab" data-tab="responses" aria-selected="false">{!! \App\Support\Icons::i('chart') !!} Responses</button>
                 </div>
                 <div class="fb-top__actions">
                     <label class="sr-only" for="fb-mine">Open one of my forms</label>
                     <select id="fb-mine" class="fb-mine" data-mine hidden></select>
-                    <button type="button" class="btn btn--sm btn--ghost" data-new>＋ New form</button>
+                    <button type="button" class="btn btn--sm btn--ghost" data-new>{!! \App\Support\Icons::i('plus') !!} New form</button>
                     <button type="button" class="btn btn--sm btn--glow" data-publish>Publish form</button>
                 </div>
             </div>

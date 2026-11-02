@@ -6,13 +6,13 @@
         <p class="eyebrow">Client reviews</p>
         <h2>What clients say</h2>
         <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
-            <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
+            <span class="rating-badge__stars" aria-hidden="true">@include('partials.icon', ['n' => 'star-solid', 'times' => 5])</span>
             <span>@include('partials.rating-summary', ['t' => $t])</span>
         </a>
         <div class="reviews is-loading" data-reviews aria-busy="true">
             @foreach ($t['reviews'] as $r)
                 <figure class="review" data-country="{{ $r['code'] }}">
-                    <span class="review__stars" aria-label="{{ $r['rating'] }} out of 5 stars">{{ str_repeat('★', $r['rating']) }}<span class="review__stars-off">{{ str_repeat('★', 5 - $r['rating']) }}</span></span>
+                    <span class="review__stars" role="img" aria-label="{{ $r['rating'] }} out of 5 stars">@include('partials.icon', ['n' => 'star-solid', 'times' => $r['rating']])<span class="review__stars-off">@include('partials.icon', ['n' => 'star-outline', 'times' => 5 - $r['rating']])</span></span>
                     <blockquote>“{{ $r['text'] }}”</blockquote>
                     <figcaption>
                         <span class="review__avatar" aria-hidden="true">{{ strtoupper(substr($r['name'], 0, 1)) }}</span>

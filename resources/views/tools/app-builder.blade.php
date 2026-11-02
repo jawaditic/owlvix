@@ -61,8 +61,8 @@
                     <li><b>3</b><span>Try it, then<br>save it</span></li>
                 </ol>
                 <div class="wzb__actions">
-                    <button type="button" class="btn btn--glow wzb__go" data-wz-start>🚀 Start building my app</button>
-                    <button type="button" class="wzb__no" data-wzb-no>or use the full builder →</button>
+                    <button type="button" class="btn btn--glow wzb__go" data-wz-start>{!! \App\Support\Icons::i('rocket') !!} Start building my app</button>
+                    <button type="button" class="wzb__no" data-wzb-no>or use the full builder {!! \App\Support\Icons::i('arrow-right') !!}</button>
                 </div>
             </div>
             <div class="wzb__phone" aria-hidden="true">
@@ -80,14 +80,14 @@
         <div class="fb ab card" data-ab @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif data-qr="{{ \App\Support\Asset::url('js/qr.js') }}" data-site-builder="{{ route('website-builder') }}">
             <div class="fb-top ab-top">
                 <div class="fb-tabs" role="tablist">
-                    <button type="button" role="tab" data-tab="design" aria-selected="true">✏️ Design</button>
-                    <button type="button" role="tab" data-tab="build" aria-selected="false">📦 Build &amp; download</button>
+                    <button type="button" role="tab" data-tab="design" aria-selected="true">{!! \App\Support\Icons::i('pen') !!} Design</button>
+                    <button type="button" role="tab" data-tab="build" aria-selected="false">{!! \App\Support\Icons::i('box') !!} Build &amp; download</button>
                 </div>
                 <div class="fb-top__actions">
                     <label class="sr-only" for="ab-mine">Open one of my apps</label>
                     <select id="ab-mine" class="fb-mine" data-mine hidden></select>
-                    <button type="button" class="btn btn--sm btn--ghost" data-mine-signin hidden>📂 My apps</button>
-                    <button type="button" class="btn btn--sm btn--ghost" data-new>＋ New app</button>
+                    <button type="button" class="btn btn--sm btn--ghost" data-mine-signin hidden>{!! \App\Support\Icons::i('folder') !!} My apps</button>
+                    <button type="button" class="btn btn--sm btn--ghost" data-new>{!! \App\Support\Icons::i('plus') !!} New app</button>
                     <button type="button" class="btn btn--sm btn--glow" data-save>Save app</button>
                     <button type="button" class="ab-full-btn ab-full-btn--app" data-app-full aria-pressed="false" aria-label="Full screen builder" data-tip="Fill the screen with the builder">
                         <svg class="ab-full-btn__on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
@@ -96,7 +96,7 @@
                 </div>
                 {{-- add a block to the page on the phone, top right of the toolbar so it is always easy to find (same menu as under the screen's blocks) --}}
                 <details class="ab-add ab-add--prev" data-add-block-prev>
-                    <summary class="btn btn--sm btn--glow">＋ Add block <span class="ab-add__to" data-add-to></span></summary>
+                    <summary class="btn btn--sm btn--glow">{!! \App\Support\Icons::i('plus') !!} Add block <span class="ab-add__to" data-add-to></span></summary>
                     <div class="ab-add__grid" data-add-types-prev></div>
                 </details>
             </div>
@@ -113,18 +113,18 @@
 
                         <details class="fb-settings"><summary class="ab-sec"><span class="ab-sec__ic"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></span><span class="ab-sec__t">2. Pages &amp; menu</span></summary>
                             <div class="ab-langbar" data-langbar></div>
-                            <p class="fb-hint">Up to 15 pages, each a native screen you build from blocks (or a page of your website). For each page choose where its link goes: the bottom bar (up to 5), the ☰ menu at the top, or both.</p>
-                            <label>☰ Menu at the top
+                            <p class="fb-hint">Up to 15 pages, each a native screen you build from blocks (or a page of your website). For each page choose where its link goes: the bottom bar (up to 5), the {!! \App\Support\Icons::i('menu') !!} menu at the top, or both.</p>
+                            <label>{!! \App\Support\Icons::i('menu') !!} Menu at the top
                                 <select data-menu>
-                                    <option value="show">Show it — with the pages ticked “☰ Menu” below</option>
+                                    <option value="show">Show it — with the pages ticked “Menu” below</option>
                                     <option value="hide">Don’t show it</option>
                                 </select>
                             </label>
                             <p class="ab-err" data-menu-note hidden></p>
                             <div class="ab-tabs" data-tabs></div>
-                            {{-- ＋ Add page: a blank page or a ready-made one, filled with suitable blocks (list drawn by app-builder.js) --}}
+                            {{-- Add page: a blank page or a ready-made one, filled with suitable blocks (list drawn by app-builder.js) --}}
                             <details class="ab-add ab-add--page" data-add-page>
-                                <summary class="btn btn--sm btn--ghost">＋ Add page</summary>
+                                <summary class="btn btn--sm btn--ghost">{!! \App\Support\Icons::i('plus') !!} Add page</summary>
                                 <div class="ab-add__grid" data-page-presets></div>
                             </details>
                         </details>
@@ -163,8 +163,8 @@
                             </div>
                             <div class="ab-field"><span>Theme</span>
                                 <div class="ab-seg" role="group" aria-label="Theme">
-                                    <button type="button" data-style="theme:light">☀️ Light</button>
-                                    <button type="button" data-style="theme:dark">🌙 Dark</button>
+                                    <button type="button" data-style="theme:light">{!! \App\Support\Icons::i('sun') !!} Light</button>
+                                    <button type="button" data-style="theme:dark">{!! \App\Support\Icons::i('moon') !!} Dark</button>
                                     <button type="button" data-style="theme:auto">Follow the phone</button>
                                 </div>
                             </div>

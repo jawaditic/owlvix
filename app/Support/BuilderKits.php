@@ -30,10 +30,10 @@ class BuilderKits
                 'cta' => ['Want a site built for you?', 'Our designers build custom business websites with booking, payments and SEO. Start free: we design the first version at no cost.'],
                 'faq' => [
                     ['Is the website builder really free?', 'Yes. Build a site with up to 10 pages, download it or publish it free on sites.owlvix.com. No payment and no watermark on your content.'],
-                    ['How many pages can my website have?', 'Up to 10. Use “＋ Page” at the top and pick a ready page (About, Services, Pricing, Contact, Menu) or start from a blank one. Pages appear in your menu automatically.'],
+                    ['How many pages can my website have?', 'Up to 10. Use the “Page” button at the top and pick a ready page (About, Services, Pricing, Contact, Menu) or start from a blank one. Pages appear in your menu automatically.'],
                     ['Can I use my own domain?', 'Yes. Download the site and upload it to any hosting, then point your domain at it. Or ask us and we will set it up for you.'],
                     ['Does the contact form work?', 'Yes. Switch it on with your email (free) and every message a visitor sends is emailed to you — even on your own hosting.'],
-                    ['Can I keep editing later?', 'Your work is kept in this browser automatically. Press “☁️ Save” to save it to your free account, then open it from “My sites” on any device.'],
+                    ['Can I keep editing later?', 'Your work is kept in this browser automatically. Press “Save” to save it to your free account, then open it from “My sites” on any device.'],
                 ],
             ],
             'portfolio' => [

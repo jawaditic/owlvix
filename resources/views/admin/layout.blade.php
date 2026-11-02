@@ -10,6 +10,7 @@
     <script>(function () { var t; try { t = localStorage.getItem('owlvix-theme'); } catch (e) {} if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); })();</script>
     <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/theme.css') }}">
     <link rel="stylesheet" href="{{ \App\Support\Asset::url('css/admin.css') }}">
+    <script src="{{ \App\Support\Asset::url('js/icons.js') }}" defer></script>
 </head>
 <body class="@yield('body_class')">
     <script>try { if (localStorage.getItem('owlvix-side') === 'mini') document.body.classList.add('side-mini'); } catch (e) {}</script>

@@ -68,7 +68,7 @@ class LeadIntegrations
                     return 'That Mailchimp API key doesn’t look right. It looks like 32 letters and numbers, a dash and “us” with a number (for example …-us21).';
                 }
                 if (! preg_match('/^[0-9a-z]{3,20}$/', $list)) {
-                    return 'That Mailchimp audience ID doesn’t look right. Find it under Audience → Settings → “Audience name and defaults”.';
+                    return 'That Mailchimp audience ID doesn’t look right. Find it under Audience > Settings > “Audience name and defaults”.';
                 }
                 $out['mailchimp'] = ['key' => $key, 'list' => $list, 'dc' => $m[1]];
             }
@@ -91,7 +91,7 @@ class LeadIntegrations
                     return 'That Brevo API key doesn’t look right.';
                 }
                 if (! preg_match('/^\d{1,10}$/', $list)) {
-                    return 'The Brevo list ID should be a number (Contacts → Lists).';
+                    return 'The Brevo list ID should be a number (Contacts > Lists).';
                 }
                 $out['brevo'] = ['key' => $key, 'list' => $list];
             }

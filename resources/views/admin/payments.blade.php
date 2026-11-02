@@ -32,7 +32,7 @@
                 <div class="t-form__grid" style="grid-template-columns:1fr 1fr">
                     <label>Secret key <small class="muted">{{ $hints[$mode]['secret'] ? 'saved '.$hints[$mode]['secret'].' — leave empty to keep' : 'sk_'.$mode.'_…' }}</small>
                         <input type="password" name="{{ $mode }}[secret]" autocomplete="off" placeholder="{{ $hints[$mode]['secret'] ? '••••••••'.$hints[$mode]['secret'] : 'sk_'.$mode.'_…' }}"></label>
-                    <label>Connect client ID <small class="muted">{{ $hints[$mode]['client_id'] ? 'saved '.$hints[$mode]['client_id'] : 'ca_… (Stripe → Connect → Settings)' }}</small>
+                    <label>Connect client ID <small class="muted">{{ $hints[$mode]['client_id'] ? 'saved '.$hints[$mode]['client_id'] : 'ca_… (Stripe > Connect > Settings)' }}</small>
                         <input type="text" name="{{ $mode }}[client_id]" autocomplete="off" placeholder="{{ $hints[$mode]['client_id'] ? '…'.$hints[$mode]['client_id'] : 'ca_…' }}"></label>
                 </div>
                 @if ($hints[$mode]['secret'] || $hints[$mode]['client_id'])
@@ -46,7 +46,7 @@
             <label>Owlvix fee (%) <input type="number" name="fee" min="0" max="20" step="0.1" value="{{ $s['fee'] ?? 0 }}"></label>
             <p class="muted" style="align-self:end">Taken from each payment as a Stripe application fee. 0 = none.</p>
         </div>
-        <p class="muted">In Stripe: Settings → Connect → turn on OAuth for Standard accounts, and add the redirect URI <code>{{ $callback }}</code> (in both test and live mode).</p>
+        <p class="muted">In Stripe: Settings {!! \App\Support\Icons::i('arrow-right') !!} Connect {!! \App\Support\Icons::i('arrow-right') !!} turn on OAuth for Standard accounts, and add the redirect URI <code>{{ $callback }}</code> (in both test and live mode).</p>
         <button type="submit" class="btn">Save</button>
     </form>
 @endsection

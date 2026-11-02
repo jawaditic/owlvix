@@ -112,7 +112,7 @@ Please use {{ $order->label() }} as the payment reference.</p></div>
         <div class="box"><b>Your downloads</b>
             @if ($paid)
                 @foreach ($files as $f)
-                    <p>@if ($f['file'])<a class="dl" href="{{ route('shop.download', [$order->token, $f['id']]) }}">⬇️ {{ $f['name'] }}</a>@else{{ $f['name'] }} — {{ $store->name }} will send you the file.@endif</p>
+                    <p>@if ($f['file'])<a class="dl" href="{{ route('shop.download', [$order->token, $f['id']]) }}">{!! \App\Support\Icons::i('download') !!} {{ $f['name'] }}</a>@else{{ $f['name'] }} — {{ $store->name }} will send you the file.@endif</p>
                 @endforeach
                 <p class="small">You can download each file up to {{ \App\Models\BuilderShopFile::MAX_DOWNLOADS }} times.</p>
             @else
@@ -142,7 +142,7 @@ Please use {{ $order->label() }} as the payment reference.</p></div>
                 <form method="post" action="{{ route('shop.review', $order->token) }}" class="review">
                     <input type="hidden" name="product" value="{{ $line['id'] }}">
                     <fieldset><legend>{{ $line['name'] }}</legend>
-                        <span class="stars">@for ($i = 5; $i >= 1; $i--)<input type="radio" id="r{{ $line['id'] }}{{ $i }}" name="rating" value="{{ $i }}" @checked(($r->rating ?? 0) === $i) required><label for="r{{ $line['id'] }}{{ $i }}" title="{{ $i }} star{{ $i > 1 ? 's' : '' }}">★</label>@endfor</span>
+                        <span class="stars">@for ($i = 5; $i >= 1; $i--)<input type="radio" id="r{{ $line['id'] }}{{ $i }}" name="rating" value="{{ $i }}" @checked(($r->rating ?? 0) === $i) required><label for="r{{ $line['id'] }}{{ $i }}" title="{{ $i }} star{{ $i > 1 ? 's' : '' }}">{!! \App\Support\Icons::i('star-solid') !!}</label>@endfor</span>
                     </fieldset>
                     <textarea name="text" rows="2" maxlength="1500" placeholder="What did you think? (optional)">{{ $r->text ?? '' }}</textarea>
                     <button class="btn btn--ghost" type="submit">{{ $r ? 'Update my review' : 'Post my review' }}</button>
@@ -156,7 +156,7 @@ Please use {{ $order->label() }} as the payment reference.</p></div>
             <form method="post" action="{{ route('shop.pay', $order->token) }}"><button class="btn" type="submit">Pay {{ $order->money($order->total) }} now</button></form>
         @endif
         @if ($wa && ! $waiting)
-            <a class="btn btn--ghost" href="https://wa.me/{{ $wa }}?text={{ rawurlencode('Hi! About my order '.$order->label().' ('.$order->name.')') }}" rel="noopener">💬 Message the shop</a>
+            <a class="btn btn--ghost" href="https://wa.me/{{ $wa }}?text={{ rawurlencode('Hi! About my order '.$order->label().' ('.$order->name.')') }}" rel="noopener">{!! \App\Support\Icons::i('whatsapp') !!} Message the shop</a>
         @endif
         @if ($back)
             <a class="btn {{ $waiting ? 'btn--ghost' : '' }}" href="{{ $back }}">Back to {{ $store->name }}</a>

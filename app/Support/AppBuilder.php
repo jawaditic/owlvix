@@ -170,7 +170,7 @@ class AppBuilder
             return 'The bank details are too long (300 characters at most).';
         }
         if ($shop['pay']['bank'] && $shop['pay']['bank_details'] === '') {
-            return 'Add your bank details for “Bank transfer” under “More settings → Orders & bookings”, or turn it off.';
+            return 'Add your bank details for “Bank transfer” under “More settings”, then “Orders & bookings”, or turn it off.';
         }
         $types = collect($content['tabs'])->flatMap(fn ($t) => $t['blocks'] ?? [])->pluck('type');
         if (($types->contains('products') || $types->contains('booking')) && $shop['whatsapp'] === '' && $shop['email'] === '') {

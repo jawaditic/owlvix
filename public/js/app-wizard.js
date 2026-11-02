@@ -15,24 +15,24 @@
         const made = () => { try { return !!localStorage.getItem(OFF + '-made'); } catch { return false; } }; // finished the quick setup
         const banner = document.querySelector('[data-wz-banner]');
 
-        const EMOJI = { restaurant: '🍽️', cafe: '☕', salon: '💇', gym: '🏋️', shop: '🛍️', clinic: '🩺', realestate: '🏡', events: '🎟️', agency: '💼', church: '⛪', school: '🎓', hotel: '🏨' };
+        const TYPE_ICON = { restaurant: 'food', cafe: 'coffee', salon: 'scissors', gym: 'dumbbell', shop: 'bag', clinic: 'health', realestate: 'home', events: 'ticket', agency: 'briefcase', church: 'building', school: 'graduation', hotel: 'building' };
         const PALETTES = [
             ['Forest', '#16a34a'], ['Ocean', '#2563eb'], ['Sunset', '#e8590c'], ['Berry', '#be185d'],
             ['Royal', '#6d28d9'], ['Coffee', '#7c4a2d'], ['Teal', '#0d9488'], ['Midnight', '#1e1b49'],
         ];
         // pages the visitor can add on the "pages" step, each ready with suitable blocks
         const EXTRA = [
-            ['About', 'info', '👋', [{ type: 'heading', text: 'About us' }, { type: 'text', text: 'Tell people your story — who you are, what you do and why you love it.' }]],
-            ['Gallery', 'image', '🖼️', ['gallery']],
-            ['Contact', 'location', '📍', ['contact', 'hours']],
-            ['Reviews', 'star', '⭐', ['reviews']],
-            ['FAQ', 'chat', '💬', ['faq']],
-            ['Offers', 'tag', '🏷️', [{ type: 'notice', text: 'This week only: 10% off everything!', tone: 'success' }, { type: 'list', title: 'Current offers' }]],
-            ['Book', 'calendar', '📅', ['booking']],
-            ['Shop', 'cart', '🛒', ['products']],
-            ['Videos', 'play', '🎬', ['video']],
-            ['Rewards', 'heart', '🎁', ['loyalty']],
-            ['Follow us', 'globe', '📣', ['social']],
+            ['About', 'info', 'hand', [{ type: 'heading', text: 'About us' }, { type: 'text', text: 'Tell people your story — who you are, what you do and why you love it.' }]],
+            ['Gallery', 'image', 'image', ['gallery']],
+            ['Contact', 'location', 'pin', ['contact', 'hours']],
+            ['Reviews', 'star', 'star', ['reviews']],
+            ['FAQ', 'chat', 'chat', ['faq']],
+            ['Offers', 'tag', 'tag', [{ type: 'notice', text: 'This week only: 10% off everything!', tone: 'success' }, { type: 'list', title: 'Current offers' }]],
+            ['Book', 'calendar', 'calendar', ['booking']],
+            ['Shop', 'cart', 'cart', ['products']],
+            ['Videos', 'play', 'film', ['video']],
+            ['Rewards', 'heart', 'gift', ['loyalty']],
+            ['Follow us', 'globe', 'megaphone', ['social']],
         ];
         /* ---------- phone numbers: a flag and country code to pick, then the number ---------- */
         const CODES = 'AF93 AL355 DZ213 AR54 AM374 AU61 AT43 AZ994 BH973 BD880 BY375 BE32 BJ229 BO591 BA387 BW267 BR55 BN673 BG359 KH855 CM237 CA1 CL56 CN86 CO57 CR506 HR385 CY357 CZ420 DK45 DO1 EC593 EG20 SV503 EE372 ET251 FI358 FR33 GE995 DE49 GH233 GR30 GT502 HN504 HK852 HU36 IS354 IN91 ID62 IR98 IQ964 IE353 IL972 IT39 CI225 JM1 JP81 JO962 KZ7 KE254 KW965 KG996 LA856 LV371 LB961 LY218 LT370 LU352 MO853 MY60 MV960 MT356 MU230 MX52 MD373 MN976 ME382 MA212 MZ258 MM95 NA264 NP977 NL31 NZ64 NI505 NG234 MK389 NO47 OM968 PK92 PS970 PA507 PY595 PE51 PH63 PL48 PT351 PR1 QA974 RO40 RU7 RW250 SA966 SN221 RS381 SG65 SK421 SI386 SO252 ZA27 KR82 ES34 LK94 SD249 SE46 CH41 SY963 TW886 TJ992 TZ255 TH66 TT1 TN216 TR90 TM993 UG256 UA380 AE971 GB44 US1 UY598 UZ998 VE58 VN84 YE967 ZM260 ZW263'
@@ -70,7 +70,7 @@
         };
 
         const LOOKS = [
-            ['theme', 'Light or dark', [['light', '☀️ Light'], ['dark', '🌙 Dark'], ['auto', '🌓 Follow the phone']]],
+            ['theme', 'Light or dark', [['light', `${OwlIcon('sun')} Light`], ['dark', `${OwlIcon('moon')} Dark`], ['auto', `${OwlIcon('phone')} Follow the phone`]]],
             ['corners', 'Corners', [['rounded', 'Rounded'], ['soft', 'Soft'], ['square', 'Square']]],
             ['font', 'Font', [['modern', 'Modern'], ['classic', 'Classic'], ['condensed', 'Condensed'], ['plain', 'Plain']]],
             ['nav', 'Bottom bar', [['floating', 'Floating'], ['classic', 'Classic']]],
@@ -88,8 +88,8 @@
                 title: 'What kind of business is it?', sub: 'We’ll start you with pages made for it — you can change everything.',
                 draw: () => {
                     const keep = B.current() || applied || kind === 'keep' || B.hasContent();
-                    return `<div class="wz-grid wz-grid--types">${keep ? `<button type="button" class="wz-card" data-kind="keep" aria-pressed="${kind === 'keep'}"><span class="wz-card__em">✅</span><b>Keep my app</b><small>Update what’s there</small></button>` : ''}
-                        ${B.templates.map((t, i) => `<button type="button" class="wz-card" data-kind="${t.id}" aria-pressed="${kind === t.id}" style="--i:${i + (keep ? 1 : 0)}"><span class="wz-card__em">${EMOJI[t.id] || '📱'}</span><b>${esc(t.name)}</b><small>${esc(t.note)}</small></button>`).join('')}</div>`;
+                    return `<div class="wz-grid wz-grid--types">${keep ? `<button type="button" class="wz-card" data-kind="keep" aria-pressed="${kind === 'keep'}"><span class="wz-card__em">${OwlIcon('check')}</span><b>Keep my app</b><small>Update what’s there</small></button>` : ''}
+                        ${B.templates.map((t, i) => `<button type="button" class="wz-card" data-kind="${t.id}" aria-pressed="${kind === t.id}" style="--i:${i + (keep ? 1 : 0)}"><span class="wz-card__em">${OwlIcon(TYPE_ICON[t.id] || 'phone')}</span><b>${esc(t.name)}</b><small>${esc(t.note)}</small></button>`).join('')}</div>`;
                 },
                 ok: () => (kind ? '' : 'Pick the closest one — you can change everything later.'),
                 leave: async () => { if (kind && kind !== 'keep' && kind !== applied) { await B.useTemplate(kind); applied = kind; drop = new Set(); } },
@@ -101,7 +101,7 @@
                         <div class="wz-icon__ctl"><b>Icon</b>
                             <div class="wz-chips"><button type="button" data-wz-imode="letter" aria-pressed="${B.state().icon.mode !== 'image'}">Letters</button><button type="button" data-wz-imode="image" aria-pressed="${B.state().icon.mode === 'image'}">My logo</button></div>
                             <label class="wz-field" data-wz-letters ${B.state().icon.mode === 'image' ? 'hidden' : ''}>Letters<input data-wz="letter" maxlength="2" value="${esc(B.state().icon.letter)}" placeholder="${esc((A().name || 'A').trim().charAt(0).toUpperCase())}"></label>
-                            <label class="wz-upload" data-wz-logo ${B.state().icon.mode === 'image' ? '' : 'hidden'}><input type="file" accept="image/png,image/jpeg,image/webp" data-wz-file class="sr-only"><span>⬆️ ${B.state().icon.image ? 'Change logo' : 'Upload your logo'}</span><small>Square PNG, JPG or WebP</small></label>
+                            <label class="wz-upload" data-wz-logo ${B.state().icon.mode === 'image' ? '' : 'hidden'}><input type="file" accept="image/png,image/jpeg,image/webp" data-wz-file class="sr-only"><span>${OwlIcon('upload')} ${B.state().icon.image ? 'Change logo' : 'Upload your logo'}</span><small>Square PNG, JPG or WebP</small></label>
                         </div></div>`,
                 ok: () => (A().name.trim() ? '' : 'Please give your app a name.'),
                 after: () => paint(),
@@ -117,19 +117,19 @@
                     const have = new Set(A().tabs.map(t => (t.label || '').trim().toLowerCase())), full = A().tabs.length >= B.maxPages;
                     const more = EXTRA.filter(([label]) => !have.has(label.toLowerCase()));
                     const barFull = A().tabs.filter((t, i) => B.inBar(t, i)).length >= B.maxBar;
-                    return `<p class="wz-hint wz-place-hint">Show each page in the <b>bottom bar</b> (up to ${B.maxBar}), the <b>☰ menu</b>, or both.</p>
+                    return `<p class="wz-hint wz-place-hint">Show each page in the <b>bottom bar</b> (up to ${B.maxBar}), the <b>${OwlIcon('menu')} menu</b>, or both.</p>
                         <div class="wz-pages">${A().tabs.map((t, i) => {
                         const bar = B.inBar(t, i), menu = B.inMenu(t, i);
                         return `<div class="wz-page wz-page--place${i === fresh ? ' is-new' : ''}${drop.has(i) ? ' is-off' : ''}" style="--i:${i === fresh ? 0 : i}">
                             <div class="wz-page__main" title="Show it on the phone"><input type="checkbox" data-wz-page="${i}" ${drop.has(i) ? '' : 'checked'} aria-label="Keep the ${esc(t.label || 'page')} page"><span class="wz-page__ic">${B.svgIcon(t.icon, 'currentColor', 20)}</span><b>${esc(t.label || 'Page')}</b><small>${t.type === 'web' ? 'Website page' : `${(t.blocks || []).length} block${(t.blocks || []).length === 1 ? '' : 's'}`}</small></div>
                             <span class="wz-place" role="group" aria-label="Where ${esc(t.label || 'this page')} shows">
                                 <button type="button" data-wz-place="${i}:bar" aria-pressed="${bar}" ${!bar && barFull ? 'title="The bottom bar is full (5 pages)"' : ''}><i class="wz-place__bar"></i>Bottom bar</button>
-                                <button type="button" data-wz-place="${i}:menu" aria-pressed="${menu}"><i class="wz-place__menu">☰</i>Menu</button>
+                                <button type="button" data-wz-place="${i}:menu" aria-pressed="${menu}"><i class="wz-place__menu">${OwlIcon('menu')}</i>Menu</button>
                             </span></div>`;
                     }).join('')}</div>
                         <div class="wz-add"><b>Add a page</b>${full ? `<p class="wz-hint">You’ve reached ${B.maxPages} pages — the most an app can have.</p>` : `
-                            <div class="wz-chips wz-add__chips">${more.map(([label, , em], i) => `<button type="button" data-wz-add="${i}" style="--i:${i}">${em} ${esc(label)}</button>`).join('')}</div>
-                            <div class="wz-add__own"><input data-wz-own maxlength="20" placeholder="Or name your own page, e.g. Our team" aria-label="Name of a new page"><button type="button" class="btn btn--sm btn--ghost" data-wz-own-add>＋ Add</button></div>`}</div>`;
+                            <div class="wz-chips wz-add__chips">${more.map(([label, , em], i) => `<button type="button" data-wz-add="${i}" style="--i:${i}">${OwlIcon(em)} ${esc(label)}</button>`).join('')}</div>
+                            <div class="wz-add__own"><input data-wz-own maxlength="20" placeholder="Or name your own page, e.g. Our team" aria-label="Name of a new page"><button type="button" class="btn btn--sm btn--ghost" data-wz-own-add>${OwlIcon('plus')} Add</button></div>`}</div>`;
                 },
                 ok: () => (drop.size >= A().tabs.length ? 'Keep at least one page.' : ''),
                 leave: () => { if (drop.size) { B.removePages([...drop]); drop = new Set(); B.changed(); } },
@@ -157,8 +157,8 @@
                 skip: () => !sells(),
                 draw: () => {
                     const p = A().shop.pay;
-                    return `<div class="wz-pays">${[['cash', '💵', 'Cash on delivery or collection'], ['card', '💳', 'Card on delivery or collection'], ['bank', '🏦', 'Bank transfer'], ['online', '⚡', 'Pay now by card online (Stripe)']]
-                        .map(([k, em, l], i) => `<label class="wz-page" style="--i:${i}"><input type="checkbox" data-wz-pay="${k}" ${p[k] ? 'checked' : ''}><span class="wz-page__ic">${em}</span><b>${l}</b></label>`).join('')}</div>
+                    return `<div class="wz-pays">${[['cash', 'cash', 'Cash on delivery or collection'], ['card', 'card', 'Card on delivery or collection'], ['bank', 'bank', 'Bank transfer'], ['online', 'bolt', 'Pay now by card online (Stripe)']]
+                        .map(([k, em, l], i) => `<label class="wz-page" style="--i:${i}"><input type="checkbox" data-wz-pay="${k}" ${p[k] ? 'checked' : ''}><span class="wz-page__ic">${OwlIcon(em)}</span><b>${l}</b></label>`).join('')}</div>
                         <label class="wz-field" data-wz-bank ${p.bank ? '' : 'hidden'}>Your bank details<textarea data-wz="bank_details" rows="2" maxlength="300" placeholder="Account name, IBAN or account number, bank">${esc(p.bank_details)}</textarea></label>`;
                 },
                 ok: () => (A().shop.pay.bank && !A().shop.pay.bank_details.trim() ? 'Add your bank details, or untick bank transfer.' : ''),
@@ -179,11 +179,11 @@
             box.innerHTML = `<div class="wz__shade" data-wz-close></div>
                 <div class="wz__panel">
                     <div class="wz__main">
-                        <div class="wz__top"><span class="wz__brand">✨ Quick setup</span><span class="wz__count" data-wz-count></span><button type="button" class="wz__x" data-wz-close aria-label="Close">✕</button></div>
+                        <div class="wz__top"><span class="wz__brand">${OwlIcon('sparkle')} Quick setup</span><span class="wz__count" data-wz-count></span><button type="button" class="wz__x" data-wz-close aria-label="Close">${OwlIcon('close')}</button></div>
                         <div class="wz__bar"><i data-wz-bar></i></div>
                         <div class="wz__step" data-wz-step aria-live="polite"></div>
                         <p class="wz__err" data-wz-err role="alert" hidden></p>
-                        <div class="wz__nav"><button type="button" class="btn btn--ghost" data-wz-back>← Back</button><button type="button" class="btn btn--glow" data-wz-next>Next →</button></div>
+                        <div class="wz__nav"><button type="button" class="btn btn--ghost" data-wz-back>${OwlIcon('arrow-left')} Back</button><button type="button" class="btn btn--glow" data-wz-next>Next ${OwlIcon('arrow-right')}</button></div>
                     </div>
                     <div class="wz__side" data-wz-side></div>
                 </div>`;
@@ -230,7 +230,7 @@
             el.innerHTML = `<div class="wz__in ${dir < 0 ? 'from-left' : dir > 0 ? 'from-right' : 'is-same'}"><h2 id="wz-title">${s.title}</h2><p class="wz__sub">${s.sub}</p>${s.draw()}</div>`;
             $('[data-wz-err]', box).hidden = true;
             $('[data-wz-back]', box).style.visibility = step ? 'visible' : 'hidden';
-            $('[data-wz-next]', box).textContent = step === steps.length - 1 ? 'Finish ✨' : 'Next →';
+            $('[data-wz-next]', box).innerHTML = step === steps.length - 1 ? `Finish ${OwlIcon('sparkle')}` : `Next ${OwlIcon('arrow-right')}`;
             s.after?.();
             if (dir) setTimeout(() => el.querySelector('input:not([type=checkbox]):not([type=color]), [aria-pressed="true"], button')?.focus({ preventScroll: true }), still() ? 0 : 280);
         };
@@ -251,7 +251,7 @@
             try { localStorage.setItem(OFF, '1'); localStorage.setItem(OFF + '-made', '1'); } catch {} // they've made their app: from now on the page opens on the builder
             const tasks = ['Laying out your pages', 'Painting your colours', 'Drawing your icon', 'Polishing the animations'];
             // the step counter becomes a "Done" button that closes the wizard (like ✕ or Keep editing)
-            $('[data-wz-count]', box).innerHTML = '<button type="button" class="wz__done" data-wz-close>✓ Done</button>';
+            $('[data-wz-count]', box).innerHTML = `<button type="button" class="wz__done" data-wz-close>${OwlIcon('tick')} Done</button>`;
             $('[data-wz-bar]', box).style.width = '100%';
             $('.wz__nav', box).hidden = true;
             const el = $('[data-wz-step]', box);
@@ -263,12 +263,12 @@
                 B.showPage(0); B.showApp(); bump(); // the app opens on its first screen (Home), like on a phone
                 box.classList.add('is-done');
                 el.innerHTML = `<div class="wz__in from-right wz-done">${still() ? '' : '<div class="wz-confetti" aria-hidden="true">' + Array.from({ length: 18 }, (_, i) => `<i style="--i:${i}"></i>`).join('') + '</div>'}
-                    <div class="wz-done__badge" aria-hidden="true">🎉</div>
+                    <div class="wz-done__badge" aria-hidden="true">${OwlIcon('party')}</div>
                     <h2 id="wz-title">Your app is ready to try</h2>
                     <p class="wz__sub">Tap around the phone preview — pages, buttons and the menu all work. Save it to keep it, then build it for Android when you’re happy.</p>
                     <div class="wz-done__actions">
-                        <button type="button" class="btn btn--glow" data-wz-save>💾 Save my app</button>
-                        <button type="button" class="btn btn--ghost" data-wz-edit>✏️ Keep editing</button>
+                        <button type="button" class="btn btn--glow" data-wz-save>${OwlIcon('save')} Save my app</button>
+                        <button type="button" class="btn btn--ghost" data-wz-edit>${OwlIcon('pen')} Keep editing</button>
                         <button type="button" class="ab-link" data-wz-again>Run quick setup again</button>
                     </div></div>`;
                 $('[data-wz-save]', box).focus({ preventScroll: true });
@@ -345,7 +345,7 @@
         document.addEventListener('change', async e => {
             if (!box || !e.target.matches?.('[data-wz-file]')) return;
             await B.setLogo(e.target.files[0]); paint(); bump();
-            const s = e.target.closest('label')?.querySelector('span'); if (s) s.textContent = '⬆️ Change logo';
+            const s = e.target.closest('label')?.querySelector('span'); if (s) s.innerHTML = `${OwlIcon('upload')} Change logo`;
         });
         document.addEventListener('keydown', e => {
             if (!box) return;
@@ -381,7 +381,7 @@
             else if (e.target.closest('[data-wzb-no]')) { try { localStorage.setItem(OFF, '1'); if (banner.classList.contains('wzb--back')) sessionStorage.setItem(OFF + '-back', '1'); } catch {} hideBanner(); setTimeout(() => root.scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }), 60); }
         });
         const actions = root.querySelector('.fb-top__actions');
-        if (actions && !actions.querySelector('[data-wz-open]')) actions.insertAdjacentHTML('afterbegin', '<button type="button" class="btn btn--sm btn--ghost wz-open" data-wz-open>✨ Quick setup</button>');
+        if (actions && !actions.querySelector('[data-wz-open]')) actions.insertAdjacentHTML('afterbegin', `<button type="button" class="btn btn--sm btn--ghost wz-open" data-wz-open>${OwlIcon('sparkle')} Quick setup</button>`);
         root.addEventListener('click', e => { if (e.target.closest('[data-wz-open]')) open(); });
         // a new app starts with the wizard, from the first question
         document.addEventListener('owl-app-new', () => { if (box) return; applied = null; open(); kind = null; draw(0); });
@@ -400,7 +400,7 @@
             const tint = setInterval(() => { if (!live()) { clearInterval(tint); return; } c = (c + 1) % colours.length; banner.style.setProperty('--wc', colours[c]); }, 6000);
             const lines = banner.classList.contains('wzb--back')
                 ? ['Hoo! Welcome back — your app is right where you left it.', 'Press Resume to carry on in the editor.', 'Want a fresh start? The quick setup is right here too.']
-                : ['Hoo! Want your own app? I’ll help you make it — it takes about 2 minutes.', 'Pick your kind of business and I’ll set up the pages for you.', 'You’ll see your app on the phone as you go. Ready? 🚀'];
+                : ['Hoo! Want your own app? I’ll help you make it — it takes about 2 minutes.', 'Pick your kind of business and I’ll set up the pages for you.', 'You’ll see your app on the phone as you go. Ready?'];
             let n = 0; const say = banner.querySelector('[data-wzb-say]');
             const timer = setInterval(() => {
                 if (!live() || !say) { clearInterval(timer); return; }
@@ -425,10 +425,10 @@
             banner.querySelector('.wzb__steps')?.setAttribute('hidden', '');
             const go = banner.querySelector('[data-wz-start]');
             if (go) {
-                go.insertAdjacentHTML('beforebegin', `<a class="btn btn--glow wzb__go" href="${esc(editorUrl)}" data-wz-resume>▶ Resume my app</a>`);
-                go.className = 'btn btn--ghost wzb__again'; go.textContent = '✨ Quick setup again';
+                go.insertAdjacentHTML('beforebegin', `<a class="btn btn--glow wzb__go" href="${esc(editorUrl)}" data-wz-resume>${OwlIcon('play')} Resume my app</a>`);
+                go.className = 'btn btn--ghost wzb__again'; go.innerHTML = `${OwlIcon('sparkle')} Quick setup again`;
             }
-            const no = banner.querySelector('[data-wzb-no]'); if (no) no.textContent = 'or edit it here on this page →';
+            const no = banner.querySelector('[data-wzb-no]'); if (no) no.innerHTML = `or edit it here on this page ${OwlIcon('arrow-right')}`;
             const say = banner.querySelector('[data-wzb-say]'); if (say) say.textContent = 'Hoo! Welcome back — your app is right where you left it.';
             showBanner();
         } else if (banner && !off && !B.state().id) showBanner();

@@ -20,7 +20,14 @@
     const BLOCK_ICONS = { heading: 'M6 4v16M18 4v16M6 12h12', text: 'M4 6h16M4 10h16M4 14h16M4 18h10', button: 'M3 8.5A2.5 2.5 0 0 1 5.5 6h13A2.5 2.5 0 0 1 21 8.5v7a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 15.5zM8 12h8', divider: 'M3 12h18M7 7h10M7 17h10', list: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01', gallery: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
         slider: 'M6 6h12v10H6zM2.5 8v6M21.5 8v6M10 20h.01M12 20h.01M14 20h.01', cards: 'M3 5h8v6H3zM13 5h8v6h-8zM3 13h8v6H3zM13 13h8v6h-8z', faq: 'M9.1 9a3 3 0 1 1 4.2 2.7c-.8.4-1.3 1.2-1.3 2.1v.2M12 18h.01M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z',
         social: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4', notice: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', spacer: 'M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4' };
-    const svgIcon = (name, color, size = 22) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[name] || BLOCK_ICONS[name] || ICONS.home}"/></svg>`;
+    // The app's icon names drawn with our icon set (window.OwlIcon), as the phone app draws them (app-shell/icons.js)
+    const OWL_NAMES = { phone: 'call', location: 'pin' };
+    const svgIcon = (name, color, size = 22) => {
+        const own = !ICONS[name] && BLOCK_ICONS[name] ? '' : window.OwlIcon?.paths(OWL_NAMES[name] || (ICONS[name] ? name : 'home'));
+        return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" style="color:${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${own || `<path d="${BLOCK_ICONS[name] || ICONS[name] || ICONS.home}"/>`}</svg>`;
+    };
+    // The phone mock-up's status bar: signal bars and a battery
+    const PH_SYS = '<svg viewBox="0 0 30 12" width="2.5em" height="1em" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="2.5" height="4" rx=".6"/><rect x="4" y="5.5" width="2.5" height="6.5" rx=".6"/><rect x="8" y="3" width="2.5" height="9" rx=".6"/><rect x="15" y="2" width="12" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="16.8" y="3.8" width="7" height="5.4" rx=".8"/><rect x="27.6" y="4.8" width="1.6" height="3.4" rx=".6"/></svg>';
     const STORE = 'owlvix-app-builder';
     const MAX_TABS = 15, MAX_BAR = 5, MAX_BLOCKS = 40, MAX_PENDING = 9e6; // MAX_PENDING: new pictures (as text) before a save is needed
 
@@ -190,9 +197,9 @@
         const bar = $('[data-langbar]'); if (!bar) return;
         const codes = [A().lang, ...Object.keys(A().translations)];
         bar.innerHTML = `<div class="ab-langbar__row"><span>Languages:</span>${codes.map(c => `<button type="button" data-lang="${c}" aria-pressed="${c === D.editLang}">${esc(LANGS[c] || c)}${c === A().lang ? ' <small>(main)</small>' : ''}</button>`).join('')}
-            ${codes.length < 5 ? `<select data-lang-add aria-label="Add a language"><option value="">＋ Add language</option>${Object.entries(LANGS).filter(([c]) => !codes.includes(c)).map(([c, n]) => `<option value="${c}">${esc(n)}</option>`).join('')}</select>` : ''}</div>
+            ${codes.length < 5 ? `<select data-lang-add aria-label="Add a language"><option value="">Add language</option>${Object.entries(LANGS).filter(([c]) => !codes.includes(c)).map(([c, n]) => `<option value="${c}">${esc(n)}</option>`).join('')}</select>` : ''}</div>
             ${D.editLang !== A().lang ? `<p class="fb-hint">Editing the <b>${esc(LANGS[D.editLang])}</b> pages — translate the words here. Adding, moving or removing a page changes every language; blocks, pictures and prices are set per language, so add new blocks in each one. <button type="button" class="ab-link" data-lang-del="${D.editLang}">Remove this language</button></p>`
-                : `<p class="fb-hint">Main language <select data-lang-main aria-label="Main language">${Object.entries(LANGS).filter(([c]) => c === A().lang || !codes.includes(c)).map(([c, n]) => `<option value="${c}" ${c === A().lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select> — the app opens in the phone’s language when you’ve added it, and people can switch in the ☰ menu. Orders and bookings reach you in the main language.</p>`}`;
+                : `<p class="fb-hint">Main language <select data-lang-main aria-label="Main language">${Object.entries(LANGS).filter(([c]) => c === A().lang || !codes.includes(c)).map(([c, n]) => `<option value="${c}" ${c === A().lang ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select> — the app opens in the phone’s language when you’ve added it, and people can switch in the ${OwlIcon('menu')} menu. Orders and bookings reach you in the main language.</p>`}`;
     };
     const eachImage = fn => allTabs().forEach(t => (t.blocks || []).forEach(b => {
         if (b.image) fn(b.image); if (b.items) b.items.forEach(i => i.image && fn(i.image)); if (b.images) b.images.forEach(fn);
@@ -359,7 +366,7 @@
     /* ------------------------------------------------ preview: the app's native look (app-shell/blocks.js) */
     const pv = {
         tap: (a, html, cls = '') => { const t = a?.kind && (a.kind === 'tab' || String(a.value ?? '').trim()) ? a : null; return t ? `<button type="button" class="ab-n-tap ${cls}" data-pact="${esc(JSON.stringify(t))}">${html}</button>` : `<div class="${cls}">${html}</div>`; },
-        chev: '<i class="ab-n-chev" aria-hidden="true">›</i>',
+        chev: `<i class="ab-n-chev" aria-hidden="true">${OwlIcon('chevron-right')}</i>`,
     };
     const blockHtml = (b, c, bi = -1) => {
         const on = ink(c.primary);
@@ -389,7 +396,7 @@
                 const rows = (b.rows || []).filter(r => r.day || r.time);
                 return rows.length ? `<div class="ab-n-pad">${b.title ? `<h5 class="ab-n-ct">${esc(b.title)}</h5>` : ''}<div class="ab-n-card">${rows.map(r => `<div class="ab-n-row"><span class="ab-n-rb"><b>${esc(r.day)}</b></span><small>${esc(r.time)}</small></div>`).join('')}</div></div>` : '';
             }
-            case 'video': { const id = youtubeId(b.url); return id ? `<div class="ab-n-pad"><div class="ab-n-vid" style="background-image:url('https://i.ytimg.com/vi/${id}/hqdefault.jpg')"><span>▶</span></div>${b.title ? `<p class="ab-n-cap">${esc(b.title)}</p>` : ''}</div>` : ''; }
+            case 'video': { const id = youtubeId(b.url); return id ? `<div class="ab-n-pad"><div class="ab-n-vid" style="background-image:url('https://i.ytimg.com/vi/${id}/hqdefault.jpg')"><span>${OwlIcon('play')}</span></div>${b.title ? `<p class="ab-n-cap">${esc(b.title)}</p>` : ''}</div>` : ''; }
             case 'divider': return '<hr class="ab-n-hr">';
             case 'slider': return b.images?.length ? `<div class="ab-n-pad"><div class="ab-n-slide"><img src="${esc(imgSrc(b.images[0]))}" alt=""></div>${b.images.length > 1 ? `<div class="ab-n-dots">${b.images.map((_, i) => `<i${i ? '' : ` style="background:${c.primary};width:14px"`}></i>`).join('')}</div>` : ''}</div>` : '';
             case 'cards': {
@@ -400,7 +407,7 @@
             case 'reviews': {
                 const items = (b.items || []).filter(i => i.text);
                 return items.length ? `<div class="ab-n-revs">${b.title ? `<h5 class="ab-n-ct">${esc(b.title)}</h5>` : ''}<div class="ab-n-revrow">${items.map(i =>
-                    `<div class="ab-n-rev"><span class="ab-n-stars">${'★'.repeat(i.stars || 5)}<u>${'★'.repeat(5 - (i.stars || 5))}</u></span><p>“${esc(i.text)}”</p>${i.name ? `<small>— ${esc(i.name)}</small>` : ''}</div>`).join('')}</div></div>` : '';
+                    `<div class="ab-n-rev"><span class="ab-n-stars" aria-label="${i.stars || 5} out of 5">${OwlIcon('star-solid').repeat(i.stars || 5)}<u>${OwlIcon('star-solid').repeat(5 - (i.stars || 5))}</u></span><p>“${esc(i.text)}”</p>${i.name ? `<small>— ${esc(i.name)}</small>` : ''}</div>`).join('')}</div></div>` : '';
             }
             case 'faq': {
                 const items = (b.items || []).filter(i => i.q);
@@ -506,22 +513,22 @@
         const a = A(), st = a.style || {}, dark = st.theme === 'dark' || (st.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
         const c = dark && !isDark(a.colors.bar) ? { ...a.colors, bar: '#111827' } : a.colors, phone = $('[data-phone]'), tabs = a.tabs;
         const time = '9:41', barInk = ink(c.bar), muted = isDark(c.bar) ? 'rgba(255,255,255,.6)' : 'rgba(15,23,42,.5)';
-        const status = `<div class="ab-ph__status" style="background:${c.bar};color:${barInk}"><span>${time}</span><span class="ab-ph__sys">▮▮▮ ◔ ▭</span></div>`;
+        const status = `<div class="ab-ph__status" style="background:${c.bar};color:${barInk}"><span>${time}</span><span class="ab-ph__sys">${PH_SYS}</span></div>`;
         if (view === 'splash') {
             const intro = D.splash.bg === 'image' && D.splash.bgImage ? `<img src="${esc(D.splash.bgImage)}" alt="">`
                 : D.splash.bg === 'video' && bgVideo ? `<video src="${esc(bgVideo.url)}" autoplay muted loop playsinline></video>`
-                : D.splash.bg === 'video' && D.splash.hasVideo ? '<span class="ab-ph__vid">▶ Your video plays here</span>' : '';
+                : D.splash.bg === 'video' && D.splash.hasVideo ? `<span class="ab-ph__vid">${OwlIcon('play')} Your video plays here</span>` : '';
             if (intro && previewIntro) {
-                phone.innerHTML = `<div class="ab-ph__screen ab-ph__intro">${intro}<span class="ab-ph__skip">Skip</span><button type="button" class="ab-ph__step" data-pintro>← Splash</button></div>`;
+                phone.innerHTML = `<div class="ab-ph__screen ab-ph__intro">${intro}<span class="ab-ph__skip">Skip</span><button type="button" class="ab-ph__step" data-pintro>${OwlIcon('arrow-left')} Splash</button></div>`;
                 paintIcon($('[data-icon-prev]'));
                 return;
             }
             const px = Math.round(SPLASH_DP[D.splash.size] * 0.75), dpr = Math.min(3, window.devicePixelRatio || 1);
-            phone.innerHTML = `<div class="ab-ph__screen ab-ph__splash" style="background:${c.splash}"><canvas width="${px * dpr}" height="${px * dpr}" style="width:${px}px;height:${px}px" data-splash-icon></canvas>${intro ? '<button type="button" class="ab-ph__step" data-pintro>Then: intro →</button>' : ''}</div>`;
+            phone.innerHTML = `<div class="ab-ph__screen ab-ph__splash" style="background:${c.splash}"><canvas width="${px * dpr}" height="${px * dpr}" style="width:${px}px;height:${px}px" data-splash-icon></canvas>${intro ? `<button type="button" class="ab-ph__step" data-pintro>Then: intro ${OwlIcon('arrow-right')}</button>` : ''}</div>`;
             $('[data-splash-icon]', phone).getContext('2d').drawImage(drawSplash(px * dpr), 0, 0);
         } else if (view === 'home') {
             const others = ['#60a5fa', '#f472b6', '#facc15', '#34d399', '#a78bfa', '#fb923c', '#f87171'];
-            phone.innerHTML = `<div class="ab-ph__screen ab-ph__home"><div class="ab-ph__status" style="color:#fff;background:transparent"><span>${time}</span><span class="ab-ph__sys">▮▮▮ ◔ ▭</span></div>
+            phone.innerHTML = `<div class="ab-ph__screen ab-ph__home"><div class="ab-ph__status" style="color:#fff;background:transparent"><span>${time}</span><span class="ab-ph__sys">${PH_SYS}</span></div>
                 <div class="ab-ph__grid">${others.map(o => `<div><i style="background:${o}"></i><span></span></div>`).join('')}<div class="is-ours"><canvas width="56" height="56" data-home-icon></canvas><b>${esc(a.name || 'Your app')}</b></div></div></div>`;
             paintIcon($('[data-home-icon]', phone), 0.5); // Android launchers usually show a circle
         } else {
@@ -562,11 +569,11 @@
             <select data-t="icon" data-i="${i}" aria-label="Tab ${i + 1} icon">${Object.keys(ICONS).map(k => `<option value="${k}" ${t.icon === k ? 'selected' : ''}>${ICON_NAMES[k] || k}</option>`).join('')}</select>
             <span class="ab-tab__ic" aria-hidden="true">${svgIcon(t.icon, 'currentColor')}</span>
             <input data-t="label" data-i="${i}" data-v="pagename" maxlength="24" value="${esc(t.label)}" placeholder="Name" aria-label="Page ${i + 1} name">
-            <span class="fb-q__tools"><button type="button" data-tmove="-1" data-i="${i}" title="Move this page earlier in the app’s menu" ${i ? '' : 'disabled'}>↑</button><button type="button" data-tmove="1" data-i="${i}" title="Move this page later in the app’s menu" ${i < tabs.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-tdel="${i}" title="Remove this page from the app" class="fb-del" ${tabs.length > 1 ? '' : 'disabled'}>✕</button></span>
+            <span class="fb-q__tools"><button type="button" data-tmove="-1" data-i="${i}" title="Move this page earlier in the app’s menu" ${i ? '' : 'disabled'}>${OwlIcon('arrow-up')}</button><button type="button" data-tmove="1" data-i="${i}" title="Move this page later in the app’s menu" ${i < tabs.length - 1 ? '' : 'disabled'}>${OwlIcon('arrow-down')}</button><button type="button" data-tdel="${i}" title="Remove this page from the app" class="fb-del" ${tabs.length > 1 ? '' : 'disabled'}>${OwlIcon('close')}</button></span>
             <div class="ab-tab__kind">
                 <div class="ab-tab__where"><span>Show in:</span>
                     <label class="fb-check"><input type="checkbox" data-t="bar" data-i="${i}" ${inBar(t, i) ? 'checked' : ''}> Bottom bar</label>
-                    <label class="fb-check"><input type="checkbox" data-t="menu" data-i="${i}" ${inMenu(t, i) ? 'checked' : ''}> ☰ Menu</label></div>
+                    <label class="fb-check"><input type="checkbox" data-t="menu" data-i="${i}" ${inMenu(t, i) ? 'checked' : ''}> ${OwlIcon('menu')} Menu</label></div>
                 <select data-t="type" data-i="${i}" aria-label="Page ${i + 1} shows"><option value="screen" ${t.type !== 'web' ? 'selected' : ''}>App screen (native)</option><option value="web" ${t.type === 'web' ? 'selected' : ''}>A page of my website</option></select>
                 ${t.type === 'web' ? `<div class="ab-tab__path"><span title="${esc(base)}">${esc(base.replace(/^https:\/\//, ''))}</span><input data-t="path" data-i="${i}" maxlength="200" value="${esc(t.path)}" placeholder="(home page)" aria-label="Tab ${i + 1} page" spellcheck="false" autocapitalize="off"></div>` : ''}
             </div>
@@ -585,7 +592,7 @@
     };
     const imageField = (label, path, img) => `<div class="ab-imgf"><span>${label}</span>${img
         ? `<img src="${esc(imgSrc(img))}" alt=""><span class="ab-imgf__tools"><button type="button" class="btn btn--sm btn--ghost" data-pick="${path}">Change</button><button type="button" class="btn btn--sm btn--ghost" data-unimg="${path}">Remove</button></span>`
-        : `<button type="button" class="btn btn--sm btn--ghost" data-pick="${path}">＋ Add picture</button>`}</div>`;
+        : `<button type="button" class="btn btn--sm btn--ghost" data-pick="${path}">${OwlIcon('plus')} Add picture</button>`}</div>`;
     const actionField = (label, path, a) => {
         a = a || { kind: '', value: '' };
         const tabs = A().tabs;
@@ -598,11 +605,11 @@
     /** Rows of a block (list, cards, reviews, FAQ) with move/remove, and an "add" button. */
     const items = (b, label, body) => {
         const n = (b.items || []).length;
-        return `<div class="ab-items">${(b.items || []).map((it, i) => `<div class="ab-item"><div class="ab-item__head"><b>${label} ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move this item up the list" ${i ? '' : 'disabled'}>↑</button><button type="button" data-imove="1" data-ii="${i}" title="Move this item down the list" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-idel="${i}" title="Remove this item" class="fb-del">✕</button></span></div>${body(it, i)}</div>`).join('')}</div>
-            <button type="button" class="btn btn--sm btn--ghost" data-iadd ${n >= MAX_ITEMS[b.type] ? 'disabled' : ''}>＋ Add ${label.toLowerCase()}</button>`;
+        return `<div class="ab-items">${(b.items || []).map((it, i) => `<div class="ab-item"><div class="ab-item__head"><b>${label} ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move this item up the list" ${i ? '' : 'disabled'}>${OwlIcon('arrow-up')}</button><button type="button" data-imove="1" data-ii="${i}" title="Move this item down the list" ${i < n - 1 ? '' : 'disabled'}>${OwlIcon('arrow-down')}</button><button type="button" data-idel="${i}" title="Remove this item" class="fb-del">${OwlIcon('close')}</button></span></div>${body(it, i)}</div>`).join('')}</div>
+            <button type="button" class="btn btn--sm btn--ghost" data-iadd ${n >= MAX_ITEMS[b.type] ? 'disabled' : ''}>${OwlIcon('plus')} Add ${label.toLowerCase()}</button>`;
     };
-    const pics = (b, type) => `<div class="ab-gal">${(b.images || []).map((img, i) => `<span><img src="${esc(imgSrc(img))}" alt=""><button type="button" data-gdel="${i}" aria-label="Remove picture ${i + 1}">✕</button></span>`).join('')}</div>
-        <button type="button" class="btn btn--sm btn--ghost" data-pick="images" ${(b.images || []).length >= MAX_PICS[type] ? 'disabled' : ''}>＋ Add pictures</button>`;
+    const pics = (b, type) => `<div class="ab-gal">${(b.images || []).map((img, i) => `<span><img src="${esc(imgSrc(img))}" alt=""><button type="button" data-gdel="${i}" aria-label="Remove picture ${i + 1}">${OwlIcon('close')}</button></span>`).join('')}</div>
+        <button type="button" class="btn btn--sm btn--ghost" data-pick="images" ${(b.images || []).length >= MAX_PICS[type] ? 'disabled' : ''}>${OwlIcon('plus')} Add pictures</button>`;
     const blockFields = b => {
         switch (b.type) {
             case 'hero': return field('Title', 'title', b.title, { max: 80 }) + field('Text', 'text', b.text, { max: 300, area: true, rows: 2 }) + imageField('Background picture', 'image', b.image)
@@ -615,11 +622,11 @@
             case 'button': return field('Label', 'label', b.label, { max: 40 }) + actionField('Tapping it', 'action', b.action)
                 + `<label>Style<select data-f="style"><option value="solid" ${b.style !== 'outline' ? 'selected' : ''}>Filled</option><option value="outline" ${b.style === 'outline' ? 'selected' : ''}>Outline</option></select></label>`;
             case 'list': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + `<div class="ab-items">${(b.items || []).map((it, i) => `<div class="ab-item">
-                    <div class="ab-item__head"><b>Item ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move this item up the list" ${i ? '' : 'disabled'}>↑</button><button type="button" data-imove="1" data-ii="${i}" title="Move this item down the list" ${i < b.items.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-idel="${i}" title="Remove this item" class="fb-del">✕</button></span></div>
+                    <div class="ab-item__head"><b>Item ${i + 1}</b><span class="fb-q__tools"><button type="button" data-imove="-1" data-ii="${i}" title="Move this item up the list" ${i ? '' : 'disabled'}>${OwlIcon('arrow-up')}</button><button type="button" data-imove="1" data-ii="${i}" title="Move this item down the list" ${i < b.items.length - 1 ? '' : 'disabled'}>${OwlIcon('arrow-down')}</button><button type="button" data-idel="${i}" title="Remove this item" class="fb-del">${OwlIcon('close')}</button></span></div>
                     <div class="fb-2">${field('Name', `items.${i}.title`, it.title, { max: 80 })}${field('Price <small>— optional</small>', `items.${i}.price`, it.price, { max: 20, ph: '$10' })}</div>
                     ${field('Description <small>— optional</small>', `items.${i}.text`, it.text, { max: 400, area: true, rows: 2 })}
                     ${imageField('Picture <small>— optional</small>', `items.${i}.image`, it.image)}${actionField('Tapping it', `items.${i}.action`, it.action)}</div>`).join('')}</div>
-                <button type="button" class="btn btn--sm btn--ghost" data-iadd ${(b.items || []).length >= 50 ? 'disabled' : ''}>＋ Add item</button>`;
+                <button type="button" class="btn btn--sm btn--ghost" data-iadd ${(b.items || []).length >= 50 ? 'disabled' : ''}>${OwlIcon('plus')} Add item</button>`;
             case 'gallery': return pics(b, 'gallery') + `
                 <label>Columns<select data-f="columns" data-num><option value="2" ${b.columns !== 3 ? 'selected' : ''}>2</option><option value="3" ${b.columns === 3 ? 'selected' : ''}>3</option></select></label>`;
             case 'contact': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + '<p class="fb-hint">Fill in what you want to show — each line opens the phone’s dialer, WhatsApp, email or maps.</p><div class="fb-2">'
@@ -628,8 +635,8 @@
                 + field('Address', 'address', b.address, { max: 200, area: true, rows: 2 });
             case 'hours': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + `<div class="ab-hours">${(b.rows || []).map((r, i) => `<div class="ab-hours__row">
                     <input data-f="rows.${i}.day" value="${esc(r.day)}" maxlength="30" placeholder="Monday" aria-label="Day"><input data-f="rows.${i}.time" value="${esc(r.time)}" maxlength="60" placeholder="9:00 – 17:00" aria-label="Hours">
-                    <span class="fb-q__tools"><button type="button" data-hdel="${i}" class="fb-del" title="Remove this day’s hours">✕</button></span></div>`).join('')}</div>
-                <button type="button" class="btn btn--sm btn--ghost" data-hadd ${(b.rows || []).length >= 14 ? 'disabled' : ''}>＋ Add row</button>`;
+                    <span class="fb-q__tools"><button type="button" data-hdel="${i}" class="fb-del" title="Remove this day’s hours">${OwlIcon('close')}</button></span></div>`).join('')}</div>
+                <button type="button" class="btn btn--sm btn--ghost" data-hadd ${(b.rows || []).length >= 14 ? 'disabled' : ''}>${OwlIcon('plus')} Add row</button>`;
             case 'video': return field(`YouTube link${youtubeId(b.url) === 'aqz-KE-bpKQ' ? ' <small>— a demo video for now: paste your own link</small>' : ''}`, 'url', b.url, { max: 300, v: 'youtube', type: 'url', ph: 'https://www.youtube.com/watch?v=…' }) + field('Title <small>— optional</small>', 'title', b.title, { max: 120 });
             case 'divider': return '<p class="fb-hint">A thin line between blocks.</p>';
             case 'slider': return `<p class="fb-hint">Pictures people swipe through — best when they're all the same shape.</p>` + pics(b, 'slider');
@@ -639,7 +646,7 @@
                     + field('Text <small>— optional</small>', `items.${i}.text`, it.text, { max: 200, area: true, rows: 2 }) + actionField('Tapping it', `items.${i}.action`, it.action));
             case 'reviews': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
                 + items(b, 'Review', (it, i) => field('What they said', `items.${i}.text`, it.text, { max: 500, area: true, rows: 3 })
-                    + `<div class="fb-2">${field('Name <small>— optional</small>', `items.${i}.name`, it.name, { max: 60 })}<label>Stars<select data-f="items.${i}.stars" data-num>${[5, 4, 3, 2, 1].map(n => `<option value="${n}" ${+it.stars === n ? 'selected' : ''}>${'★'.repeat(n)}</option>`).join('')}</select></label></div>`);
+                    + `<div class="fb-2">${field('Name <small>— optional</small>', `items.${i}.name`, it.name, { max: 60 })}<label>Stars<select data-f="items.${i}.stars" data-num>${[5, 4, 3, 2, 1].map(n => `<option value="${n}" ${+it.stars === n ? 'selected' : ''}>${n} star${n > 1 ? 's' : ''}</option>`).join('')}</select></label></div>`);
             case 'faq': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
                 + items(b, 'Question', (it, i) => field('Question', `items.${i}.q`, it.q, { max: 160 }) + field('Answer', `items.${i}.a`, it.a, { max: 1500, area: true, rows: 3 }));
             case 'social': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 }) + '<p class="fb-hint">Paste the full address of each page you have — leave the rest empty.</p><div class="fb-2">'
@@ -649,22 +656,22 @@
             case 'loyalty': return field('Title', 'title', b.title, { max: 80 })
                 + `<div class="fb-2">${field('Reward', 'reward', b.reward, { max: 60, ph: 'Free coffee' })}<label>Stamps needed<select data-f="stamps" data-num>${[4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => `<option value="${n}" ${+b.stamps === n ? 'selected' : ''}>${n}</option>`).join('')}</select></label></div>`
                 + field('Text <small>— optional</small>', 'text', b.text, { max: 200, ph: 'Get a stamp with every coffee.' })
-                + `<label>Staff PIN <small>— 4 to 8 digits; staff type it on the customer’s phone to add a stamp or give the reward</small><input data-f="pin" data-v="pin"${b.pinHash ? ' data-set="1"' : ''} type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" value="${esc(b.pin || '')}" placeholder="${b.pinHash ? 'Set ✓ — type a new PIN to change it' : 'e.g. 4821'}"></label>
+                + `<label>Staff PIN <small>— 4 to 8 digits; staff type it on the customer’s phone to add a stamp or give the reward</small><input data-f="pin" data-v="pin"${b.pinHash ? ' data-set="1"' : ''} type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" value="${esc(b.pin || '')}" placeholder="${b.pinHash ? 'PIN set — type a new one to change it' : 'e.g. 4821'}"></label>
                     <p class="fb-hint">Stamps are kept on each customer’s phone. Staff type the PIN on it to add a stamp (the phone needs internet; we check the PIN and block guessing). Keep the PIN to your team; change it any time (it takes effect when you save).</p>`;
             case 'booking': {
                 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], order = [1, 2, 3, 4, 5, 6, 0];
                 return field('Title', 'title', b.title, { max: 80 }) + field('Text <small>— optional</small>', 'text', b.text, { max: 300, area: true, rows: 2 })
-                    + `<p class="fb-hint">People pick a service, a day and a time, then send you the request on WhatsApp or by email (set up under “More settings → Orders & bookings”). You confirm it — the app doesn’t know which times are already taken.</p>
+                    + `<p class="fb-hint">People pick a service, a day and a time, then send you the request on WhatsApp or by email (set up under “More settings ${OwlIcon('chevron-right')} Orders & bookings”). You confirm it — the app doesn’t know which times are already taken.</p>
                     <div class="ab-items">${(b.services || []).map((sv, i) => `<div class="ab-hours__row"><input data-f="services.${i}.name" value="${esc(sv.name)}" maxlength="60" placeholder="Service" aria-label="Service ${i + 1}"><input data-f="services.${i}.info" value="${esc(sv.info || '')}" maxlength="40" placeholder="30 min · $25" aria-label="Service ${i + 1} details">
-                        <span class="fb-q__tools"><button type="button" data-svdel="${i}" class="fb-del" title="Remove this service">✕</button></span></div>`).join('')}</div>
-                    <button type="button" class="btn btn--sm btn--ghost" data-svadd ${(b.services || []).length >= 20 ? 'disabled' : ''}>＋ Add service</button>
+                        <span class="fb-q__tools"><button type="button" data-svdel="${i}" class="fb-del" title="Remove this service">${OwlIcon('close')}</button></span></div>`).join('')}</div>
+                    <button type="button" class="btn btn--sm btn--ghost" data-svadd ${(b.services || []).length >= 20 ? 'disabled' : ''}>${OwlIcon('plus')} Add service</button>
                     <div class="ab-field"><span>Open for bookings</span><div class="ab-days">${order.map(d => `<label class="fb-check"><input type="checkbox" data-bday="${d}" ${(b.days || []).includes(d) ? 'checked' : ''}> ${DAYS[d]}</label>`).join('')}</div></div>
                     <div class="fb-2"><label>First appointment<input type="time" data-f="from" value="${esc(b.from)}" step="900"></label><label>Last one ends by<input type="time" data-f="to" data-v="until" value="${esc(b.to)}" step="900"></label>
                     <label>Each appointment<select data-f="slot" data-num>${[15, 20, 30, 45, 60, 90, 120].map(m => `<option value="${m}" ${+b.slot === m ? 'selected' : ''}>${m < 60 ? m + ' minutes' : m / 60 + (m === 60 ? ' hour' : ' hours')}</option>`).join('')}</select></label>
                     <label>Book up to<select data-f="ahead" data-num>${[7, 14, 30, 60, 90].map(n => `<option value="${n}" ${+b.ahead === n ? 'selected' : ''}>${n} days ahead</option>`).join('')}</select></label></div>`;
             }
             case 'products': return field('Title <small>— optional</small>', 'title', b.title, { max: 80 })
-                + `<p class="fb-hint">People tap a product, choose how many and send you the order on WhatsApp or by email (set up under “More settings → Orders & bookings”).</p>`
+                + `<p class="fb-hint">People tap a product, choose how many and send you the order on WhatsApp or by email (set up under “More settings ${OwlIcon('chevron-right')} Orders & bookings”).</p>`
                 + items(b, 'Product', (it, i) => `<div class="fb-2">${field('Name', `items.${i}.name`, it.name, { max: 80 })}${field(`Price <small>— ${esc(A().shop?.currency || '$')}, empty = “Ask us”</small>`, `items.${i}.price`, it.price, { max: 12, mode: 'decimal', ph: '9.50', v: 'price' })}</div>`
                     + field('Category <small>— optional, e.g. Drinks</small>', `items.${i}.category`, it.category, { max: 40 })
                     + field('Description <small>— optional</small>', `items.${i}.text`, it.text, { max: 400, area: true, rows: 2 })
@@ -691,7 +698,7 @@
         const blocks = t.blocks;
         box.innerHTML = blocks.length ? blocks.map((b, i) => `<details class="ab-blk" data-b="${i}" ${openBlocks.has(b) ? 'open' : ''}>
             <summary><span class="ab-blk__ic" aria-hidden="true">${svgIcon(BLOCKS[b.type]?.icon, 'currentColor', 18)}</span><b>${esc(BLOCKS[b.type]?.name || b.type)}</b><small>${esc(blockSummary(b))}</small>
-                <span class="fb-q__tools"><button type="button" data-bmove="-1" title="Move this block up the screen" aria-label="Move block up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-bmove="1" title="Move this block down the screen" aria-label="Move block down" ${i < blocks.length - 1 ? '' : 'disabled'}>↓</button><button type="button" data-bcopy title="Make a copy of this block" aria-label="Duplicate block" ${blocks.length >= MAX_BLOCKS ? 'disabled' : ''}>⧉</button><button type="button" data-bdel title="Remove this block" aria-label="Remove block" class="fb-del">✕</button></span></summary>
+                <span class="fb-q__tools"><button type="button" data-bmove="-1" title="Move this block up the screen" aria-label="Move block up" ${i ? '' : 'disabled'}>${OwlIcon('arrow-up')}</button><button type="button" data-bmove="1" title="Move this block down the screen" aria-label="Move block down" ${i < blocks.length - 1 ? '' : 'disabled'}>${OwlIcon('arrow-down')}</button><button type="button" data-bcopy title="Make a copy of this block" aria-label="Duplicate block" ${blocks.length >= MAX_BLOCKS ? 'disabled' : ''}>${OwlIcon('copy')}</button><button type="button" data-bdel title="Remove this block" aria-label="Remove block" class="fb-del">${OwlIcon('close')}</button></span></summary>
             <div class="ab-blk__body">${blockFields(b)}</div></details>`).join('') : '<p class="fb-hint">This screen is empty. Add your first block below.</p>';
         $$('[data-add-type]').forEach(x => (x.disabled = blocks.length >= MAX_BLOCKS));
     };
@@ -722,7 +729,7 @@
         const hidden = A().menu === 'hide', lost = A().tabs.filter((t, i) => !inBar(t, i) && (hidden || !inMenu(t, i))).map(t => t.label || 'Page');
         const n = $('[data-menu-note]');
         n.hidden = !lost.length;
-        n.textContent = `${lost.join(', ')} ${lost.length > 1 ? 'are' : 'is'} in neither the bottom bar nor the ☰ menu, so people can only open ${lost.length > 1 ? 'them' : 'it'} from a button on another page (Tapping it → Open a tab).`;
+        n.textContent = `${lost.join(', ')} ${lost.length > 1 ? 'are' : 'is'} in neither the bottom bar nor the menu, so people can only open ${lost.length > 1 ? 'them' : 'it'} from a button on another page (Tapping it: Open a tab).`;
     };
     const drawSettings = () => {
         const a = A();
@@ -788,7 +795,7 @@
         else if (el.dataset.t) { // (tab fields carry data-i too — their index — so they're matched first)
             const t = a.tabs[+el.dataset.i]; activeTab = +el.dataset.i;
             if (el.dataset.t === 'bar') {
-                if (el.checked && barCount() >= MAX_BAR) { el.checked = false; note(`Up to ${MAX_BAR} pages fit in the bottom bar. Untick another page first — the rest stay in the ☰ menu.`); return; }
+                if (el.checked && barCount() >= MAX_BAR) { el.checked = false; note(`Up to ${MAX_BAR} pages fit in the bottom bar. Untick another page first — the rest stay in the menu.`); return; }
                 if (t.menu === undefined) t.menu = inMenu(t, +el.dataset.i); // keep the menu as it was
                 t.bar = el.checked; drawTabs(); drawPhone(); markDirty(); return;
             }
@@ -1008,7 +1015,7 @@
             const bar = barCount() < MAX_BAR;
             const nt = { label: p.name, icon: p.icon, type: 'screen', bar, menu: !bar, path: '', blocks: p.blocks.map(x => (typeof x === 'string' ? block(x) : { ...block(x.type), ...x })) };
             eachLangTabs(ts => ts.push(JSON.parse(JSON.stringify(nt)))); // every language gets the page (to translate)
-            if (!bar) note('This page is in the ☰ menu — the bottom bar is full (5 pages).');
+            if (!bar) note('This page is in the menu — the bottom bar is full (5 pages).');
             activeTab = tabs.length - 1; enterNext = true; psheet = null; drawTabs(); drawBlocks(); drawPhone(); markDirty();
             track('app_builder_page', { preset: t.dataset.pagePreset });
         } else if (t.matches('[data-add-tab]')) {
@@ -1017,7 +1024,7 @@
             const used = tabs.map(x => x.icon), icon = ['grid', 'info', 'chat', 'calendar', 'store', 'location'].find(k => !used.includes(k)) || 'star';
             const nt = { label: ICON_NAMES[icon], icon, type: 'screen', bar: barCount() < MAX_BAR, menu: barCount() >= MAX_BAR, path: '', blocks: [{ type: 'heading', text: ICON_NAMES[icon], align: 'left' }] };
             eachLangTabs(ts => ts.push(JSON.parse(JSON.stringify(nt)))); // every language gets the page (to translate)
-            if (!tabs[tabs.length - 1].bar) note('This page is in the ☰ menu — the bottom bar is full (5 pages).');
+            if (!tabs[tabs.length - 1].bar) note('This page is in the menu — the bottom bar is full (5 pages).');
             activeTab = tabs.length - 1; drawTabs(); drawBlocks(); drawPhone(); markDirty();
             $(`[data-t="label"][data-i="${activeTab}"]`)?.focus();
         } else if (t.dataset.tmove) {
@@ -1223,7 +1230,7 @@
             ? `<p class="fb-hint">${mode === 'live' ? 'Real card payments aren’t available yet — use Test mode to try it.' : 'Test payments aren’t available right now.'}</p>`
             : !x ? '<p class="fb-hint">Save your app first, then connect your Stripe account here.</p>'
             : connected
-                ? `<p class="fb-hint ab-pay__ok">✓ Your Stripe ${mode === 'live' ? 'live' : 'test'} account is connected. <button type="button" class="ab-link" data-stripe-off="${mode}">Disconnect</button></p>`
+                ? `<p class="fb-hint ab-pay__ok">${OwlIcon('tick')} Your Stripe ${mode === 'live' ? 'live' : 'test'} account is connected. <button type="button" class="ab-link" data-stripe-off="${mode}">Disconnect</button></p>`
                   + (mode === 'test' ? '<p class="fb-hint">Test it in the app with the card <b>4242 4242 4242 4242</b>, any future date and any CVC. No real money moves.</p>' : '<p class="fb-hint">Customers pay you for real. Refunds and disputes are handled in your Stripe dashboard.</p>')
                 : `<p><button type="button" class="btn btn--sm" data-stripe-connect="${mode}">Connect Stripe (${mode})</button></p><p class="fb-hint">You sign in to Stripe (or open a free account) and come back here. We never see your keys or your customers’ cards; payments go straight to your Stripe account and you’re the seller.</p>`;
         if (p.online && stripeOn[mode] && x && !connected) $('[data-stripe]').insertAdjacentHTML('beforeend', '<p class="fb-hint">Until it’s connected, the app doesn’t show “Pay now”.</p>');
@@ -1262,9 +1269,9 @@
     const note = (msg, kind) => { if (window.owlToast) return window.owlToast(msg, kind); const n = $('[data-note]'); n.hidden = false; n.textContent = msg; clearTimeout(note.t); note.t = setTimeout(() => (n.hidden = true), 7000); };
     const syncSave = () => {
         const b = $('[data-save]');
-        b.textContent = saving ? 'Saving…' : D.id ? (D.dirty ? 'Save changes' : 'Saved ✓') : 'Save app';
+        b.innerHTML = saving ? 'Saving…' : D.id ? (D.dirty ? 'Save changes' : `${OwlIcon('tick')} Saved`) : 'Save app';
         b.disabled = saving || iconLoading || (!!D.id && !D.dirty);
-        if (draftAtRisk && D.dirty) { $('[data-status]').textContent = '⚠️ This browser can’t keep your new pictures — save now so you don’t lose them.'; return; }
+        if (draftAtRisk && D.dirty) { $('[data-status]').innerHTML = `${OwlIcon('warning')} This browser can’t keep your new pictures — save now so you don’t lose them.`; return; }
         $('[data-status]').textContent = D.id
             ? (D.dirty ? 'Unsaved changes — save to update the app on phones.' : current()?.version_code ? 'Saved — phones with your app show these screens within a minute.' : 'Saved to your account.')
             : 'Not saved yet — your work is kept in this browser.';
@@ -1305,7 +1312,7 @@
         if (D.icon.mode === 'image' && !logo) return 'Please add your logo, or switch the icon to letters.';
         const missing = [a.lang, ...Object.keys(a.translations)].find(code => (tabsOf(code) || []).some(t => !t.label.trim()));
         if (missing) return `Please give each page a name${missing !== a.lang ? ` (${LANGS[missing] || missing})` : ''}.`;
-        if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'booking' || (b.type === 'products' && (b.items || []).some(i => i.name?.trim())))) && !a.shop.whatsapp.trim() && !a.shop.email.trim()) return 'Your app takes orders or bookings: add a WhatsApp number or email for them under “More settings → Orders & bookings”.';
+        if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'booking' || (b.type === 'products' && (b.items || []).some(i => i.name?.trim())))) && !a.shop.whatsapp.trim() && !a.shop.email.trim()) return 'Your app takes orders or bookings: add a WhatsApp number or email for them under “More settings”, then “Orders & bookings”.';
         if (a.tabs.some(t => (t.blocks || []).some(b => b.type === 'loyalty' && !b.pinHash && !/^\d{4,8}$/.test(b.pin || '')))) return 'Please set a staff PIN (4 to 8 digits) for your loyalty card.';
         if (a.tabs.some(t => t.type === 'web') && !siteUrl()) return 'You have a tab that shows your website: add your website address (starting with https://) under “More settings”.';
         return null;
@@ -1416,7 +1423,7 @@
 
     /* ------------------------------------------------ build & download */
     let poll = null;
-    const OUTDATED = { features: 'it doesn’t have the newest features (statistics, push notifications, ☰ menu, new blocks)', push: 'it can’t receive notifications yet',
+    const OUTDATED = { features: 'it doesn’t have the newest features (statistics, push notifications, a menu, new blocks)', push: 'it can’t receive notifications yet',
         name: 'the name changed', icon: 'the icon changed', splash: 'the splash screen changed', intro: 'the intro changed' };
     const outOfDate = x => (x.out_of_date || []).map(k => OUTDATED[k] || k).join('; ');
     const fmtMB = n => (n ? (n / 1048576).toFixed(1) + ' MB' : '');
@@ -1436,11 +1443,11 @@
             return;
         }
         const b = x.build, running = b && ['queued', 'building'].includes(b.status);
-        const step = (n, done, title, body) => `<div class="ab-step${done ? ' is-done' : ''}"><span class="ab-step__n">${done ? '✓' : n}</span><div><b>${title}</b>${body}</div></div>`;
+        const step = (n, done, title, body) => `<div class="ab-step${done ? ' is-done' : ''}"><span class="ab-step__n">${done ? OwlIcon('tick') : n}</span><div><b>${title}</b>${body}</div></div>`;
 
         const verify = x.allowed
             ? '<p class="fb-hint">' + (x.own_site ? 'It’s one of your Owlvix sites — all set.' : 'Your website is checked — all set.') + '</p>'
-            : `<p class="fb-hint">Your app shows pages of <b>${esc(new URL(x.url).hostname)}</b>. Copy this tag into the <code>&lt;head&gt;</code> of your home page there, publish your site, then press Check. (WordPress: a header plugin like “WPCode”; Wix: Settings → Custom code; Shopify: theme.liquid.)</p>
+            : `<p class="fb-hint">Your app shows pages of <b>${esc(new URL(x.url).hostname)}</b>. Copy this tag into the <code>&lt;head&gt;</code> of your home page there, publish your site, then press Check. (WordPress: a header plugin like “WPCode”; Wix: Settings ${OwlIcon('chevron-right')} Custom code; Shopify: theme.liquid.)</p>
                <div class="fb-copyrow"><input readonly value="${esc(x.tag)}"><button type="button" class="btn btn--sm" data-copy="${esc(x.tag)}">Copy</button></div>
                <button type="button" class="btn btn--sm btn--glow" data-act="verify">Check my website</button>`;
 
@@ -1449,10 +1456,10 @@
         else if (running) buildBody = `<div class="ab-running"><span class="ab-spin" aria-hidden="true"></span><div><b>Building version ${esc(b.version_name)}…</b><p class="fb-hint">This usually takes 10–15 minutes. You can close this page — we’ll email you when it’s ready.</p></div></div>`;
         else buildBody = `${b?.status === 'failed' ? `<p class="ab-err">${esc(b.error || 'The last build didn’t finish.')}</p>` : ''}
             ${D.dirty ? '<p class="fb-hint">You have unsaved changes — they’ll be saved first.</p>' : ''}
-            ${x.out_of_date?.length ? `<p class="ab-warn">📱 Phones have an older version of your app — ${esc(outOfDate(x))}. Build again (and upload the new .aab to Google Play) to update it.</p>` : ''}
+            ${x.out_of_date?.length ? `<p class="ab-warn">${OwlIcon('phone')} Phones have an older version of your app — ${esc(outOfDate(x))}. Build again (and upload the new .aab to Google Play) to update it.</p>` : ''}
             ${x.version_code ? '<p class="fb-hint">Changes to your screens, tabs and colours reach phones when you save — build again only to change the name, icon or splash screen, or for a Google Play update.</p>' : ''}
             <p class="fb-hint">Version <b>${esc(A().version_name || '1.0.0')}</b> · build ${x.version_code + 1}${x.version_code ? ' — raise the version in “More settings” for each Google Play update.' : ''}</p>
-            <button type="button" class="btn btn--glow" data-act="build" ${x.allowed ? '' : 'disabled'}>📦 Build Android app</button>`;
+            <button type="button" class="btn btn--glow" data-act="build" ${x.allowed ? '' : 'disabled'}>${OwlIcon('box')} Build Android app</button>`;
 
         let files = '';
         if (b?.status === 'done' && b.files?.apk) {
@@ -1460,13 +1467,13 @@
                 <div class="ab-file"><div><b>APK — try it on your phone</b><p class="fb-hint">Open this on an Android phone to install. ${fmtMB(b.files.apk.bytes)}</p><a class="btn btn--sm btn--glow" href="${esc(b.files.apk.url)}" data-dl="apk">Download APK</a></div><div class="ab-qr" data-qr-for="${esc(b.files.apk.url)}" aria-label="Scan with your phone to download"></div></div>
                 ${b.files.aab ? `<div class="ab-file"><div><b>AAB — for Google Play</b><p class="fb-hint">Upload this in Google Play Console. ${fmtMB(b.files.aab.bytes)}</p><a class="btn btn--sm" href="${esc(b.files.aab.url)}" data-dl="aab">Download AAB</a></div></div>` : ''}
                 <p class="fb-hint">Links work for 2 days on this page (7 days in the email). Built ${esc(new Date(b.finished_at || b.created_at).toLocaleString())}.</p>
-                ${x.has_keystore ? `<div class="ab-key"><b>🔑 Your signing key</b><p class="fb-hint">Google Play needs every update signed with the same key. We keep it safe for your next builds — download a copy too, and keep it somewhere safe.</p><button type="button" class="btn btn--sm btn--ghost" data-act="keystore">Download signing key</button></div>` : ''}
+                ${x.has_keystore ? `<div class="ab-key"><b>${OwlIcon('key')} Your signing key</b><p class="fb-hint">Google Play needs every update signed with the same key. We keep it safe for your next builds — download a copy too, and keep it somewhere safe.</p><button type="button" class="btn btn--sm btn--ghost" data-act="keystore">Download signing key</button></div>` : ''}
             </div>
             <details class="fb-settings ab-play"><summary>How to put it on Google Play</summary>
                 <ol><li>Make a Google Play developer account at <a href="https://play.google.com/console" target="_blank" rel="noopener">play.google.com/console</a> (one-time $25).</li>
                 <li>Press <b>Create app</b>, then fill in the store listing: short and full description, icon (512 × 512), at least 2 phone screenshots and a feature graphic (1024 × 500).</li>
                 <li>Answer the app content questions (privacy policy link, ads, target age, data safety).</li>
-                <li>Go to <b>Testing → Internal testing</b> (or <b>Production</b>), create a release and upload the <b>.aab</b> file.</li>
+                <li>Go to <b>Testing ${OwlIcon('chevron-right')} Internal testing</b> (or <b>Production</b>), create a release and upload the <b>.aab</b> file.</li>
                 <li>Send it for review. New apps usually take a few days. New personal accounts must first test with 12 people for 14 days.</li></ol>
             </details>`;
         }
@@ -1479,7 +1486,7 @@
         ${statsHtml(x)}
         ${pushHtml(x)}
         ${kitHtml(x)}
-        <div class="ab-ios"><b>🍎 Want it on the iPhone App Store?</b><p class="fb-hint">Apple only takes apps from the owner’s own developer account. We publish iPhone apps for you, with logins, payments and push notifications if you need them.</p><a href="#contact" class="btn btn--sm btn--ghost" data-act="ios">Ask for a free quote</a></div>
+        <div class="ab-ios"><b>${OwlIcon('apple')} Want it on the iPhone App Store?</b><p class="fb-hint">Apple only takes apps from the owner’s own developer account. We publish iPhone apps for you, with logins, payments and push notifications if you need them.</p><a href="#contact" class="btn btn--sm btn--ghost" data-act="ios">Ask for a free quote</a></div>
         <button type="button" class="fb-danger" data-act="delete">Delete this app</button>`;
         $$('[data-qr-for]', box).forEach(el => withQR(() => (el.innerHTML = window.OwlQR.svg(el.dataset.qrFor, { color: '#0f172a' }))));
         if (running) poll = setTimeout(refresh, 20000);
@@ -1494,13 +1501,13 @@
             api('GET', `/builder/apps/${x.id}/stats`).then(r => { stats[x.id] = { at: Date.now(), data: r }; if (current()?.id === x.id && !$('[data-panel="build"]').hidden) { const el = $('[data-stats]'); if (el) el.outerHTML = statsHtml(x); } }).catch(() => {});
         }
         const d = stats[x.id]?.data;
-        if (!d) return '<div class="ab-stats" data-stats><b>📊 Statistics</b><p class="fb-hint">Loading…</p></div>';
+        if (!d) return `<div class="ab-stats" data-stats><b>${OwlIcon('chart')} Statistics</b><p class="fb-hint">Loading…</p></div>`;
         const fmt = n => Number(n).toLocaleString();
         const max = Math.max(1, ...d.days.map(r => r.active));
         const none = !d.days.some(r => r.active);
         const day = iso => new Date(iso + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
         const topMax = Math.max(1, ...d.pages.map(p => p.views));
-        return `<div class="ab-stats" data-stats><b>📊 Statistics <small>— last 30 days</small></b>
+        return `<div class="ab-stats" data-stats><b>${OwlIcon('chart')} Statistics <small>— last 30 days</small></b>
             <div class="ab-stats__tiles">
                 <div><span>Installs</span><strong>${fmt(d.installs)}</strong><small>all time</small></div>
                 <div><span>Daily users</span><strong>${fmt(d.daily_users)}</strong><small>average, last 7 days</small></div>
@@ -1537,13 +1544,13 @@
     const pushHtml = x => {
         if (!x.push?.available) return '';
         if (!x.push.ready) {
-            return `<div class="ab-push"><b>🔔 Push notifications</b><p class="fb-hint">${x.version_code ? 'Build your app again (and upload the new .aab to Google Play) — the version on phones can’t receive notifications yet.' : 'After your first build you can send a message to everyone who has your app — offers, news, reminders.'}</p></div>`;
+            return `<div class="ab-push"><b>${OwlIcon('bell')} Push notifications</b><p class="fb-hint">${x.version_code ? 'Build your app again (and upload the new .aab to Google Play) — the version on phones can’t receive notifications yet.' : 'After your first build you can send a message to everyone who has your app — offers, news, reminders.'}</p></div>`;
         }
         if (!pushes[x.id]) api('GET', `/builder/apps/${x.id}/pushes`).then(r => { pushes[x.id] = r.pushes; if (current()?.id === x.id && !$('[data-panel="build"]').hidden) drawPushList(); }).catch(() => {});
         const tabs = A().tabs;
-        return `<div class="ab-push"><b>🔔 Send a notification</b>
+        return `<div class="ab-push"><b>${OwlIcon('bell')} Send a notification</b>
             <p class="fb-hint">It pops up on the phone of everyone who has your app and allowed notifications. Up to 3 a day — keep them useful.</p>
-            <label>Title <small data-push-count="title">${pushDraft.title.length}/65</small><input data-push="title" maxlength="65" value="${esc(pushDraft.title)}" placeholder="Weekend offer 🎉"></label>
+            <label>Title <small data-push-count="title">${pushDraft.title.length}/65</small><input data-push="title" maxlength="65" value="${esc(pushDraft.title)}" placeholder="Weekend offer: 20% off"></label>
             <label>Message <small data-push-count="body">${pushDraft.body.length}/240</small><textarea data-push="body" rows="3" maxlength="240" placeholder="20% off all cakes this Saturday and Sunday.">${esc(pushDraft.body)}</textarea></label>
             <label>When tapped, open<select data-push="tab"><option value="">The app</option>${tabs.map((t, i) => `<option value="${i}" ${pushDraft.tab === String(i) ? 'selected' : ''}>${esc(t.label || 'Page ' + (i + 1))}</option>`).join('')}</select></label>
             <button type="button" class="btn btn--glow btn--sm" data-act="push-send">Send to everyone</button>
@@ -1565,7 +1572,7 @@
         if (!await ask('Send this notification?', `“${pushDraft.title.trim()}” goes to everyone with ${x.name}. It can’t be taken back.`, 'Send')) return;
         const r = await api('POST', `/builder/apps/${x.id}/push`, { title: pushDraft.title.trim(), body: pushDraft.body.trim(), tab: pushDraft.tab });
         pushes[x.id] = r.pushes; Object.assign(pushDraft, { title: '', body: '', tab: '' });
-        note('🔔 Sent! Phones get it within a few seconds.'); track('app_builder_push');
+        note('Sent! Phones get it within a few seconds.'); track('app_builder_push');
     };
 
     /* ------------------------------------------------ Google Play listing kit */
@@ -1595,14 +1602,14 @@
     const kitHtml = x => {
         if (!kitText.short) Object.assign(kitText, suggestTexts());
         const use = x.data_use || {}, dirty = D.dirty ? '<p class="fb-hint">Save your app first so the privacy policy shows your latest details.</p>' : '';
-        const yes = `Answer <b>Yes</b> to collecting data, then tick <b>App activity → App interactions</b> (anonymous counts of opens and page views) — used for <b>Analytics</b>${use.push ? ', and <b>Device or other IDs</b> (push notifications use Firebase Cloud Messaging) — used for <b>App functionality</b>' : ''}. For each: collected, not shared, processed ephemerally: <b>No</b>, required: <b>No</b>. Data is encrypted in transit: <b>Yes</b>. Way to request deletion: <b>No</b> (nothing is linked to a person).${use.website ? ` Also answer for what <b>${esc(use.website)}</b> collects (forms, bookings, accounts).` : ''}`;
-        return `<details class="fb-settings ab-kit" ${kitOpen ? 'open' : ''}><summary>📋 Google Play listing kit</summary>
+        const yes = `Answer <b>Yes</b> to collecting data, then tick <b>App activity ${OwlIcon('chevron-right')} App interactions</b> (anonymous counts of opens and page views) — used for <b>Analytics</b>${use.push ? ', and <b>Device or other IDs</b> (push notifications use Firebase Cloud Messaging) — used for <b>App functionality</b>' : ''}. For each: collected, not shared, processed ephemerally: <b>No</b>, required: <b>No</b>. Data is encrypted in transit: <b>Yes</b>. Way to request deletion: <b>No</b> (nothing is linked to a person).${use.website ? ` Also answer for what <b>${esc(use.website)}</b> collects (forms, bookings, accounts).` : ''}`;
+        return `<details class="fb-settings ab-kit" ${kitOpen ? 'open' : ''}><summary>${OwlIcon('clipboard')} Google Play listing kit</summary>
             <p class="fb-hint">Everything Google Play asks for in the store listing — made from your app.</p>
             <h3 class="ab-sub">1. Graphics</h3>
             <div class="ab-kit__btns">
-                <button type="button" class="btn btn--sm btn--ghost" data-act="kit-icon">⬇ App icon&nbsp;<small>512 × 512</small></button>
-                <button type="button" class="btn btn--sm btn--ghost" data-act="kit-feature">⬇ Feature graphic&nbsp;<small>1024 × 500</small></button>
-                <button type="button" class="btn btn--sm btn--glow" data-act="kit-shots">📸 Make phone screenshots</button>
+                <button type="button" class="btn btn--sm btn--ghost" data-act="kit-icon">${OwlIcon('download')} App icon&nbsp;<small>512 × 512</small></button>
+                <button type="button" class="btn btn--sm btn--ghost" data-act="kit-feature">${OwlIcon('download')} Feature graphic&nbsp;<small>1024 × 500</small></button>
+                <button type="button" class="btn btn--sm btn--glow" data-act="kit-shots">${OwlIcon('camera')} Make phone screenshots</button>
             </div>
             <div class="ab-kit__shots" data-kit-shots></div>
             <h3 class="ab-sub">2. Texts</h3>
@@ -1613,7 +1620,7 @@
                 <button type="button" class="ab-copy" data-copyfrom='[data-kit="full"]' title="Copy the full description to paste in Play Console"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg><span>Copy</span></button></div>
                 <textarea id="ab-kit-full" data-kit="full" rows="8" maxlength="4000">${esc(kitText.full)}</textarea></div>
             <h3 class="ab-sub">3. Privacy policy</h3>
-            <p class="fb-hint">Paste this link in Play Console → App content → Privacy policy. Add your business name and email under Design → More settings.</p>
+            <p class="fb-hint">Paste this link in Play Console ${OwlIcon('chevron-right')} App content ${OwlIcon('chevron-right')} Privacy policy. Add your business name and email under Design ${OwlIcon('chevron-right')} More settings.</p>
             <div class="fb-copyrow"><input readonly value="${esc(x.privacy_url)}"><button type="button" class="btn btn--sm" data-copy="${esc(x.privacy_url)}">Copy</button></div>
             <a class="ab-link" href="${esc(x.privacy_url)}" target="_blank" rel="noopener">Open the policy</a>${dirty}
             <h3 class="ab-sub">4. App content answers</h3>
@@ -1732,17 +1739,17 @@
         const was = current()?.build?.status;
         try { const r = await api('GET', '/builder/apps'); apps = r.apps; enabled = r.enabled; } catch {}
         const now = current()?.build?.status;
-        if (was !== now && now === 'done') { note('🎉 Your app is ready! Download it below.'); track('app_builder_built'); }
+        if (was !== now && now === 'done') { note('Your app is ready! Download it below.'); track('app_builder_built'); }
         drawBuild();
     };
     $('[data-build]').addEventListener('click', async e => {
         const t = e.target.closest('[data-act],[data-copy],[data-copyfrom],[data-dl]'); if (!t) return;
-        if (t.dataset.copyfrom) { const src = $(t.dataset.copyfrom), lbl = t.querySelector('span') || t; try { await navigator.clipboard.writeText(src.value); lbl.textContent = 'Copied ✓'; t.classList.add('is-done'); } catch { src.select(); } setTimeout(() => { lbl.textContent = 'Copy'; t.classList.remove('is-done'); }, 2000); return; }
+        if (t.dataset.copyfrom) { const src = $(t.dataset.copyfrom), lbl = t.querySelector('span') || t; try { await navigator.clipboard.writeText(src.value); lbl.innerHTML = `${OwlIcon('tick')} Copied`; t.classList.add('is-done'); } catch { src.select(); } setTimeout(() => { lbl.textContent = 'Copy'; t.classList.remove('is-done'); }, 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }
         if (t.dataset.act?.startsWith('kit-')) { kitAction(t); return; }
         if (t.dataset.act === 'push-send') { t.disabled = true; try { await sendPush(current()); } catch (ex) { note(ex.message, 'error'); } finally { t.disabled = false; drawBuild(); } return; }
         const x = current();
-        if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copied ✓'; } catch { t.previousElementSibling?.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
+        if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.innerHTML = `${OwlIcon('tick')} Copied`; } catch { t.previousElementSibling?.select(); } setTimeout(() => (t.textContent = 'Copy'), 2000); return; }
         if (t.dataset.dl) { track('app_builder_download', { kind: t.dataset.dl }); return; }
         const act = t.dataset.act;
         if (act === 'signin') return signIn(drawBuild);
@@ -1750,7 +1757,7 @@
         if (act === 'ios') { e.preventDefault(); track('app_builder_ios'); document.querySelector('.lp-cta__box [data-quote]')?.click(); return; }
         t.disabled = true;
         try {
-            if (act === 'verify') { const r = await api('POST', `/builder/apps/${x.id}/verify`); apps = apps.map(y => (y.id === x.id ? r.app : y)); note('✓ Website checked. You can build your app now.'); track('app_builder_verify'); }
+            if (act === 'verify') { const r = await api('POST', `/builder/apps/${x.id}/verify`); apps = apps.map(y => (y.id === x.id ? r.app : y)); note('Website checked. You can build your app now.'); track('app_builder_verify'); }
             else if (act === 'build') {
                 if (D.dirty && !await saveApp()) return;
                 const r = await api('POST', `/builder/apps/${x.id}/build`); apps = apps.map(y => (y.id === x.id ? r.app : y));

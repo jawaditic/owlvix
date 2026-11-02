@@ -46,7 +46,7 @@
             'title' => 'Let’s make <span class="accent">your invoice</span> together',
             'sub' => 'Answer a few easy questions and watch your invoice fill in as you go. Your details stay on this device — nothing is uploaded.',
             'steps' => [['Pick a', 'design'], ['You, your client', '& your prices'], ['Preview, then', 'download PDF']],
-            'go' => '🚀 Start my invoice',
+            'go' => 'Start my invoice',
             'pill' => 'Quick setup · about 2 minutes',
         ])
         @endunless
@@ -61,7 +61,7 @@
             </div>
             <div class="rb-filebar">
                 <span class="fb-hint" data-saved>Saved on this device</span>
-                <span class="ib-filebar__btns"><button type="button" class="rb-link" data-new>＋ New invoice</button><button type="button" class="rb-link" data-reset>Clear</button></span>
+                <span class="ib-filebar__btns"><button type="button" class="rb-link" data-new>{!! \App\Support\Icons::i('plus') !!} New invoice</button><button type="button" class="rb-link" data-reset>Clear</button></span>
             </div>
             <details class="ib-mine" data-mine hidden>
                 <summary>My invoices (<span data-mine-count>0</span>) <small>— kept on this device</small></summary>

@@ -7,12 +7,12 @@
        offKey,                      // localStorage flag: set once the visitor finishes or says "use the full builder"
        say: ['…', '…'],             // the owl's lines on the banner
        hasSaved: () => bool,        // a saved project is open: no banner
-       quickSlot,                   // where the "✨ Quick setup" button goes
+       quickSlot,                   // where the "Quick setup" button goes
        steps: [{ title, sub, draw() → html, after(box), ok() → '' | problem, leave() (async), skip(),
                  click(e, el, box), input(e, el, box), change(e, el, box) }],
        preview: { mount(side), unmount(), refresh() },   // shown beside the steps, updated as answers come in
        tasks: ['Laying out your pages', …],               // the short "building" moment
-       done: { title, sub, actions: [{ label, cls, act(close), then }] },
+       done: { title, sub, actions: [{ label, icon, cls, act(close), then }] },   // icon: an OwlIcon name shown before the label
        editorUrl,                   // on a builder's main page: its editor page (routes/web.php). Finishing goes there; a
                                     // finish button with `then` runs again on the editor page (#then=…)
        beforeLeave: () => bool,     // save everything now; false (couldn't keep it in the browser) = stay on this page
@@ -46,11 +46,11 @@
             box.innerHTML = `<div class="wz__shade" data-wz-close></div>
                 <div class="wz__panel">
                     <div class="wz__main">
-                        <div class="wz__top"><span class="wz__brand">✨ Quick setup</span><span class="wz__count" data-wz-count></span><button type="button" class="wz__x" data-wz-close aria-label="Close">✕</button></div>
+                        <div class="wz__top"><span class="wz__brand">${ic('sparkle')} Quick setup</span><span class="wz__count" data-wz-count></span><button type="button" class="wz__x" data-wz-close aria-label="Close">${ic('close')}</button></div>
                         <div class="wz__bar"><i data-wz-bar></i></div>
                         <div class="wz__step" data-wz-step aria-live="polite"></div>
                         <p class="wz__err" data-wz-err role="alert" hidden></p>
-                        <div class="wz__nav"><button type="button" class="btn btn--ghost" data-wz-back>← Back</button><button type="button" class="btn btn--glow" data-wz-next>Next →</button></div>
+                        <div class="wz__nav"><button type="button" class="btn btn--ghost" data-wz-back>${ic('arrow-left')} Back</button><button type="button" class="btn btn--glow" data-wz-next>Next ${ic('arrow-right')}</button></div>
                     </div>
                     <div class="wz__side" data-wz-side></div>
                 </div>`;
@@ -92,7 +92,7 @@
             el.innerHTML = `<div class="wz__in ${dir < 0 ? 'from-left' : dir > 0 ? 'from-right' : 'is-same'}"><h2 id="wz-title">${s.title}</h2><p class="wz__sub">${s.sub}</p>${s.draw()}</div>`;
             $('[data-wz-err]', box).hidden = true;
             $('[data-wz-back]', box).style.visibility = step ? 'visible' : 'hidden';
-            $('[data-wz-next]', box).textContent = step === steps.length - 1 ? 'Finish ✨' : 'Next →';
+            $('[data-wz-next]', box).innerHTML = step === steps.length - 1 ? `Finish ${ic('sparkle')}` : `Next ${ic('arrow-right')}`;
             s.after?.(box);
             if (dir) setTimeout(() => el.querySelector('input:not([type=checkbox]):not([type=color]):not([type=file]), [aria-pressed="true"], button')?.focus({ preventScroll: true }), still() ? 0 : 280);
         };
@@ -113,7 +113,7 @@
             finished = true;
             try { localStorage.setItem(cfg.offKey, '1'); localStorage.setItem(cfg.offKey + '-made', '1'); } catch {} // from now on the page opens on the builder; they've made something
             const tasks = cfg.tasks || ['Laying out your pages', 'Painting your colours', 'Adding your details', 'Polishing the details'];
-            $('[data-wz-count]', box).innerHTML = '<button type="button" class="wz__done" data-wz-close>✓ Done</button>';
+            $('[data-wz-count]', box).innerHTML = '<button type="button" class="wz__done" data-wz-close>' + ic('tick') + ' Done</button>';
             $('[data-wz-bar]', box).style.width = '100%';
             $('.wz__nav', box).hidden = true;
             const el = $('[data-wz-step]', box);
@@ -125,11 +125,11 @@
                 box.classList.add('is-done');
                 const d = cfg.done;
                 el.innerHTML = `<div class="wz__in from-right wz-done">${still() ? '' : '<div class="wz-confetti" aria-hidden="true">' + Array.from({ length: 18 }, (_, i) => `<i style="--i:${i}"></i>`).join('') + '</div>'}
-                    <div class="wz-done__badge" aria-hidden="true">🎉</div>
+                    <div class="wz-done__badge" aria-hidden="true">${ic('party')}</div>
                     <h2 id="wz-title">${d.title}</h2>
                     <p class="wz__sub">${d.sub}</p>
                     <div class="wz-done__actions">
-                        ${d.actions.map((a, i) => `<button type="button" class="${a.cls || 'btn btn--ghost'}" data-wz-act="${i}">${a.label}</button>`).join('')}
+                        ${d.actions.map((a, i) => `<button type="button" class="${a.cls || 'btn btn--ghost'}" data-wz-act="${i}">${a.icon ? ic(a.icon) + ' ' : ''}${a.label}</button>`).join('')}
                         <button type="button" class="ab-link" data-wz-again>Run quick setup again</button>
                     </div></div>`;
                 $('[data-wz-act="0"]', box)?.focus({ preventScroll: true });
@@ -181,7 +181,7 @@
             if (e.target.closest('[data-wz-start]')) open();
             else if (e.target.closest('[data-wzb-no]')) { try { localStorage.setItem(cfg.offKey, '1'); if (banner.classList.contains('wzb--back')) sessionStorage.setItem(cfg.offKey + '-back', '1'); } catch {} hideBanner(); setTimeout(() => root.scrollIntoView({ behavior: still() ? 'auto' : 'smooth', block: 'start' }), 60); }
         });
-        if (cfg.quickSlot && !cfg.quickSlot.querySelector('[data-wz-open]')) cfg.quickSlot.insertAdjacentHTML('afterbegin', `<button type="button" class="${cfg.quickClass || 'btn btn--sm btn--ghost'} wz-open" data-wz-open>✨ Quick setup</button>`);
+        if (cfg.quickSlot && !cfg.quickSlot.querySelector('[data-wz-open]')) cfg.quickSlot.insertAdjacentHTML('afterbegin', `<button type="button" class="${cfg.quickClass || 'btn btn--sm btn--ghost'} wz-open" data-wz-open>${ic('sparkle')} Quick setup</button>`);
         root.addEventListener('click', e => { if (e.target.closest('[data-wz-open]')) open(); });
         let run = 0;
         function showBanner() {
@@ -235,20 +235,23 @@
         $('.wzb__steps', banner)?.setAttribute('hidden', '');
         const go = $('[data-wz-start]', banner);
         if (go) {
-            go.insertAdjacentHTML('beforebegin', `<a class="btn btn--glow wzb__go" href="${esc(cfg.editorUrl)}" data-wz-resume>▶ Resume my ${esc(noun)}</a>`);
+            go.insertAdjacentHTML('beforebegin', `<a class="btn btn--glow wzb__go" href="${esc(cfg.editorUrl)}" data-wz-resume>${ic('play')} Resume my ${esc(noun)}</a>`);
             go.className = 'btn btn--ghost wzb__again';
-            go.textContent = '✨ Quick setup again';
+            go.innerHTML = `${ic('sparkle')} Quick setup again`;
         }
-        const no = $('[data-wzb-no]', banner); if (no) no.textContent = 'or edit it here on this page →';
+        const no = $('[data-wzb-no]', banner); if (no) no.innerHTML = `or edit it here on this page ${ic('arrow-right')}`;
         cfg.say = [`Hoo! Welcome back — your ${noun} is right where you left it.`, 'Press Resume to carry on in the editor.', 'Want a fresh start? The quick setup is right here too.'];
         const say = $('[data-wzb-say]', banner); if (say) say.textContent = cfg.say[0];
     };
 
     /* ---------- shared helpers for the steps ---------- */
+    /** One of our icons (icons.js); an unknown name or no icons.js: nothing. */
+    function ic(name) { return window.OwlIcon ? window.OwlIcon(name) : ''; }
+    function isIcon(name) { return !!window.OwlIcon?.names?.includes(name); }
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const PALETTES = [['Forest', '#16a34a'], ['Ocean', '#2563eb'], ['Sunset', '#e8590c'], ['Berry', '#be185d'], ['Royal', '#6d28d9'], ['Coffee', '#7c4a2d'], ['Teal', '#0d9488'], ['Midnight', '#1e1b49']];
-    /** Big cards to pick one of (data-wz-pick="value"). */
-    const cards = (items, current) => `<div class="wz-grid wz-grid--types">${items.map(([v, em, name, small], i) => `<button type="button" class="wz-card" data-wz-pick="${esc(v)}" aria-pressed="${current === v}" style="--i:${i}"><span class="wz-card__em">${em}</span><b>${esc(name)}</b>${small ? `<small>${esc(small)}</small>` : ''}</button>`).join('')}</div>`;
+    /** Big cards to pick one of (data-wz-pick="value"): [value, icon, name, small] — icon is an OwlIcon name (anything else is printed as text). */
+    const cards = (items, current) => `<div class="wz-grid wz-grid--types">${items.map(([v, em, name, small], i) => `<button type="button" class="wz-card" data-wz-pick="${esc(v)}" aria-pressed="${current === v}" style="--i:${i}"><span class="wz-card__em">${isIcon(em) ? ic(em) : esc(em)}</span><b>${esc(name)}</b>${small ? `<small>${esc(small)}</small>` : ''}</button>`).join('')}</div>`;
     /** The colour swatches (data-pal) and a colour input (data-wz-color). */
     const palette = (current, label = 'Or your own colour') => `<div class="wz-grid wz-grid--pal">${PALETTES.map(([n, c], i) => `<button type="button" class="wz-swatch" data-pal="${c}" aria-pressed="${String(current).toLowerCase() === c}" style="--c:${c};--i:${i}"><i></i>${n}</button>`).join('')}</div>
         <label class="wz-field wz-field--row">${label}<input type="color" data-wz-color value="${esc(/^#[0-9a-f]{6}$/i.test(current) ? current : '#16a34a')}"></label>`;

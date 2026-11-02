@@ -5,8 +5,8 @@
 @php
     $faq = [
         ['Is the email template builder free?', 'Yes, completely. No sign-up, no limits and no branding in your emails. Everything happens in your browser — your email is never uploaded to us.'],
-        ['How do I use it in Mailchimp?', 'Press “Copy HTML”. In Mailchimp create an email, choose “Code your own” → “Paste in code”, paste and save. Pick “Mailchimp” under Settings → Unsubscribe link first, so the unsubscribe link works.'],
-        ['How do I use it in Brevo or Klaviyo?', 'Brevo: Campaigns → Create → “Paste your code”. Klaviyo: Templates → Create → “Import HTML” or a code block. Choose your platform under Settings so the unsubscribe link is filled in for you.'],
+        ['How do I use it in Mailchimp?', 'Press “Copy HTML”. In Mailchimp create an email, choose “Code your own” > “Paste in code”, paste and save. Pick “Mailchimp” under Settings > Unsubscribe link first, so the unsubscribe link works.'],
+        ['How do I use it in Brevo or Klaviyo?', 'Brevo: Campaigns > Create > “Paste your code”. Klaviyo: Templates > Create > “Import HTML” or a code block. Choose your platform under Settings so the unsubscribe link is filled in for you.'],
         ['Why don’t my images show?', 'Emails can only show images that are online. Upload them to your email platform’s image library or your website and paste the address starting with https://. Google Drive and Dropbox links don’t work.'],
         ['Will it look right in Outlook and on phones?', 'Yes. It is built the way email apps expect — tables and inline styles, 600 pixels wide, with columns that stack on phones. Always send yourself a test before sending to your list.'],
         ['Can I send emails from here?', 'No — this tool makes the design. Send it with your email platform, which handles your list, unsubscribes and delivery. Need help with that? We set up email marketing too.'],
@@ -47,7 +47,7 @@
             'title' => 'Let’s write <span class="accent">your email</span> together',
             'sub' => 'Pick what it’s for, add your brand and words, and watch the email come together as you go. Works in Mailchimp, Brevo, Klaviyo and more.',
             'steps' => [['Pick what', 'it’s for'], ['Brand, words', '& colours'], ['Preview, then', 'save it']],
-            'go' => '🚀 Start my email',
+            'go' => 'Start my email',
         ])
         @endunless
         <div class="fb eb card" data-eb @if ($editorUrl = \App\Support\FreeTools::editorUrl(Route::currentRouteName())) data-editor-url="{{ $editorUrl }}" @endif>
@@ -55,16 +55,16 @@
                 <div class="fb-tpls"><span>Start from:</span><div data-templates></div></div>
                 <div class="fb-top__actions">
                     <div class="eb-devices" role="group" aria-label="Preview size">
-                        <button type="button" data-device="desktop" aria-pressed="true" title="Preview the email on a computer">🖥</button>
-                        <button type="button" data-device="mobile" aria-pressed="false" title="Preview the email on a phone">📱</button>
+                        <button type="button" data-device="desktop" aria-pressed="true" title="Preview the email on a computer" aria-label="Preview the email on a computer">{!! \App\Support\Icons::i('monitor') !!}</button>
+                        <button type="button" data-device="mobile" aria-pressed="false" title="Preview the email on a phone" aria-label="Preview the email on a phone">{!! \App\Support\Icons::i('phone') !!}</button>
                     </div>
                     <button type="button" class="btn btn--sm btn--ghost" data-download>Download .html</button>
                     <button type="button" class="btn btn--sm btn--glow" data-copy>Copy HTML</button>
                     {{-- saved to the account, like the app builder: "My emails" and Save --}}
                     <label class="sr-only" for="eb-mine">Open one of my saved emails</label>
                     <select id="eb-mine" class="fb-mine" data-cloud-list hidden></select>
-                    <button type="button" class="btn btn--sm btn--ghost" data-cloud-signin>🗂 My emails</button>
-                    <button type="button" class="btn btn--sm btn--ghost" data-cloud-save>☁️ Save</button>
+                    <button type="button" class="btn btn--sm btn--ghost" data-cloud-signin>{!! \App\Support\Icons::i('folder') !!} My emails</button>
+                    <button type="button" class="btn btn--sm btn--ghost" data-cloud-save>{!! \App\Support\Icons::i('cloud') !!} Save</button>
                 </div>
             </div>
             <p class="fb-status" data-cloud-status></p>
@@ -107,9 +107,9 @@
                 <button type="button" role="tab" aria-selected="false" data-how="klaviyo">Klaviyo</button>
                 <button type="button" role="tab" aria-selected="false" data-how="other">Other / Gmail</button>
             </div>
-            <ol data-how-panel="mailchimp"><li>Under Settings choose <b>Mailchimp</b> as the unsubscribe link, then press <b>Copy HTML</b>.</li><li>In Mailchimp create an email and pick <b>Code your own → Paste in code</b>.</li><li>Paste, save, and send yourself a test.</li></ol>
-            <ol data-how-panel="brevo" hidden><li>Choose <b>Brevo</b> as the unsubscribe link, then press <b>Copy HTML</b>.</li><li>In Brevo go to <b>Campaigns → Create</b> and pick <b>Paste your code</b>.</li><li>Paste, save, and send a test.</li></ol>
-            <ol data-how-panel="klaviyo" hidden><li>Choose <b>Klaviyo</b> as the unsubscribe link, then press <b>Copy HTML</b>.</li><li>In Klaviyo go to <b>Content → Templates → Create → Import HTML</b> (or add an HTML block).</li><li>Paste, save, and preview it.</li></ol>
+            <ol data-how-panel="mailchimp"><li>Under Settings choose <b>Mailchimp</b> as the unsubscribe link, then press <b>Copy HTML</b>.</li><li>In Mailchimp create an email and pick <b>Code your own {!! \App\Support\Icons::i('chevron-right') !!} Paste in code</b>.</li><li>Paste, save, and send yourself a test.</li></ol>
+            <ol data-how-panel="brevo" hidden><li>Choose <b>Brevo</b> as the unsubscribe link, then press <b>Copy HTML</b>.</li><li>In Brevo go to <b>Campaigns {!! \App\Support\Icons::i('chevron-right') !!} Create</b> and pick <b>Paste your code</b>.</li><li>Paste, save, and send a test.</li></ol>
+            <ol data-how-panel="klaviyo" hidden><li>Choose <b>Klaviyo</b> as the unsubscribe link, then press <b>Copy HTML</b>.</li><li>In Klaviyo go to <b>Content {!! \App\Support\Icons::i('chevron-right') !!} Templates {!! \App\Support\Icons::i('chevron-right') !!} Create {!! \App\Support\Icons::i('chevron-right') !!} Import HTML</b> (or add an HTML block).</li><li>Paste, save, and preview it.</li></ol>
             <ol data-how-panel="other" hidden><li>Most email tools (MailerLite, ConvertKit, HubSpot, ActiveCampaign) have an <b>HTML / code</b> editor — paste it there.</li><li>Gmail and Outlook can’t send designed emails to a list: use an email platform for newsletters.</li><li>Choose <b>My own link</b> for unsubscribe if your tool isn’t listed, and paste your tool’s unsubscribe address.</li></ol>
         </div>
 

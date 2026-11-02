@@ -8,6 +8,8 @@
     const $ = (s, el = root) => el.querySelector(s), $$ = (s, el = root) => [...el.querySelectorAll(s)];
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const hex = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : d);
+    /** A block's mark in the editor: one of our icons (icons.js) by name, or short text like "H". (Never used inside the email itself.) */
+    const ic = (v, o) => (window.OwlIcon?.names?.includes(v) ? window.OwlIcon(v, o) : esc(v));
     const uid = () => (Math.random().toString(36).slice(2) + '00000000').slice(0, 8);
     const track = (e, d = {}) => window.track?.(e, d);
     const STORE = 'owlvix-email-builder';
@@ -30,17 +32,17 @@
     /* ------------------------------------------------ blocks: [label, icon, defaults, fields] */
     // Field kinds: text, area, url, img, select (options), num (min, max), check
     const B = {
-        header: ['Logo / header', '⌂', { logo: '', logoW: 160, name: 'Your brand', align: 'center' }, [['logo', 'Logo image address (https://…)', 'img'], ['logoW', 'Logo width (px)', 'num', 40, 300], ['name', 'Brand name (shown if no logo)', 'text'], ['align', 'Alignment', 'select', { left: 'Left', center: 'Centre' }]]],
+        header: ['Logo / header', 'home', { logo: '', logoW: 160, name: 'Your brand', align: 'center' }, [['logo', 'Logo image address (https://…)', 'img'], ['logoW', 'Logo width (px)', 'num', 40, 300], ['name', 'Brand name (shown if no logo)', 'text'], ['align', 'Alignment', 'select', { left: 'Left', center: 'Centre' }]]],
         heading: ['Heading', 'H', { text: 'A big, clear headline', size: 28, align: 'left' }, [['text', 'Heading', 'text'], ['size', 'Size (px)', 'num', 18, 44], ['align', 'Alignment', 'select', { left: 'Left', center: 'Centre', right: 'Right' }]]],
         text: ['Text', '¶', { text: 'Write your message here. Keep paragraphs short — most people read email on their phone.\n\nUse **two stars** for bold. Web addresses become links.', align: 'left' }, [['text', 'Text', 'area'], ['align', 'Alignment', 'select', { left: 'Left', center: 'Centre' }]]],
-        image: ['Image', '🖼', { src: '', alt: '', url: '', full: false }, [['src', 'Image address (https://…)', 'img'], ['alt', 'Describe the image (shown if images are off)', 'text'], ['url', 'Link (optional)', 'url'], ['full', 'Edge to edge (no side space)', 'check']]],
-        button: ['Button', '⏺', { text: 'Shop now', url: '', align: 'center', full: false }, [['text', 'Button text', 'text'], ['url', 'Link', 'url'], ['align', 'Alignment', 'select', { left: 'Left', center: 'Centre' }], ['full', 'Full width', 'check']]],
-        split: ['Image + text', '◧', { src: '', title: 'Feature title', text: 'A short description of this feature, product or story.', btn: 'Learn more', url: '', flip: false }, [['src', 'Image address (https://…)', 'img'], ['title', 'Title', 'text'], ['text', 'Text', 'area'], ['btn', 'Link text (optional)', 'text'], ['url', 'Link', 'url'], ['flip', 'Image on the right', 'check']]],
-        products: ['Two products', '▦', { a: { src: '', name: 'Product one', price: '$29', url: '' }, b: { src: '', name: 'Product two', price: '$39', url: '' }, btn: 'Buy now' }, [['a', 'First product', 'product'], ['b', 'Second product', 'product'], ['btn', 'Button text', 'text']]],
+        image: ['Image', 'image', { src: '', alt: '', url: '', full: false }, [['src', 'Image address (https://…)', 'img'], ['alt', 'Describe the image (shown if images are off)', 'text'], ['url', 'Link (optional)', 'url'], ['full', 'Edge to edge (no side space)', 'check']]],
+        button: ['Button', 'record', { text: 'Shop now', url: '', align: 'center', full: false }, [['text', 'Button text', 'text'], ['url', 'Link', 'url'], ['align', 'Alignment', 'select', { left: 'Left', center: 'Centre' }], ['full', 'Full width', 'check']]],
+        split: ['Image + text', 'grid', { src: '', title: 'Feature title', text: 'A short description of this feature, product or story.', btn: 'Learn more', url: '', flip: false }, [['src', 'Image address (https://…)', 'img'], ['title', 'Title', 'text'], ['text', 'Text', 'area'], ['btn', 'Link text (optional)', 'text'], ['url', 'Link', 'url'], ['flip', 'Image on the right', 'check']]],
+        products: ['Two products', 'bag', { a: { src: '', name: 'Product one', price: '$29', url: '' }, b: { src: '', name: 'Product two', price: '$39', url: '' }, btn: 'Buy now' }, [['a', 'First product', 'product'], ['b', 'Second product', 'product'], ['btn', 'Button text', 'text']]],
         divider: ['Divider', '—', {}, []],
-        spacer: ['Space', '↕', { h: 24 }, [['h', 'Height (px)', 'num', 4, 120]]],
-        social: ['Social links', '＠', { facebook: '', instagram: 'https://instagram.com/', linkedin: '', x: '', youtube: '', tiktok: '', whatsapp: '' }, Object.entries(SOCIAL).map(([k, v]) => [k, v[0], 'url'])],
-        footer: ['Footer & unsubscribe', '✉', { company: 'Your Company Ltd', address: '12 Main Street, Your City', why: 'You are getting this email because you signed up on our website.' }, [['company', 'Company name', 'text'], ['address', 'Postal address (required by law in many countries)', 'text'], ['why', 'Why they get this email', 'area']]],
+        spacer: ['Space', 'up-down', { h: 24 }, [['h', 'Height (px)', 'num', 4, 120]]],
+        social: ['Social links', 'link', { facebook: '', instagram: 'https://instagram.com/', linkedin: '', x: '', youtube: '', tiktok: '', whatsapp: '' }, Object.entries(SOCIAL).map(([k, v]) => [k, v[0], 'url'])],
+        footer: ['Footer & unsubscribe', 'mail', { company: 'Your Company Ltd', address: '12 Main Street, Your City', why: 'You are getting this email because you signed up on our website.' }, [['company', 'Company name', 'text'], ['address', 'Postal address (required by law in many countries)', 'text'], ['why', 'Why they get this email', 'area']]],
     };
     const MAX = 60; // blocks per email
     const block = (type, o = {}) => ({ id: uid(), type, ...structuredClone(B[type][2]), ...o });
@@ -211,8 +213,8 @@ ${rows}
         const n = E.blocks.length;
         $('[data-blocks]').innerHTML = E.blocks.map((b, i) => {
             const [label, icon, , fields] = B[b.type], open = b.id === openId;
-            return `<div class="fb-q${open ? ' is-open' : ''}" data-i="${i}"><div class="fb-q__head" data-toggle="${b.id}" role="button" tabindex="0" aria-expanded="${open}"><span class="fb-q__icon" aria-hidden="true">${esc(icon)}</span><span class="fb-q__label">${label}${summary(b) ? ` <small>· ${summary(b)}</small>` : ''}</span>
-                <span class="fb-q__tools"><button type="button" data-move="-1" title="Move this block up the email" aria-label="Move up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" title="Move this block down the email" aria-label="Move down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup title="Make a copy of this block" aria-label="Copy this block">⧉</button><button type="button" data-del title="Delete this block" aria-label="Delete this block" class="fb-del">✕</button></span></div>
+            return `<div class="fb-q${open ? ' is-open' : ''}" data-i="${i}"><div class="fb-q__head" data-toggle="${b.id}" role="button" tabindex="0" aria-expanded="${open}"><span class="fb-q__icon" aria-hidden="true">${ic(icon)}</span><span class="fb-q__label">${label}${summary(b) ? ` <small>· ${summary(b)}</small>` : ''}</span>
+                <span class="fb-q__tools"><button type="button" data-move="-1" title="Move this block up the email" aria-label="Move up" ${i ? '' : 'disabled'}>${ic('arrow-up')}</button><button type="button" data-move="1" title="Move this block down the email" aria-label="Move down" ${i < n - 1 ? '' : 'disabled'}>${ic('arrow-down')}</button><button type="button" data-dup title="Make a copy of this block" aria-label="Copy this block">${ic('copy')}</button><button type="button" data-del title="Delete this block" aria-label="Delete this block" class="fb-del">${ic('close')}</button></span></div>
                 ${open ? `<div class="fb-q__body">${fields.map(fl => fieldHtml(b, fl)).join('') || '<p class="fb-hint">Nothing to set.</p>'}</div>` : ''}</div>`;
         }).join('') || '<p class="fb-hint">Your email is empty — add a block below.</p>';
     };
@@ -251,7 +253,7 @@ ${rows}
     const markPreview = () => { const d = frame.contentDocument; if (!d) return; d.querySelectorAll('[data-b].is-on').forEach(el => el.classList.remove('is-on')); d.querySelector(`[data-b="${openId}"]`)?.classList.add('is-on'); };
     const changed = () => { save(); drawPreview(); };
 
-    $('[data-add]').innerHTML = Object.entries(B).map(([k, v]) => `<button type="button" data-add-block="${k}"><span aria-hidden="true">${esc(v[1])}</span>${v[0]}</button>`).join('');
+    $('[data-add]').innerHTML = Object.entries(B).map(([k, v]) => `<button type="button" data-add-block="${k}"><span aria-hidden="true">${ic(v[1])}</span>${v[0]}</button>`).join('');
     $('[data-templates]').innerHTML = Object.entries(T).map(([k, v]) => `<button type="button" class="fb-chip" data-tpl="${k}">${esc(v[0])}</button>`).join('');
     $('[data-set="font"]').innerHTML = Object.entries(FONTS).map(([k, v]) => `<option value="${esc(k)}">${v}</option>`).join('');
     $('[data-set="platform"]').innerHTML = Object.entries(UNSUB).map(([k, v]) => `<option value="${k}">${v[0]}</option>`).join('');
@@ -302,7 +304,7 @@ ${rows}
     };
     $('[data-copy]').addEventListener('click', async () => {
         if (!(await ready())) return;
-        try { await navigator.clipboard.writeText(html()); note('✅ HTML copied — paste it into your email platform’s “code” or “HTML” editor.'); }
+        try { await navigator.clipboard.writeText(html()); note('HTML copied — paste it into your email platform’s “code” or “HTML” editor.'); }
         catch { note('Your browser blocked copying — use Download instead.'); }
         track('email_builder_copy');
     });
@@ -336,9 +338,9 @@ ${rows}
         if (!st || !btn || typeof E === 'undefined') return;
         const dirty = unsaved();
         st.textContent = !cloud.id ? 'Not saved yet — your email is kept in this browser. Save it to your account to open it anywhere.'
-            : dirty ? 'Unsaved changes — press Save to update your account copy.' : 'Saved to your account ✓';
+            : dirty ? 'Unsaved changes — press Save to update your account copy.' : 'Saved to your account.';
         st.dataset.state = !cloud.id ? 'new' : dirty ? 'dirty' : 'saved';
-        btn.textContent = !cloud.id ? '☁️ Save' : dirty ? '☁️ Save changes' : 'Saved ✓';
+        btn.innerHTML = !cloud.id ? `${ic('cloud')} Save` : dirty ? `${ic('cloud')} Save changes` : `${ic('tick')} Saved`;
         btn.classList.toggle('btn--glow', dirty); btn.classList.toggle('btn--ghost', !dirty);
     }
     const drawCloudList = () => {
@@ -346,7 +348,7 @@ ${rows}
         const on = !!ACC?.signedIn() && cloudList !== null;
         sel.hidden = !on; signin.hidden = on;
         if (!on) return;
-        sel.innerHTML = `<option value="">🗂 My emails (${cloudList.length})</option>` + cloudList.map(x => `<option value="${esc(x.id)}" ${x.id === cloud.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('') + '<option value="new">＋ New email</option>';
+        sel.innerHTML = `<option value="">My emails (${cloudList.length})</option>` + cloudList.map(x => `<option value="${esc(x.id)}" ${x.id === cloud.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('') + '<option value="new">+ New email</option>';
         if (!cloudList.some(x => x.id === cloud.id)) sel.value = '';
     };
     const loadCloudList = async () => { try { cloudList = await ACC.projects.list('email'); } catch (ex) { cloudList = null; if (ex.status !== 401) note(ex.message, 'error'); } drawCloudList(); };
@@ -390,7 +392,7 @@ ${rows}
     let wizard = null;
     const WZ = window.OwlWizard;
     if (WZ) {
-        const EM = { newsletter: '📰', sale: '🏷️', welcome: '👋', event: '🎟️', launch: '🚀' };
+        const EM = { newsletter: 'doc', sale: 'tag', welcome: 'hand', event: 'ticket', launch: 'rocket' };
         let picked = null, hadWork = false, before = null; try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!cloud.id; } catch {}
         const first = type => E.blocks.find(b => b.type === type);
         let frame = null, timer = 0;
@@ -399,7 +401,7 @@ ${rows}
         const steps = [
             {
                 title: 'What is this email for?', sub: 'We’ll start you with a ready email made for it — you can change every block.',
-                draw: () => WZ.cards([...(hadWork ? [['keep', '✅', 'Keep my email', 'Update what’s there']] : []), ...Object.entries(T).map(([k, v]) => [k, EM[k] || '✉️', v[0]])], picked),
+                draw: () => WZ.cards([...(hadWork ? [['keep', 'check', 'Keep my email', 'Update what’s there']] : []), ...Object.entries(T).map(([k, v]) => [k, EM[k] || 'mail', v[0]])], picked),
                 click: (e, el, box) => {
                     if (!el.dataset.wzPick) return;
                     picked = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el);
@@ -466,7 +468,7 @@ ${rows}
         let named = false;
         wizard = WZ.mount({
             root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-email-off',
-            say: ['Hoo! Need an email for your customers? I’ll set it up with you — it takes about 2 minutes.', 'Pick what it’s for, and I’ll start you with a ready email.', 'You’ll see it on a phone as you go. Ready? 🚀'],
+            say: ['Hoo! Need an email for your customers? I’ll set it up with you — it takes about 2 minutes.', 'Pick what it’s for, and I’ll start you with a ready email.', 'You’ll see it on a phone as you go. Ready?'],
             hasSaved: () => !!cloud.id,
             quickSlot: root.querySelector('.fb-top__actions'),
             onRestart: () => { picked = null; named = false; hadWork = false; },
@@ -479,9 +481,9 @@ ${rows}
                 title: 'Your email is ready',
                 sub: 'Scroll the preview to see it. Save it to your account, then copy the HTML into your email platform — and fine-tune any block in the editor.',
                 actions: [
-                    { label: '☁️ Save to my account', cls: 'btn btn--glow', then: 'save', act: close => { close(); saveCloud(); } },
-                    { label: '📋 Copy HTML', then: 'copy', act: async (close, o) => { close(); if (o?.replay && !(await window.sweet({ icon: 'success', title: 'Your email is ready', text: 'Copy the HTML, then paste it into your email platform.', confirm: '📋 Copy HTML', cancel: 'Not now' }))) return; root.querySelector('[data-copy]').click(); } }, // (copying needs a click, so on arrival it's one more tap)
-                    { label: '✏️ Keep editing', act: close => close() },
+                    { label: 'Save to my account', icon: 'cloud', cls: 'btn btn--glow', then: 'save', act: close => { close(); saveCloud(); } },
+                    { label: 'Copy HTML', icon: 'clipboard', then: 'copy', act: async (close, o) => { close(); if (o?.replay && !(await window.sweet({ icon: 'success', title: 'Your email is ready', text: 'Copy the HTML, then paste it into your email platform.', confirm: 'Copy HTML', cancel: 'Not now' }))) return; root.querySelector('[data-copy]').click(); } }, // (copying needs a click, so on arrival it's one more tap)
+                    { label: 'Keep editing', icon: 'pen', act: close => close() },
                 ],
             },
             editorUrl: root.dataset.editorUrl || '', noun: 'email',

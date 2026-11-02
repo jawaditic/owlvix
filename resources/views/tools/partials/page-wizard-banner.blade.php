@@ -8,6 +8,6 @@
         'title' => 'Let’s build <span class="accent">your '.e($what).'</span> together',
         'sub' => 'Answer a few easy questions and watch your '.$what.' come to life on a phone as you go. No code, no cost.',
         'steps' => [['Pick what', 'it’s for'], ['Name, words', '& colours'], ['Preview, then', 'save it']],
-        'go' => '🚀 Start building my '.$what,
+        'go' => 'Start building my '.$what,
     ])
 </div>

@@ -2,7 +2,7 @@
 @section('title', $message->name)
 
 @section('content')
-    <a href="{{ route('admin.messages.index') }}" class="back">← All enquiries</a>
+    <a href="{{ route('admin.messages.index') }}" class="back">{!! \App\Support\Icons::i('arrow-left') !!} All enquiries</a>
 
     <article class="panel detail">
         <header class="detail__head">

@@ -16,7 +16,7 @@ const cards = [
     ...data.guides.map(g => ({ file: g.route, label: 'Free step-by-step guide', title: g.title, sub: 'Plain English · with a free builder', url: 'owlvix.com' + g.path })),
     { file: 'guides', label: 'Free guides', title: 'Step-by-step guides for small businesses', sub: 'Shops · Websites · Menus · CVs · Apps', url: 'owlvix.com/guides' },
     { file: 'examples', label: '56 free designs', title: 'Ready-made designs you can use free', sub: 'Shops · Websites · Menus · Weddings · Portfolios', url: 'owlvix.com/examples' },
-    ...data.builders.map(b => ({ file: b.route, label: 'Free builder · No sign-up to start', title: 'Free ' + b.title.replace(/^(.)/, c => c.toLowerCase()).replace(/^free /i, ''), sub: b.desc, url: 'owlvix.com' + b.path })),
+    ...data.builders.map(b => ({ file: b.route, label: 'Free builder · No sign-up to start', title: 'Free ' + b.title.replace(/^([A-Z])(?=[a-z])/, c => c.toLowerCase()).replace(/^free /i, ''), sub: b.desc, url: 'owlvix.com' + b.path })),
 ];
 
 const page = c => `<!doctype html><html><head><meta charset="utf-8">

@@ -194,7 +194,7 @@ class SeoCheck
         $xRobots = strtolower(implode(',', $headers['x-robots-tag'] ?? []));
         $noindex = str_contains($robotsMeta, 'noindex') || str_contains($xRobots, 'noindex');
         $add('Technical', 'Indexable by Google', $noindex ? 'fail' : 'pass', $noindex ? 'The page tells search engines not to index it (noindex).' : 'No noindex tag found.',
-            $noindex ? 'Remove the "noindex" robots tag (or X-Robots-Tag header) if you want this page to appear in Google. In WordPress check Settings → Reading → "Discourage search engines".' : '');
+            $noindex ? 'Remove the "noindex" robots tag (or X-Robots-Tag header) if you want this page to appear in Google. In WordPress check Settings > Reading > "Discourage search engines".' : '');
 
         $canonical = $attr('//link[translate(@rel,"CANOICL","canoicl")="canonical"]', 'href');
         $add('Technical', 'Canonical tag', $canonical ? 'pass' : 'warn', $canonical ? 'Points to '.mb_strimwidth($canonical, 0, 70, '…') : 'No canonical tag.',

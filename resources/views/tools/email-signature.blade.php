@@ -5,8 +5,8 @@
 @php
     $faq = [
         ['Is the email signature generator free?', 'Yes, completely. No sign-up, no watermark and no limits. Everything happens in your browser — your details are not sent to us.'],
-        ['How do I add it to Gmail?', 'Press “Copy signature”. In Gmail open Settings (gear) → See all settings → General → Signature → Create new, paste with Ctrl+V (Cmd+V on Mac) and press “Save changes” at the bottom of the page.'],
-        ['How do I add it to Outlook?', 'Press “Copy signature”. In Outlook on the web or the new Outlook go to Settings → Accounts → Signatures; in classic Outlook go to File → Options → Mail → Signatures. Create a new one, paste and save.'],
+        ['How do I add it to Gmail?', 'Press “Copy signature”. In Gmail open Settings (gear) > See all settings > General > Signature > Create new, paste with Ctrl+V (Cmd+V on Mac) and press “Save changes” at the bottom of the page.'],
+        ['How do I add it to Outlook?', 'Press “Copy signature”. In Outlook on the web or the new Outlook go to Settings > Accounts > Signatures; in classic Outlook go to File > Options > Mail > Signatures. Create a new one, paste and save.'],
         ['Why does my photo not show?', 'Email signatures can only show images that are online. Put your photo or logo on your website (or any public image host) and paste its address, starting with https://. Images from Google Drive or Dropbox sharing links do not work.'],
         ['Will it look the same on phones?', 'Yes. The signature is built with simple tables and inline styles — the way email apps expect — so it looks right in Gmail, Outlook, Apple Mail and on phones.'],
     ];
@@ -116,9 +116,9 @@
                         <button type="button" role="tab" aria-selected="false" data-how="apple">Apple Mail</button>
                         <button type="button" role="tab" aria-selected="false" data-how="phone">iPhone / Android</button>
                     </div>
-                    <ol data-how-panel="gmail"><li>Press <b>Copy signature</b>.</li><li>In Gmail open <b>Settings ⚙ → See all settings</b>.</li><li>On the <b>General</b> tab scroll to <b>Signature</b> and press <b>Create new</b>.</li><li>Paste (Ctrl+V / Cmd+V), choose it as the default, and press <b>Save changes</b> at the bottom.</li></ol>
-                    <ol data-how-panel="outlook" hidden><li>Press <b>Copy signature</b>.</li><li>Outlook on the web / new Outlook: <b>Settings → Accounts → Signatures</b>. Classic Outlook: <b>File → Options → Mail → Signatures</b>.</li><li>Create a new signature and paste (Ctrl+V).</li><li>Pick it for new messages and replies, then save.</li></ol>
-                    <ol data-how-panel="apple" hidden><li>Press <b>Download .html</b> and open the file in Safari, then select all (Cmd+A) and copy (Cmd+C).</li><li>In Mail open <b>Settings → Signatures</b> and press <b>+</b>.</li><li>Untick <b>Always match my default message font</b>, then paste into the box on the right.</li></ol>
+                    <ol data-how-panel="gmail"><li>Press <b>Copy signature</b>.</li><li>In Gmail open <b>Settings {!! \App\Support\Icons::i('gear') !!} {!! \App\Support\Icons::i('chevron-right') !!} See all settings</b>.</li><li>On the <b>General</b> tab scroll to <b>Signature</b> and press <b>Create new</b>.</li><li>Paste (Ctrl+V / Cmd+V), choose it as the default, and press <b>Save changes</b> at the bottom.</li></ol>
+                    <ol data-how-panel="outlook" hidden><li>Press <b>Copy signature</b>.</li><li>Outlook on the web / new Outlook: <b>Settings {!! \App\Support\Icons::i('chevron-right') !!} Accounts {!! \App\Support\Icons::i('chevron-right') !!} Signatures</b>. Classic Outlook: <b>File {!! \App\Support\Icons::i('chevron-right') !!} Options {!! \App\Support\Icons::i('chevron-right') !!} Mail {!! \App\Support\Icons::i('chevron-right') !!} Signatures</b>.</li><li>Create a new signature and paste (Ctrl+V).</li><li>Pick it for new messages and replies, then save.</li></ol>
+                    <ol data-how-panel="apple" hidden><li>Press <b>Download .html</b> and open the file in Safari, then select all (Cmd+A) and copy (Cmd+C).</li><li>In Mail open <b>Settings {!! \App\Support\Icons::i('chevron-right') !!} Signatures</b> and press <b>+</b>.</li><li>Untick <b>Always match my default message font</b>, then paste into the box on the right.</li></ol>
                     <ol data-how-panel="phone" hidden><li>Phone mail apps only keep plain text signatures.</li><li>Set the signature up in Gmail or Outlook on a computer — it is then used when you send from their phone apps too.</li></ol>
                 </div>
                 <div class="lp-cta__box card speed-cta schema-cta">
@@ -257,12 +257,12 @@
             sel.removeAllRanges();
         }
         if (!ok) return said('Your browser blocked copying. Use “Download .html”, open the file, select all and copy.');
-        said('✅ Copied! Now paste it into your email signature settings (Ctrl+V / Cmd+V).');
+        said('Copied! Now paste it into your email signature settings (Ctrl+V / Cmd+V).');
         window.track?.('esig_copy', { design: S.design });
     });
     $('[data-copy-html]').addEventListener('click', async () => {
         if (!named()) return;
-        try { await navigator.clipboard.writeText(html()); said('✅ HTML code copied.'); } catch { said('Your browser blocked copying — use Download instead.'); }
+        try { await navigator.clipboard.writeText(html()); said('HTML code copied.'); } catch { said('Your browser blocked copying — use Download instead.'); }
         window.track?.('esig_copy_html');
     });
     $('[data-download]').addEventListener('click', () => {

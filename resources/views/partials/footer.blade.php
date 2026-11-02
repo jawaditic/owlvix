@@ -13,7 +13,7 @@
             @unless (request()->routeIs('free-tools'))<a href="{{ route('free-tools') }}">Free tools</a>@endunless
             @unless (request()->routeIs('guides'))<a href="{{ route('guides') }}">Guides</a>@endunless
             <a href="{{ route('privacy') }}">Privacy</a>
-            <a href="{{ request()->routeIs('home', 'landing', 'service.*') ? '#contact' : route('landing').'#contact' }}">Start a project →</a>
+            <a href="{{ request()->routeIs('home', 'landing', 'service.*') ? '#contact' : route('landing').'#contact' }}">Start a project {!! \App\Support\Icons::i('arrow-right') !!}</a>
         </nav>
     </div>
 </footer>

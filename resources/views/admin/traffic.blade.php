@@ -7,8 +7,8 @@
             $max = max(1, $rows->max('n') ?? 1);
             return ['rows' => $rows, 'max' => $max, 'label' => $label];
         };
-        $sourceIcons = ['Google' => '🔎', 'Direct' => '↪', 'WhatsApp' => '💬', 'Facebook' => '📘', 'Instagram' => '📸', 'LinkedIn' => '💼', 'Fiverr' => '🟢', 'Email' => '✉', 'ChatGPT' => '🤖', 'X (Twitter)' => '𝕏', 'YouTube' => '▶', 'Bing' => '🔎'];
-        $deviceIcons = ['mobile' => '📱', 'desktop' => '🖥', 'tablet' => '📟'];
+        $sourceIcons = ['Google' => 'search', 'Direct' => 'arrow-right', 'WhatsApp' => 'whatsapp', 'Facebook' => 'book', 'Instagram' => 'camera', 'LinkedIn' => 'briefcase', 'Fiverr' => 'dot', 'Email' => 'mail', 'ChatGPT' => 'robot', 'X (Twitter)' => 'megaphone', 'YouTube' => 'play', 'Bing' => 'search'];
+        $deviceIcons = ['mobile' => 'phone', 'desktop' => 'monitor', 'tablet' => 'phone'];
     @endphp
 
     <div class="head">
@@ -97,7 +97,7 @@
                 <ul class="hbars hbars--flags">
                     @foreach ($sources as $s)
                         <li title="{{ $s['key'] }}: {{ $s['n'] }}">
-                            <span class="hbars__name"><span class="flag" aria-hidden="true">{{ $sourceIcons[$s['key']] ?? '🔗' }}</span>{{ $s['key'] }}</span>
+                            <span class="hbars__name"><span class="flag" aria-hidden="true">{!! \App\Support\Icons::i($sourceIcons[$s['key']] ?? 'link') !!}</span>{{ $s['key'] }}</span>
                             <span class="hbars__track"><i style="width: {{ max(2, round($s['n'] / $max * 100)) }}%"></i></span>
                             <span class="hbars__val">{{ $s['n'] }}</span>
                         </li>
@@ -113,7 +113,7 @@
                 <ul class="hbars hbars--flags">
                     @foreach ($devices as $d)
                         <li title="{{ ucfirst($d['key']) }}: {{ $d['n'] }}">
-                            <span class="hbars__name"><span class="flag" aria-hidden="true">{{ $deviceIcons[$d['key']] ?? '' }}</span>{{ ucfirst($d['key']) }}</span>
+                            <span class="hbars__name"><span class="flag" aria-hidden="true">@isset($deviceIcons[$d['key']]){!! \App\Support\Icons::i($deviceIcons[$d['key']]) !!}@endisset</span>{{ ucfirst($d['key']) }}</span>
                             <span class="hbars__track"><i style="width: {{ max(2, round($d['n'] / $dTotal * 100)) }}%"></i></span>
                             <span class="hbars__val">{{ round($d['n'] / $dTotal * 100) }}%</span>
                         </li>
@@ -156,7 +156,7 @@
                 <span class="visit-row__flag" title="{{ \App\Support\Country::name($v->country) }}">{{ \App\Support\Country::flag($v->country) }}</span>
                 <span class="visit-row__main">
                     <strong>{{ \App\Support\Country::name($v->country) }}</strong>
-                    <small>{{ $v->source }}{{ $v->referrer_host && $v->referrer_host !== strtolower($v->source) ? ' · '.$v->referrer_host : '' }} · {{ $deviceIcons[$v->device] ?? '' }} {{ ucfirst($v->device) }} · {{ $v->browser }}</small>
+                    <small>{{ $v->source }}{{ $v->referrer_host && $v->referrer_host !== strtolower($v->source) ? ' · '.$v->referrer_host : '' }} · @isset($deviceIcons[$v->device]){!! \App\Support\Icons::i($deviceIcons[$v->device]) !!} @endisset{{ ucfirst($v->device) }} · {{ $v->browser }}</small>
                 </span>
                 <span class="visit-row__meta">
                     @if ($v->is_new)<em class="pill-new">New</em>@endif

@@ -8,6 +8,8 @@
     const $ = (s, el = root) => el.querySelector(s), $$ = (s, el = root) => [...el.querySelectorAll(s)];
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const hex = (c, d) => (/^#[0-9a-f]{6}$/i.test(c || '') ? c : d);
+    /** One of our icons (icons.js), as inline SVG. */
+    const ic = (v, o) => (window.OwlIcon ? window.OwlIcon(v, o) : '');
     const uid = () => (Math.random().toString(36).slice(2) + '00000000').slice(0, 8);
     const track = (e, d = {}) => window.track?.(e, d);
     /** Styled dialog (window.sweet). If its script hasn't loaded after a short wait, questions answer "no" (nothing is
@@ -150,9 +152,9 @@ main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam whe
         ? `<label${o.wide ? ' class="rb-wide"' : ''}>${label}${o.hint ? ` <small>${o.hint}</small>` : ''}<textarea data-p="${path}" rows="${o.rows || 3}" maxlength="${o.max || 1000}" placeholder="${esc(o.ph || '')}">${esc(val)}</textarea></label>`
         : `<label${o.wide ? ' class="rb-wide"' : ''}>${label}<input data-p="${path}" maxlength="${o.max || 120}" value="${esc(val)}" placeholder="${esc(o.ph || '')}"${o.type ? ` type="${o.type}"` : ''}></label>`;
     const listHtml = (key, title, render, addLabel) => `<div class="rb-list">${R[key].map((x, i) => `<div class="fb-q is-open rb-item" data-list="${key}" data-i="${i}"><div class="fb-q__head"><span class="fb-q__label">${esc(title(x)) || '<i>New entry</i>'}</span>
-        <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} title="Move this entry up" aria-label="Move up">↑</button><button type="button" data-move="1" ${i < R[key].length - 1 ? '' : 'disabled'} title="Move this entry down" aria-label="Move down">↓</button><button type="button" data-del class="fb-del" title="Delete this entry" aria-label="Delete this entry">✕</button></span></div>
+        <span class="fb-q__tools"><button type="button" data-move="-1" ${i ? '' : 'disabled'} title="Move this entry up" aria-label="Move up">${ic('arrow-up')}</button><button type="button" data-move="1" ${i < R[key].length - 1 ? '' : 'disabled'} title="Move this entry down" aria-label="Move down">${ic('arrow-down')}</button><button type="button" data-del class="fb-del" title="Delete this entry" aria-label="Delete this entry">${ic('close')}</button></span></div>
         <div class="fb-q__body fb-2">${render(x, `${key}.${i}`)}</div></div>`).join('')}</div>
-        ${R[key].length < MAX[key] ? `<button type="button" class="btn btn--sm btn--ghost rb-add" data-add="${key}">＋ ${addLabel}</button>` : ''}`;
+        ${R[key].length < MAX[key] ? `<button type="button" class="btn btn--sm btn--ghost rb-add" data-add="${key}">${ic('plus')} ${addLabel}</button>` : ''}`;
     const openState = {};
     const draw = (openKey = '') => {
         $$('[data-form] details').forEach(d => (openState[d.dataset.sec] = d.open));
@@ -160,7 +162,7 @@ main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam whe
         const P = R.person;
         $('[data-form]').innerHTML = `
         <details class="fb-settings" data-sec="person" open><summary>Your details</summary>
-            <div class="rb-photo">${R.photo ? `<img src="${R.photo}" alt="Your photo">` : '<span aria-hidden="true">👤</span>'}<div><button type="button" class="btn btn--sm btn--ghost" data-photo>${R.photo ? 'Change photo' : 'Add a photo (optional)'}</button>${R.photo ? '<button type="button" class="rb-link" data-photo-clear>Remove</button>' : ''}<p class="fb-hint">Skip the photo for jobs in the UK, US and Canada.</p></div></div>
+            <div class="rb-photo">${R.photo ? `<img src="${R.photo}" alt="Your photo">` : `<span aria-hidden="true">${ic('user')}</span>`}<div><button type="button" class="btn btn--sm btn--ghost" data-photo>${R.photo ? 'Change photo' : 'Add a photo (optional)'}</button>${R.photo ? '<button type="button" class="rb-link" data-photo-clear>Remove</button>' : ''}<p class="fb-hint">Skip the photo for jobs in the UK, US and Canada.</p></div></div>
             <div class="fb-2">${fld('person.name', 'Full name', P.name)}${fld('person.title', 'Job title', P.title, { ph: 'e.g. Marketing Manager' })}${fld('person.email', 'Email', P.email, { type: 'email' })}${fld('person.phone', 'Phone', P.phone, { type: 'tel' })}${fld('person.place', 'City, country', P.place)}${fld('person.web', 'LinkedIn or website', P.web, { ph: 'linkedin.com/in/you' })}</div>
         </details>
         <details class="fb-settings" data-sec="summary" open><summary>Profile</summary>${fld('summary', 'About you', R.summary, { area: true, rows: 4, max: 1500, hint: '2–3 sentences', wide: true })}</details>
@@ -251,7 +253,7 @@ main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam whe
     /* ------------------------------------------------ quick setup wizard (public/js/builder-wizard.js) — everything stays on this device */
     const WZ = window.OwlWizard;
     if (WZ) {
-        const EM = { classic: '📄', modern: '🗂️', bold: '⚡', minimal: '◻️', compact: '📑' };
+        const EM = { classic: 'doc', modern: 'folder', bold: 'bolt', minimal: 'note', compact: 'clipboard' };
         // still the untouched example? (its name and email, and its summary, skills and jobs — edits there are theirs to keep)
         const isSample = () => {
             const ex = clean(sample()), jobs = r => JSON.stringify((r.jobs || []).map(j => [j.role, j.company, j.points]));
@@ -267,7 +269,7 @@ main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam whe
         const steps = [
             {
                 title: 'Pick a design', sub: 'All five pass applicant tracking systems (ATS). You can switch any time.',
-                draw: () => WZ.cards(Object.entries(DESIGNS).map(([k, v]) => [k, EM[k] || '📄', v]), R.design),
+                draw: () => WZ.cards(Object.entries(DESIGNS).map(([k, v]) => [k, EM[k] || 'doc', v]), R.design),
                 click: (e, el, box) => { if (!el.dataset.wzPick) return; R.design = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el); upd(); },
             },
             {
@@ -283,7 +285,7 @@ main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam whe
                 draw: () => { const j = j0(); return `<div class="wz-2">${field('role', 'Job title', 'e.g. Sales Assistant', j)}${field('company', 'Company', 'e.g. Northwind Ltd', j)}
                     ${field('from', 'From', 'e.g. 2022', j, 'text', 20)}${field('to', 'To', j.now ? 'Present' : 'e.g. 2024', j, 'text', 20)}</div>
                     <label class="wz-check"><input type="checkbox" data-wz-now ${j.now ? 'checked' : ''}> I work here now</label>
-                    <label class="wz-field">What you achieved <small>— one per line, numbers help</small><textarea data-wz="points" rows="3" maxlength="1500" placeholder="Served 80+ customers a day with a 4.9★ rating&#10;Trained 3 new team members">${esc(fresh ? '' : j.points)}</textarea></label>`; },
+                    <label class="wz-field">What you achieved <small>— one per line, numbers help</small><textarea data-wz="points" rows="3" maxlength="1500" placeholder="Served 80+ customers a day with a 4.9-star rating&#10;Trained 3 new team members">${esc(fresh ? '' : j.points)}</textarea></label>`; },
                 input: (e, el) => { if (!el.dataset.wz) return; own(); j0()[el.dataset.wz] = el.value; upd(); },
                 change: (e, el, box) => { if (!el.matches('[data-wz-now]')) return; own(); j0().now = el.checked; const to = box.querySelector('[data-wz="to"]'); if (to) to.placeholder = el.checked ? 'Present' : 'e.g. 2024'; upd(); },
             },
@@ -317,7 +319,7 @@ main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam whe
         ];
         WZ.mount({
             root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-resume-off',
-            say: ['Hoo! Need a CV? I’ll write it with you — it takes about 3 minutes.', 'Your details stay on this device. Nothing is uploaded.', 'You’ll see your CV take shape as you go. Ready? 🚀'],
+            say: ['Hoo! Need a CV? I’ll write it with you — it takes about 3 minutes.', 'Your details stay on this device. Nothing is uploaded.', 'You’ll see your CV take shape as you go. Ready?'],
             hasSaved: () => !isSample(),
             quickSlot: root.querySelector('.fb-top__actions'),
             onRestart: () => { fresh = isSample(); },
@@ -333,13 +335,13 @@ main,aside,.side,.main{min-width:0}`; // one colour source in print: no seam whe
                 title: 'Your CV is ready',
                 sub: 'Download it as a PDF, or keep editing to add more jobs, languages and certificates. It stays saved on this device.',
                 actions: [
-                    { label: '📄 Download PDF', cls: 'btn btn--glow', then: 'pdf', act: async (close, o) => {
+                    { label: 'Download PDF', icon: 'download', cls: 'btn btn--glow', then: 'pdf', act: async (close, o) => {
                         close();
                         // on arrival at the editor page the PDF window needs a fresh click, or the browser blocks it
-                        if (o?.replay) { if (await window.sweet({ icon: 'success', title: 'Your CV is ready', text: 'Save it as a PDF — or keep editing first.', confirm: '📄 Download PDF', cancel: 'Keep editing' })) root.querySelector('[data-pdf]')?.click(); return; }
+                        if (o?.replay) { if (await window.sweet({ icon: 'success', title: 'Your CV is ready', text: 'Save it as a PDF — or keep editing first.', confirm: 'Download PDF', cancel: 'Keep editing' })) root.querySelector('[data-pdf]')?.click(); return; }
                         setTimeout(() => root.querySelector('[data-pdf]')?.click(), 350);
                     } },
-                    { label: '✏️ Keep editing', act: close => close() },
+                    { label: 'Keep editing', icon: 'pen', act: close => close() },
                 ],
             },
             editorUrl: root.dataset.editorUrl || '', noun: 'CV',

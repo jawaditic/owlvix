@@ -162,7 +162,7 @@
                     </a>
                     @if (! empty($t['profile_url']))
                         <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
-                            <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
+                            <span class="rating-badge__stars" aria-hidden="true">@include('partials.icon', ['n' => 'star-solid', 'times' => 5])</span>
                             <span>@include('partials.rating-summary', ['t' => $t])</span>
                         </a>
                     @endif
@@ -210,7 +210,7 @@
                                 <a href="#contact" class="btn btn--ghost btn--block" data-service="{{ $s['service'] }}">Get a quote for this</a>
                                 @foreach ((array) ($s['page'] ?? []) as $slug)
                                     @if (config('service_pages.'.$slug))
-                                        <a href="{{ route('service.'.$slug) }}" class="lp-service__more">{{ config('service_pages.'.$slug.'.name') }} <span class="nowrap">in detail →</span></a>
+                                        <a href="{{ route('service.'.$slug) }}" class="lp-service__more">{{ config('service_pages.'.$slug.'.name') }} <span class="nowrap">in detail {!! \App\Support\Icons::i('arrow-right') !!}</span></a>
                                     @endif
                                 @endforeach
                             </div>

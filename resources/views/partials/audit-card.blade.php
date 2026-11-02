@@ -57,10 +57,10 @@
             const res = await fetch(af.action, { method: 'POST', body: fd, headers: { Accept: 'application/json' } });
             const json = await res.json().catch(() => ({}));
             if (!res.ok || !json.ok) throw new Error(json.error || Object.values(json.errors || {})[0]?.[0] || json.message || 'Could not send. Please try again.');
-            amsg.textContent = json.already ? '✓ We already have your request — your audit is on its way.' : '✓ Requested! Check your inbox for a confirmation. Your full audit arrives within 2 business days.';
+            amsg.textContent = json.already ? 'We already have your request — your audit is on its way.' : 'Requested! Check your inbox for a confirmation. Your full audit arrives within 2 business days.';
             amsg.dataset.ok = '1';
             af.querySelectorAll('input, textarea').forEach(i => i.disabled = true);
-            btn.textContent = 'Audit requested ✓';
+            btn.textContent = 'Audit requested';
             window.track?.('generate_lead', { form: 'ai_audit' });
         } catch (err) { amsg.textContent = err.message; amsg.dataset.ok = ''; btn.disabled = false; btn.innerHTML = label; }
         finally { amsg.hidden = false; }

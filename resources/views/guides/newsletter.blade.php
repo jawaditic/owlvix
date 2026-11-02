@@ -30,7 +30,7 @@
         ['Write short and add one big button', 'A headline, two or three short paragraphs or blocks, and one clear button. Most people read email on a phone, so keep it easy to skim.'],
         ['Add images the right way', 'Emails can only show images that are online. Upload them to your email platform’s image library or your website and paste the address starting with https://. Google Drive and Dropbox links don’t work.',
             'add alt text to every image — some email apps hide images until the reader allows them.'],
-        ['Copy it into your email platform', 'Choose your platform under Settings so the unsubscribe link is filled in, then press “Copy HTML”. In Mailchimp choose “Code your own” → “Paste in code”; in Brevo, “Paste your code”; in Klaviyo, “Import HTML”.'],
+        ['Copy it into your email platform', 'Choose your platform under Settings so the unsubscribe link is filled in, then press “Copy HTML”. In Mailchimp choose “Code your own” > “Paste in code”; in Brevo, “Paste your code”; in Klaviyo, “Import HTML”.'],
         ['Send yourself a test, then send', 'Send a test to yourself and open it on your phone and computer. Check every link and button, then send it — or schedule it for when your readers are most likely to open.'],
     ],
     'mistakes' => [

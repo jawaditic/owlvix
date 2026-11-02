@@ -83,7 +83,7 @@ class SecurityCheck
             $hasHttps ? '' : 'Install an SSL certificate (free from Let\'s Encrypt or your host) so the connection is encrypted and browsers stop showing "Not secure".');
 
         $redirects = $http['ok'] && str_starts_with($http['url'], 'https://');
-        $add('HTTPS & certificate', 'HTTP → HTTPS redirect', $redirects ? 'pass' : ($hasHttps ? 'warn' : 'fail'),
+        $add('HTTPS & certificate', 'HTTP to HTTPS redirect', $redirects ? 'pass' : ($hasHttps ? 'warn' : 'fail'),
             $redirects ? 'http:// visitors are sent to https://.' : 'http:// visitors stay on the insecure version.',
             $redirects ? '' : 'Add a permanent (301) redirect from http:// to https:// on your server or hosting panel.');
 

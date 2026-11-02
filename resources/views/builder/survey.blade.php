@@ -58,7 +58,7 @@
 <main class="card">
     @if ($sent)
         <div class="done">
-            <div class="tick" aria-hidden="true">✓</div>
+            <div class="tick" aria-hidden="true">{!! \App\Support\Icons::i('tick') !!}</div>
             <h1>{{ $s['title'] }}</h1>
             <p class="intro">{!! nl2br(e($s['thanks'])) !!}</p>
             <a href="{{ route('builder.survey', ['id' => $form->id] + ($embed ? ['embed' => 1] : [])) }}" style="color: var(--c)">Send another answer</a>

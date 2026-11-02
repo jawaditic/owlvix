@@ -51,28 +51,44 @@
     };
 
     /* ================================================================ icons */
-    const I = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
-    const ICONS = {
-        check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
-        phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>', mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
-        pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-        heart: '<path d="M12 20s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/>', bolt: '<path d="M13 3L4 14h7l-1 7 9-11h-7z"/>',
-        shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>', truck: '<path d="M3 6h11v10H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
-        gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8S10 3 7.5 4.5 9 8 12 8zM12 8s2-5 4.5-3.5S15 8 12 8z"/>', chat: '<path d="M4 5h16v11H8l-4 4z"/>',
-        user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
-        rocket: '<path d="M12 2c3 2 5 6 5 10l-2 4H9l-2-4c0-4 2-8 5-10z"/><circle cx="12" cy="9" r="2"/><path d="M9 16l-2 4M15 16l2 4"/>', leaf: '<path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15zM5 19l7-7"/>',
-        home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>', cart: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l3 12h11l2-8H6"/>',
-        card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>', globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
-        camera: '<path d="M4 7h4l2-3h4l2 3h4v13H4z"/><circle cx="12" cy="13" r="4"/>', play: '<circle cx="12" cy="12" r="9"/><path d="M10 8l6 4-6 4z"/>',
-        award: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>', thumb: '<path d="M7 11v10H3V11zM7 11l4-8a3 3 0 0 1 3 3v4h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 2H7"/>',
-        lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>', coffee: '<path d="M4 8h13v6a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6zM17 10h2a3 3 0 0 1 0 6h-2M8 2v3M12 2v3"/>',
-        tool: '<path d="M14 6a4 4 0 0 0 5 5l-9 9a2 2 0 0 1-3-3l9-9a4 4 0 0 0-2-2z"/>', chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-        smile: '<circle cx="12" cy="12" r="9"/><path d="M8 14a5 5 0 0 0 8 0M9 9h.01M15 9h.01"/>', target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
-        arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>', wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0M12 20h.01"/>',
+    /* Owlvix's own icon set (window.OwlIcon from js/icons.js, loaded before the builders). Published pages get the
+       shapes as self-contained inline <svg> (currentColor, 1em), so they need no script or font. */
+    const ICONS = {};
+    (window.OwlIcon?.names || []).forEach(n => { ICONS[n] = window.OwlIcon.paths(n); });
+    const I = d => `<svg class="oi" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${d}</svg>`;
+    /** One of our icons by name, as inline SVG ('' when the name is unknown). */
+    const ico = name => (has(ICONS, name) ? I(ICONS[name]) : '');
+    // older projects: "i:" names from the first icon set that are called something else now
+    const ICON_ALIAS = { tool: 'wrench', arrow: 'arrow-right', award: 'gem', target: 'record' };
+    // older projects (and typed values): an emoji → the icon that replaced it
+    const EMOJI = {};
+    Object.entries({
+        'arrow-right': '→', 'arrow-left': '←', 'arrow-up': '↑', 'arrow-down': '↓', external: '↗', undo: '↩', redo: '↪', refresh: '↻ 🔁 🔄', 'up-down': '↕',
+        'chevron-down': '▾', play: '▶ ⏯ 📺', record: '⏺ 🎯', plus: '＋ ➕', tick: '✓ ✔ ☑', check: '✅', close: '✕ ✖ ❌', menu: '☰', 'star-solid': '★ 🌟', star: '⭐ 🏆 🏅 🥇', 'star-outline': '☆',
+        rocket: '🚀', party: '🎉 🎊 🥳', cloud: '☁', sparkle: '✨ 🧽 💫', box: '📦', chat: '💬 🗨', doc: '📄 📑 📰 📃', phone: '📱 📲', pen: '✏ 🖌 🖊 ✍', calendar: '📅 📆 🗓',
+        download: '⬇ 📥', upload: '⬆ 📤', pin: '📍 📌 🗺', chart: '📊', trend: '📈 💹', monitor: '🖥 💻', folder: '🗂 📂 📁', mail: '✉ 📨 📩 💌 📧', tag: '🏷', briefcase: '💼',
+        cart: '🛒', bolt: '⚡', truck: '🚚 🚛', link: '🔗', image: '🖼', camera: '📸 📷', hand: '👋', gift: '🎁', cash: '💵 💲 💰 💸', card: '💳', clipboard: '📋', note: '📝',
+        call: '📞 ☎ 📟', receipt: '🧾', bell: '🔔', music: '♪ ♫ 🎵 🎶 🎸 🎧 🎹', mic: '🎤 🎙', lock: '🔒 🔐', key: '🔑', sun: '☀ 🌞', moon: '🌙 🌓', coffee: '☕', dumbbell: '🏋 💪',
+        home: '🏡 🏠', bank: '🏦', bag: '🛍', store: '🏪', user: '👤 🧑', users: '👥 👪', eye: '👁 👀', search: '🔎 🔍', book: '📘 📚 📖', fire: '🔥', food: '🍽', pizza: '🍕',
+        burger: '🍔', bowl: '🍛 🍣 🍜', bakery: '🥐 🍞', cocktail: '🍸 🍷 🥂', apple: '🍎', leaf: '🥬 🌿 🌱 🍃', scissors: '💇 ✂', health: '🩺 💊', tooth: '🦷', ticket: '🎟 🎫',
+        graduation: '🎓', film: '🎬 🎥 🎞', megaphone: '📣 📢', handshake: '🤝', bulb: '💡 🧠', wrench: '🛠 🔧 🔨', gear: '⚙', shirt: '👕 👗', flower: '💐 🌸 🌷 🌹', palette: '🎨',
+        globe: '🌍 🌐 🌎 🌏', gem: '💍 💎', clock: '⏱ ⏳ ⌛ 🕘 ⏰', robot: '🤖', heart: '💖 💚 ❤ 💙 💜 🧡 💛', building: '⛪ 🏨 🏢', save: '💾', info: 'ℹ', quote: '❝ ❞', hash: '🔢 #️⃣',
+        help: '❓ ❔', smile: '😊 🙂 😀 😃', shield: '🛡', wifi: '📶', warning: '⚠', compass: '🧭', cake: '🎂 🧁', bottle: '🍼 🧴', vase: '🏺', magnet: '🧲', paw: '🐾 🐶 🐱',
+        trash: '🗑', copy: '⧉', thumb: '👍', whatsapp: '🟢', team: '🫂', qr: '🔳',
+    }).forEach(([n, list]) => list.split(' ').forEach(e => { EMOJI[e] = n; }));
+    /** The icon an icon value stands for: "i:name", a plain name, or a known emoji. '' when it is just text. */
+    const iconName = v => {
+        let t = String(v || '').trim();
+        if (t.startsWith('i:')) t = t.slice(2);
+        t = ICON_ALIAS[t] || t;
+        if (has(ICONS, t)) return t;
+        const e = EMOJI[t.replace(/[️‍]|\uD83C[\uDFFB-\uDFFF]/g, '')];
+        return e && has(ICONS, e) ? e : '';
     };
-    /** An icon value is either "i:name" (built-in line icon) or any emoji / text. */
-    const icon = v => (String(v || '').startsWith('i:') && ICONS[v.slice(2)] ? `<span class="ic">${I(ICONS[v.slice(2)])}</span>` : `<span class="ic ic-txt">${esc(v)}</span>`);
-    const SOCIAL = { facebook: ['Facebook', 'f', '#1877f2'], instagram: ['Instagram', 'IG', '#e1306c'], linkedin: ['LinkedIn', 'in', '#0a66c2'], x: ['X (Twitter)', '𝕏', '#111111'], youtube: ['YouTube', '▶', '#ff0000'], tiktok: ['TikTok', '♪', '#111111'], whatsapp: ['WhatsApp', 'WA', '#25d366'], pinterest: ['Pinterest', 'P', '#e60023'] };
+    /** An icon value → HTML: our icon for a name or a known emoji, otherwise the text itself (escaped). */
+    const icon = v => { const n = iconName(v); return n ? `<span class="ic">${ico(n)}</span>` : `<span class="ic ic-txt">${esc(v)}</span>`; };
+    const STARS = ico('star-solid').repeat(5);
+    const SOCIAL = { facebook: ['Facebook', 'f', '#1877f2'], instagram: ['Instagram', 'IG', '#e1306c'], linkedin: ['LinkedIn', 'in', '#0a66c2'], x: ['X (Twitter)', '𝕏', '#111111'], youtube: ['YouTube', ico('play'), '#ff0000'], tiktok: ['TikTok', ico('music'), '#111111'], whatsapp: ['WhatsApp', 'WA', '#25d366'], pinterest: ['Pinterest', 'P', '#e60023'] };
 
     /* ================================================================ links */
     const LINK_TYPES = { contact: 'Contact section', page: 'Another page', url: 'Web address', popup: 'Open the popup', whatsapp: 'WhatsApp', phone: 'Phone call', email: 'Email' };
@@ -134,10 +150,10 @@
                 const src = getPath(w.p, path);
                 const attr = x.edit ? ` data-img="${esc(w.id)}|${esc(path)}"` : '';
                 if (src) return `<div class="${extra} ${K(path)}"${attr}><img src="${esc(src)}" alt="${esc(alt)}" loading="lazy"></div>`;
-                if (x.edit) return `<div class="${extra} pic-empty"${attr}><span>＋ Add photo</span></div>`;
+                if (x.edit) return `<div class="${extra} pic-empty"${attr}><span>${ico('plus')} Add photo</span></div>`;
                 return fallback;
             },
-            icon: path => { const v = getPath(w.p, path); return v || x.edit ? `<span class="${K(path)}"${x.edit ? ` data-icon="${esc(w.id)}|${esc(path)}"` : ''}>${icon(v || '⭐')}</span>` : ''; },
+            icon: path => { const v = getPath(w.p, path); return v || x.edit ? `<span class="${K(path)}"${x.edit ? ` data-icon="${esc(w.id)}|${esc(path)}"` : ''}>${icon(v || 'i:star')}</span>` : ''; },
             href: l => href(l, x),
             items: () => w.p.items || [],
         };
@@ -165,79 +181,79 @@
         render: (w, x, H) => H.t('text', ['h1', 'h2', 'h3', 'h4', 'p'].includes(w.p.tag) ? w.p.tag : 'h2', 'hd', 'Heading', { keep: true }) });
     def('text', { label: 'Text', icon: '¶', group: 'basic', make: () => ({ html: '<p>Write your text here. Select words to make them <b>bold</b>, add links or lists.</p>' }), fields: [],
         render: (w, x, H) => H.t('html', 'div', 'rt', 'Text', { rich: true }) });
-    def('button', { label: 'Button', icon: '⏺', group: 'basic', make: () => ({ text: 'Click here', link: { to: 'contact' }, kind: 'primary', size: 'md', align: 'auto' }),
+    def('button', { label: 'Button', icon: 'record', group: 'basic', make: () => ({ text: 'Click here', link: { to: 'contact' }, kind: 'primary', size: 'md', align: 'auto' }),
         fields: [F.link('link', 'Link'), F.select('kind', 'Style', { primary: 'Filled', ghost: 'Outline', light: 'White' }), F.select('size', 'Size', { sm: 'Small', md: 'Medium', lg: 'Large' }), F.select('align', 'Alignment', { auto: 'Same as the section', left: 'Left', center: 'Centre', right: 'Right', full: 'Full width' })],
         render: (w, x, H) => `<div class="btn-wrap al-${pick(w.p.align, ['auto', 'left', 'center', 'right', 'full'])}">${H.btn('text', 'link', `btn btn-${pick(w.p.size, ['md', 'sm', 'lg'])} ${w.p.kind === 'ghost' ? 'btn-ghost' : w.p.kind === 'light' ? 'btn-light' : ''}`)}</div>` });
-    def('image', { label: 'Image', icon: '🖼', group: 'basic', make: () => ({ src: '', alt: '', caption: '', url: '' }), fields: [F.img('src', 'Image'), F.text('alt', 'Alt text (for Google & screen readers)'), F.text('url', 'Link (optional)', 'https://…')],
+    def('image', { label: 'Image', icon: 'image', group: 'basic', make: () => ({ src: '', alt: '', caption: '', url: '' }), fields: [F.img('src', 'Image'), F.text('alt', 'Alt text (for Google & screen readers)'), F.text('url', 'Link (optional)', 'https://…')],
         render: (w, x, H) => { const img = H.pic('src', w.p.alt, 'img-w', ''); const u = safeUrl(w.p.url); return `<figure class="fig">${u && !x.edit ? `<a href="${esc(u)}">${img}</a>` : img}${H.t('caption', 'figcaption', '', 'Caption (optional)')}</figure>`; } });
-    def('spacer', { label: 'Spacer', icon: '↕', group: 'basic', make: () => ({ h: 40 }), fields: [F.num('h', 'Height (px)', 0, 400, 4)],
+    def('spacer', { label: 'Spacer', icon: 'up-down', group: 'basic', make: () => ({ h: 40 }), fields: [F.num('h', 'Height (px)', 0, 400, 4)],
         render: w => `<div class="spacer" style="height:${Math.max(0, +w.p.h || 0)}px"></div>` });
     def('divider', { label: 'Divider', icon: '—', group: 'basic', make: () => ({ style: 'solid', width: 100, weight: 2 }), fields: [F.select('style', 'Line', { solid: 'Solid', dashed: 'Dashed', dotted: 'Dotted', double: 'Double' }), F.num('width', 'Width (%)', 5, 100, 5), F.num('weight', 'Thickness (px)', 1, 12)],
         render: w => `<hr class="divider" style="border-top:${+w.p.weight || 2}px ${['solid', 'dashed', 'dotted', 'double'].includes(w.p.style) ? w.p.style : 'solid'} currentColor;width:${Math.min(100, +w.p.width || 100)}%">` });
-    def('iconbox', { label: 'Icon box', icon: '★', group: 'basic', make: () => ({ icon: 'i:bolt', title: 'Fast results', text: 'Describe this benefit in one or two sentences.', layout: 'top' }),
+    def('iconbox', { label: 'Icon box', icon: 'star', group: 'basic', make: () => ({ icon: 'i:bolt', title: 'Fast results', text: 'Describe this benefit in one or two sentences.', layout: 'top' }),
         fields: [F.icon('icon', 'Icon'), F.select('layout', 'Icon position', { top: 'Above', left: 'Left' })],
         render: (w, x, H) => `<div class="iconbox lay-${pick(w.p.layout, ['top', 'left'])}"><div class="iconbox__i">${H.icon('icon')}</div><div>${H.t('title', 'h3', '', 'Title')}${H.t('text', 'div', 'rt', 'Text', { rich: true })}</div></div>` });
-    def('imagebox', { label: 'Image box', icon: '🗂', group: 'basic', make: () => ({ src: '', title: 'Image box title', text: 'A short description of this item.' }), fields: [F.img('src', 'Image')],
+    def('imagebox', { label: 'Image box', icon: 'folder', group: 'basic', make: () => ({ src: '', title: 'Image box title', text: 'A short description of this item.' }), fields: [F.img('src', 'Image')],
         render: (w, x, H) => `<div class="imagebox">${H.pic('src', w.p.title, 'pic', '<div class="pic pic-fill"></div>')}${H.t('title', 'h3', '', 'Title')}${H.t('text', 'p', 'muted', 'Text', { ml: true })}</div>` });
-    def('iconlist', { label: 'Icon list', icon: '☰', group: 'basic', make: () => ({ items: [{ icon: 'i:check', text: 'First point' }, { icon: 'i:check', text: 'Second point' }, { icon: 'i:check', text: 'Third point' }] }),
+    def('iconlist', { label: 'Icon list', icon: 'menu', group: 'basic', make: () => ({ items: [{ icon: 'i:check', text: 'First point' }, { icon: 'i:check', text: 'Second point' }, { icon: 'i:check', text: 'Third point' }] }),
         fields: [F.list('items', 'Items', { icon: 'i:check', text: 'New point' }, [['icon', 'icon'], ['text', 'text']])],
         render: (w, x, H) => `<ul class="iconlist">${H.items().map((it, i) => `<li>${H.icon(`items.${i}.icon`)}${H.t(`items.${i}.text`, 'span', '', 'Text', { keep: true })}</li>`).join('')}</ul>` });
-    def('video1', { label: 'Video', icon: '▶', group: 'basic', make: () => ({ url: '' }), fields: [F.text('url', 'YouTube link', 'https://www.youtube.com/watch?v=…')],
+    def('video1', { label: 'Video', icon: 'play', group: 'basic', make: () => ({ url: '' }), fields: [F.text('url', 'YouTube link', 'https://www.youtube.com/watch?v=…')],
         render: (w, x) => { const id = ytId(w.p.url); return id ? `<div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/${id}" title="Video" loading="lazy" allowfullscreen allow="encrypted-media; picture-in-picture"></iframe></div>` : (x.edit ? '<div class="embed pic-empty"><span>Paste a YouTube link in the Content tab</span></div>' : ''); } });
 
     /* ---------- pro widgets */
     def('counter', { label: 'Counter', icon: '123', group: 'pro', make: () => ({ num: '500', prefix: '', suffix: '+', label: 'Happy customers' }), fields: [F.text('num', 'Number'), F.text('prefix', 'Before the number'), F.text('suffix', 'After the number')],
         render: (w, x, H) => `<div class="counter"><b class="${H.K('num')}"><span>${esc(w.p.prefix)}</span><span${x.edit || !/^\d[\d,]*(\.\d+)?$/.test(String(w.p.num).trim()) ? '' : ` data-count="${esc(String(w.p.num).replace(/,/g, ''))}"`}>${esc(w.p.num)}</span><span>${esc(w.p.suffix)}</span></b>${H.t('label', 'p', '', 'Label')}</div>`, runtime: true });
-    def('progress', { label: 'Progress bars', icon: '▰', group: 'pro', make: () => ({ items: [{ label: 'Design', pct: 90 }, { label: 'Development', pct: 80 }, { label: 'Support', pct: 95 }] }),
+    def('progress', { label: 'Progress bars', icon: 'chart', group: 'pro', make: () => ({ items: [{ label: 'Design', pct: 90 }, { label: 'Development', pct: 80 }, { label: 'Support', pct: 95 }] }),
         fields: [F.list('items', 'Bars', { label: 'Skill', pct: 75 }, [['label', 'text'], ['pct', 'number']])],
         render: (w, x, H) => `<div class="bars">${H.items().map((it, i) => `<div class="bar"><div class="bar__top">${H.t(`items.${i}.label`, 'span', '', 'Label', { keep: true })}<span>${Math.max(0, Math.min(100, +it.pct || 0))}%</span></div><div class="bar__track"><i style="width:${Math.max(0, Math.min(100, +it.pct || 0))}%"></i></div></div>`).join('')}</div>` });
-    def('rating', { label: 'Star rating', icon: '⭐', group: 'pro', make: () => ({ stars: 4.8, label: 'Rated 4.8 from 200+ reviews' }), fields: [F.num('stars', 'Stars (0–5)', 0, 5, 0.1)],
-        render: (w, x, H) => { const s = Math.max(0, Math.min(5, +w.p.stars || 0)); return `<div class="rating"><span class="stars-v" style="--v:${(s / 5) * 100}%" aria-label="${s} out of 5">★★★★★</span>${H.t('label', 'span', 'muted', 'Label')}</div>`; } });
-    def('social', { label: 'Social icons', icon: '＠', group: 'pro', make: () => ({ shape: 'round', items: [{ net: 'facebook', url: '' }, { net: 'instagram', url: '' }, { net: 'linkedin', url: '' }] }),
+    def('rating', { label: 'Star rating', icon: 'star-solid', group: 'pro', make: () => ({ stars: 4.8, label: 'Rated 4.8 from 200+ reviews' }), fields: [F.num('stars', 'Stars (0–5)', 0, 5, 0.1)],
+        render: (w, x, H) => { const s = Math.max(0, Math.min(5, +w.p.stars || 0)); return `<div class="rating"><span class="stars-v" style="--v:${(s / 5) * 100}%" role="img" aria-label="${s} out of 5"><span class="stars-v__bg">${STARS}</span><span class="stars-v__fg">${STARS}</span></span>${H.t('label', 'span', 'muted', 'Label')}</div>`; } });
+    def('social', { label: 'Social icons', icon: 'thumb', group: 'pro', make: () => ({ shape: 'round', items: [{ net: 'facebook', url: '' }, { net: 'instagram', url: '' }, { net: 'linkedin', url: '' }] }),
         fields: [F.select('shape', 'Shape', { round: 'Circle', rounded: 'Rounded', square: 'Square' }), F.list('items', 'Networks', { net: 'x', url: '' }, [['net', 'social'], ['url', 'text']])],
         render: (w, x) => `<div class="socials sh-${pick(w.p.shape, ['round', 'rounded', 'square'])}">${(w.p.items || []).map(it => { const n = SOCIAL[it.net] || SOCIAL.facebook, u = safeUrl(it.url); return u || x.edit ? `<a href="${esc(u || '#')}" style="--sc:${n[2]}" title="${n[0]}" aria-label="${n[0]}" rel="noopener">${n[1]}</a>` : ''; }).join('')}</div>` });
-    def('notice', { label: 'Notice box', icon: 'ℹ', group: 'pro', make: () => ({ kind: 'info', title: 'Good to know', text: 'Add an important note, offer or announcement here.' }), fields: [F.select('kind', 'Type', { info: 'Info', success: 'Success', warning: 'Warning', danger: 'Important' })],
+    def('notice', { label: 'Notice box', icon: 'info', group: 'pro', make: () => ({ kind: 'info', title: 'Good to know', text: 'Add an important note, offer or announcement here.' }), fields: [F.select('kind', 'Type', { info: 'Info', success: 'Success', warning: 'Warning', danger: 'Important' })],
         render: (w, x, H) => `<div class="notice nt-${pick(w.p.kind, ['info', 'success', 'warning', 'danger'])}">${H.t('title', 'b', '', 'Title')}${H.t('text', 'div', 'rt', 'Text', { rich: true })}</div>` });
-    def('hours', { label: 'Opening hours', icon: '🕘', group: 'pro', make: () => ({ items: [{ day: 'Monday – Friday', time: '9:00 – 18:00' }, { day: 'Saturday', time: '10:00 – 14:00' }, { day: 'Sunday', time: 'Closed' }] }),
+    def('hours', { label: 'Opening hours', icon: 'clock', group: 'pro', make: () => ({ items: [{ day: 'Monday – Friday', time: '9:00 – 18:00' }, { day: 'Saturday', time: '10:00 – 14:00' }, { day: 'Sunday', time: 'Closed' }] }),
         fields: [F.list('items', 'Rows', { day: 'Day', time: 'Time' }, [['day', 'text'], ['time', 'text']])],
         render: (w, x, H) => `<dl class="hours">${H.items().map((it, i) => `<div>${H.t(`items.${i}.day`, 'dt', '', 'Day', { keep: true })}${H.t(`items.${i}.time`, 'dd', '', 'Time', { keep: true })}</div>`).join('')}</dl>` });
-    def('pricelist', { label: 'Price list / menu', icon: '📋', group: 'pro', make: () => ({ items: [{ name: 'Item name', desc: 'Short description', price: '$12' }, { name: 'Another item', desc: 'Short description', price: '$15' }, { name: 'Third item', desc: 'Short description', price: '$9' }] }),
+    def('pricelist', { label: 'Price list / menu', icon: 'clipboard', group: 'pro', make: () => ({ items: [{ name: 'Item name', desc: 'Short description', price: '$12' }, { name: 'Another item', desc: 'Short description', price: '$15' }, { name: 'Third item', desc: 'Short description', price: '$9' }] }),
         fields: [F.list('items', 'Items', { name: 'Item', desc: '', price: '$0' }, [['name', 'text'], ['price', 'text']], 30)],
         render: (w, x, H) => `<ul class="pricelist">${H.items().map((it, i) => `<li><div class="pl-top">${H.t(`items.${i}.name`, 'b', '', 'Name', { keep: true })}<i></i>${H.t(`items.${i}.price`, 'b', 'pl-price', '$0', { keep: true })}</div>${H.t(`items.${i}.desc`, 'p', 'muted', 'Description')}</li>`).join('')}</ul>` });
-    def('testimonial', { label: 'Testimonial', icon: '❝', group: 'pro', make: () => ({ quote: 'Fantastic service from start to finish. Highly recommended!', name: 'Customer name', role: 'Customer', photo: '' }), fields: [F.img('photo', 'Photo')],
-        render: (w, x, H) => `<figure class="tst"><div class="stars">★★★★★</div>${H.t('quote', 'blockquote', '', 'What they said', { ml: true })}<figcaption>${H.pic('photo', w.p.name, 'avatar sm', '')}<span>${H.t('name', 'b', '', 'Name')}${H.t('role', 'small', 'muted', 'Role')}</span></figcaption></figure>` });
-    def('tabs', { label: 'Tabs', icon: '⊟', group: 'pro', make: () => ({ items: [{ title: 'First tab', html: '<p>Content of the first tab.</p>' }, { title: 'Second tab', html: '<p>Content of the second tab.</p>' }, { title: 'Third tab', html: '<p>Content of the third tab.</p>' }] }),
+    def('testimonial', { label: 'Testimonial', icon: 'quote', group: 'pro', make: () => ({ quote: 'Fantastic service from start to finish. Highly recommended!', name: 'Customer name', role: 'Customer', photo: '' }), fields: [F.img('photo', 'Photo')],
+        render: (w, x, H) => `<figure class="tst"><div class="stars" role="img" aria-label="5 out of 5">${STARS}</div>${H.t('quote', 'blockquote', '', 'What they said', { ml: true })}<figcaption>${H.pic('photo', w.p.name, 'avatar sm', '')}<span>${H.t('name', 'b', '', 'Name')}${H.t('role', 'small', 'muted', 'Role')}</span></figcaption></figure>` });
+    def('tabs', { label: 'Tabs', icon: 'grid', group: 'pro', make: () => ({ items: [{ title: 'First tab', html: '<p>Content of the first tab.</p>' }, { title: 'Second tab', html: '<p>Content of the second tab.</p>' }, { title: 'Third tab', html: '<p>Content of the third tab.</p>' }] }),
         fields: [F.list('items', 'Tabs', { title: 'New tab', html: '<p>Tab content.</p>' }, [['title', 'text']], 8)],
         render: (w, x, H) => {
             if (x.edit) return `<div class="tabs is-edit">${H.items().map((it, i) => `<div class="tab-edit">${H.t(`items.${i}.title`, 'b', 'tab-label', 'Tab title', { keep: true })}${H.t(`items.${i}.html`, 'div', 'rt tab-panel', 'Content', { rich: true, keep: true })}</div>`).join('')}</div>`;
             const n = `t${String(w.id).replace(/[^a-z0-9]/gi, '')}`;
             return `<div class="tabs">${H.items().map((it, i) => `<input type="radio" name="${n}" id="${n}-${i}" ${i === 0 ? 'checked' : ''}><label for="${n}-${i}" class="tab-label ${H.K('items.0.title')}">${esc(it.title)}</label>`).join('')}<div class="tab-panels">${H.items().map(it => `<div class="tab-panel rt">${sanitize(it.html)}</div>`).join('')}</div></div>`;
         } });
-    def('accordion', { label: 'Accordion', icon: '≡', group: 'pro', make: () => ({ items: [{ title: 'What is included?', html: '<p>Explain what customers get.</p>' }, { title: 'How long does it take?', html: '<p>Give a realistic time frame.</p>' }] }),
+    def('accordion', { label: 'Accordion', icon: 'chevron-down', group: 'pro', make: () => ({ items: [{ title: 'What is included?', html: '<p>Explain what customers get.</p>' }, { title: 'How long does it take?', html: '<p>Give a realistic time frame.</p>' }] }),
         fields: [F.list('items', 'Items', { title: 'New question', html: '<p>The answer.</p>' }, [['title', 'text']], 15)],
         render: (w, x, H) => `<div class="faq">${H.items().map((it, i) => `<details${x.edit || i === 0 ? ' open' : ''}><summary${H.E(`items.${i}.title`, 'Title')} class="${H.K(`items.${i}.title`)}">${esc(it.title)}</summary>${H.t(`items.${i}.html`, 'div', 'rt', 'Content', { rich: true, keep: true })}</details>`).join('')}</div>` });
     const slides = (w, x, H, inner) => {
         const items = H.items(), per = Math.max(1, Math.min(4, +w.p.per || 1));
         if (x.edit) return `<div class="car-edit" style="--per:${Math.min(per, 3)}">${items.map(inner).join('')}</div>`;
         return `<div class="car" data-carousel${w.p.auto ? ' data-auto="1"' : ''} style="--per:${per}"><div class="ob-track">${items.map((it, i) => `<div class="car__slide">${inner(it, i)}</div>`).join('')}</div>
-            <button type="button" class="car__nav prev" data-prev aria-label="Previous">‹</button><button type="button" class="car__nav next" data-next aria-label="Next">›</button>
+            <button type="button" class="car__nav prev" data-prev aria-label="Previous">${ico('arrow-left')}</button><button type="button" class="car__nav next" data-next aria-label="Next">${ico('arrow-right')}</button>
             <div class="car__dots">${items.map((_, i) => `<button type="button" data-dot class="${i === 0 ? 'is-on' : ''}" aria-label="Slide ${i + 1}"></button>`).join('')}</div></div>`;
     };
-    def('carousel', { label: 'Image slider', icon: '🎞', group: 'pro', make: () => ({ per: 1, auto: true, items: [{ src: '', caption: '' }, { src: '', caption: '' }, { src: '', caption: '' }] }),
+    def('carousel', { label: 'Image slider', icon: 'film', group: 'pro', make: () => ({ per: 1, auto: true, items: [{ src: '', caption: '' }, { src: '', caption: '' }, { src: '', caption: '' }] }),
         fields: [F.num('per', 'Slides visible at once', 1, 4), F.bool('auto', 'Play automatically'), F.list('items', 'Slides', { src: '', caption: '' }, [['src', 'img'], ['caption', 'text']], 20)],
         render: (w, x, H) => slides(w, x, H, (it, i) => `<figure class="fig">${H.pic(`items.${i}.src`, it.caption || 'Slide', 'pic slide-pic', '<div class="pic slide-pic pic-fill"></div>')}${H.t(`items.${i}.caption`, 'figcaption', '', 'Caption (optional)')}</figure>`), runtime: true });
-    def('tcarousel', { label: 'Review slider', icon: '💬', group: 'pro', make: () => ({ per: 1, auto: true, items: [{ quote: 'Fantastic service from start to finish.', name: 'Customer name', role: 'Customer' }, { quote: 'Quick, friendly and great value.', name: 'Customer name', role: 'Customer' }, { quote: 'Exactly what we needed. Thank you!', name: 'Customer name', role: 'Customer' }] }),
+    def('tcarousel', { label: 'Review slider', icon: 'chat', group: 'pro', make: () => ({ per: 1, auto: true, items: [{ quote: 'Fantastic service from start to finish.', name: 'Customer name', role: 'Customer' }, { quote: 'Quick, friendly and great value.', name: 'Customer name', role: 'Customer' }, { quote: 'Exactly what we needed. Thank you!', name: 'Customer name', role: 'Customer' }] }),
         fields: [F.num('per', 'Reviews visible at once', 1, 3), F.bool('auto', 'Play automatically'), F.list('items', 'Reviews', { quote: 'What they said.', name: 'Name', role: '' }, [['name', 'text']], 12)],
-        render: (w, x, H) => slides(w, x, H, (it, i) => `<figure class="tst card">${'<div class="stars">★★★★★</div>'}${H.t(`items.${i}.quote`, 'blockquote', '', 'What they said', { ml: true, keep: true })}<figcaption><span>${H.t(`items.${i}.name`, 'b', '', 'Name')}${H.t(`items.${i}.role`, 'small', 'muted', 'Role')}</span></figcaption></figure>`), runtime: true });
-    def('flipbox', { label: 'Flip box', icon: '⟲', group: 'pro', make: () => ({ icon: 'i:rocket', title: 'Hover me', text: 'Front side text.', backTitle: 'More details', backText: 'Back side text with more information.', btn: 'Learn more', link: { to: 'contact' } }),
+        render: (w, x, H) => slides(w, x, H, (it, i) => `<figure class="tst card"><div class="stars" role="img" aria-label="5 out of 5">${STARS}</div>${H.t(`items.${i}.quote`, 'blockquote', '', 'What they said', { ml: true, keep: true })}<figcaption><span>${H.t(`items.${i}.name`, 'b', '', 'Name')}${H.t(`items.${i}.role`, 'small', 'muted', 'Role')}</span></figcaption></figure>`), runtime: true });
+    def('flipbox', { label: 'Flip box', icon: 'refresh', group: 'pro', make: () => ({ icon: 'i:rocket', title: 'Hover me', text: 'Front side text.', backTitle: 'More details', backText: 'Back side text with more information.', btn: 'Learn more', link: { to: 'contact' } }),
         fields: [F.icon('icon', 'Icon'), F.link('link', 'Button link')],
         render: (w, x, H) => `<div class="flip${x.edit ? ' is-edit' : ''}" tabindex="0"><div class="flip__in"><div class="flip__f">${H.icon('icon')}${H.t('title', 'h3', '', 'Title')}${H.t('text', 'p', '', 'Text', { ml: true })}</div><div class="flip__b">${H.t('backTitle', 'h3', '', 'Back title')}${H.t('backText', 'p', '', 'Back text', { ml: true })}${H.btn('btn', 'link', 'btn btn-light btn-sm')}</div></div></div>` });
-    def('beforeafter', { label: 'Before / after', icon: '◐', group: 'pro', make: () => ({ before: '', after: '', lb: 'Before', la: 'After' }), fields: [F.img('before', 'Before image'), F.img('after', 'After image'), F.text('lb', 'Before label'), F.text('la', 'After label')],
+    def('beforeafter', { label: 'Before / after', icon: 'eye', group: 'pro', make: () => ({ before: '', after: '', lb: 'Before', la: 'After' }), fields: [F.img('before', 'Before image'), F.img('after', 'After image'), F.text('lb', 'Before label'), F.text('la', 'After label')],
         render: (w, x, H) => x.edit
             ? `<div class="ba-edit">${H.pic('before', 'Before', 'pic', '')}${H.pic('after', 'After', 'pic', '')}</div>`
             : (w.p.before && w.p.after ? `<div class="ba" data-ba style="--pos:50%"><img src="${esc(w.p.after)}" alt="${esc(w.p.la)}"><div class="ba__b"><img src="${esc(w.p.before)}" alt="${esc(w.p.lb)}"></div><span class="ba__l l">${esc(w.p.lb)}</span><span class="ba__l r">${esc(w.p.la)}</span><input type="range" min="0" max="100" value="50" aria-label="Compare before and after"></div>` : ''),
         runtime: true });
-    def('countdown', { label: 'Countdown', icon: '⏳', group: 'pro', make: () => ({ date: plus7(), done: 'This offer has ended.' }), fields: [F.date('date', 'Counts down to'), F.text('done', 'Text when finished')],
+    def('countdown', { label: 'Countdown', icon: 'clock', group: 'pro', make: () => ({ date: plus7(), done: 'This offer has ended.' }), fields: [F.date('date', 'Counts down to'), F.text('done', 'Text when finished')],
         render: (w, x) => {
             const left = Math.max(0, (Date.parse(w.p.date) - Date.now()) / 1000) || 0, v = { d: Math.floor(left / 86400), h: Math.floor(left / 3600) % 24, m: Math.floor(left / 60) % 60, s: Math.floor(left % 60) };
             const at = Date.parse(w.p.date); // the author's local time, saved as an exact moment
@@ -247,7 +263,7 @@
         fields: [F.area('words', 'Rotating words (one per line)'), F.select('tag', 'HTML tag', { h1: 'H1', h2: 'H2', h3: 'H3' })],
         render: (w, x, H) => { const words = String(w.p.words || '').split('\n').map(s => s.trim()).filter(Boolean); const tag = ['h1', 'h2', 'h3'].includes(w.p.tag) ? w.p.tag : 'h2';
             return `<${tag} class="ahead hd"${x.edit ? '' : ` aria-label="${esc([w.p.before, words.join(', '), w.p.after].filter(Boolean).join(' '))}"`}>${H.t('before', 'span', '', 'Text before')} <span class="ahead__w"${x.edit ? '' : ' data-rotate aria-hidden="true"'}>${x.edit ? `<span class="is-on">${esc(words.join(' / '))}</span>` : words.map((wd, i) => `<span class="${i === 0 ? 'is-on' : ''}">${esc(wd)}</span>`).join('')}</span> ${H.t('after', 'span', '', 'Text after')}</${tag}>`; }, runtime: true });
-    def('form', { label: 'Contact form', icon: '✉', group: 'pro', make: () => ({ btn: 'Send message', phone: true, name: true, message: true }),
+    def('form', { label: 'Contact form', icon: 'mail', group: 'pro', make: () => ({ btn: 'Send message', phone: true, name: true, message: true }),
         fields: [F.text('btn', 'Button text'), F.bool('name', 'Ask for a name'), F.bool('phone', 'Ask for a phone number'), F.bool('message', 'Ask for a message (untick for a waitlist or “notify me” sign-up)')],
         render: (w, x) => formHtml(x, w.p) });
 
@@ -280,7 +296,7 @@
     const rsvpHtml = (x, own) => {
         // All RSVP widgets on a site send to one form, so they all ask the first widget's questions
         const p = { ...(rsvpWidget(x.P)?.p || own), btn: own.btn }, I = RSVP_IDS, meals = lines(p.meals);
-        if (!x.P.site.rsvpAction) return x.edit ? '<div class="form pic-empty"><span>💌 RSVP form — switch it on in the Content tab (free, takes a minute)</span></div>' : '';
+        if (!x.P.site.rsvpAction) return x.edit ? `<div class="form pic-empty"><span>${ico('mail')} RSVP form — switch it on in the Content tab (free, takes a minute)</span></div>` : '';
         return `<form class="form rsvp" method="post" action="${esc(x.P.site.rsvpAction)}">
             <label>Your name<input name="${I.name}" required maxlength="100" autocomplete="name"></label>
             <label>Email${p.emailReq ? '' : ' (optional)'}<input name="${I.email}" type="email" maxlength="150" autocomplete="email"${p.emailReq ? ' required' : ''}></label>
@@ -292,15 +308,15 @@
             ${backInput(x)}
             <button class="btn" type="submit">${esc(p.btn || 'Send my RSVP')}</button></form>`;
     };
-    def('rsvp', { label: 'RSVP form', icon: '💌', group: 'pro', make: () => ({ btn: 'Send my RSVP', yes: 'Yes, I will be there', no: 'Sorry, I can’t make it', guests: true, meal: false, meals: 'Chicken\nFish\nVegetarian', note: true, emailReq: false, thanks: 'Thank you! Your RSVP has been sent.' }),
+    def('rsvp', { label: 'RSVP form', icon: 'heart', group: 'pro', make: () => ({ btn: 'Send my RSVP', yes: 'Yes, I will be there', no: 'Sorry, I can’t make it', guests: true, meal: false, meals: 'Chicken\nFish\nVegetarian', note: true, emailReq: false, thanks: 'Thank you! Your RSVP has been sent.' }),
         fields: [F.text('btn', 'Button text'), F.text('yes', '“Yes” answer'), F.text('no', '“No” answer'), F.bool('guests', 'Ask how many guests'), F.bool('meal', 'Ask for a meal choice'), F.area('meals', 'Meal choices (one per line)'), F.bool('note', 'Ask for a message'), F.bool('emailReq', 'Email is required'), F.text('thanks', 'Thank-you message')],
         render: (w, x) => rsvpHtml(x, w.p) });
 
-    def('optin', { label: 'Opt-in form', icon: '✉', group: 'funnel', make: () => ({ btn: 'Get instant access', name: true, phone: false, note: 'We respect your privacy. Unsubscribe any time.' }),
+    def('optin', { label: 'Opt-in form', icon: 'inbox', group: 'funnel', make: () => ({ btn: 'Get instant access', name: true, phone: false, note: 'We respect your privacy. Unsubscribe any time.' }),
         fields: [F.text('btn', 'Button text'), F.bool('name', 'Ask for a name'), F.bool('phone', 'Ask for a phone number'), F.text('note', 'Small print under the button')],
         render: (w, x) => {
             const p = w.p;
-            if (!x.P.site.leadAction) return x.edit ? '<div class="form pic-empty"><span>📥 Opt-in form — switch it on in the Content tab to collect leads (free)</span></div>' : '';
+            if (!x.P.site.leadAction) return x.edit ? `<div class="form pic-empty"><span>${ico('inbox')} Opt-in form — switch it on in the Content tab to collect leads (free)</span></div>` : '';
             const next = nextOf(x.page, x.P), nextUrl = next && x.mode === 'publish' ? new URL(pageHref(next.slug, x), x.origin).href : next ? pageHref(next.slug, x) : '';
             return `<form class="form optin" method="post" action="${esc(x.P.site.leadAction)}">
                 ${p.name !== false ? '<input name="name" maxlength="100" autocomplete="name" placeholder="Your name" aria-label="Your name">' : ''}
@@ -310,9 +326,9 @@
                 ${backInput(x)}
                 <input type="hidden" name="_next" value="${esc(nextUrl)}"><input type="hidden" name="_site" value="${esc(x.P.site.publishSlug || '')}">
                 <input type="hidden" name="_step" value="${esc(x.page.slug)}"><input type="hidden" name="_v" value="${x.variant === 'b' ? 'b' : 'a'}">
-                <button class="btn btn-lg" type="submit">${esc(p.btn || 'Get instant access')}</button>${p.note ? `<small class="optin__note">🔒 ${esc(p.note)}</small>` : ''}</form>`;
+                <button class="btn btn-lg" type="submit">${esc(p.btn || 'Get instant access')}</button>${p.note ? `<small class="optin__note">${ico('lock')} ${esc(p.note)}</small>` : ''}</form>`;
         } });
-    def('paybtn', { label: 'Buy button', icon: '💳', group: 'funnel', make: () => ({ text: 'Yes! Get it now', sub: '30-day money-back guarantee', align: 'center', no: '' }),
+    def('paybtn', { label: 'Buy button', icon: 'card', group: 'funnel', make: () => ({ text: 'Yes! Get it now', sub: '30-day money-back guarantee', align: 'center', no: '' }),
         fields: [F.text('sub', 'Small text under the button'), F.select('align', 'Alignment', { left: 'Left', center: 'Centre', right: 'Right', full: 'Full width' }), F.text('no', '“No thanks” link text (upsells)')],
         render: (w, x, H) => `<div class="paybtn al-${pick(w.p.align, ['center', 'left', 'right', 'full'])}"><a class="btn btn-lg ${H.K('text')}" href="${esc(href({ to: 'pay' }, x))}"${H.E('text', 'Button')}>${esc(w.p.text)}</a>${H.t('sub', 'small', 'muted', 'Small print')}${w.p.no ? `<a class="paybtn__no" href="${esc(href({ to: 'next' }, x))}">${esc(w.p.no)}</a>` : ''}</div>` });
     /** Where a form sends people back to after they submit (published pages; downloaded ones use the browser's Referer). */
@@ -326,13 +342,13 @@
             <input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">
             ${backInput(x)}
             <button class="btn" type="submit">${esc(p.btn || 'Send message')}</button></form>`;
-        return x.edit ? '<div class="form pic-empty"><span>📨 Contact form — switch it on in the Content tab (free, takes a minute)</span></div>' : '';
+        return x.edit ? `<div class="form pic-empty"><span>${ico('mail')} Contact form — switch it on in the Content tab (free, takes a minute)</span></div>` : '';
     };
 
     /* ---------- sections (full-width blocks with their own layout) */
     const items = w => w.p.items || [];
     const g = n => `g${Math.min(n, 4)}`;
-    def('hero', { label: 'Hero', icon: '✨', group: 'section', full: true, variants: { center: 'Centred', split: 'Image on the right', cover: 'Image background' },
+    def('hero', { label: 'Hero', icon: 'sparkle', group: 'section', full: true, variants: { center: 'Centred', split: 'Image on the right', cover: 'Image background' },
         make: () => ({ v: 'center', eyebrow: 'Your tagline here', title: 'A clear headline that says what you do', text: 'One or two sentences about who you help and why they should choose you.', btn: 'Get in touch', link: { to: 'contact' }, btn2: '', link2: { to: 'url', val: '' }, image: '' }),
         fields: [F.text('eyebrow', 'Small line above the headline'), F.link('link', 'Button link'), F.text('btn2', 'Second button text (optional)'), F.link('link2', 'Second button link'), F.img('image', 'Photo')],
         render: (w, x, H) => {
@@ -342,20 +358,20 @@
             const media = v === 'split' ? H.pic('image', x.P.site.name, 'pic hero-pic', `<div class="pic hero-pic pic-fill" aria-hidden="true">${esc(initial)}</div>`) : '';
             return `<div class="wrap hero-${v}"${bg}${v === 'cover' && x.edit ? ` data-img="${esc(w.id)}|image"` : ''}>${copy}${media}</div>`;
         } });
-    def('features', { label: 'Features', icon: '⭐', group: 'section', full: true, make: () => ({ title: 'Why choose us', intro: '', items: [{ icon: '⚡', title: 'Fast', text: 'Explain this benefit in a sentence.' }, { icon: '💎', title: 'Quality', text: 'Explain this benefit in a sentence.' }, { icon: '🤝', title: 'Friendly', text: 'Explain this benefit in a sentence.' }] }),
-        fields: [F.area('intro', 'Intro text (optional)'), F.list('items', 'Features', { icon: '✅', title: 'New feature', text: 'Describe it.' }, [['icon', 'icon'], ['title', 'text']])],
+    def('features', { label: 'Features', icon: 'star', group: 'section', full: true, make: () => ({ title: 'Why choose us', intro: '', items: [{ icon: 'i:bolt', title: 'Fast', text: 'Explain this benefit in a sentence.' }, { icon: 'i:gem', title: 'Quality', text: 'Explain this benefit in a sentence.' }, { icon: 'i:handshake', title: 'Friendly', text: 'Explain this benefit in a sentence.' }] }),
+        fields: [F.area('intro', 'Intro text (optional)'), F.list('items', 'Features', { icon: 'i:check', title: 'New feature', text: 'Describe it.' }, [['icon', 'icon'], ['title', 'text']])],
         render: (w, x, H) => `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}${H.t('intro', 'p', 'intro', '', { ml: true })}<div class="grid ${g(items(w).length)}">${items(w).map((it, i) => `<div class="card"><div class="icon">${H.icon(`items.${i}.icon`)}</div>${H.t(`items.${i}.title`, 'h3', '', 'Title')}${H.t(`items.${i}.text`, 'p', '', 'Text', { ml: true })}</div>`).join('')}</div></div>` });
-    def('imagetext', { label: 'Image + text', icon: '🖼️', group: 'section', full: true, variants: { left: 'Image on the left', right: 'Image on the right' },
+    def('imagetext', { label: 'Image + text', icon: 'image', group: 'section', full: true, variants: { left: 'Image on the left', right: 'Image on the right' },
         make: () => ({ v: 'left', eyebrow: '', title: 'Tell your story', text: '<p>Explain what makes you different, who is behind the business, or how your product works.</p>', btn: '', link: { to: 'contact' }, image: '' }),
         fields: [F.text('eyebrow', 'Small line above the heading'), F.text('btn', 'Button text (optional)'), F.link('link', 'Button link'), F.img('image', 'Photo')],
         render: (w, x, H) => `<div class="wrap split ${w.v === 'right' ? 'flip-side' : ''}">${H.pic('image', w.p.title, 'pic', '<div class="pic pic-fill" aria-hidden="true"></div>')}<div>${H.t('eyebrow', 'p', 'eyebrow', 'Tagline')}${H.t('title', 'h2', 'left hd', 'Heading')}${H.t('text', 'div', 'rt body', 'Text', { rich: true })}${H.btn('btn', 'link')}</div></div>` });
-    def('steps', { label: 'How it works', icon: '🔢', group: 'section', full: true, make: () => ({ title: 'How it works', intro: '', items: [{ title: 'Get in touch', text: 'Tell us what you need.' }, { title: 'We plan it', text: 'You get a clear plan and price.' }, { title: 'Done', text: 'We deliver, you enjoy the result.' }] }),
+    def('steps', { label: 'How it works', icon: 'hash', group: 'section', full: true, make: () => ({ title: 'How it works', intro: '', items: [{ title: 'Get in touch', text: 'Tell us what you need.' }, { title: 'We plan it', text: 'You get a clear plan and price.' }, { title: 'Done', text: 'We deliver, you enjoy the result.' }] }),
         fields: [F.area('intro', 'Intro text (optional)'), F.list('items', 'Steps', { title: 'New step', text: 'Describe it.' }, [['title', 'text']], 6)],
         render: (w, x, H) => `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}${H.t('intro', 'p', 'intro', '', { ml: true })}<div class="grid ${g(items(w).length)}">${items(w).map((it, i) => `<div class="card"><div class="num">${i + 1}</div>${H.t(`items.${i}.title`, 'h3', '', 'Step')}${H.t(`items.${i}.text`, 'p', '', 'Text', { ml: true })}</div>`).join('')}</div></div>` });
-    def('stats', { label: 'Numbers', icon: '📊', group: 'section', full: true, make: () => ({ items: [{ num: '500+', label: 'Happy customers' }, { num: '10 yrs', label: 'Experience' }, { num: '4.9★', label: 'Average rating' }, { num: '24/7', label: 'Support' }] }),
+    def('stats', { label: 'Numbers', icon: 'chart', group: 'section', full: true, make: () => ({ items: [{ num: '500+', label: 'Happy customers' }, { num: '10 yrs', label: 'Experience' }, { num: '4.9/5', label: 'Average rating' }, { num: '24/7', label: 'Support' }] }),
         fields: [F.list('items', 'Numbers', { num: '100', label: 'New number' }, [['label', 'text']], 6)],
         render: (w, x, H) => `<div class="wrap"><div class="stats ${g(items(w).length)}">${items(w).map((it, i) => `<div>${H.t(`items.${i}.num`, 'b', '', '100')}${H.t(`items.${i}.label`, 'span', '', 'Label')}</div>`).join('')}</div></div>` });
-    def('pricing', { label: 'Pricing table', icon: '💲', group: 'section', full: true, make: () => ({ title: 'Simple pricing', intro: '', items: [
+    def('pricing', { label: 'Pricing table', icon: 'cash', group: 'section', full: true, make: () => ({ title: 'Simple pricing', intro: '', items: [
         { name: 'Basic', price: '$49', period: '/month', features: 'Feature one\nFeature two\nFeature three', btn: 'Choose Basic', featured: false },
         { name: 'Pro', price: '$99', period: '/month', features: 'Everything in Basic\nFeature four\nPriority support', btn: 'Choose Pro', featured: true },
         { name: 'Business', price: '$199', period: '/month', features: 'Everything in Pro\nFeature five\nDedicated manager', btn: 'Choose Business', featured: false }] }),
@@ -364,40 +380,40 @@
             `<div class="card plan${it.featured ? ' featured' : ''}">${it.featured ? '<span class="badge">Most popular</span>' : ''}${H.t(`items.${i}.name`, 'h3', '', 'Plan')}<p class="price">${H.t(`items.${i}.price`, 'b', '', '$0')}${H.t(`items.${i}.period`, 'span', '', '/month')}</p>
             <ul${H.E(`items.${i}.features`, 'One feature per line', { ml: true })} class="${H.K(`items.${i}.features`)}">${x.edit ? nl(it.features) : String(it.features || '').split('\n').filter(s => s.trim()).map(s => `<li>${esc(s)}</li>`).join('')}</ul>
             ${it.btn ? `<a class="btn ${it.featured ? '' : 'btn-ghost'}" href="${esc(href({ to: 'contact' }, x))}"${H.E(`items.${i}.btn`, 'Button')}>${esc(it.btn)}</a>` : ''}</div>`).join('')}</div></div>` });
-    def('gallery', { label: 'Gallery', icon: '🖼', group: 'section', full: true, make: () => ({ title: 'Our work', items: [{ src: '', caption: '' }, { src: '', caption: '' }, { src: '', caption: '' }] }),
+    def('gallery', { label: 'Gallery', icon: 'grid', group: 'section', full: true, make: () => ({ title: 'Our work', items: [{ src: '', caption: '' }, { src: '', caption: '' }, { src: '', caption: '' }] }),
         fields: [F.list('items', 'Photos', { src: '', caption: '' }, [['src', 'img'], ['caption', 'text']], 24)],
         render: (w, x, H) => `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}<div class="gallery">${items(w).map((it, i) => (it.src || x.edit) ? `<figure>${H.pic(`items.${i}.src`, it.caption || x.P.site.name, 'pic')}${H.t(`items.${i}.caption`, 'figcaption', '', 'Caption (optional)')}</figure>` : '').join('')}</div></div>` });
-    def('team', { label: 'Team', icon: '👥', group: 'section', full: true, make: () => ({ title: 'Meet the team', items: [{ photo: '', name: 'Your name', role: 'Founder' }, { photo: '', name: 'Team member', role: 'Role' }, { photo: '', name: 'Team member', role: 'Role' }] }),
+    def('team', { label: 'Team', icon: 'users', group: 'section', full: true, make: () => ({ title: 'Meet the team', items: [{ photo: '', name: 'Your name', role: 'Founder' }, { photo: '', name: 'Team member', role: 'Role' }, { photo: '', name: 'Team member', role: 'Role' }] }),
         fields: [F.list('items', 'People', { photo: '', name: 'Name', role: 'Role' }, [['photo', 'img'], ['name', 'text']], 12)],
         render: (w, x, H) => `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}<div class="grid ${g(items(w).length)} team">${items(w).map((it, i) =>
             `<div class="person">${H.pic(`items.${i}.photo`, it.name, 'avatar', `<div class="avatar pic-fill" aria-hidden="true">${esc((it.name || '?').trim()[0] || '?')}</div>`)}${H.t(`items.${i}.name`, 'h3', '', 'Name')}${H.t(`items.${i}.role`, 'p', '', 'Role')}</div>`).join('')}</div></div>` });
-    def('testimonials', { label: 'Reviews', icon: '💬', group: 'section', full: true, make: () => ({ title: 'What customers say', items: [{ quote: 'Fantastic service from start to finish. Highly recommended!', name: 'Customer name', role: 'Customer' }, { quote: 'Quick, friendly and great value. We will be back.', name: 'Customer name', role: 'Customer' }] }),
+    def('testimonials', { label: 'Reviews', icon: 'chat-dots', group: 'section', full: true, make: () => ({ title: 'What customers say', items: [{ quote: 'Fantastic service from start to finish. Highly recommended!', name: 'Customer name', role: 'Customer' }, { quote: 'Quick, friendly and great value. We will be back.', name: 'Customer name', role: 'Customer' }] }),
         fields: [F.list('items', 'Reviews', { quote: 'What they said.', name: 'Name', role: '' }, [['name', 'text']], 6)],
         render: (w, x, H) => `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}<div class="grid ${g(Math.min(items(w).length, 3))}">${items(w).map((it, i) =>
-            `<figure class="card tst"><div class="stars">★★★★★</div>${H.t(`items.${i}.quote`, 'blockquote', '', 'What they said', { ml: true, keep: true })}<figcaption><span>${H.t(`items.${i}.name`, 'b', '', 'Name')}${H.t(`items.${i}.role`, 'small', 'muted', 'Who they are')}</span></figcaption></figure>`).join('')}</div></div>` });
-    def('logos', { label: 'Client logos', icon: '🏷️', group: 'section', full: true, make: () => ({ title: 'Trusted by', items: [{ src: '' }, { src: '' }, { src: '' }, { src: '' }] }),
+            `<figure class="card tst"><div class="stars" role="img" aria-label="5 out of 5">${STARS}</div>${H.t(`items.${i}.quote`, 'blockquote', '', 'What they said', { ml: true, keep: true })}<figcaption><span>${H.t(`items.${i}.name`, 'b', '', 'Name')}${H.t(`items.${i}.role`, 'small', 'muted', 'Who they are')}</span></figcaption></figure>`).join('')}</div></div>` });
+    def('logos', { label: 'Client logos', icon: 'tag', group: 'section', full: true, make: () => ({ title: 'Trusted by', items: [{ src: '' }, { src: '' }, { src: '' }, { src: '' }] }),
         fields: [F.list('items', 'Logos', { src: '' }, [['src', 'img']], 12)],
         render: (w, x, H) => `<div class="wrap">${H.t('title', 'p', 'logos-title', 'Trusted by')}<div class="logos">${items(w).map((it, i) => (it.src || x.edit) ? H.pic(`items.${i}.src`, 'Client logo', 'logo-img') : '').join('')}</div></div>` });
-    def('faq', { label: 'FAQ', icon: '❓', group: 'section', full: true, make: () => ({ title: 'Questions', items: [{ q: 'A question customers often ask?', a: 'A short, helpful answer.' }, { q: 'Another common question?', a: 'Another clear answer.' }] }),
+    def('faq', { label: 'FAQ', icon: 'help', group: 'section', full: true, make: () => ({ title: 'Questions', items: [{ q: 'A question customers often ask?', a: 'A short, helpful answer.' }, { q: 'Another common question?', a: 'Another clear answer.' }] }),
         fields: [F.list('items', 'Questions', { q: 'New question?', a: 'The answer.' }, [['q', 'text']], 15)],
         render: (w, x, H) => `<div class="wrap narrow">${H.t('title', 'h2', 'hd', 'Heading')}<div class="faq">${items(w).map((it, i) =>
             `<details${x.edit ? ' open' : ''}><summary${H.E(`items.${i}.q`, 'Question')} class="${H.K(`items.${i}.q`)}">${esc(it.q)}</summary>${H.t(`items.${i}.a`, 'p', '', 'Answer', { ml: true, keep: true })}</details>`).join('')}</div></div>` });
-    def('video', { label: 'Video section', icon: '▶️', group: 'section', full: true, make: () => ({ title: 'See it in action', text: '', url: '' }), fields: [F.text('url', 'YouTube link', 'https://www.youtube.com/watch?v=…'), F.area('text', 'Text under the heading (optional)')],
+    def('video', { label: 'Video section', icon: 'play', group: 'section', full: true, make: () => ({ title: 'See it in action', text: '', url: '' }), fields: [F.text('url', 'YouTube link', 'https://www.youtube.com/watch?v=…'), F.area('text', 'Text under the heading (optional)')],
         render: (w, x, H) => `<div class="wrap narrow">${H.t('title', 'h2', 'hd', 'Heading')}${H.t('text', 'p', 'intro', '', { ml: true })}${W.video1.render(w, x, H)}</div>` });
-    def('map', { label: 'Map', icon: '📍', group: 'section', full: true, make: () => ({ title: 'Find us', address: '' }), fields: [F.text('address', 'Address shown on the map', '12 Main Street, City')],
-        render: (w, x, H) => `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}${w.p.address ? `<div class="embed map"><iframe src="https://www.google.com/maps?q=${encodeURIComponent(w.p.address)}&output=embed" title="Map" loading="lazy"></iframe></div><p class="intro">📍 ${esc(w.p.address)}</p>` : (x.edit ? '<div class="embed map pic-empty"><span>Type your address in the Content tab</span></div>' : '')}</div>` });
-    def('textblock', { label: 'Text section', icon: '📝', group: 'section', full: true, make: () => ({ title: 'A heading', text: '<p>Write anything here — your story, details, terms or an announcement.</p>' }), fields: [],
+    def('map', { label: 'Map', icon: 'pin', group: 'section', full: true, make: () => ({ title: 'Find us', address: '' }), fields: [F.text('address', 'Address shown on the map', '12 Main Street, City')],
+        render: (w, x, H) => `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}${w.p.address ? `<div class="embed map"><iframe src="https://www.google.com/maps?q=${encodeURIComponent(w.p.address)}&output=embed" title="Map" loading="lazy"></iframe></div><p class="intro">${ico('pin')} ${esc(w.p.address)}</p>` : (x.edit ? '<div class="embed map pic-empty"><span>Type your address in the Content tab</span></div>' : '')}</div>` });
+    def('textblock', { label: 'Text section', icon: 'note', group: 'section', full: true, make: () => ({ title: 'A heading', text: '<p>Write anything here — your story, details, terms or an announcement.</p>' }), fields: [],
         render: (w, x, H) => `<div class="wrap narrow prose">${H.t('title', 'h2', 'left hd', 'Heading')}${H.t('text', 'div', 'rt', 'Text', { rich: true })}</div>` });
-    def('cta', { label: 'Call to action', icon: '📣', group: 'section', full: true, make: () => ({ title: 'Ready to get started?', text: 'Get in touch today — we reply within one business day.', btn: 'Contact us', link: { to: 'contact' } }), fields: [F.link('link', 'Button link')], bg: 'brand',
+    def('cta', { label: 'Call to action', icon: 'megaphone', group: 'section', full: true, make: () => ({ title: 'Ready to get started?', text: 'Get in touch today — we reply within one business day.', btn: 'Contact us', link: { to: 'contact' } }), fields: [F.link('link', 'Button link')], bg: 'brand',
         render: (w, x, H) => `<div class="wrap narrow center">${H.t('title', 'h2', 'hd', 'Heading')}${H.t('text', 'p', 'intro', '', { ml: true })}${H.btn('btn', 'link', 'btn btn-light')}</div>` });
-    def('contact', { label: 'Contact', icon: '📞', group: 'section', full: true, make: () => ({ title: 'Get in touch', text: 'Call, message us or fill in the form — we reply the same day.', whatsapp: '', phone: '', email: '', address: '', form: true, btn: 'Send message' }),
+    def('contact', { label: 'Contact', icon: 'call', group: 'section', full: true, make: () => ({ title: 'Get in touch', text: 'Call, message us or fill in the form — we reply the same day.', whatsapp: '', phone: '', email: '', address: '', form: true, btn: 'Send message' }),
         fields: [F.text('whatsapp', 'WhatsApp number', '+1 555 123 4567'), F.text('phone', 'Phone'), F.text('email', 'Email'), F.text('address', 'Address (optional)'), F.bool('form', 'Show a contact form')],
         render: (w, x, H) => {
             const p = w.p, wa = digits(p.whatsapp).replace(/^\+/, ''), tel = digits(p.phone), mail = String(p.email || '').trim();
-            const acts = [wa && `<a class="btn" href="https://wa.me/${esc(wa)}">💬 WhatsApp</a>`, tel && `<a class="btn btn-ghost" href="tel:${esc(tel)}">📞 ${esc(p.phone)}</a>`, mail && `<a class="btn btn-ghost" href="mailto:${esc(mail)}">✉️ ${esc(mail)}</a>`].filter(Boolean).join('');
+            const acts = [wa && `<a class="btn" href="https://wa.me/${esc(wa)}">${ico('whatsapp')} WhatsApp</a>`, tel && `<a class="btn btn-ghost" href="tel:${esc(tel)}">${ico('call')} ${esc(p.phone)}</a>`, mail && `<a class="btn btn-ghost" href="mailto:${esc(mail)}">${ico('mail')} ${esc(mail)}</a>`].filter(Boolean).join('');
             const form = p.form ? formHtml(x, p) : '';
             return `<div class="wrap ${form ? 'contact-grid' : 'narrow center'}"><div>${H.t('title', 'h2', (form ? 'left ' : '') + 'hd', 'Heading')}${H.t('text', 'p', 'intro', '', { ml: true })}
-                ${acts ? `<div class="actions ${form ? '' : 'center'}">${acts}</div>` : (x.edit ? '<p class="intro">Add WhatsApp, phone or email in the Content tab.</p>' : '')}${p.address ? `<p class="addr">📍 ${esc(p.address)}</p>` : ''}</div>${form ? `<div class="card">${form}</div>` : ''}</div>`;
+                ${acts ? `<div class="actions ${form ? '' : 'center'}">${acts}</div>` : (x.edit ? '<p class="intro">Add WhatsApp, phone or email in the Content tab.</p>' : '')}${p.address ? `<p class="addr">${ico('pin')} ${esc(p.address)}</p>` : ''}</div>${form ? `<div class="card">${form}</div>` : ''}</div>`;
         } });
     /* ---------- online store (/online-store-builder): product cards, a cart and checkout.
        Cards carry data-product / data-name / data-price for the cart (builder-runtime.js keeps it in window.name, so
@@ -475,10 +491,11 @@
     /** Checkout works on this finished page: a store whose checkout is switched on. */
     const shopOn = x => x.P.kind === 'store' && !!x.P.site.shopAction;
     /** The ways to pay the page offers (cards only once a Stripe account is connected). */
-    const payWays = s => [s.card && s.cardReady && ['card', '💳 Pay by card'], s.cod && ['cod', s.pickup && !s.delivery ? '💵 Pay when you collect' : '💵 Cash on delivery'], s.bank && ['bank', '🏦 Bank transfer']].filter(Boolean);
+    /** The ways to pay: [value, label, icon]. */
+    const payWays = s => [s.card && s.cardReady && ['card', 'Pay by card', 'card'], s.cod && ['cod', s.pickup && !s.delivery ? 'Pay when you collect' : 'Cash on delivery', 'cash'], s.bank && ['bank', 'Bank transfer', 'bank']].filter(Boolean);
     /** The price a product shows: its own, or "from" the cheapest size when sizes cost different amounts. */
     const priceOf = it => { const b = basePrice(it), vs = variants(it), ps = vs.length ? vs.map(v => MONEY(v.price) ?? b) : [b]; const ok = ps.filter(n => n !== null); return { low: ok.length ? Math.min(...ok) : null, varies: new Set(ok).size > 1 }; };
-    def('products', { label: 'Products', icon: '🛍', group: 'shop', full: true,
+    def('products', { label: 'Products', icon: 'bag', group: 'shop', full: true,
         make: () => ({ title: 'Shop our bestsellers', intro: '', cols: '3', btn: 'Add to cart', filters: true, items: [
             { pid: '', name: 'Product name', price: '24', old: '', desc: 'A short description of this product.', long: '', cat: '', badge: 'New', image: '', images: [], sold: false, optName: 'Size', vals: [] },
             { pid: '', name: 'Another product', price: '39', old: '49', desc: 'What makes it special, in a sentence.', long: '', cat: '', badge: 'Sale', image: '', images: [], sold: false, optName: 'Size', vals: [{ vid: '', v: 'S', price: '' }, { vid: '', v: 'M', price: '' }, { vid: '', v: 'L', price: '' }] },
@@ -495,21 +512,21 @@
                     const vp = MONEY(v.price); return `<button type="button" data-optv="${esc(v.vid)}" data-v="${esc(String(v.v).trim())}"${vp !== null ? ` data-price="${vp}"` : ''} aria-pressed="${vs.length === 1}">${esc(String(v.v).trim())}</button>`;
                 }).join('')}</div></div>` : '') + (vs2.length ? `<div class="popt"><span class="popt__l">${esc(it.opt2Name || 'Option')}</span><div class="popt__v" role="group" data-second aria-label="${esc(it.opt2Name || 'Option')}">${vs2.map(v =>
                     `<button type="button" data-optv2="${esc(v.vid)}" data-v="${esc(String(v.v).trim())}" aria-pressed="${vs2.length === 1}">${esc(String(v.v).trim())}</button>`).join('')}</div></div>` : '');
-                const tag = it.kind === 'digital' ? '<span class="pkind">⬇️ Instant download</span>' : it.kind === 'gift' ? '<span class="pkind">🎁 Gift card · code by email</span>' : '';
+                const tag = it.kind === 'digital' ? `<span class="pkind">${ico('download')} Instant download</span>` : it.kind === 'gift' ? `<span class="pkind">${ico('gift')} Gift card · code by email</span>` : '';
                 const buy = it.sold ? '<span class="pcard__sold">Sold out</span>' : !canBuy || !price ? '' : `${opts}<button type="button" class="btn btn-sm pcard__add ${H.K('btn')}" data-add>${esc(w.p.btn || 'Add to cart')}</button>`;
                 const data = x.edit ? '' : ` id="p-${esc(it.pid || '')}" data-product="${esc(it.pid || '')}" data-name="${esc(String(it.name || '').trim())}" data-price="${esc(String(basePrice(it) ?? ''))}" data-cat="${esc(String(it.cat || '').trim())}" data-kind="${esc(it.kind || 'item')}"`;
                 const initial = esc((String(it.name || '?').trim()[0] || '?').toUpperCase());
                 // no photo yet: the same coloured tile as the finished page, with an "Add photo" button on it in the editor
                 const pic = it.image ? H.pic(`items.${i}.image`, it.name || 'Product', 'pic')
-                    : `<div class="pic pic-fill pcard__ph"${x.edit ? ` data-img="${esc(w.id)}|items.${i}.image"` : ' aria-hidden="true"'}><b>${initial}</b>${x.edit ? '<span>＋ Add photo</span>' : ''}</div>`;
+                    : `<div class="pic pic-fill pcard__ph"${x.edit ? ` data-img="${esc(w.id)}|items.${i}.image"` : ' aria-hidden="true"'}><b>${initial}</b>${x.edit ? `<span>${ico('plus')} Add photo</span>` : ''}</div>`;
                 const extra = (it.images || []).filter(Boolean);
                 // what the product's own page (opened from the card) adds: more photos and the longer description
                 const more = x.edit || (!extra.length && !String(it.long || '').trim()) ? '' : `<div class="pcard__more" hidden>${extra.map(src => `<img src="${esc(src)}" alt="${esc(it.name || '')}" loading="lazy">`).join('')}${String(it.long || '').trim() ? `<div class="pcard__long">${nl(it.long)}</div>` : ''}</div>`;
                 const open = !x.edit && it.pid ? `<a class="pcard__open" href="#p-${esc(it.pid)}" data-quick aria-label="${esc(String(it.name || 'Product').trim())} — see details"></a>` : '';
-                return `<article class="pcard${it.sold ? ' is-sold' : ''}"${data}><div class="pcard__pic">${pic}${it.badge ? `<span class="pbadge">${esc(it.badge)}</span>` : ''}${extra.length && !x.edit ? `<span class="pcard__n">＋${extra.length}</span>` : ''}${open}</div>
-                    <div class="pcard__b">${H.t(`items.${i}.name`, 'h3', '', 'Product name', { keep: true })}${H.t(`items.${i}.desc`, 'p', 'muted', 'Short description', { ml: true })}<p class="prating" data-prating hidden></p><p class="pprice"><b data-pprice>${pr.varies ? 'From ' : ''}${price || (x.edit ? 'Set a price →' : '')}</b>${old ? ` <s>${old}</s>` : ''}</p>${tag}<p class="pstock" data-pstock hidden></p>${buy}</div>${more}</article>`;
+                return `<article class="pcard${it.sold ? ' is-sold' : ''}"${data}><div class="pcard__pic">${pic}${it.badge ? `<span class="pbadge">${esc(it.badge)}</span>` : ''}${extra.length && !x.edit ? `<span class="pcard__n" aria-label="${extra.length} more photos">${ico('plus')}${extra.length}</span>` : ''}${open}</div>
+                    <div class="pcard__b">${H.t(`items.${i}.name`, 'h3', '', 'Product name', { keep: true })}${H.t(`items.${i}.desc`, 'p', 'muted', 'Short description', { ml: true })}<p class="prating" data-prating hidden></p><p class="pprice"><b data-pprice>${pr.varies ? 'From ' : ''}${price || (x.edit ? `Set a price ${ico('arrow-right')}` : '')}</b>${old ? ` <s>${old}</s>` : ''}</p>${tag}<p class="pstock" data-pstock hidden></p>${buy}</div>${more}</article>`;
             }).join('');
-            const off = x.edit && x.P.kind === 'store' && !x.P.site.shopAction ? '<p class="shop-off">🛒 Checkout is off — switch it on in the Content tab</p>' : '';
+            const off = x.edit && x.P.kind === 'store' && !x.P.site.shopAction ? `<p class="shop-off">${ico('cart')} Checkout is off — switch it on in the Content tab</p>` : '';
             const filters = w.p.filters !== false && (cats.length > 1 || items.length > 8)
                 ? `<div class="pfilter">${cats.length > 1 ? `<div class="pfilter__cats" role="group" aria-label="Categories"><button type="button" data-pcat="" aria-pressed="true">All</button>${cats.map(c => `<button type="button" data-pcat="${esc(c)}" aria-pressed="false">${esc(c)}</button>`).join('')}</div>` : ''}${items.length > 8 ? '<input type="search" name="_q" data-psearch placeholder="Search products" aria-label="Search products" maxlength="60">' : ''}</div>` : '';
             return `<div class="wrap">${H.t('title', 'h2', 'hd', 'Heading')}${H.t('intro', 'p', 'intro', '', { ml: true })}${off}${filters}<div class="grid g${n} shop-grid">${cards}</div><p class="pnone" data-pnone hidden>No products match. Try another search.</p></div>`;
@@ -519,11 +536,11 @@
         if (!shopOn(x)) return '';
         const s = x.P.site.shop, cur = s.currency, fee = MONEY(s.fee) || 0, free = MONEY(s.freeOver) || 0, zones = (s.zones || []).filter(z => z && typeof z === 'object');
         const byZone = !!zones.length && s.delivery;
-        const dels = [s.delivery && ['delivery', byZone ? '🚚 Delivery' : `🚚 Delivery — ${fee ? money(fee, cur) + (free ? ` (free over ${money(free, cur)})` : '') : 'free'}`], s.pickup && ['pickup', `🏪 Pick up${s.pickupText ? ' — ' + s.pickupText : ' — free'}`]].filter(Boolean);
+        const dels = [s.delivery && ['delivery', byZone ? 'Delivery' : `Delivery — ${fee ? money(fee, cur) + (free ? ` (free over ${money(free, cur)})` : '') : 'free'}`, 'truck'], s.pickup && ['pickup', `Pick up${s.pickupText ? ' — ' + s.pickupText : ' — free'}`, 'store']].filter(Boolean);
         const pays = payWays(s);
         const choice = (name, list, legend) => list.length > 1
-            ? `<fieldset class="ob-choice"><legend>${legend}</legend>${list.map(([v, l], i) => `<label><input type="radio" name="${name}" value="${v}"${i ? '' : ' checked'}> ${esc(l)}</label>`).join('')}</fieldset>`
-            : list.length ? `<div class="ob-choice"><b>${legend}</b><input type="hidden" name="${name}" value="${list[0][0]}"><p class="ob-one">${esc(list[0][1])}</p></div>` : '';
+            ? `<fieldset class="ob-choice"><legend>${legend}</legend>${list.map(([v, l, ic], i) => `<label><input type="radio" name="${name}" value="${v}"${i ? '' : ' checked'}> ${ico(ic)} ${esc(l)}</label>`).join('')}</fieldset>`
+            : list.length ? `<div class="ob-choice"><b>${legend}</b><input type="hidden" name="${name}" value="${list[0][0]}"><p class="ob-one">${ico(list[0][2])} ${esc(list[0][1])}</p></div>` : '';
         const delivers = !!s.delivery, first = dels[0]?.[0] === 'delivery';
         // shipping by country: the countries the zones name, or every country when one zone is "everywhere else"
         const anywhere = zones.some(z => !(z.countries || []).length), named = [...new Set(zones.flatMap(z => z.countries || []))];
@@ -546,14 +563,14 @@
                 ${choice('_pay', pays, 'Payment')}
                 <input type="hidden" name="_cart" value="[]" data-cart-field><input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true">${backInput(x)}
                 <button class="btn btn-lg ob-place" type="submit" data-place>Place order</button>
-                ${pays.some(p => p[0] === 'card') ? `<small class="ob-small">🔒 Card payments are handled securely by Stripe${s.mode === 'test' ? ' (test mode — no real money)' : ''}.</small>` : ''}</form>`
+                ${pays.some(p => p[0] === 'card') ? `<small class="ob-small">${ico('lock')} Card payments are handled securely by Stripe${s.mode === 'test' ? ' (test mode — no real money)' : ''}.</small>` : ''}</form>`
             : '<p class="ob-one">This shop isn’t taking orders online yet.</p>';
-        return `${x.P.site.bare ? `<a href="#cart" class="nav-cart ob-cartfab" data-cart-open aria-label="Your cart">${I(ICONS.cart)}<span class="nav-cart__n" data-cart-count hidden>0</span></a>` : ''}
+        return `${x.P.site.bare ? `<a href="#cart" class="nav-cart ob-cartfab" data-cart-open aria-label="Your cart">${ico('cart')}<span class="nav-cart__n" data-cart-count hidden>0</span></a>` : ''}
 <div class="ob-cart" data-cart hidden role="dialog" aria-modal="true" aria-labelledby="ob-cart-t"><div class="ob-cart__box">
-<div class="ob-cart__top"><h3 id="ob-cart-t">Your cart</h3><button type="button" class="ob-cart__x" data-cart-close aria-label="Close">×</button></div>
+<div class="ob-cart__top"><h3 id="ob-cart-t">Your cart</h3><button type="button" class="ob-cart__x" data-cart-close aria-label="Close">${ico('close')}</button></div>
 <p class="ob-cart__empty" data-cart-empty>Your cart is empty.</p><ul class="ob-lines" data-cart-lines></ul>${form}
-<p class="ob-myorders"><a href="${esc(x.P.site.shopAction)}/account" target="_blank" rel="noopener">📦 My orders</a></p></div></div>
-<div class="ob-quick" data-quickview hidden role="dialog" aria-modal="true" aria-label="Product"><div class="ob-quick__box"><button type="button" class="ob-cart__x ob-quick__x" data-quick-close aria-label="Close">×</button><div data-quick-body></div></div></div>`;
+<p class="ob-myorders"><a href="${esc(x.P.site.shopAction)}/account" target="_blank" rel="noopener">${ico('box')} My orders</a></p></div></div>
+<div class="ob-quick" data-quickview hidden role="dialog" aria-modal="true" aria-label="Product"><div class="ob-quick__box"><button type="button" class="ob-cart__x ob-quick__x" data-quick-close aria-label="Close">${ico('close')}</button><div data-quick-body></div></div></div>`;
     };
     /**
      * A phone box with the country's flag and calling code in front (checkout, contact and opt-in forms). The real
@@ -615,25 +632,25 @@
     /* ================================================================ examples & templates */
     const EXAMPLES = {
         agency: ['Consultant / agency', 'Northwind Consulting', '#4f46e5', ['Growth consulting for small businesses', 'Grow your business with a clear, practical plan', 'We find what is holding your sales back and fix it with you — marketing, pricing and processes that actually work.', 'Book a free call'],
-            [['📈', 'More customers', 'A marketing plan built around the channels your buyers use.'], ['💡', 'Better pricing', 'Package and price your services so they sell — and pay.'], ['⚙️', 'Simple systems', 'Free your time with tools and processes that run themselves.']]],
+            [['i:trend', 'More customers', 'A marketing plan built around the channels your buyers use.'], ['i:bulb', 'Better pricing', 'Package and price your services so they sell — and pay.'], ['i:gear', 'Simple systems', 'Free your time with tools and processes that run themselves.']]],
         dental: ['Dental clinic', 'BrightSmile Dental', '#0ea5e9', ['Family & cosmetic dentistry', 'A healthier, brighter smile — without the fear', 'Gentle check-ups, whitening and implants from a friendly team. New patients welcome.', 'Book a check-up'],
-            [['🦷', 'Pain-free treatment', 'Modern tools and a calm approach.'], ['📅', 'Same-week appointments', 'Evening and Saturday slots.'], ['💳', 'Clear prices', 'You get the cost before we start.']]],
+            [['i:tooth', 'Pain-free treatment', 'Modern tools and a calm approach.'], ['i:calendar', 'Same-week appointments', 'Evening and Saturday slots.'], ['i:card', 'Clear prices', 'You get the cost before we start.']]],
         restaurant: ['Restaurant / café', 'Olive & Ember', '#ea580c', ['Wood-fired kitchen · Open daily', 'Fresh, wood-fired food made to share', 'Seasonal plates, hand-stretched pizza and natural wines in the heart of the city.', 'Book a table'],
-            [['🔥', 'Wood-fired everything', 'Our oven runs at 450°C.'], ['🥬', 'Local & seasonal', 'Menus change with the season.'], ['🎉', 'Private events', 'Parties for up to 40 guests.']]],
+            [['i:fire', 'Wood-fired everything', 'Our oven runs at 450°C.'], ['i:leaf', 'Local & seasonal', 'Menus change with the season.'], ['i:party', 'Private events', 'Parties for up to 40 guests.']]],
         course: ['Online course', 'Code in 30 Days', '#16a34a', ['Beginner-friendly · Learn at your pace', 'Learn to build websites in 30 days', 'Short daily lessons, real projects and a friendly community. No experience needed.', 'Join the course'],
-            [['🎥', '60+ short lessons', 'Clear videos for phone or laptop.'], ['🛠️', '5 real projects', 'Finish with a portfolio.'], ['💬', 'Help when stuck', 'Community and live sessions.']]],
+            [['i:film', '60+ short lessons', 'Clear videos for phone or laptop.'], ['i:wrench', '5 real projects', 'Finish with a portfolio.'], ['i:chat', 'Help when stuck', 'Community and live sessions.']]],
         realestate: ['Real estate', 'Keystone Homes', '#0f766e', ['Buy · Sell · Rent', 'Find the right home — or sell yours for more', 'Local agents who know every street. Free valuations and honest advice.', 'Get a free valuation'],
-            [['🏡', 'Local experts', '15 years selling homes here.'], ['📸', 'Homes that stand out', 'Pro photos and video tours.'], ['🤝', 'Honest advice', 'Clear pricing and updates.']]],
+            [['i:home', 'Local experts', '15 years selling homes here.'], ['i:camera', 'Homes that stand out', 'Pro photos and video tours.'], ['i:handshake', 'Honest advice', 'Clear pricing and updates.']]],
         services: ['Home services', 'FixRight Plumbing', '#dc2626', ['24/7 emergency call-outs', 'Fast, reliable plumbing — fixed right the first time', 'Leaks, drains, boilers and bathrooms. Upfront prices and a 12-month guarantee.', 'Get a free quote'],
-            [['⚡', 'Here in 60 minutes', 'Emergency call-outs day and night.'], ['💰', 'Upfront prices', 'You approve the price first.'], ['✅', '12-month guarantee', 'If it fails, we come back free.']]],
+            [['i:bolt', 'Here in 60 minutes', 'Emergency call-outs day and night.'], ['i:cash', 'Upfront prices', 'You approve the price first.'], ['i:check', '12-month guarantee', 'If it fails, we come back free.']]],
         salon: ['Hair & beauty salon', 'Velvet Hair Studio', '#be185d', ['Hair · Nails · Brows', 'Walk out feeling like the best version of you', 'Cuts, colour and treatments from stylists who listen. Book online in under a minute.', 'Book an appointment'],
-            [['✂️', 'Expert stylists', 'Every stylist trained for 5+ years.'], ['🌿', 'Kind products', 'Vegan, cruelty-free colour.'], ['📅', 'Easy booking', 'Evening and Sunday slots.']]],
+            [['i:scissors', 'Expert stylists', 'Every stylist trained for 5+ years.'], ['i:leaf', 'Kind products', 'Vegan, cruelty-free colour.'], ['i:calendar', 'Easy booking', 'Evening and Sunday slots.']]],
         fitness: ['Gym & personal trainer', 'Peak Fitness', '#ea580c', ['Personal training · Small classes', 'Get stronger, fitter and more confident — with a coach on your side', 'One-to-one training and small group classes for every level. Your first session is free.', 'Book a free session'],
-            [['🏋️', 'Plans made for you', 'Built around your goals and time.'], ['👥', 'Small classes', 'Never more than 8 people.'], ['📈', 'Real progress', 'We check in and track results every month.']]],
+            [['i:dumbbell', 'Plans made for you', 'Built around your goals and time.'], ['i:users', 'Small classes', 'Never more than 8 people.'], ['i:trend', 'Real progress', 'We check in and track results every month.']]],
         cleaning: ['Cleaning company', 'Sparkle Cleaning Co.', '#0891b2', ['Homes · Offices · End of tenancy', 'A spotless home, without lifting a finger', 'Trusted, insured cleaners who arrive on time and bring everything. Weekly, one-off or deep cleans.', 'Get a free quote'],
-            [['🧽', 'Everything included', 'We bring products and equipment.'], ['🛡️', 'Insured & vetted', 'Background-checked cleaners.'], ['😊', 'Happiness promise', 'Not happy? We come back free.']]],
+            [['i:sparkle', 'Everything included', 'We bring products and equipment.'], ['i:shield', 'Insured & vetted', 'Background-checked cleaners.'], ['i:smile', 'Happiness promise', 'Not happy? We come back free.']]],
         accounting: ['Accountant / bookkeeper', 'Ledger & Co. Accountants', '#1e40af', ['Small business accounting', 'Less paperwork, lower tax bills, more time for your business', 'Bookkeeping, tax returns and payroll for sole traders and small companies — at a fixed monthly fee.', 'Book a free call'],
-            [['📊', 'Fixed monthly fee', 'No surprise bills, ever.'], ['🧾', 'Tax done for you', 'Returns filed on time, every time.'], ['☎️', 'A real person', 'Your own accountant, a call away.']]],
+            [['i:chart', 'Fixed monthly fee', 'No surprise bills, ever.'], ['i:receipt', 'Tax done for you', 'Returns filed on time, every time.'], ['i:call', 'A real person', 'Your own accountant, a call away.']]],
     };
     const fill = (sec, { v, ...p }) => { const w = sec.cols[0].widgets[0]; if (v) w.v = v; Object.assign(w.p, p); return sec; }; // v = variant (layout)
     const newProject = key => {
@@ -660,7 +677,7 @@
             'visit': ['Visit us — hours, map & contact', () => cols('3', [wp('heading', { text: 'Opening hours', tag: 'h3' }), 'hours'], [wp('heading', { text: 'Find us', tag: 'h3' }), wp('text', { html: '<p>12 Main Street<br>Your City</p>' })], [wp('heading', { text: 'Follow us', tag: 'h3' }), 'social'])],
             'tabs-info': ['Details — tabs', () => cols('1', [wp('heading', { text: 'Everything you need to know' }), 'tabs'])],
             'reviews-slider': ['Reviews — slider', () => { const s = cols('1', [wp('heading', { text: 'What customers say' }), 'tcarousel']); s.st._ = { d: { align: 'center' } }; s.bg = 'alt'; return s; }],
-            'flip-3': ['Services — three flip boxes', () => cols('3', ['flipbox'], [wp('flipbox', { icon: 'i:bolt' })], [wp('flipbox', { icon: 'i:award' })])],
+            'flip-3': ['Services — three flip boxes', () => cols('3', ['flipbox'], [wp('flipbox', { icon: 'i:bolt' })], [wp('flipbox', { icon: 'i:star' })])],
         },
         pages: {
             about: ['About', () => [fill(sectionOf('hero'), { eyebrow: 'Our story', title: 'About us', text: 'Who we are, what we do and why we do it.', btn: 'Get in touch' }), TEMPLATES.sections['intro-2col'][1](), sectionOf('stats'), sectionOf('team'), sectionOf('cta')]],
@@ -691,9 +708,9 @@
         'hero-words': ['Hero — rotating words', () => look(cols('1', [ey('Design · Build · Grow'), wp('animhead', { before: 'We build', words: 'websites\nonline stores\nmobile apps', after: 'that win you customers', tag: 'h1' }), para('A small team that plans, designs and builds with you — on time and on budget.'), btn('Start a project', { align: 'center', size: 'lg' })]), 'soft', 'center'), 'Heroes'],
         'hero-form': ['Hero — headline & sign-up form', () => { const s = section('2-1', [column([ey('Free guide'), head('The 10-minute checklist for a website that sells', 'h1'), para('Join 5,000+ owners who used it to get more calls and enquiries.'), list('Fix the 3 things that lose most visitors', 'Write a headline that converts', 'Add proof people trust')]), card([head('Get the checklist', 'h3'), 'form'])]); return look(s, 'alt'); }, 'Heroes'],
         // Features & services
-        'features-6': ['Features — six icon boxes', () => look(cols('3', [ib('bolt', 'Fast set-up', 'Ready in minutes, not weeks.'), ib('shield', 'Secure', 'Your data is encrypted and backed up.')], [ib('chart', 'Clear reports', 'See what works at a glance.'), ib('phone', 'Works on phones', 'Looks great on every screen.')], [ib('chat', 'Real support', 'Talk to a person, not a bot.'), ib('heart', 'Loved by teams', 'Rated 4.9 by our customers.')]), '', 'center'), 'Features'],
-        'features-left': ['Features — icons beside text', () => cols('2', [ib('rocket', 'Launch quickly', 'Start from a ready design and change only what you need.', 'left'), ib('target', 'Reach the right people', 'Built-in SEO so customers can find you.', 'left')], [ib('lock', 'Safe and private', 'Encrypted, backed up and always yours.', 'left'), ib('smile', 'Easy to use', 'No training needed — click and type.', 'left')]), 'Features'],
-        'features-cards': ['Services — three cards with buttons', () => look(section('3', [card([ib('home', 'Residential', 'Homes, flats and extensions — done properly.'), btn('Learn more', { kind: 'ghost', size: 'sm' })]), card([ib('tool', 'Repairs', 'Fast fixes from people who turn up on time.'), btn('Learn more', { kind: 'ghost', size: 'sm' })]), card([ib('award', 'Commercial', 'Offices and shops, out of hours if needed.'), btn('Learn more', { kind: 'ghost', size: 'sm' })])]), 'alt'), 'Features'],
+        'features-6': ['Features — six icon boxes', () => look(cols('3', [ib('bolt', 'Fast set-up', 'Ready in minutes, not weeks.'), ib('shield', 'Secure', 'Your data is encrypted and backed up.')], [ib('chart', 'Clear reports', 'See what works at a glance.'), ib('call', 'Works on phones', 'Looks great on every screen.')], [ib('chat', 'Real support', 'Talk to a person, not a bot.'), ib('heart', 'Loved by teams', 'Rated 4.9 by our customers.')]), '', 'center'), 'Features'],
+        'features-left': ['Features — icons beside text', () => cols('2', [ib('rocket', 'Launch quickly', 'Start from a ready design and change only what you need.', 'left'), ib('compass', 'Reach the right people', 'Built-in SEO so customers can find you.', 'left')], [ib('lock', 'Safe and private', 'Encrypted, backed up and always yours.', 'left'), ib('smile', 'Easy to use', 'No training needed — click and type.', 'left')]), 'Features'],
+        'features-cards': ['Services — three cards with buttons', () => look(section('3', [card([ib('home', 'Residential', 'Homes, flats and extensions — done properly.'), btn('Learn more', { kind: 'ghost', size: 'sm' })]), card([ib('wrench', 'Repairs', 'Fast fixes from people who turn up on time.'), btn('Learn more', { kind: 'ghost', size: 'sm' })]), card([ib('star', 'Commercial', 'Offices and shops, out of hours if needed.'), btn('Learn more', { kind: 'ghost', size: 'sm' })])]), 'alt'), 'Features'],
         'features-list': ['Benefits — headline & checklist', () => cols('2', [ey('Why us'), head('Everything you need, nothing you don’t'), para('We keep it simple so you can focus on your customers.')], [list('No contracts — cancel any time', 'Free set-up and training', 'Support 7 days a week', 'Your data, always exportable', 'Price locked for 12 months')]), 'Features'],
         'features-image': ['Feature — image & text', () => fill(sectionOf('imagetext'), { eyebrow: 'How it helps', title: 'Spend less time on admin, more on customers', text: '<p>Reminders, invoices and follow-ups go out on their own, so nothing slips through the cracks.</p>', btn: 'See all features' }), 'Features'],
         'features-image-r': ['Feature — text & image (right)', () => fill(sectionOf('imagetext'), { v: 'right', eyebrow: 'Made for teams', title: 'Everyone on the same page', text: '<p>Share jobs, notes and photos in one place — from the office or on the road.</p>', btn: 'Learn more' }), 'Features'],
@@ -734,7 +751,7 @@
         'offer-banner': ['Offer — announcement banner', () => look(cols('1', [wp('notice', { kind: 'success', title: 'Spring offer: 20% off all services', text: 'Book before 31 May and save — mention this website when you call.' })]), 'plain'), 'Calls to action'],
         // Contact
         'contact-split': ['Contact — details & form', () => look(sectionOf('contact'), 'alt'), 'Contact'],
-        'contact-cards': ['Contact — three ways to reach us', () => look(cols('3', [ib('phone', 'Call us', '+1 555 010 2030 · Mon–Fri 9–6')], [ib('mail', 'Email', 'hello@yourbusiness.com — we reply same day')], [ib('pin', 'Visit', '12 Main Street, Your City')]), '', 'center'), 'Contact'],
+        'contact-cards': ['Contact — three ways to reach us', () => look(cols('3', [ib('call', 'Call us', '+1 555 010 2030 · Mon–Fri 9–6')], [ib('mail', 'Email', 'hello@yourbusiness.com — we reply same day')], [ib('pin', 'Visit', '12 Main Street, Your City')]), '', 'center'), 'Contact'],
         'contact-hours': ['Contact — hours & map', () => cols('2', [head('Opening hours', 'h3'), 'hours', btn('Get directions', { kind: 'ghost' })], [wp('heading', { text: 'Where to find us', tag: 'h3' }), para('12 Main Street, Your City — free parking behind the building.'), 'social']), 'Contact'],
     };
     // the first ten templates get a group too
@@ -766,20 +783,20 @@
     const FUNNELS = {
         leadmagnet: ['Lead magnet (free guide)', () => [
             step('Opt-in', 'index', 'optin', [(() => { const s = section('2-1', [column([wp('heading', { text: 'Get the free guide: 7 ways to double your leads', tag: 'h1' }), wp('text', { html: '<p>A short, practical PDF you can use today. Join 5,000+ business owners who already read it.</p>' }), wp('iconlist', { items: [{ icon: 'i:check', text: 'The 3-step offer formula' }, { icon: 'i:check', text: 'Copy-and-paste email templates' }, { icon: 'i:check', text: 'A 30-day action plan' }] })]), optinCard('Send me the guide', 'Yes, send it to me!')]); s.bg = 'soft'; s.st._ = { d: { minH: 620 } }; return s; })(), sectionOf('testimonials')]),
-            step('Thank you', 'thank-you', 'thankyou', [thanks('🎉 Check your inbox!', 'Your free guide is on its way. While you wait, here is something that will help even more.', 'Book a free call')]),
+            step('Thank you', 'thank-you', 'thankyou', [thanks('Check your inbox!', 'Your free guide is on its way. While you wait, here is something that will help even more.', 'Book a free call')]),
         ]],
         webinar: ['Webinar registration', () => [
             step('Register', 'index', 'webinar', [(() => { const s = section('2', [column([wp('heading', { text: 'FREE live training: How to get your first 100 customers', tag: 'h1' }), wp('text', { html: '<p>Join us live on Thursday at 7 pm. Seats are limited.</p>' }), wp('countdown', {})]), optinCard('Save my seat', 'Register for free')]); s.bg = 'soft'; s.st._ = { d: { minH: 600 } }; return s; })(), sectionOf('faq')]),
-            step('Confirmed', 'confirmed', 'thankyou', [thanks('✅ You are registered!', 'We sent the link to your email. Add it to your calendar so you don\'t miss it.', 'Add to my calendar', [wp('video1', { url: '' })])]),
+            step('Confirmed', 'confirmed', 'thankyou', [thanks('You are registered!', 'We sent the link to your email. Add it to your calendar so you don\'t miss it.', 'Add to my calendar', [wp('video1', { url: '' })])]),
         ]],
         launch: ['Product launch (sales page)', () => [
             step('Sales page', 'index', 'sales', [fill(sectionOf('hero'), { v: 'split', eyebrow: 'New', title: 'The product headline that sells the result', text: 'Explain the transformation customers get — and why now.', btn: 'Get it now', link: { to: 'pay' } }), sectionOf('features'), sectionOf('testimonials'), (() => { const s = section('1', [column([wp('heading', { text: 'Get instant access today', tag: 'h2' }), wp('paybtn', {})])]); s.st._ = { d: { align: 'center' } }; s.bg = 'soft'; return s; })(), sectionOf('faq')]),
-            step('Thank you', 'thank-you', 'thankyou', [thanks('🎉 Thank you for your order!', 'Your receipt and access details are on their way to your email.', '')]),
+            step('Thank you', 'thank-you', 'thankyou', [thanks('Thank you for your order!', 'Your receipt and access details are on their way to your email.', '')]),
         ]],
         tripwire: ['Low-price offer + upsell', () => [
             step('Offer', 'index', 'sales', [fill(sectionOf('hero'), { eyebrow: 'Today only', title: 'Get the starter kit for just $7', text: 'Everything you need to get started — instant download.', btn: 'Get it for $7', link: { to: 'pay' } }), sectionOf('features'), sectionOf('faq')]),
             step('Special upgrade', 'upgrade', 'upsell', [(() => { const s = section('1', [column([wp('heading', { text: 'Wait! Add the complete course for $47', tag: 'h1' }), wp('text', { html: '<p>One-time offer: upgrade your order and get everything you need to go further — only on this page.</p>' }), wp('paybtn', { text: 'Yes, add it to my order', no: 'No thanks, I\'ll skip this offer' })])]); s.st._ = { d: { align: 'center', minH: 560 } }; s.bg = 'soft'; return s; })()]),
-            step('Thank you', 'thank-you', 'thankyou', [thanks('🎉 You\'re all set!', 'Check your email for your download links.', '')]),
+            step('Thank you', 'thank-you', 'thankyou', [thanks('You\'re all set!', 'Check your email for your download links.', '')]),
         ]],
         consult: ['Free consultation booking', () => [
             step('Book a call', 'index', 'optin', [(() => { const s = section('2', [column([wp('heading', { text: 'Book your free 30-minute strategy call', tag: 'h1' }), wp('text', { html: '<p>Tell us about your goals and we will show you the fastest way to reach them. No pressure, no cost.</p>' }), wp('iconlist', {})]), optinCard('Request my call', 'Book my free call', [])]); s.cols[1].widgets[1].p.phone = true; s.bg = 'soft'; s.st._ = { d: { minH: 600 } }; return s; })(), sectionOf('testimonials')]),
@@ -854,7 +871,7 @@
         const quick = styled(section('3', [
             column([wp('iconbox', { icon: 'i:clock', title: o.hoursShort, text: 'Open today', layout: 'left' })]),
             column([wp('iconbox', { icon: 'i:pin', title: o.area, text: 'Address & hours below', layout: 'left' })]),
-            column([wp('iconbox', { icon: o.order ? 'i:truck' : 'i:phone', title: o.order ? 'Delivery & pick-up' : 'Book a table', text: o.order ? 'Order on WhatsApp or call us' : 'Call us or send a message', layout: 'left' })]),
+            column([wp('iconbox', { icon: o.order ? 'i:truck' : 'i:call', title: o.order ? 'Delivery & pick-up' : 'Book a table', text: o.order ? 'Order on WhatsApp or call us' : 'Call us or send a message', layout: 'left' })]),
         ]), { pt: 28, pb: 28 }, 'soft');
         const cat = ([title, left, right], k) => {
             const list = items => wp('pricelist', { items: items.map(([name, price, desc = '']) => ({ name, price, desc })) });
@@ -921,10 +938,10 @@
                 () => [fill(sectionOf('steps'), { title: 'How commissions work', items: [{ title: 'Tell me your idea', text: 'Send a few words and any reference photos.' }, { title: 'Sketch & approve', text: 'You see a sketch before I start the final piece.' }, { title: 'Delivered', text: 'Get a high-resolution file or a framed original.' }] })])],
         } },
         links: { label: 'link-in-bio page', examples: {
-            creator: ['Creator / influencer', () => bio('Jess Rivera', '#e11d48', '✨ Lifestyle & travel creator · New videos every Friday', [['▶ Watch my latest video'], ['🛍 Shop my favourites'], ['📸 My photo presets'], ['📩 Work with me', 'email']], ['instagram', 'tiktok', 'youtube'])],
-            musician: ['Musician / band', () => bio('The Night Owls', '#7c3aed', '🎸 Indie rock from Manchester · New single out now', [['🎧 Listen on Spotify'], ['🎟 Tour dates & tickets'], ['👕 Merch store'], ['▶ Watch the music video']], ['instagram', 'youtube', 'tiktok'])],
-            shop: ['Small shop', () => bio('Bloom & Co. Flowers', '#16a34a', '🌸 Fresh flowers delivered same day · Order by 2 pm', [['💐 Order flowers online'], ['💬 Order on WhatsApp', 'whatsapp'], ['📍 Visit our shop'], ['⭐ Leave us a review']], ['instagram', 'facebook', 'pinterest'])],
-            coach: ['Coach / consultant', () => bio('Dr. Sam Patel', '#0ea5e9', '🧠 Helping founders beat burnout · Coach & speaker', [['📅 Book a free intro call'], ['📘 Free guide: 5 signs of burnout'], ['🎙 Listen to my podcast'], ['✉️ Email me', 'email']], ['linkedin', 'youtube', 'x'])],
+            creator: ['Creator / influencer', () => bio('Jess Rivera', '#e11d48', 'Lifestyle & travel creator · New videos every Friday', [['Watch my latest video'], ['Shop my favourites'], ['My photo presets'], ['Work with me', 'email']], ['instagram', 'tiktok', 'youtube'])],
+            musician: ['Musician / band', () => bio('The Night Owls', '#7c3aed', 'Indie rock from Manchester · New single out now', [['Listen on Spotify'], ['Tour dates & tickets'], ['Merch store'], ['Watch the music video']], ['instagram', 'youtube', 'tiktok'])],
+            shop: ['Small shop', () => bio('Bloom & Co. Flowers', '#16a34a', 'Fresh flowers delivered same day · Order by 2 pm', [['Order flowers online'], ['Order on WhatsApp', 'whatsapp'], ['Visit our shop'], ['Leave us a review']], ['instagram', 'facebook', 'pinterest'])],
+            coach: ['Coach / consultant', () => bio('Dr. Sam Patel', '#0ea5e9', 'Helping founders beat burnout · Coach & speaker', [['Book a free intro call'], ['Free guide: 5 signs of burnout'], ['Listen to my podcast'], ['Email me', 'email']], ['linkedin', 'youtube', 'x'])],
         } },
         event: { label: 'event website', examples: {
             wedding: ['Wedding', () => eventPage('Emma & James', '#b45309', { site: { fonts: { heading: 'Playfair Display', body: 'Lato', base: 17 } }, eyebrow: 'We’re getting married', title: 'Emma & James', days: 180, hour: 14, time: '2 pm', place: 'Rose Garden Hall, Bath', countTitle: 'Until we say “I do”',
@@ -933,7 +950,7 @@
                 venue: 'Rose Garden Hall', address: '12 Garden Lane, Bath BA1 2AB', extra: [wp('text', { html: '<p><b>Dress code:</b> garden formal</p>' })],
                 rsvpTitle: 'Will you celebrate with us?', rsvpText: 'Please reply at least six weeks before the day.', rsvp: { meal: true, meals: 'Chicken\nSalmon\nVegetarian\nVegan' },
                 faq: [['Can I bring a plus one?', 'Your invitation says how many seats we have saved for you. Please contact us if you are not sure.'], ['Are children welcome?', 'We love your little ones, but we have chosen to make our day adults-only.'], ['Is there parking?', 'Yes, free parking is available at the venue.'], ['Do you have a gift list?', 'Your presence is the best gift! If you would like to give something, a contribution to our honeymoon would mean the world.']] })],
-            birthday: ['Birthday party', () => eventPage('Sam’s 30th', '#db2777', { eyebrow: 'You’re invited', title: 'Sam is turning 30! 🎉', days: 30, hour: 20, time: '8 pm till late', place: 'The Rooftop Bar, Manchester', countTitle: 'The party starts in',
+            birthday: ['Birthday party', () => eventPage('Sam’s 30th', '#db2777', { eyebrow: 'You’re invited', title: 'Sam is turning 30!', days: 30, hour: 20, time: '8 pm till late', place: 'The Rooftop Bar, Manchester', countTitle: 'The party starts in',
                 storyEyebrow: 'The plan', storyTitle: 'Drinks, music and way too much cake', story: 'Come celebrate three decades of Sam with good friends, a great DJ and a view over the city. Dress to impress — there will be a photo booth!',
                 planTitle: 'The night', plan: [['8 pm · Welcome drinks', 'First drink is on us.'], ['9 pm · Food & cake', 'Pizza, snacks and the big cake moment.'], ['10 pm · Dance', 'DJ until 2 am.']],
                 venue: 'The Rooftop Bar', address: '45 King Street, Manchester M2 4LQ', rsvp: { guests: true, note: true }, rsvpText: 'Let us know a week before so we can plan food and drinks.',
@@ -1002,7 +1019,7 @@
         } },
         store: { label: 'online store', examples: {
             fashion: ['Clothing & fashion', () => storePage('Thread & Co.', '#0f766e', { eyebrow: 'New season · Free delivery over $75', title: 'Everyday clothes, made to last', text: 'Soft organic cotton, honest prices and pieces you will wear for years. Order today, delivered in 2–3 days.',
-                shop: { fee: '4.99', freeOver: '75' }, shopTitle: 'Bestsellers', shopIntro: 'Pick your size — every order ships within 24 hours.', perks: [['truck', 'Free delivery', 'On orders over $75'], ['award', '30-day returns', 'Easy, no questions asked'], ['shield', 'Secure checkout', 'Card, cash or bank transfer']],
+                shop: { fee: '4.99', freeOver: '75' }, shopTitle: 'Bestsellers', shopIntro: 'Pick your size — every order ships within 24 hours.', perks: [['truck', 'Free delivery', 'On orders over $75'], ['refresh', '30-day returns', 'Easy, no questions asked'], ['shield', 'Secure checkout', 'Card, cash or bank transfer']],
                 products: [['Classic white tee', '24', '100% organic cotton, relaxed fit.', { cat: 'Tops', options: 'Size: S, M, L, XL', badge: 'Bestseller', long: 'Our everyday tee in heavyweight organic cotton. Pre-washed, so it keeps its shape and size.\nMachine wash at 30°. Model is 1.80 m and wears M.' }], ['Linen shirt', '49', 'Breathable linen for warm days.', { cat: 'Tops', options: 'Size: S, M, L, XL' }], ['Denim jacket', '89', 'Washed denim with a timeless cut.', { cat: 'Jackets', old: '110', badge: 'Sale', options: 'Size: S, M, L, XL' }],
                     ['Everyday hoodie', '59', 'Brushed inside, built to keep its shape.', { cat: 'Tops', options: 'Size: S, M, L, XL', opt2Name: 'Colour', vals2: [{ vid: '', v: 'Grey' }, { vid: '', v: 'Navy' }] }], ['Canvas tote bag', '19', 'Roomy, sturdy and machine washable.', { cat: 'Accessories' }], ['Wool beanie', '22', 'Merino blend, one size.', { cat: 'Accessories', options: 'Colour: Black, Grey, Mustard' }]],
                 story: ['Our story', 'Fewer, better clothes', 'We started Thread & Co. because we were tired of clothes that fell apart after a few washes. Every piece is made in small batches by a family-run workshop we know by name.'],
@@ -1058,7 +1075,7 @@
                 faq: [['Are your treats natural?', 'Yes — no artificial colours or preservatives.'], ['Which bed size do I need?', 'Measure your pet from nose to tail while lying down and add 15 cm.'], ['Can I swap a toy my pet doesn’t like?', 'Yes, within 30 days — just message us.']],
                 policy: '<p><b>Delivery:</b> 1–3 working days. $4.50, free over $50.</p><p><b>Returns:</b> unused items within 30 days. Food and treats can’t be returned once opened.</p>' })],
             jewellery: ['Jewellery', () => storePage('Aurelia Jewellery', '#a16207', { site: { fonts: { heading: 'Playfair Display', body: 'Lato', base: 17 } }, eyebrow: 'Handmade · Recycled gold & silver', title: 'Everyday jewellery, made to keep', text: 'Delicate pieces in recycled sterling silver and gold, made by hand in our studio. Gift-wrapped for free.',
-                shop: { fee: '4', freeOver: '50' }, shopTitle: 'The collection', perks: [['award', 'Recycled metals', 'Silver and 14k gold'], ['gift', 'Free gift wrap', 'Every order'], ['shield', '1-year guarantee', 'Free repairs']],
+                shop: { fee: '4', freeOver: '50' }, shopTitle: 'The collection', perks: [['gem', 'Recycled metals', 'Silver and 14k gold'], ['gift', 'Free gift wrap', 'Every order'], ['shield', '1-year guarantee', 'Free repairs']],
                 products: [['Pearl drop earrings', '45', 'Freshwater pearls on silver hooks.', { cat: 'Earrings', badge: 'Bestseller', optName: 'Metal', vals: [{ v: 'Silver', price: '' }, { v: 'Gold vermeil', price: '58' }] }], ['Initial necklace', '52', 'Your letter on a fine 45 cm chain.', { cat: 'Necklaces', options: 'Letter: A, B, C, D, E, J, L, M, S' }], ['Stacking rings (set of 3)', '38', 'Plain, twisted and dotted bands.', { cat: 'Rings', options: 'Size: 5, 6, 7, 8, 9' }],
                     ['Birthstone bracelet', '42', 'A tiny stone for their month.', { cat: 'Bracelets', options: 'Month: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec' }], ['Hoop earrings', '34', 'Light, everyday hoops.', { cat: 'Earrings', optName: 'Size', vals: [{ v: '12 mm', price: '' }, { v: '20 mm', price: '39' }] }], ['Jewellery gift card', '50', 'The code is emailed straight away.', { cat: 'Gifts', kind: 'gift' }]],
                 story: ['Made by hand', 'Small studio, careful hands', 'Every piece is cut, soldered and polished by hand in our studio, using recycled silver and gold — beautiful jewellery that’s kinder to the planet.'],
@@ -1073,7 +1090,7 @@
                 return { v: 3, kind: 'soon', site: soonSite('Northwind', '#4f46e5'), pages: [homePage([styled(section('1', [col]), { align: 'center', minH: 760 }, 'soft')])] };
             }],
             maintenance: ['Under maintenance', () => {
-                const col = column([wp('heading', { text: '🛠 We\'ll be back soon', tag: 'h1' }), wp('text', { html: '<p>Our website is getting an upgrade. It will be back in a few hours — thanks for your patience.</p>' }), wp('button', { text: 'Email us', link: { to: 'email', val: '' }, align: 'center' }), widget('social')]);
+                const col = column([wp('heading', { text: 'We\'ll be back soon', tag: 'h1' }), wp('text', { html: '<p>Our website is getting an upgrade. It will be back in a few hours — thanks for your patience.</p>' }), wp('button', { text: 'Email us', link: { to: 'email', val: '' }, align: 'center' }), widget('social')]);
                 col.st._ = { d: { maxw: 620 } };
                 return { v: 3, kind: 'soon', site: soonSite('Your business', '#0ea5e9', { theme: 'dark' }), pages: [homePage([styled(section('1', [col]), { align: 'center', minH: 760 })])] };
             }],
@@ -1084,7 +1101,7 @@
                 return { v: 3, kind: 'soon', site: soonSite('Kite', '#16a34a'), pages: [homePage([styled(s, { minH: 760 }, 'soft')])] };
             }],
             opening: ['Shop opening soon', () => {
-                const col = column([wp('heading', { text: 'Opening on 1 March', tag: 'h1' }), wp('text', { html: '<p>Our new bakery is almost ready! Fresh bread, pastries and the best coffee in town — come and say hello.</p>' }), widget('countdown'), wp('text', { html: '<p>📍 12 Main Street, Your City</p>' }), widget('hours'), widget('social')]);
+                const col = column([wp('heading', { text: 'Opening on 1 March', tag: 'h1' }), wp('text', { html: '<p>Our new bakery is almost ready! Fresh bread, pastries and the best coffee in town — come and say hello.</p>' }), widget('countdown'), wp('text', { html: '<p>12 Main Street, Your City</p>' }), widget('hours'), widget('social')]);
                 col.st._ = { d: { maxw: 640 } };
                 return { v: 3, kind: 'soon', site: soonSite('Golden Crust Bakery', '#d97706'), pages: [homePage([styled(section('1', [col]), { align: 'center', minH: 760 }, 'soft')])] };
             }],
@@ -1191,7 +1208,8 @@ h1,h2,h3,h4,.hd{font-family:var(--hf),var(--bf),sans-serif;line-height:1.15;marg
 .grid{display:grid;gap:20px;margin-top:36px}.g1{grid-template-columns:1fr}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
 .card{padding:28px;border-radius:var(--r);background:var(--card);border:1px solid var(--border)}.card p{margin:0;color:var(--muted)}
 .icon{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:1.6rem;margin-bottom:14px;background:var(--soft);color:var(--primary)}
-.ic{display:inline-grid;place-items:center;line-height:1}.ic svg{width:1.1em;height:1.1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.oi{width:1.1em;height:1.1em;vertical-align:-.18em;flex:none}
+.ic{display:inline-grid;place-items:center;line-height:1}.ic .oi{vertical-align:0}
 .num{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;margin-bottom:14px;font-weight:800;background:var(--primary);color:var(--ink)}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}.split.flip-side>:first-child{order:2}
 .stats{display:grid;gap:20px;text-align:center}.stats b{display:block;font:800 clamp(2rem,4vw,2.8rem)/1.1 var(--hf),sans-serif;color:var(--primary)}.bg-brand .stats b,.bg-dark .stats b{color:#fff}.stats span{color:var(--muted)}
@@ -1199,7 +1217,7 @@ h1,h2,h3,h4,.hd{font-family:var(--hf),var(--bf),sans-serif;line-height:1.15;marg
 .price{margin:0}.price b{font:800 2.4rem var(--hf),sans-serif;color:var(--text)}.price span{color:var(--muted)}.plan ul{margin:10px 0 18px;padding-left:20px;color:var(--muted);flex:1}.plan li{margin:4px 0}
 .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:32px}.gallery figure{margin:0}.gallery figcaption{margin-top:8px;font-size:.9rem;color:var(--muted);text-align:center}
 .team{text-align:center}.avatar{width:120px;height:120px;border-radius:50%;overflow:hidden;margin:0 auto 14px;background:var(--soft)}.avatar img{width:100%;height:100%;object-fit:cover}.avatar.pic-fill{font-size:2.6rem}.avatar.sm{width:48px;height:48px;margin:0;font-size:1rem}.person p{color:var(--muted);margin:0}
-.tst{margin:0}.tst blockquote{margin:0 0 16px;font:500 1.08rem/1.6 var(--hf),sans-serif}.tst figcaption{display:flex;align-items:center;gap:12px}.tst figcaption b{display:block}.tst figcaption small{display:block}.stars{color:#f59e0b;letter-spacing:3px;margin-bottom:10px}
+.tst{margin:0}.tst blockquote{margin:0 0 16px;font:500 1.08rem/1.6 var(--hf),sans-serif}.tst figcaption{display:flex;align-items:center;gap:12px}.tst figcaption b{display:block}.tst figcaption small{display:block}.stars{color:#f59e0b;margin-bottom:10px;line-height:1}.stars .oi{margin-right:3px}
 .logos-title{text-align:center;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-size:.82rem;margin:0}.logos{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:36px;margin-top:22px}.logo-img{width:140px;height:60px;display:grid;place-items:center}.logo-img img{max-height:60px;width:auto;object-fit:contain;filter:grayscale(1);opacity:.75}
 .faq{display:grid;gap:12px;margin-top:24px}details{padding:18px 22px;border-radius:14px;background:var(--card);border:1px solid var(--border)}summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}summary::after{content:'+';color:var(--primary);font-size:1.3rem;line-height:1}details[open] summary::after{content:'−'}details>p,details>.rt{margin:10px 0 0;color:var(--muted)}
 .embed{position:relative;aspect-ratio:16/9;border-radius:var(--r);overflow:hidden;margin-top:20px;background:#000}.embed iframe{position:absolute;inset:0;width:100%;height:100%;border:0}.map{aspect-ratio:21/9;background:var(--alt)}
@@ -1210,7 +1228,7 @@ h1,h2,h3,h4,.hd{font-family:var(--hf),var(--bf),sans-serif;line-height:1.15;marg
 .iconlist{list-style:none;margin:0;padding:0;display:grid;gap:10px}.iconlist li{display:flex;gap:10px;align-items:flex-start}.iconlist .ic{color:var(--primary);font-size:1.15rem;margin-top:.2em}
 .counter b{display:block;font:800 clamp(2.2rem,4vw,3rem)/1.1 var(--hf),sans-serif;color:var(--primary)}.counter p{margin:6px 0 0;color:var(--muted)}.bg-brand .counter b,.bg-dark .counter b{color:#fff}
 .bars{display:grid;gap:16px}.bar__top{display:flex;justify-content:space-between;font-weight:600;margin-bottom:6px}.bar__track{height:10px;border-radius:999px;background:var(--soft);overflow:hidden}.bar__track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),var(--secondary))}
-.rating{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.stars-v{font-size:1.4rem;letter-spacing:3px;background:linear-gradient(90deg,#f59e0b var(--v),#d1d5db var(--v));-webkit-background-clip:text;background-clip:text;color:transparent}
+.rating{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.stars-v{position:relative;display:inline-flex;font-size:1.4rem;line-height:1}.stars-v>span{display:flex;gap:3px;white-space:nowrap}.stars-v__bg{color:#d1d5db}.stars-v__fg{position:absolute;inset:0 auto 0 0;width:var(--v);overflow:hidden;color:#f59e0b}
 .socials{display:flex;flex-wrap:wrap;gap:10px}.socials a{width:42px;height:42px;display:grid;place-items:center;background:var(--sc);color:#fff;text-decoration:none;font:800 .9rem var(--bf),sans-serif;transition:transform .15s}.socials a:hover{transform:translateY(-3px)}.sh-round a{border-radius:50%}.sh-rounded a{border-radius:12px}.sh-square a{border-radius:2px}
 .notice{padding:18px 20px;border-radius:14px;border-left:5px solid var(--nc);background:color-mix(in srgb,var(--nc) 10%,var(--card))}.notice b{display:block;margin-bottom:4px}.nt-info{--nc:#3b82f6}.nt-success{--nc:#16a34a}.nt-warning{--nc:#f59e0b}.nt-danger{--nc:#dc2626}
 .hours{margin:0;display:grid}.hours div{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px dashed var(--border)}.hours dt{font-weight:600}.hours dd{margin:0;color:var(--muted)}
@@ -1219,7 +1237,7 @@ h1,h2,h3,h4,.hd{font-family:var(--hf),var(--bf),sans-serif;line-height:1.15;marg
 ${Array.from({ length: 8 }, (_, i) => `.tabs>input:nth-of-type(${i + 1}):checked~.tab-panels>.tab-panel:nth-child(${i + 1}){display:block}.tabs>input:nth-of-type(${i + 1}):checked+label{background:var(--primary);color:var(--ink)}`).join('')}
 .tabs>input:focus-visible+label{outline:2px solid var(--primary);outline-offset:2px}.tabs.is-edit{display:grid;gap:12px}.tabs.is-edit .tab-panel{display:block}.tab-edit .tab-label{display:inline-block;margin-bottom:8px;background:var(--primary);color:var(--ink)}
 .car{position:relative}.ob-track{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - (var(--per) - 1) * 20px) / var(--per));gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:4px}.ob-track::-webkit-scrollbar{display:none}.car__slide{scroll-snap-align:start}
-.slide-pic{aspect-ratio:16/9}.car__nav{position:absolute;top:calc(50% - 40px);width:44px;height:44px;border-radius:50%;border:0;background:var(--card);color:var(--text);font-size:1.6rem;box-shadow:0 8px 20px rgba(15,23,42,.18);cursor:pointer}.car__nav.prev{left:-14px}.car__nav.next{right:-14px}
+.slide-pic{aspect-ratio:16/9}.car__nav .oi{width:.8em;height:.8em}.car__nav{position:absolute;top:calc(50% - 40px);width:44px;height:44px;border-radius:50%;border:0;background:var(--card);color:var(--text);font-size:1.6rem;box-shadow:0 8px 20px rgba(15,23,42,.18);cursor:pointer}.car__nav.prev{left:-14px}.car__nav.next{right:-14px}
 .car__dots{display:flex;justify-content:center;gap:8px;margin-top:14px}.car__dots button{width:10px;height:10px;padding:0;border:0;cursor:pointer;border-radius:50%;background:var(--border)}.car__dots button.is-on{background:var(--primary);width:24px;border-radius:999px}
 .car-edit{display:grid;grid-template-columns:repeat(var(--per),1fr);gap:16px}
 .flip{perspective:1200px;min-height:260px}.flip__in{position:relative;min-height:260px;transition:transform .7s;transform-style:preserve-3d}.flip:hover .flip__in,.flip:focus-within .flip__in{transform:rotateY(180deg)}
@@ -1317,7 +1335,7 @@ ${cssSafe(s.css || '')}`;
         else {
             const grid = (has(LAYOUTS, s.layout) ? LAYOUTS[s.layout] : LAYOUTS[1])[0];
             inner = `<div class="wrap${s.width === 'full' ? ' full' : ''}"><div class="cols c-${s.cols.length}" style="grid-template-columns:${grid}">${s.cols.map(c =>
-                `<div ${advAttrs(c, x, `col x-${c.id}`)}${x.edit ? ` data-c="${esc(c.id)}"` : ''}>${c.widgets.map(w => renderWidget(w, x)).join('') || (x.edit ? '<div class="ed-empty">＋ Drag a widget here<br><small>or pick one in the Add tab</small></div>' : '')}</div>`).join('')}</div></div>`;
+                `<div ${advAttrs(c, x, `col x-${c.id}`)}${x.edit ? ` data-c="${esc(c.id)}"` : ''}>${c.widgets.map(w => renderWidget(w, x)).join('') || (x.edit ? `<div class="ed-empty">${ico('plus')} Drag a widget here<br><small>or pick one in the Add tab</small></div>` : '')}</div>`).join('')}</div></div>`;
         }
         return `<section ${advAttrs(s, x, `s${full ? ' s-full' : ''}${first} bg-${sectionBg(s, i)} x-${s.id}`)}${anchor}${x.edit ? ` data-s="${esc(s.id)}"` : ''}>${innerAnchor}${inner}</section>`;
     };
@@ -1328,7 +1346,7 @@ ${cssSafe(s.css || '')}`;
         if (s.bare) return bar; // simple page (link-in-bio, coming soon): no header or menu
         return `${bar}<header class="nav${s.sticky !== false ? ' is-sticky' : ''}"${x.edit ? ' data-hdr' : ''}><div class="wrap"><a class="brand" href="${x.edit ? '#' : esc(pageHref('index', x))}"><span${x.edit ? ' data-img="site|logo"' : ''}>${logo}</span><span${x.edit ? ' data-e="site|name" data-ph="Business name"' : ''}>${esc(name)}</span></a>
             <nav>${menu.length > 1 ? menu.map(p => `<a href="${x.edit ? '#' : esc(pageHref(p.slug, x))}"${x.edit ? ` data-goto="${esc(p.id)}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('') : ''}
-            ${shopOn(x) || (x.edit && x.P.kind === 'store') ? `<a class="nav-cart" href="#cart" data-cart-open aria-label="Your cart">${I(ICONS.cart)}<span class="nav-cart__n" data-cart-count hidden>0</span></a>` : ''}${s.navBtn && !goesNowhere(s.navLink, x) ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}${
+            ${shopOn(x) || (x.edit && x.P.kind === 'store') ? `<a class="nav-cart" href="#cart" data-cart-open aria-label="Your cart">${ico('cart')}<span class="nav-cart__n" data-cart-count hidden>0</span></a>` : ''}${s.navBtn && !goesNowhere(s.navLink, x) ? `<a class="btn btn-sm" href="${esc(href(s.navLink, x))}"${x.edit ? ' data-e="site|navBtn" data-ph="Button"' : ''}>${esc(s.navBtn)}</a>` : ''}${
             // phones: the page links fold into a ☰ menu (a <details>, so it works without scripts)
             menu.length > 1 ? `<details class="mnav"><summary aria-label="Menu"><span></span><span></span><span></span></summary><div class="mnav__list">${menu.map(p => `<a href="${x.edit ? '#' : esc(pageHref(p.slug, x))}"${x.edit ? ` data-goto="${esc(p.id)}"` : ''}${p === x.page ? ' aria-current="page"' : ''}>${esc(p.title)}</a>`).join('')}${
                 // small phones: the header button moves into the menu, so the name keeps its room
@@ -1345,7 +1363,7 @@ ${cssSafe(s.css || '')}`;
     };
     const popupHtml = (pg, x) => {
         const p = pg.popup; if (!p?.on) return '';
-        return `<div class="ob-pop" data-popup="${esc(p.trigger || 'delay')}" data-delay="${Math.max(1, +p.delay || 6)}" hidden role="dialog" aria-modal="true" aria-label="${esc(p.title)}"><div class="ob-pop__box"><button type="button" class="ob-pop__x" data-popup-close aria-label="Close">×</button>
+        return `<div class="ob-pop" data-popup="${esc(p.trigger || 'delay')}" data-delay="${Math.max(1, +p.delay || 6)}" hidden role="dialog" aria-modal="true" aria-label="${esc(p.title)}"><div class="ob-pop__box"><button type="button" class="ob-pop__x" data-popup-close aria-label="Close">${ico('close')}</button>
             ${p.image ? `<div class="pic"><img src="${esc(p.image)}" alt=""></div>` : ''}<div class="ob-pop__in"><h3>${esc(p.title)}</h3>${p.text ? `<p>${nl(p.text)}</p>` : ''}${p.btn ? `<a class="btn" href="${esc(href(p.link, x))}" data-popup-close>${esc(p.btn)}</a>` : ''}</div></div></div>`;
     };
     /** Does this page need the runtime script (animations, sliders, counters, popup…)? */
@@ -1393,7 +1411,7 @@ ${header(x)}
 ${body}
 </main>
 ${footer(x)}
-${x.edit ? '' : popupHtml(pg, x) + shopHtml(x)}${!x.edit && s.backTop ? '<a href="#" class="ob-top" aria-label="Back to top">↑</a>' : ''}
+${x.edit ? '' : popupHtml(pg, x) + shopHtml(x)}${!x.edit && s.backTop ? `<a href="#" class="ob-top" aria-label="Back to top">${ico('arrow-up')}</a>` : ''}
 </body>
 </html>`;
     };
@@ -1536,7 +1554,7 @@ ${x.edit ? '' : popupHtml(pg, x) + shopHtml(x)}${!x.edit && s.backTop ? '<a href
 
     window.OwlB = {
         uid, esc, nl, clone, hex, slugify, getPath, setPath, sanitize, styleKey, classKey, cssSafe, safeUrl,
-        ICONS, icon, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
+        ICONS, icon, iconName, ico, SOCIAL, LINK_TYPES, FONTS, GLOBAL, SHADOWS, ANIMS, LAYOUTS, W, F, EXAMPLES, TEMPLATES,
         widget, column, section, sectionOf, isFull, migrate, newProject, newPage, reId, defaultsSite, defaultsPopup,
         CURRENCIES, COUNTRIES, countryName, money, MONEY, optionsOf, shopProducts, fixPids, productWidgets, variants, stockKeys, defaultsShop, payWays,
         FUNNELS, STEP_TYPES, FUNNEL_LINKS, newFunnel, KITS, KIT_PATH, newKit, rsvpSchema, rsvpWidget, ACCOUNT_KEYS, newStep, nextOf, normalize, normalizeSection: SECTION,

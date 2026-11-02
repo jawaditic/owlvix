@@ -4,7 +4,15 @@
     $c = ['good' => '#16a34a', 'average' => '#d97706', 'poor' => '#dc2626'];
     $soft = ['good' => '#dcfce7', 'average' => '#fef3c7', 'poor' => '#fee2e2'];
     $label = ['good' => 'Good', 'average' => 'Needs improvement', 'poor' => 'Poor'];
-    $mark = ['good' => '✓', 'average' => '!', 'poor' => '✕'];
+    // dompdf draws SVG only from <img>, so each icon becomes a small data-URI image in a fixed colour
+    // (drawn at its real size, as dompdf's SVG reader doesn't scale the 24×24 viewBox itself).
+    $icon = function (string $name, string $colour, int $px = 9): string {
+        $inner = preg_replace('/^<svg[^>]*>|<\/svg>$/', '', \App\Support\Icons::i($name));
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'.$px.'" height="'.$px.'" viewBox="0 0 '.$px.' '.$px.'"><g transform="scale('.round($px / 24, 4).')" fill="none" stroke="'.$colour.'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'.str_replace('currentColor', $colour, $inner).'</g></svg>';
+
+        return '<img src="data:image/svg+xml;base64,'.base64_encode($svg).'" style="width:'.$px.'px;height:'.$px.'px;margin-right:2px;vertical-align:-1px" alt="">';
+    };
+    $markIcon = ['good' => 'tick', 'average' => 'warning', 'poor' => 'close'];
     $headline = ['good' => 'Your site is fast', 'average' => 'Your site could be faster', 'poor' => 'Your site is slow'][$r['rating']];
     $impact = ['high' => ['High impact', '#dc2626', '#fee2e2'], 'medium' => ['Medium impact', '#d97706', '#fef3c7'], 'low' => ['Low impact', '#16a34a', '#dcfce7']];
     $tested = \Illuminate\Support\Carbon::parse($r['tested_at']);
@@ -137,9 +145,9 @@
                 @foreach ($row as $m)
                     <td class="cell">
                         <div class="metric">
-                            <div class="top"><span class="abbr">{{ $m['abbr'] ?? '' }}</span><span class="stat" style="background: {{ $c[$m['rating']] }}">{{ $mark[$m['rating']] }}</span>{{ $m['label'] }}</div>
+                            <div class="top"><span class="abbr">{{ $m['abbr'] ?? '' }}</span><span class="stat" style="background: {{ $c[$m['rating']] }}">{!! $icon($markIcon[$m['rating']], '#ffffff') !!}</span>{{ $m['label'] }}</div>
                             <div class="val" style="color: {{ $c[$m['rating']] }}">{{ $m['value'] }}</div>
-                            <span class="pill" style="background: {{ $soft[$m['rating']] }}; color: {{ $c[$m['rating']] }}">{{ $mark[$m['rating']] }} {{ $label[$m['rating']] }}</span>
+                            <span class="pill" style="background: {{ $soft[$m['rating']] }}; color: {{ $c[$m['rating']] }}">{!! $icon($markIcon[$m['rating']], $c[$m['rating']], 9) !!} {{ $label[$m['rating']] }}</span>
                             <div class="scale">
                                 <div class="z" style="left:0;width:33%;background:#22c55e"></div>
                                 <div class="z" style="left:33%;width:33%;background:#f59e0b"></div>
@@ -162,9 +170,9 @@
             @foreach ($r['field'] as $m)
                 <td class="cell">
                     <div class="metric">
-                        <div class="top"><span class="abbr">{{ $m['abbr'] ?? '' }}</span><span class="stat" style="background: {{ $c[$m['rating']] }}">{{ $mark[$m['rating']] }}</span>{{ $m['label'] }}</div>
+                        <div class="top"><span class="abbr">{{ $m['abbr'] ?? '' }}</span><span class="stat" style="background: {{ $c[$m['rating']] }}">{!! $icon($markIcon[$m['rating']], '#ffffff') !!}</span>{{ $m['label'] }}</div>
                         <div class="val" style="color: {{ $c[$m['rating']] }}">{{ $m['value'] }}</div>
-                        <span class="pill" style="background: {{ $soft[$m['rating']] }}; color: {{ $c[$m['rating']] }}">{{ $mark[$m['rating']] }} {{ $label[$m['rating']] }}</span>
+                        <span class="pill" style="background: {{ $soft[$m['rating']] }}; color: {{ $c[$m['rating']] }}">{!! $icon($markIcon[$m['rating']], $c[$m['rating']], 9) !!} {{ $label[$m['rating']] }}</span>
                     </div>
                 </td>
             @endforeach
@@ -210,7 +218,7 @@
                     <li>Get a fixed-price plan within one business day</li>
                     <li>We fix the issues and re-test — you see the new score</li>
                 </ol>
-                <a class="cta" href="{{ url('/') }}/#contact">Get a free quote → owlvix.com</a>
+                <a class="cta" href="{{ url('/') }}/#contact">Get a free quote {!! $icon('arrow-right', '#04130b', 10) !!} owlvix.com</a>
             </td>
             <td style="width:110px;text-align:right"><img src="{{ public_path('images/owl.png') }}" width="96"></td>
         </tr></table>

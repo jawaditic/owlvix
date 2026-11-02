@@ -16,12 +16,12 @@
 
     <div class="head">
         <div>
-            <h1>{{ $greeting }} 👋</h1>
+            <h1>{{ $greeting }} {!! \App\Support\Icons::i('hand') !!}</h1>
             <p class="muted">{{ now()->format('l, j F Y') }} · Here's how Owlvix is doing.</p>
         </div>
         <div class="head__actions">
-            <a href="{{ route('admin.projects.create') }}" class="btn btn--ghost">+ Project</a>
-            <a href="{{ route('admin.testimonials.create') }}" class="btn btn--ghost">+ Review</a>
+            <a href="{{ route('admin.projects.create') }}" class="btn btn--ghost">{!! \App\Support\Icons::i('plus') !!} Project</a>
+            <a href="{{ route('admin.testimonials.create') }}" class="btn btn--ghost">{!! \App\Support\Icons::i('plus') !!} Review</a>
             <a href="{{ route('admin.messages.index') }}" class="btn">Open inbox</a>
         </div>
     </div>
@@ -35,9 +35,9 @@
                 @if ($stats['lastMonth'] === 0 && $stats['thisMonth'] === 0)
                     No enquiries yet this month
                 @elseif ($delta > 0)
-                    <span class="trend trend--up">▲ {{ $delta }}</span> more than this time last month
+                    <span class="trend trend--up">{!! \App\Support\Icons::i('arrow-up') !!} {{ $delta }}</span> more than this time last month
                 @elseif ($delta < 0)
-                    <span class="trend trend--down">▼ {{ abs($delta) }}</span> fewer than this time last month
+                    <span class="trend trend--down">{!! \App\Support\Icons::i('arrow-down') !!} {{ abs($delta) }}</span> fewer than this time last month
                 @else
                     Same as this time last month
                 @endif
@@ -46,7 +46,7 @@
         <a href="{{ route('admin.messages.index', ['status' => 'unread']) }}" class="panel kpi kpi--link {{ $stats['unread'] ? 'kpi--alert' : '' }}">
             <span class="kpi__label">Waiting for you</span>
             <strong class="kpi__value">{{ $stats['unread'] }}</strong>
-            <span class="kpi__note">{{ $stats['unread'] ? 'unread '.\Illuminate\Support\Str::plural('enquiry', $stats['unread']).' → open' : 'All caught up ✓' }}</span>
+            <span class="kpi__note">@if ($stats['unread'])unread {{ \Illuminate\Support\Str::plural('enquiry', $stats['unread']) }} {!! \App\Support\Icons::i('arrow-right') !!} open @else All caught up {!! \App\Support\Icons::i('tick') !!}@endif</span>
         </a>
         <div class="panel kpi">
             <span class="kpi__label">Reply rate</span>
@@ -137,7 +137,7 @@
         <section class="panel chart-card">
             <header class="chart-card__head">
                 <h2>Latest enquiries</h2>
-                <a href="{{ route('admin.messages.index') }}" class="detail__email">See all →</a>
+                <a href="{{ route('admin.messages.index') }}" class="detail__email">See all {!! \App\Support\Icons::i('arrow-right') !!}</a>
             </header>
             @forelse ($recent as $m)
                 <a href="{{ route('admin.messages.show', $m) }}" class="mini-row {{ $m->isUnread() ? 'is-new' : '' }}">
@@ -147,7 +147,7 @@
                         <small>{{ $m->service ?: 'Enquiry' }} · {{ \Illuminate\Support\Str::limit($m->messageText(), 60) }}</small>
                     </span>
                     <span class="mini-row__meta">
-                        @if ($m->isUnread())<em class="pill-new">New</em>@elseif ($m->replies_count)<em class="pill-done">✓ Replied</em>@endif
+                        @if ($m->isUnread())<em class="pill-new">New</em>@elseif ($m->replies_count)<em class="pill-done">{!! \App\Support\Icons::i('tick') !!} Replied</em>@endif
                         <time datetime="{{ $m->created_at->toIso8601String() }}">{{ $m->created_at->diffForHumans(null, true) }}</time>
                     </span>
                 </a>

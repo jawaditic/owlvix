@@ -8,7 +8,7 @@
         ['How do I edit my page?', 'Click any text on the page and type. Click a photo or the logo to replace it. Drag widgets from the Add tab into any column, and use the Edit tab for each element\'s Content, Style and Advanced settings — just like Elementor.'],
         ['Can I style things differently on mobile?', 'Yes. Switch the preview to tablet or mobile in the top bar, then change sizes, spacing or alignment in the Style tab — those values apply only to that screen size. You can also hide any element on a device in the Advanced tab.'],
         ['Does the contact form really work?', 'Yes. Switch it on with your email (free) and every message a visitor sends is emailed to you — even if you put the page on your own hosting.'],
-        ['Can I keep editing later?', 'Your work is kept in this browser automatically. Press “☁️ Save” to save it to your free account, then open it from “My sites” on any device.'],
+        ['Can I keep editing later?', 'Your work is kept in this browser automatically. Press “Save” to save it to your free account, then open it from “My sites” on any device.'],
         ['Will my published page show on Google?', 'Pages published on sites.owlvix.com are hidden from search engines. For your own domain and Google ranking, download the page and upload it to your hosting — or ask us to set it up.'],
     ];
 @endphp
@@ -45,7 +45,7 @@
     <div class="container">
         <div class="lpb-after card" data-lpb-after hidden>
             <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'desk', 'alt' => 'Owlvix owl'])</span>
-            <h2>🎉 Your website is downloaded</h2>
+            <h2>{!! \App\Support\Icons::i('party') !!} Your website is downloaded</h2>
             <ol>
                 <li data-after-zip hidden>Unzip the file — every page is its own .html file.</li>
                 <li>Upload the file(s) to your hosting (cPanel File Manager, Netlify, GitHub Pages…). The home page must be called <code>index.html</code>.</li>

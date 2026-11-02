@@ -46,29 +46,29 @@
         <div class="lpb-top__group">
             <label class="sr-only" for="lpb-pages">Funnel step</label>
             <select id="lpb-pages" data-pages class="lpb-select"></select>
-            <button type="button" class="lpb-tb" data-act="add-page" title="Add a funnel step">＋ Step</button>
+            <button type="button" class="lpb-tb" data-act="add-page" title="Add a funnel step">{!! \App\Support\Icons::i('plus') !!} Step</button>
             <span class="lpb-vbadge" data-variant-badge hidden></span>
         </div>
         <div class="lpb-top__group lpb-devices" role="group" aria-label="Preview size">
-            <button type="button" data-device="desktop" aria-pressed="true" title="Preview on a computer screen">🖥</button>
-            <button type="button" data-device="tablet" aria-pressed="false" title="Preview on a tablet">▭</button>
-            <button type="button" data-device="mobile" aria-pressed="false" title="Preview on a phone">📱</button>
+            <button type="button" data-device="desktop" aria-pressed="true" title="Preview on a computer screen" aria-label="Preview on a computer screen">{!! \App\Support\Icons::i('monitor') !!}</button>
+            <button type="button" data-device="tablet" aria-pressed="false" title="Preview on a tablet" aria-label="Preview on a tablet">{!! \App\Support\Icons::i('phone', 'oi--tablet') !!}</button>
+            <button type="button" data-device="mobile" aria-pressed="false" title="Preview on a phone" aria-label="Preview on a phone">{!! \App\Support\Icons::i('phone') !!}</button>
         </div>
         <div class="lpb-top__group">
-            <button type="button" class="lpb-tb" data-act="undo" title="Undo (Ctrl/Cmd+Z)">↩<span class="lpb-tb__t"> Undo</span></button>
-            <button type="button" class="lpb-tb" data-act="redo" title="Redo (Ctrl/Cmd+Shift+Z)">↪<span class="lpb-tb__t"> Redo</span></button>
-            <button type="button" class="lpb-tb" data-act="preview" title="Open a preview in a new tab">👁<span class="lpb-tb__t"> Preview</span></button>
+            <button type="button" class="lpb-tb" data-act="undo" title="Undo (Ctrl/Cmd+Z)">{!! \App\Support\Icons::i('undo') !!}<span class="lpb-tb__t"> Undo</span></button>
+            <button type="button" class="lpb-tb" data-act="redo" title="Redo (Ctrl/Cmd+Shift+Z)">{!! \App\Support\Icons::i('redo') !!}<span class="lpb-tb__t"> Redo</span></button>
+            <button type="button" class="lpb-tb" data-act="preview" title="Open a preview in a new tab">{!! \App\Support\Icons::i('eye') !!}<span class="lpb-tb__t"> Preview</span></button>
         </div>
         {{-- saved to the account, like the app builder: "My funnels" and Save --}}
         <div class="lpb-top__group lpb-cloud">
             <label class="sr-only" for="lpb-mine">Open one of my saved funnels</label>
             <select id="lpb-mine" class="lpb-select lpb-mine" data-cloud-list hidden></select>
-            <button type="button" class="lpb-tb lpb-cloud-in" data-cloud-signin title="Sign in to see the funnels you saved">🗂<span class="lpb-tb__t"> My funnels</span></button>
-            <button type="button" class="btn btn--sm btn--ghost lpb-cloud-save" data-act="cloud-save">☁️ Save</button>
+            <button type="button" class="lpb-tb lpb-cloud-in" data-cloud-signin title="Sign in to see the funnels you saved">{!! \App\Support\Icons::i('folder') !!}<span class="lpb-tb__t"> My funnels</span></button>
+            <button type="button" class="btn btn--sm btn--ghost lpb-cloud-save" data-act="cloud-save">{!! \App\Support\Icons::i('cloud') !!} Save</button>
         </div>
         <div class="lpb-top__group">
-            <button type="button" class="btn btn--sm btn--ghost" data-act="download">Download ↓</button>
-            <button type="button" class="btn btn--sm btn--glow" data-act="publish">Publish 🚀</button>
+            <button type="button" class="btn btn--sm btn--ghost" data-act="download">Download {!! \App\Support\Icons::i('download') !!}</button>
+            <button type="button" class="btn btn--sm btn--glow" data-act="publish">Publish {!! \App\Support\Icons::i('rocket') !!}</button>
             <button type="button" class="lpb-tb lpb-full-btn" data-act="fullscreen" title="Full screen (Esc to exit)" aria-pressed="false">
                 <svg viewBox="0 0 24 24" aria-hidden="true" class="i-enter"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
                 <svg viewBox="0 0 24 24" aria-hidden="true" class="i-exit"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
@@ -81,7 +81,7 @@
     <div class="lpb-body">
         <div class="lpb-side">
             <div class="lpb-tabs" role="tablist">
-                <button type="button" role="tab" data-tab="add" aria-selected="true">＋ Add</button>
+                <button type="button" role="tab" data-tab="add" aria-selected="true">{!! \App\Support\Icons::i('plus') !!} Add</button>
                 <button type="button" role="tab" data-tab="edit" aria-selected="false">Edit</button>
                 <button type="button" role="tab" data-tab="page" aria-selected="false">Steps</button>
                 <button type="button" role="tab" data-tab="site" aria-selected="false">Site</button>
@@ -126,7 +126,7 @@
     <div class="container">
         <div class="lpb-after card" data-lpb-after hidden>
             <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'desk', 'alt' => 'Owlvix owl'])</span>
-            <h2>🎉 Your funnel is downloaded</h2>
+            <h2>{!! \App\Support\Icons::i('party') !!} Your funnel is downloaded</h2>
             <ol>
                 <li data-after-zip hidden>Unzip the file — every page is its own .html file.</li>
                 <li>Upload the file(s) to your hosting (cPanel File Manager, Netlify, GitHub Pages…). The home page must be called <code>index.html</code>.</li>

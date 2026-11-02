@@ -6,19 +6,21 @@
     if (!root) return;
     const $ = (s, el = root) => el.querySelector(s), $$ = (s, el = root) => [...el.querySelectorAll(s)];
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    /** A question type's mark: one of our icons (icons.js) by name, or short text like "Aa". */
+    const ic = (v, o) => (window.OwlIcon?.names?.includes(v) ? window.OwlIcon(v, o) : esc(v));
     const uid = () => (Math.random().toString(36).slice(2) + '00000000').slice(0, 8); // always 8 characters (the server needs 3–12)
     const track = (e, d = {}) => window.track?.(e, d);
     const STORE = 'owlvix-form-builder';
-    const TYPES = { text: ['Short answer', 'Aa'], textarea: ['Paragraph', '¶'], email: ['Email', '@'], phone: ['Phone', '☎'], number: ['Number', '#'], date: ['Date', '📅'],
-        select: ['Dropdown', '▾'], radio: ['Multiple choice', '◉'], checkbox: ['Checkboxes', '☑'], rating: ['Rating 1–5', '★'], heading: ['Section title', 'H'] };
+    const TYPES = { text: ['Short answer', 'Aa'], textarea: ['Paragraph', '¶'], email: ['Email', '@'], phone: ['Phone', 'call'], number: ['Number', '#'], date: ['Date', 'calendar'],
+        select: ['Dropdown', 'chevron-down'], radio: ['Multiple choice', 'dot'], checkbox: ['Checkboxes', 'tick'], rating: ['Rating 1–5', 'star'], heading: ['Section title', 'H'] };
     const CHOICE = ['select', 'radio', 'checkbox'];
     const f = (type, label, o = {}) => ({ id: uid(), type, label, help: '', required: false, placeholder: '', ...(CHOICE.includes(type) ? { options: ['Option 1', 'Option 2'] } : {}), ...o });
     const TEMPLATES = {
         contact: ['Contact form', () => ({ title: 'Contact us', intro: 'Send us a message and we will reply within one working day.', button: 'Send message', thanks: 'Thanks! We will get back to you soon.',
             fields: [f('text', 'Your name', { required: true }), f('email', 'Email', { required: true }), f('phone', 'Phone'), f('textarea', 'Message', { required: true })] })],
-        feedback: ['Customer feedback', () => ({ title: 'How did we do?', intro: 'Your feedback helps us get better. It takes one minute.', button: 'Send feedback', thanks: 'Thank you for your feedback! 💚',
+        feedback: ['Customer feedback', () => ({ title: 'How did we do?', intro: 'Your feedback helps us get better. It takes one minute.', button: 'Send feedback', thanks: 'Thank you for your feedback!',
             fields: [f('rating', 'How happy are you with us overall?', { required: true }), f('radio', 'How did you hear about us?', { options: ['Google', 'Social media', 'A friend', 'Other'] }), f('textarea', 'What could we do better?'), f('radio', 'Would you recommend us to a friend?', { options: ['Yes', 'Maybe', 'No'] }), f('email', 'Email (if you would like a reply)')] })],
-        rsvp: ['Event RSVP', () => ({ title: 'You’re invited! Will you join us?', intro: 'Saturday 14 June · 7 pm\n12 Main Street, Your City', button: 'Send my RSVP', thanks: 'Thanks for letting us know — see you there! 🎉',
+        rsvp: ['Event RSVP', () => ({ title: 'You’re invited! Will you join us?', intro: 'Saturday 14 June · 7 pm\n12 Main Street, Your City', button: 'Send my RSVP', thanks: 'Thanks for letting us know — see you there!',
             fields: [f('text', 'Your name', { required: true }), f('radio', 'Will you come?', { required: true, options: ['Yes, I’ll be there', 'Sorry, I can’t make it'] }), f('number', 'How many guests (including you)?'), f('select', 'Meal choice', { options: ['Chicken', 'Fish', 'Vegetarian', 'Vegan'] }), f('textarea', 'Any allergies or a message for us?')] })],
         job: ['Job application', () => ({ title: 'Apply to join our team', intro: 'Tell us a little about you. We read every application.', button: 'Send application', thanks: 'Thanks for applying! We will be in touch within a week.',
             fields: [f('text', 'Full name', { required: true }), f('email', 'Email', { required: true }), f('phone', 'Phone', { required: true }), f('select', 'Which role are you applying for?', { required: true, options: ['Sales assistant', 'Customer support', 'Driver'] }), f('radio', 'When can you start?', { options: ['Right away', 'In 2 weeks', 'In a month or more'] }), f('text', 'Link to your CV or LinkedIn', { placeholder: 'https://…' }), f('textarea', 'Why do you want to work with us?')] })],
@@ -58,8 +60,8 @@
     /* ------------------------------------------------ editor */
     const fieldCard = (q, i) => {
         const open = q.id === openId, n = S().fields.length;
-        const head = `<div class="fb-q__head" data-toggle="${q.id}"><span class="fb-q__icon" aria-hidden="true">${esc(TYPES[q.type][1])}</span><span class="fb-q__label">${esc(q.label) || '<i>No question yet</i>'}${q.required ? ' <em>*</em>' : ''}</span>
-            <span class="fb-q__tools"><button type="button" data-move="-1" data-i="${i}" title="Move this question up" ${i ? '' : 'disabled'}>↑</button><button type="button" data-move="1" data-i="${i}" title="Move this question down" ${i < n - 1 ? '' : 'disabled'}>↓</button><button type="button" data-dup="${i}" title="Make a copy of this question">⧉</button><button type="button" data-del="${i}" title="Delete this question" class="fb-del">✕</button></span></div>`;
+        const head = `<div class="fb-q__head" data-toggle="${q.id}"><span class="fb-q__icon" aria-hidden="true">${ic(TYPES[q.type][1])}</span><span class="fb-q__label">${esc(q.label) || '<i>No question yet</i>'}${q.required ? ' <em>*</em>' : ''}</span>
+            <span class="fb-q__tools"><button type="button" data-move="-1" data-i="${i}" title="Move this question up" aria-label="Move this question up" ${i ? '' : 'disabled'}>${ic('arrow-up')}</button><button type="button" data-move="1" data-i="${i}" title="Move this question down" aria-label="Move this question down" ${i < n - 1 ? '' : 'disabled'}>${ic('arrow-down')}</button><button type="button" data-dup="${i}" title="Make a copy of this question" aria-label="Make a copy of this question">${ic('copy')}</button><button type="button" data-del="${i}" title="Delete this question" aria-label="Delete this question" class="fb-del">${ic('close')}</button></span></div>`;
         if (!open) return `<div class="fb-q">${head}</div>`;
         return `<div class="fb-q is-open">${head}<div class="fb-q__body">
             <div class="fb-2"><label>Question${q.type === 'heading' ? ' / title' : ''}<input data-q="label" data-i="${i}" maxlength="200" value="${esc(q.label)}"></label>
@@ -78,7 +80,7 @@
         const s = S();
         $$('[data-set]').forEach(el => (el.value = s[el.dataset.set] ?? ''));
     };
-    $('[data-add-types]').innerHTML = Object.entries(TYPES).map(([k, v]) => `<button type="button" data-add="${k}"><span aria-hidden="true">${esc(v[1])}</span>${v[0]}</button>`).join('');
+    $('[data-add-types]').innerHTML = Object.entries(TYPES).map(([k, v]) => `<button type="button" data-add="${k}"><span aria-hidden="true">${ic(v[1])}</span>${v[0]}</button>`).join('');
     $('[data-templates]').innerHTML = Object.entries(TEMPLATES).map(([k, v]) => `<button type="button" class="fb-chip" data-tpl="${k}">${esc(v[0])}</button>`).join('');
 
     root.addEventListener('input', e => {
@@ -181,7 +183,7 @@
             $('[data-status]').textContent = 'This RSVP form belongs to your event page — change its questions there and publish the page. Answers are in the Responses tab.';
             return;
         }
-        const b = $('[data-publish]'); b.textContent = D.id ? (D.dirty ? 'Save changes' : 'Saved ✓') : 'Publish form'; b.disabled = !!D.id && !D.dirty; $('[data-status]').textContent = D.id ? (D.dirty ? 'Unsaved changes — your live form still shows the last saved version.' : 'Live — changes are saved to your form.') : 'Not published yet — your work is kept in this browser.'; };
+        const b = $('[data-publish]'); b.textContent = D.id ? (D.dirty ? 'Save changes' : 'Saved') : 'Publish form'; b.disabled = !!D.id && !D.dirty; $('[data-status]').textContent = D.id ? (D.dirty ? 'Unsaved changes — your live form still shows the last saved version.' : 'Live — changes are saved to your form.') : 'Not published yet — your work is kept in this browser.'; };
     const publish = async () => {
         if (!token) return signIn(publish);
         const b = $('[data-publish]'); b.disabled = true; b.textContent = 'Saving…';
@@ -191,7 +193,7 @@
             catch (ex) { if (ex.status === 404 && D.id) { D.id = null; r = await api('POST', '/builder/surveys', { schema: S() }); } else throw ex; } // deleted, or another account's form
             const first = !D.id; D.id = r.form.id; D.dirty = false; save();
             await loadForms().catch(() => {});
-            note(first ? '🎉 Your form is live! Share the link or embed it on your site.' : 'Changes saved.');
+            note(first ? 'Your form is live! Share the link or embed it on your site.' : 'Changes saved.', 'success');
             track(first ? 'form_builder_publish' : 'form_builder_save', { fields: S().fields.length });
             if (first) showTab('share');
         } catch (ex) { note(ex.message, 'error'); if (ex.status === 401) signIn(publish); }
@@ -214,7 +216,7 @@
         const box = $('[data-share]');
         if (!D.id) { box.innerHTML = `<div class="fb-empty"><b>Publish your form to share it</b><p>You get a link to send to people, and a code to put the form on your own website.</p><button type="button" class="btn btn--glow" data-publish-now>Publish form</button></div>`; $('[data-publish-now]', box).addEventListener('click', publish); return; }
         const url = formUrl(), embed = `<iframe src="${url}?embed=1" width="100%" height="900" style="border:0;max-width:680px" title="${esc(S().title)}" loading="lazy"></iframe>`;
-        box.innerHTML = `<label>Link to your form<div class="fb-copyrow"><input readonly value="${esc(url)}"><button type="button" class="btn btn--sm" data-copy="${esc(url)}">Copy</button><a class="btn btn--sm btn--ghost" href="${esc(url)}" target="_blank" rel="noopener">Open ↗</a></div></label>
+        box.innerHTML = `<label>Link to your form<div class="fb-copyrow"><input readonly value="${esc(url)}"><button type="button" class="btn btn--sm" data-copy="${esc(url)}">Copy</button><a class="btn btn--sm btn--ghost" href="${esc(url)}" target="_blank" rel="noopener">Open ${ic('external')}</a></div></label>
             <p class="fb-hint">Send it by WhatsApp or email, or put it in your social bio.</p>
             <label>Embed on your website<div class="fb-copyrow"><textarea readonly rows="3">${esc(embed)}</textarea><button type="button" class="btn btn--sm" data-copy="${esc(embed)}">Copy</button></div></label>
             <p class="fb-hint">Paste this code into a page on WordPress (Custom HTML block), Wix (Embed code), Squarespace, Shopify or the Owlvix page builder.</p>
@@ -223,7 +225,7 @@
     };
     $('[data-share]').addEventListener('click', async e => {
         const c = e.target.closest('[data-copy]');
-        if (c) { try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent = 'Copied ✓'; } catch { c.previousElementSibling?.select(); document.execCommand('copy'); } setTimeout(() => (c.textContent = 'Copy'), 2000); track('form_builder_copy'); }
+        if (c) { try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent = 'Copied!'; } catch { c.previousElementSibling?.select(); document.execCommand('copy'); } setTimeout(() => (c.textContent = 'Copy'), 2000); track('form_builder_copy'); }
         if (e.target.closest('[data-delete]')) {
             if (!await ask('Delete this form?', 'Its link stops working and all answers are deleted. This cannot be undone.', 'Delete form', true)) return;
             try { await api('POST', `/builder/surveys/${D.id}/delete`); D.id = null; D.dirty = true; delete S().managed; /* now a copy you can publish as your own form */ save(); await loadForms().catch(() => {}); syncPublish(); drawShare(); note('Form deleted. Your questions are still here if you want to publish it again.'); }
@@ -261,8 +263,8 @@
     let wizard = null;
     const WZ = window.OwlWizard;
     if (WZ) {
-        const EM = { contact: '✉️', feedback: '💬', rsvp: '💌', job: '🧑‍💼', quote: '🧾', order: '🛒', blank: '📝' };
-        const ADD = [['text', 'Your name', '👤'], ['email', 'Email', '@'], ['phone', 'Phone', '☎'], ['textarea', 'Message', '¶'], ['date', 'Date', '📅'], ['rating', 'How would you rate us?', '★'], ['radio', 'Pick one', '◉']];
+        const EM = { contact: 'mail', feedback: 'chat', rsvp: 'mail', job: 'briefcase', quote: 'receipt', order: 'cart', blank: 'note' };
+        const ADD = [['text', 'Your name', 'user'], ['email', 'Email', '@'], ['phone', 'Phone', 'call'], ['textarea', 'Message', '¶'], ['date', 'Date', 'calendar'], ['rating', 'How would you rate us?', 'star'], ['radio', 'Pick one', 'dot']];
         let picked = null, hadWork = false; try { hadWork = !!localStorage.getItem(STORE + '-touched') || !!D.id; } catch {}
         let side = null;
         const copyPreview = () => { if (!side) return; const src = $('[data-preview]'); side.style.setProperty('--fc', src.style.getPropertyValue('--fc')); side.innerHTML = src.innerHTML; };
@@ -270,7 +272,7 @@
         const steps = [
             {
                 title: 'What kind of form is it?', sub: 'We’ll start you with the questions it usually needs — you can change every one.',
-                draw: () => WZ.cards([...(hadWork ? [['keep', '✅', 'Keep my form', 'Update what’s there']] : []), ...Object.entries(TEMPLATES).map(([k, v]) => [k, EM[k] || '📝', v[0]])], picked),
+                draw: () => WZ.cards([...(hadWork ? [['keep', 'check', 'Keep my form', 'Update what’s there']] : []), ...Object.entries(TEMPLATES).map(([k, v]) => [k, EM[k] || 'note', v[0]])], picked),
                 click: (e, el, box) => {
                     if (!el.dataset.wzPick) return;
                     picked = el.dataset.wzPick; WZ.press(box, '[data-wz-pick]', el);
@@ -288,8 +290,8 @@
             },
             {
                 title: 'Your questions', sub: 'Untick the ones you don’t need, add common ones, and choose which must be answered.',
-                draw: () => `<div class="wz-pages">${S().fields.map((q, i) => `<div class="wz-page wz-q" style="--i:${i}"><input type="checkbox" data-wz-q="${q.id}" checked aria-label="Keep “${esc(q.label)}”"><span class="wz-page__ic">${esc(TYPES[q.type]?.[1] || '?')}</span><b>${esc(q.label)}</b>${q.type === 'heading' ? '' : `<button type="button" class="wz-req" data-wz-req="${q.id}" aria-pressed="${!!q.required}">${q.required ? 'Required' : 'Optional'}</button>`}</div>`).join('')}</div>
-                    <div class="wz-add"><b>Add a question</b><div class="wz-chips wz-add__chips">${ADD.map(([t, l, ic], i) => `<button type="button" data-wz-addq="${i}" style="--i:${i}">${ic} ${esc(l)}</button>`).join('')}</div></div>`,
+                draw: () => `<div class="wz-pages">${S().fields.map((q, i) => `<div class="wz-page wz-q" style="--i:${i}"><input type="checkbox" data-wz-q="${q.id}" checked aria-label="Keep “${esc(q.label)}”"><span class="wz-page__ic">${ic(TYPES[q.type]?.[1] || '?')}</span><b>${esc(q.label)}</b>${q.type === 'heading' ? '' : `<button type="button" class="wz-req" data-wz-req="${q.id}" aria-pressed="${!!q.required}">${q.required ? 'Required' : 'Optional'}</button>`}</div>`).join('')}</div>
+                    <div class="wz-add"><b>Add a question</b><div class="wz-chips wz-add__chips">${ADD.map(([t, l, mark], i) => `<button type="button" data-wz-addq="${i}" style="--i:${i}">${ic(mark)} ${esc(l)}</button>`).join('')}</div></div>`,
                 change: (e, el) => {
                     if (!el.dataset.wzQ) return;
                     if (!el.checked) { if (S().fields.length <= 1) { el.checked = true; return note('Keep at least one question.', 'error'); } S().fields = S().fields.filter(q => q.id !== el.dataset.wzQ); upd(); wizard.redraw(); }
@@ -319,7 +321,7 @@
         ];
         wizard = WZ.mount({
             root, banner: document.querySelector('[data-wz-banner]'), offKey: 'owlvix-wz-form-off',
-            say: ['Hoo! Need a form? I’ll set it up with you — it takes about 2 minutes.', 'Pick what it’s for, and I’ll add the right questions.', 'You’ll see the form as you go. Ready? 🚀'],
+            say: ['Hoo! Need a form? I’ll set it up with you — it takes about 2 minutes.', 'Pick what it’s for, and I’ll add the right questions.', 'You’ll see the form as you go. Ready?'],
             hasSaved: () => !!D.id,
             quickSlot: root.querySelector('.fb-top__actions'),
             onRestart: () => { picked = null; hadWork = false; },
@@ -335,8 +337,8 @@
                 title: 'Your form is ready',
                 sub: 'Publish it to get a link to share and a code for your website. Answers are emailed to you and saved in the Responses tab.',
                 actions: [
-                    { label: '🚀 Publish my form', cls: 'btn btn--glow', then: 'publish', act: close => { close(); publish(); } },
-                    { label: '✏️ Keep editing', act: close => close() },
+                    { label: 'Publish my form', icon: 'rocket', cls: 'btn btn--glow', then: 'publish', act: close => { close(); publish(); } },
+                    { label: 'Keep editing', icon: 'pen', act: close => close() },
                 ],
             },
             editorUrl: root.dataset.editorUrl || '', noun: 'form',

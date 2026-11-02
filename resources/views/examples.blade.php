@@ -57,7 +57,7 @@
             <div class="ex-group" id="{{ $kind }}" data-ex-group="{{ $kind }}">
                 <div class="ex-group__head">
                     <div><h2>{{ $heading }}</h2><p>{{ $intro }}</p></div>
-                    <a href="{{ route($route) }}" class="ex-group__link">Open the {{ \Illuminate\Support\Str::lower($builder) }} →</a>
+                    <a href="{{ route($route) }}" class="ex-group__link">Open the {{ \Illuminate\Support\Str::lower($builder) }} {!! \App\Support\Icons::i('arrow-right') !!}</a>
                 </div>
                 <div class="ex-grid" data-examples="{{ $kind }}" data-builder="{{ $builder }}">
                     <noscript><p><a href="{{ route($route) }}">Open the free {{ \Illuminate\Support\Str::lower($builder) }}</a> to see its designs.</p></noscript>
@@ -79,7 +79,7 @@
                     <span class="ex-made__top" aria-hidden="true"><span>{{ mb_strtoupper(mb_substr($site->name, 0, 1)) }}</span></span>
                     <span class="ex-card__body">
                         <strong>{{ $site->name }}</strong><small>{{ $site->kindLabel() }} · {{ $site->displayUrl() }}</small>
-                        <span class="ex-made__go">Visit site →</span>
+                        <span class="ex-made__go">Visit site {!! \App\Support\Icons::i('arrow-right') !!}</span>
                     </span>
                 </a>
             @endforeach
@@ -97,7 +97,7 @@
             <button type="button" class="lpb-chip" data-ex-device="mobile" aria-pressed="false">Phone</button>
         </div>
         <a class="btn btn--sm btn--glow" href="#" data-ex-use>Use this design</a>
-        <button type="button" class="ex-dlg__x" data-ex-close aria-label="Close preview">✕</button>
+        <button type="button" class="ex-dlg__x" data-ex-close aria-label="Close preview">{!! \App\Support\Icons::i('close') !!}</button>
     </div>
     <div class="ex-dlg__frame" data-ex-frame></div>
 </dialog>

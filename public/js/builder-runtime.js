@@ -7,6 +7,9 @@
     const d = document, $$ = (s, el = d) => [...el.querySelectorAll(s)];
     const store = { get: k => { try { return sessionStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch {} } };
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    /** An Owlvix icon as inline SVG (the same markup as window.OwlIcon, which published pages don't load). */
+    const svgIcon = shapes => `<svg class="oi" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${shapes}</svg>`;
+    const TICK = svgIcon('<path d="M5 12.5l4.5 4.5L19 7.5"/>');
 
     /* Funnels: A/B steps carry both versions — show one at random (no cookies), then report the visit */
     const html = d.documentElement;
@@ -193,7 +196,11 @@
         /* live stock from owlvix: {"product" or "product:variant": count} for the products the owner tracks */
         let stock = {};
         let reviews = {};
-        const stars = avg => '★★★★★'.slice(0, Math.round(avg)) + '☆☆☆☆☆'.slice(0, 5 - Math.round(avg));
+        // Owlvix icons, inline (this script runs without js/icons.js): filled and empty stars for ratings
+        const STAR_D = 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z';
+        const star = on => svgIcon(`<path${on ? ' fill="currentColor"' : ''} d="${STAR_D}"/>`);
+        /** "4.6" → five stars as HTML (constant markup: only the rounded number decides how many are filled). */
+        const stars = avg => { const n = Math.max(0, Math.min(5, Math.round(+avg || 0))); return star(true).repeat(n) + star(false).repeat(5 - n); };
         // a size × colour is counted as "product:size_colour"
         const left = (id, vid, vid2) => { const k = vid ? id + ':' + vid + (vid2 ? '_' + vid2 : '') : id; return Object.prototype.hasOwnProperty.call(stock, k) ? stock[k] : Infinity; };
         const inCart = (id, vid, vid2) => cart.filter(l => l.id === id && l.vid === (vid || '') && l.vid2 === (vid2 || '')).reduce((n, l) => n + l.qty, 0);
@@ -223,7 +230,7 @@
                 reviews = (j && j.reviews) || {};
                 $$('[data-product]').forEach(card => {
                     const r = reviews[card.dataset.product], el = card.querySelector('[data-prating]'); if (!r || !el) return;
-                    el.textContent = stars(r.avg); el.setAttribute('aria-label', `Rated ${r.avg} out of 5 from ${r.count} review${r.count === 1 ? '' : 's'}`);
+                    el.innerHTML = stars(r.avg); el.setAttribute('aria-label', `Rated ${r.avg} out of 5 from ${r.count} review${r.count === 1 ? '' : 's'}`);
                     const n = d.createElement('span'); n.textContent = `${r.avg} (${r.count})`; el.append(n); el.hidden = false;
                 });
             }).catch(() => {});
@@ -329,11 +336,11 @@
             const rv = reviews[id];
             if (rv && rv.items.length) { // what buyers said
                 const box = d.createElement('div'); box.className = 'ob-reviews';
-                const h = d.createElement('h4'); h.textContent = `${stars(rv.avg)} ${rv.avg} · ${rv.count} review${rv.count === 1 ? '' : 's'}`; box.append(h);
+                const h = d.createElement('h4'); h.innerHTML = stars(rv.avg); h.append(` ${rv.avg} · ${rv.count} review${rv.count === 1 ? '' : 's'}`); box.append(h);
                 rv.items.forEach(it => {
                     const r = d.createElement('div'); r.className = 'ob-review';
                     r.innerHTML = '<b></b><p></p><small></small>';
-                    r.querySelector('b').textContent = stars(it.rating); r.querySelector('p').textContent = it.text; r.querySelector('small').textContent = it.name;
+                    r.querySelector('b').innerHTML = stars(it.rating); r.querySelector('p').textContent = it.text; r.querySelector('small').textContent = it.name;
                     if (!it.text) r.querySelector('p').remove();
                     box.append(r);
                 });
@@ -393,7 +400,7 @@
                 else return toast('Your cart is full');
                 const first = cart.reduce((n, l) => n + l.qty, 0) === 1;
                 save(); draw(); bump();
-                add.dataset.label ||= add.textContent; add.classList.add('is-added'); add.textContent = '✓ Added';
+                add.dataset.label ||= add.textContent; add.classList.add('is-added'); add.innerHTML = `${TICK} Added`;
                 clearTimeout(add._t); add._t = setTimeout(() => { add.classList.remove('is-added'); add.textContent = add.dataset.label; }, 1400);
                 if (first) open(); else toast('Added to your cart');
                 return;
@@ -414,14 +421,14 @@
 
         /* discount codes: checked with owlvix so the shopper sees the price (the order is checked again) */
         const codeInput = form?.querySelector('[data-code]'), codeMsg = form?.querySelector('[data-code-msg]');
-        const say = (msg, ok) => { if (!codeMsg) return; codeMsg.textContent = msg; codeMsg.hidden = !msg; codeMsg.classList.toggle('is-ok', !!ok); };
+        const say = (msg, ok) => { if (!codeMsg) return; codeMsg.textContent = msg; if (ok && msg) codeMsg.insertAdjacentHTML('afterbegin', `${TICK} `); codeMsg.hidden = !msg; codeMsg.classList.toggle('is-ok', !!ok); };
         const applyCode = async () => {
             const c = (codeInput?.value || '').trim().toUpperCase();
             if (!c) { code = null; say(''); return draw(); }
             say('Checking…');
             try {
                 const r = await (await fetch(`${api}/code?c=${encodeURIComponent(c)}&sub=${W(totals().sub)}`, { credentials: 'omit' })).json();
-                if (r.ok) { code = { code: r.code, kind: r.kind, value: +r.value || 0, min: +r.min || 0, label: r.label }; codeInput.value = r.code; say(`✓ ${r.label}`, true); }
+                if (r.ok) { code = { code: r.code, kind: r.kind, value: +r.value || 0, min: +r.min || 0, label: r.label }; codeInput.value = r.code; say(String(r.label || ''), true); }
                 else { code = null; say(r.error || 'That code isn’t valid.'); }
             } catch { code = null; say('The code couldn’t be checked — it will be checked when you order.'); }
             draw();

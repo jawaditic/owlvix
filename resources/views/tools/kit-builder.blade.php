@@ -41,7 +41,7 @@
     <div class="container">
         <div class="lpb-after card" data-lpb-after hidden>
             <span class="perch-owl" aria-hidden="true">@include('partials.live-owl', ['width' => 96, 'variant' => 'desk', 'alt' => 'Owlvix owl'])</span>
-            <h2>🎉 Your website is downloaded</h2>
+            <h2>{!! \App\Support\Icons::i('party') !!} Your website is downloaded</h2>
             <ol>
                 <li data-after-zip hidden>Unzip the file — every page is its own .html file.</li>
                 <li>Upload the file(s) to your hosting (cPanel File Manager, Netlify, GitHub Pages…). The home page must be called <code>index.html</code>.</li>

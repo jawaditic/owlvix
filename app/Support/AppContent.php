@@ -74,7 +74,7 @@ class AppContent
                 if ($label === '' || mb_strlen($label) > 24) {
                     return 'Each page needs a short name (up to 24 characters).';
                 }
-                $icon = array_key_exists(is_string($tab['icon'] ?? null) ? $tab['icon'] : '', AppBuilder::icons()) ? $tab['icon'] : 'home';
+                $icon = self::icon($tab['icon'] ?? null, 'home');
                 // In the bottom bar (the first five, unless the builder says otherwise) and/or in the ☰ menu (by
                 // default the pages that aren't in the bar); a page in neither opens only from buttons on other pages
                 $bar = array_key_exists('bar', $tab) ? (bool) $tab['bar'] : $i < self::MAX_BAR;
@@ -109,7 +109,7 @@ class AppContent
             return $e->getMessage();
         }
         if (count(array_filter(array_column($out, 'bar'))) > self::MAX_BAR) {
-            return 'Up to '.self::MAX_BAR.' pages fit in the bottom bar — put the others in the ☰ menu only.';
+            return 'Up to '.self::MAX_BAR.' pages fit in the bottom bar — put the others in the menu only.';
         }
         if (count($this->used) > self::MAX_IMAGES) {
             return 'Your app has too many pictures (up to '.self::MAX_IMAGES.').';
@@ -314,7 +314,7 @@ class AppContent
             }
             $x = array_filter(['title' => $this->text($item['title'] ?? '', 60), 'text' => $this->text($item['text'] ?? '', 200, true), 'action' => $this->action($item['action'] ?? null, $tabs)]);
             if (isset($x['title']) || isset($x['text'])) {
-                $clean[] = ['icon' => array_key_exists(is_string($item['icon'] ?? null) ? $item['icon'] : '', AppBuilder::icons()) ? $item['icon'] : 'star'] + $x;
+                $clean[] = ['icon' => self::icon($item['icon'] ?? null, 'star')] + $x;
             }
         }
 
@@ -512,6 +512,28 @@ class AppContent
     }
 
     /** Text without control characters (new lines kept when $lines), trimmed. */
+    /** Website icon names and emoji (older saves) → the app icon that stands for them (app-shell/icons.json names). */
+    private const ICON_ALIASES = [
+        'call' => 'phone', 'pin' => 'location', 'bag' => 'store', 'pizza' => 'food', 'burger' => 'food', 'bowl' => 'food', 'coffee' => 'food',
+        'film' => 'play', 'camera' => 'image', 'chat-dots' => 'chat', 'star-solid' => 'star', 'star-outline' => 'star', 'gift' => 'heart',
+        'megaphone' => 'bell', 'help' => 'info', 'note' => 'book', 'doc' => 'book', 'users' => 'user', 'team' => 'user',
+        '🏠' => 'home', '🏡' => 'home', '🛍' => 'store', '🛍️' => 'store', '🏪' => 'store', '🛒' => 'cart', '🏷' => 'tag', '🏷️' => 'tag',
+        '🍽' => 'food', '🍽️' => 'food', '🍕' => 'food', '🍔' => 'food', '☕' => 'food', '📅' => 'calendar', '🖼' => 'image', '🖼️' => 'image',
+        '📷' => 'image', '📸' => 'image', '▶' => 'play', '▶️' => 'play', '🎬' => 'play', '🎥' => 'play', '📘' => 'book', '📖' => 'book',
+        '🔎' => 'search', '🔍' => 'search', '❤' => 'heart', '❤️' => 'heart', '💖' => 'heart', '💚' => 'heart', '🎁' => 'heart', '⭐' => 'star',
+        '★' => 'star', '🔔' => 'bell', '📣' => 'bell', '💬' => 'chat', '📞' => 'phone', '☎' => 'phone', '☎️' => 'phone', '✉' => 'mail',
+        '✉️' => 'mail', '📧' => 'mail', '📍' => 'location', '👤' => 'user', '👋' => 'user', 'ℹ' => 'info', 'ℹ️' => 'info', '🌐' => 'globe', '🌍' => 'globe',
+    ];
+
+    /** An icon field: an app icon name, a website icon name or emoji it maps to, else $default. */
+    public static function icon(mixed $v, string $default): string
+    {
+        $v = is_string($v) ? trim($v) : '';
+        $v = self::ICON_ALIASES[$v] ?? $v;
+
+        return array_key_exists($v, AppBuilder::icons()) ? $v : $default;
+    }
+
     public static function str(mixed $v, bool $lines = false): string
     {
         if (! is_string($v)) {

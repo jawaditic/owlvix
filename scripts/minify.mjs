@@ -5,12 +5,16 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { transform } from 'esbuild';
+import { makeIconsJs } from './icons.mjs';
+
+makeIconsJs(); // public/js/icons.js from resources/icons/icons.json
 
 export const FILES = [
     'css/theme.css',
     'css/site.css',
     'css/admin.css',
     'js/theme.js',
+    'js/icons.js',
     'js/owl.js',
     'js/site.js',
     'js/sweet.js',
@@ -23,6 +27,7 @@ export const FILES = [
     'js/email-builder.js',
     'js/resume-builder.js',
     'js/invoice-builder.js',
+    'js/qr-builder.js',
     'js/app-builder.js',
     'js/app-templates.js',
     'js/app-wizard.js',

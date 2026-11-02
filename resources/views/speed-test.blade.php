@@ -43,8 +43,8 @@
                 <input type="text" name="url" inputmode="url" autocomplete="url" placeholder="example.com" value="{{ $url }}" required maxlength="500">
             </label>
             <div class="speed-form__device" role="radiogroup" aria-label="Device">
-                <label><input type="radio" name="strategy" value="mobile" @checked($strategy === 'mobile')><span>📱 Mobile</span></label>
-                <label><input type="radio" name="strategy" value="desktop" @checked($strategy === 'desktop')><span>💻 Desktop</span></label>
+                <label><input type="radio" name="strategy" value="mobile" @checked($strategy === 'mobile')><span>{!! \App\Support\Icons::i('phone') !!} Mobile</span></label>
+                <label><input type="radio" name="strategy" value="desktop" @checked($strategy === 'desktop')><span>{!! \App\Support\Icons::i('monitor') !!} Desktop</span></label>
             </div>
             <button type="submit" class="btn btn--glow">Test my site
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
@@ -232,7 +232,7 @@
         setTimeout(() => { btn.textContent = text; }, 4000);
     });
     $('[data-speed-share]').addEventListener('click', async e => {
-        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied ✓'; } catch { window.sweet({ icon: 'info', title: 'Copy this link', text: 'Select the link and copy it.', input: { value: location.href, readonly: true, max: 2000 }, confirm: 'Done', cancel: false }); }
+        try { await navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copied'; } catch { window.sweet({ icon: 'info', title: 'Copy this link', text: 'Select the link and copy it.', input: { value: location.href, readonly: true, max: 2000 }, confirm: 'Done', cancel: false }); }
     });
     $('[data-speed-again]').addEventListener('click', () => { form.url.value = ''; window.scrollTo({ top: 0, behavior: 'smooth' }); form.url.focus(); });
     // "Get my site fixed": fill in the quote popup with the result

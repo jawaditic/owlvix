@@ -25,7 +25,7 @@
     'steps' => [
         ['Decide what your website must do', 'Pick one main goal: get calls, get bookings, get enquiries or bring people to your shop. Every page should point visitors to that one action.',
             'write the goal down — for example “Get 5 enquiries a week” — and put that button on every page.'],
-        ['Plan your pages', 'Most small businesses need four or five: Home, About, Services (or Menu or Pricing), Contact, and maybe Reviews. In the builder, use “＋ Page” to add ready-made pages — they appear in your menu automatically.'],
+        ['Plan your pages', 'Most small businesses need four or five: Home, About, Services (or Menu or Pricing), Contact, and maybe Reviews. In the builder, use the “+ Page” button to add ready-made pages — they appear in your menu automatically.'],
         ['Pick a ready-made design', 'Open the free website builder and choose the design closest to your business — consultant, clinic, restaurant, home services, real estate, salon, gym, cleaning or accountant. Then change the colours and fonts to match your logo.',
             'pick by layout, not colour. Every colour, font and photo can be changed.'],
         ['Write a clear home page', 'In the first line, say what you do and where: “Family dentist in Leeds — new patients welcome.” Below it, list your main services, a few reviews and one big button for your main goal.',

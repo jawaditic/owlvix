@@ -97,7 +97,7 @@
                     </a>
                     @if (! empty($t['profile_url']))
                         <a href="{{ $t['profile_url'] }}" class="rating-badge" target="_blank" rel="noopener">
-                            <span class="rating-badge__stars" aria-hidden="true">★★★★★</span>
+                            <span class="rating-badge__stars" aria-hidden="true">@include('partials.icon', ['n' => 'star-solid', 'times' => 5])</span>
                             <span>@include('partials.rating-summary', ['t' => $t])</span>
                         </a>
                     @endif
@@ -207,7 +207,7 @@
                                 <span class="work-card__cat">{{ $pr->categoryLabel() }}</span>
                                 <h3>{{ $pr->title }}</h3>
                                 @if ($pr->summary)<p>{{ $pr->summary }}</p>@endif
-                                @if ($pr->url)<div class="work-card__links"><a href="{{ $pr->url }}" target="_blank" rel="noopener nofollow">View site ↗</a></div>@endif
+                                @if ($pr->url)<div class="work-card__links"><a href="{{ $pr->url }}" target="_blank" rel="noopener nofollow">View site {!! \App\Support\Icons::i('external') !!}</a></div>@endif
                             </div>
                         </article>
                     @endforeach

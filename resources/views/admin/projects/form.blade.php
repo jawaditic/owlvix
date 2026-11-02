@@ -2,7 +2,7 @@
 @section('title', $project->exists ? 'Edit project' : 'Add project')
 
 @section('content')
-    <a href="{{ route('admin.projects.index') }}" class="back">← All projects</a>
+    <a href="{{ route('admin.projects.index') }}" class="back">{!! \App\Support\Icons::i('arrow-left') !!} All projects</a>
 
     <form method="POST" enctype="multipart/form-data" class="panel detail t-form"
         action="{{ $project->exists ? route('admin.projects.update', $project) : route('admin.projects.store') }}">

@@ -129,7 +129,7 @@ class RedirectCheck
 
         $temp = array_filter(array_slice($chain, 0, -1), fn ($s) => in_array($s['code'], [302, 303, 307], true));
         if ($temp) {
-            $add('Redirect type', 'warn', count($temp).' temporary redirect(s) (302/307).', 'If the move is permanent (like http → https), use 301 or 308 so Google passes the ranking to the new address.');
+            $add('Redirect type', 'warn', count($temp).' temporary redirect(s) (302/307).', 'If the move is permanent (like http to https), use 301 or 308 so Google passes the ranking to the new address.');
         } elseif ($hops) {
             $add('Redirect type', 'pass', 'Redirects are permanent (301/308).');
         }

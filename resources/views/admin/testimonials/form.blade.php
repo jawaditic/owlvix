@@ -2,7 +2,7 @@
 @section('title', $testimonial->exists ? 'Edit review' : 'Add review')
 
 @section('content')
-    <a href="{{ route('admin.testimonials.index') }}" class="back">← All reviews</a>
+    <a href="{{ route('admin.testimonials.index') }}" class="back">{!! \App\Support\Icons::i('arrow-left') !!} All reviews</a>
 
     <form method="POST" class="panel detail t-form"
         action="{{ $testimonial->exists ? route('admin.testimonials.update', $testimonial) : route('admin.testimonials.store') }}">
@@ -38,7 +38,7 @@
             <label>Stars
                 <select name="rating">
                     @foreach ([5, 4, 3, 2, 1] as $n)
-                        <option value="{{ $n }}" @selected((int) old('rating', $testimonial->rating) === $n)>{{ str_repeat('★', $n) }} ({{ $n }})</option>
+                        <option value="{{ $n }}" @selected((int) old('rating', $testimonial->rating) === $n)>{{ $n }} {{ $n === 1 ? 'star' : 'stars' }}</option>
                     @endforeach
                 </select>
             </label>

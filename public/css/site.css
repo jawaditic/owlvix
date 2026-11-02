@@ -2574,7 +2574,7 @@ html.ab-full-open { overflow: hidden; }
 .ab-n-gal { display: grid; gap: 5px; }
 .ab-n-gal img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: calc(7px * var(--n-k)); display: block; }
 .ab-n-vid { aspect-ratio: 16 / 9; border-radius: calc(10px * var(--n-k)); background: #000 center / cover; display: grid; place-items: center; }
-.ab-n-vid span { width: 40px; height: 40px; border-radius: 50%; background: rgba(0, 0, 0, .6); color: #fff; display: grid; place-items: center; font-size: 14px; padding-left: 3px; }
+.ab-n-vid span { width: 40px; height: 40px; border-radius: 50%; background: rgba(0, 0, 0, .6); color: #fff; display: grid; place-items: center; font-size: 14px; }
 .ab-n-hr { margin: 14px 12px 4px; border: 0; border-top: 1px solid var(--n-border); }
 .ab-n-slide img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: calc(10px * var(--n-k)); }
 .ab-n-dots { display: flex; justify-content: center; gap: 4px; margin-top: 6px; }
@@ -2982,6 +2982,62 @@ html.ab-full-open { overflow: hidden; }
     .ib-line { text-align: left; }
     .ib-item .fb-q__tools { justify-self: end; }
     .wz-ib-row { grid-template-columns: minmax(0, 1fr) 60px 84px; gap: 0 6px; }
+}
+
+/* Owlvix's own inline icons (App\Support\Icons::i, window.OwlIcon) — used instead of emoji; they take the text colour */
+.oi { width: 1.1em; height: 1.1em; vertical-align: -.18em; flex: none; display: inline-block; }
+button .oi, .btn .oi { margin-inline-end: .1em; }
+.oi--tablet { transform: rotate(90deg); }
+.wz-card__em .oi, .wz-done__badge .oi { color: var(--green); }
+.wz-done__badge .oi { width: 1em; height: 1em; }
+
+/* QR code generator (public/js/qr-builder.js) */
+.qb-types { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
+.qb-type { display: grid; justify-items: center; gap: 2px; padding: 8px 4px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--field); color: var(--text-2); font: 600 .78rem Inter, 'Inter Fallback', sans-serif; cursor: pointer; text-align: center; }
+.qb-type span { font-size: 1.2rem; line-height: 1.2; }
+.qb-type:hover { border-color: var(--green); }
+.qb-type.is-on { border-color: var(--green); color: var(--green); background: rgba(30, 199, 115, .08); box-shadow: inset 0 0 0 1px var(--green); }
+.qb-note { margin: 8px 0 0; font-size: .82rem; color: var(--muted); }
+.qb-colors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.qb-colors label { display: grid; gap: 4px; font-size: .85rem; }
+.qb-colors input[type=color] { width: 100%; height: 40px; padding: 2px; border: 1px solid var(--card-border); border-radius: 10px; background: var(--field); cursor: pointer; }
+.qb-colors input:disabled { opacity: .4; cursor: not-allowed; }
+.qb-presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+.qb-preset { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--card-border); background: linear-gradient(135deg, var(--f) 50%, var(--b) 50%); cursor: pointer; }
+.qb-preset:hover, .qb-preset:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.qb-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+.qb-row > b { font-size: .85rem; min-width: 64px; }
+.qb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.qb-chips .fb-chip.is-on, .qb-sugg .fb-chip:hover { border-style: solid; border-color: var(--green); color: var(--green); background: rgba(30, 199, 115, .08); }
+.qb-label { display: block; margin-top: 10px; }
+.qb-sugg { margin-top: 8px; }
+.qb-logo img { border-radius: 10px; object-fit: contain; background: #fff; }
+.qb-stage { display: grid; place-items: center; padding: 28px; border: 1px solid var(--card-border); border-radius: 16px; background: var(--field); min-height: 280px; }
+.qb-stage > svg { width: min(100%, 340px); height: auto; display: block; }
+.qb-stage.is-clear { background: repeating-conic-gradient(#e2e8f0 0 25%, #fff 0 50%) 0 0 / 18px 18px; }
+.qb-empty { display: grid; justify-items: center; gap: 10px; text-align: center; color: var(--muted); font-size: .9rem; }
+.qb-empty svg { width: min(100%, 220px); height: auto; opacity: .14; filter: grayscale(1); }
+.qb-empty p { margin: 0; max-width: 300px; }
+.qb-empty--long p { color: var(--text-2); }
+.qb-scan { margin: 0; padding: 8px 12px; border-radius: 10px; font-size: .86rem; font-weight: 600; }
+.qb-scan[hidden] { display: none; }
+.qb-scan.is-ok { background: rgba(30, 199, 115, .1); color: var(--green); }
+.qb-scan.is-bad { background: rgba(245, 158, 11, .12); color: #b45309; }
+.qb-dl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.qb-dl select { width: auto; flex: 0 1 auto; min-width: 0; padding: 6px 10px; }
+.qb-info { margin: 0; font-size: .82rem; color: var(--muted); }
+.qb-info:empty { display: none; }
+.qb-mine .qb-thumb { width: 44px; height: 44px; flex: none; display: block; border-radius: 6px; overflow: hidden; background: #fff; border: 1px solid var(--card-border); }
+.qb-thumb svg { width: 100%; height: 100%; display: block; }
+.qb-mine li > span:first-child + span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.qb-mine li { justify-content: flex-start; }
+.qb-mine .ib-mine__btns { margin-left: auto; }
+.qb-wz-prev { width: 260px; max-width: 100%; margin: 0 auto; padding: 18px; border-radius: 14px; background: #fff; box-shadow: 0 24px 50px -24px rgba(15, 23, 42, .55), 0 0 0 1px rgba(15, 23, 42, .08); }
+.qb-wz-prev svg { width: 100%; height: auto; display: block; }
+.qb-wz-prev .qb-empty svg { opacity: .14; }
+@media (max-width: 640px) {
+    .qb-types { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .qb-stage { padding: 18px; min-height: 0; }
 }
 
 /* Mobile app builder: payment settings (cash, card, bank, card online through Stripe) */
