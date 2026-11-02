@@ -22,6 +22,7 @@ export const FILES = [
     'js/qr.js',
     'js/email-builder.js',
     'js/resume-builder.js',
+    'js/invoice-builder.js',
     'js/app-builder.js',
     'js/app-templates.js',
     'js/app-wizard.js',

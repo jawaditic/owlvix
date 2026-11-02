@@ -2947,6 +2947,42 @@ html.ab-full-open { overflow: hidden; }
 .rb-tips b { color: #b45309; }
 .rb-tips ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; color: var(--text-2); }
 @media (max-width: 900px) { .rb-layout { grid-template-columns: 1fr; } }
+/* invoice generator (/invoice-generator) — builds on the CV builder's .rb styles */
+.ib-filebar__btns { display: inline-flex; gap: 14px; }
+.ib-mine { margin-top: 10px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--field); }
+.ib-mine[hidden] { display: none; }
+.ib-mine summary { padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: .9rem; }
+.ib-mine summary small { font-weight: 400; color: var(--muted); }
+.ib-mine ul { list-style: none; margin: 0; padding: 0 8px 8px; display: grid; gap: 4px; max-height: 320px; overflow: auto; }
+.ib-mine li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 8px; border-radius: 10px; font-size: .88rem; }
+.ib-mine li.is-open { background: rgba(30, 199, 115, .08); }
+.ib-mine li > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.ib-mine li small { display: block; color: var(--muted); font-size: .8rem; }
+.ib-mine__btns { display: inline-flex; gap: 6px; align-items: center; flex: none; }
+.ib-logo img { border-radius: 10px; object-fit: contain; background: #fff; }
+.ib-terms { display: flex; flex-wrap: wrap; gap: 6px; }
+.ib-terms .fb-chip.is-on { border-style: solid; border-color: var(--green); color: var(--green); background: rgba(30, 199, 115, .08); }
+.ib-items { display: grid; gap: 8px; }
+.ib-item { display: grid; grid-template-columns: minmax(0, 1fr) 64px 96px 92px auto; gap: 6px; align-items: start; padding: 8px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--card); }
+.ib-item label { display: block; margin: 0; }
+.ib-item .ib-cap { display: none; }
+.ib-item textarea { resize: vertical; min-height: 38px; }
+.ib-item input { text-align: right; }
+.ib-line { align-self: center; text-align: right; font-weight: 600; font-size: .88rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ib-item .fb-q__tools { align-self: center; }
+.ib-total { margin: 4px 0 0; font-size: .95rem; }
+.ib-total b { color: var(--text); }
+.wz-field.wz-ib-cur { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.wz--builder .wz-ib-cur select { width: auto; flex: 0 1 280px; min-width: 0; }
+.wz-ib-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px 104px; gap: 0 10px; }
+@media (max-width: 640px) {
+    .ib-item { grid-template-columns: 1fr 1fr; }
+    .ib-item .ib-desc { grid-column: 1 / -1; }
+    .ib-item .ib-cap { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 2px; }
+    .ib-line { text-align: left; }
+    .ib-item .fb-q__tools { justify-self: end; }
+    .wz-ib-row { grid-template-columns: minmax(0, 1fr) 60px 84px; gap: 0 6px; }
+}
 
 /* Mobile app builder: payment settings (cash, card, bank, card online through Stripe) */
 .ab-pay { display: grid; gap: 10px; }

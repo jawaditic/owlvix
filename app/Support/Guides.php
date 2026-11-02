@@ -21,6 +21,7 @@ class Guides
         'guide.coming-soon' => ['/how-to-make-a-coming-soon-page', 'coming-soon', 'How to make a coming soon page and build a waitlist', 'coming-soon-builder', 'Launching something new?', 'A countdown, a sign-up form and getting your first fans before launch day.'],
         'guide.sales-funnel' => ['/how-to-build-a-sales-funnel', 'sales-funnel', 'How to build a sales funnel', 'funnel-builder', 'New to sales funnels?', 'A free offer, an opt-in page, a sales page, payments and A/B tests.'],
         'guide.newsletter' => ['/how-to-make-an-email-newsletter', 'newsletter', 'How to make an email newsletter', 'email-builder', 'First newsletter?', 'What to send, a simple design, images, Mailchimp or Brevo, and testing before you send.'],
+        'guide.invoice' => ['/how-to-make-an-invoice', 'invoice', 'How to make an invoice and get paid on time', 'invoice-generator', 'First invoice?', 'What to put on it, numbering, tax, payment terms and chasing late payments.'],
         'guide.android-app' => ['/how-to-make-an-app-without-coding', 'android-app', 'How to make an Android app without coding', 'app-builder', 'Never made an app?', 'Planning your screens, building them from blocks, testing on your phone and Google Play.'],
     ];
 

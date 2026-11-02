@@ -58,6 +58,7 @@ Route::view('/email-signature-generator', 'tools.email-signature')->name('email-
 Route::view('/form-builder', 'tools.form-builder')->name('form-builder');
 Route::view('/email-template-builder', 'tools.email-builder')->name('email-builder');
 Route::view('/resume-builder', 'tools.resume-builder')->name('resume-builder');
+Route::view('/invoice-generator', 'tools.invoice-generator')->name('invoice-generator');
 Route::view('/landing-page-builder', 'tools.landing-builder')->name('landing-builder');
 Route::view('/funnel-builder', 'tools.funnel-builder')->name('funnel-builder');
 // More free builders: the same editor with its own starting templates (App\Support\BuilderKits)
@@ -90,6 +91,7 @@ foreach ([
     'form-builder' => ['/form-builder', 'tools.form-builder', []],
     'email-builder' => ['/email-template-builder', 'tools.email-builder', []],
     'resume-builder' => ['/resume-builder', 'tools.resume-builder', []],
+    'invoice-generator' => ['/invoice-generator', 'tools.invoice-generator', []],
     'app-builder' => ['/mobile-app-builder', 'tools.app-builder', []],
 ] as $name => [$path, $view, $data]) {
     Route::view($path.'/editor', $view, $data + ['editor' => true])->name($name.'.editor');

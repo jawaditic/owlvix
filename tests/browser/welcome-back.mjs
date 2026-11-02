@@ -1,4 +1,4 @@
-// Browser test: the quick setup → editor page → "Welcome back" / Resume, on every builder (13), plus gallery designs,
+// Browser test: the quick setup → editor page → "Welcome back" / Resume, on every builder (14), plus gallery designs,
 // crafted #then= links and a real hand-off. Prints only failures, then a count.
 //   php artisan serve --port=8001        (another terminal)
 //   npm i --no-save puppeteer-core && node tests/browser/welcome-back.mjs [http://127.0.0.1:8001/]
@@ -9,7 +9,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 const b = await puppeteer.launch({ executablePath: process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: 'new' });
 let pass = 0, fail = 0; const errs = [];
 const check = (name, ok, info = '') => { ok ? pass++ : fail++; if (!ok) console.log('FAIL', name, info); };
-const ROOT = '[data-lpb], [data-eb], [data-rb], [data-fb], [data-ab]';
+const ROOT = '[data-lpb], [data-eb], [data-rb], [data-ib], [data-fb], [data-ab]';
 const state = p => p.evaluate(root => {
     const ban = document.querySelector('[data-wz-banner]');
     return { path: location.pathname, banner: !!ban && !ban.hidden, welcome: !!ban && !ban.hidden && ban.classList.contains('wzb--back'),
@@ -21,7 +21,7 @@ const finishWizard = async p => {
     for (let i = 0; i < 20 && !(await p.$('.wz-done')); i++) {
         await p.evaluate(() => document.querySelector('[data-wz-next]')?.click()); await wait(450);
         if (await p.$eval('[data-wz-err]', e => !e.hidden).catch(() => false)) {
-            await p.evaluate(() => { const box = document.querySelector('.wz'); box.querySelectorAll('input[type=text], input:not([type]), input[type=email], textarea').forEach(i => { if (!i.value) { i.value = 'Test Co'; i.dispatchEvent(new Event('input', { bubbles: true })); } }); box.querySelector('[data-wz-pick]:not([aria-pressed="true"]), [data-kind]:not([aria-pressed="true"]), .wz-card')?.click(); });
+            await p.evaluate(() => { const box = document.querySelector('.wz'); box.querySelectorAll('input[type=text], input:not([type]), input[type=email], textarea').forEach(i => { if (!i.value) { i.value = 'Test Co'; i.dispatchEvent(new Event('input', { bubbles: true })); } }); box.querySelectorAll('input[type=number]').forEach(i => { if (!i.value) { i.value = '10'; i.dispatchEvent(new Event('input', { bubbles: true })); } }); box.querySelector('[data-wz-pick]:not([aria-pressed="true"]), [data-kind]:not([aria-pressed="true"]), .wz-card')?.click(); });
             await wait(400); await p.evaluate(() => document.querySelector('[data-wz-next]')?.click()); await wait(500);
         }
     }
@@ -29,7 +29,7 @@ const finishWizard = async p => {
     await wait(500);
 };
 const paths = ['landing-page-builder', 'funnel-builder', 'website-builder', 'portfolio-builder', 'link-in-bio-builder', 'coming-soon-page-builder',
-    'event-website-builder', 'restaurant-menu-builder', 'online-store-builder', 'form-builder', 'email-template-builder', 'resume-builder', 'mobile-app-builder'];
+    'event-website-builder', 'restaurant-menu-builder', 'online-store-builder', 'form-builder', 'email-template-builder', 'resume-builder', 'invoice-generator', 'mobile-app-builder'];
 for (const path of paths) {
     const ctx = await b.createBrowserContext(); const p = await newPage(ctx);
     // 1. brand-new visitor
