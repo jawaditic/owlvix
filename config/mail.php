@@ -115,4 +115,10 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    // Addresses for the free builders' emails. Client work (enquiries, quotes, audits) keeps the "from" above.
+    'senders' => [
+        'noreply' => env('MAIL_NOREPLY_ADDRESS', 'noreply@owlvix.com'), // sign-in codes, app built, form and lead alerts, reports
+        'orders' => env('MAIL_ORDERS_ADDRESS', 'orders@owlvix.com'),    // emails to shop customers
+    ],
+
 ];

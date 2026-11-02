@@ -17,6 +17,7 @@ class BuilderFormMessage extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
             subject: ($this->data['message'] === null ? 'New sign-up on your website: ' : 'New message from your website: ').$this->form->site_name,
             replyTo: [new Address($this->data['email'], $this->data['name'] ?: $this->data['email'])],
         );

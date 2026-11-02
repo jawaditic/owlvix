@@ -16,6 +16,7 @@ class BuilderOrderPlaced extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
             subject: 'New order '.$this->order->label().' — '.$this->order->money($this->order->total).' — '.$this->order->store->name,
             replyTo: [new Address($this->order->email, $this->order->name)],
         );

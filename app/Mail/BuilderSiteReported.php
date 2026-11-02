@@ -16,6 +16,7 @@ class BuilderSiteReported extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
             subject: 'Page reported: /p/'.$this->site->slug,
             replyTo: $this->email ? [new Address($this->email)] : [],
         );

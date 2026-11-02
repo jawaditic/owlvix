@@ -20,6 +20,7 @@ class BuilderSurveyResponse extends Mailable
         $reply = SurveySchema::replyTo($this->form->schema ?? [], $this->response->answers ?? []);
 
         return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
             subject: 'New answer: '.$this->form->site_name,
             replyTo: $reply ? [new Address($reply)] : [],
         );

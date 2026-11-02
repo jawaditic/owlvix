@@ -16,6 +16,7 @@ class BuilderOrderRefunded extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.senders.orders'), mb_strimwidth($this->order->store->name, 0, 60, '…').' via Owlvix'),
             subject: 'Refund of '.$this->order->money($this->amount).' for your order '.$this->order->label(),
             replyTo: [new Address($this->ownerEmail, $this->order->store->name)],
         );

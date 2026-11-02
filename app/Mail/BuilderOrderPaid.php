@@ -16,6 +16,7 @@ class BuilderOrderPaid extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.senders.orders'), mb_strimwidth($this->order->store->name, 0, 60, '…').' via Owlvix'),
             subject: 'Payment received — your order '.$this->order->label().' from '.$this->order->store->name.' is ready',
             replyTo: [new Address($this->ownerEmail, $this->order->store->name)],
         );

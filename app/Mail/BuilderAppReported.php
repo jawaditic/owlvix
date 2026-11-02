@@ -16,6 +16,7 @@ class BuilderAppReported extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
             subject: 'App reported: '.$this->app->name.' ('.$this->app->package.')',
             replyTo: $this->email ? [new Address($this->email)] : [],
         );

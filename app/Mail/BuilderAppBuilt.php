@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\BuilderAppBuild;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
@@ -16,7 +17,10 @@ class BuilderAppBuilt extends Mailable
     {
         $name = $this->build->app->name;
 
-        return new Envelope(subject: $this->build->status === 'done' ? "Your app {$name} is ready to download" : "Your app {$name} didn’t build");
+        return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
+            subject: $this->build->status === 'done' ? "Your app {$name} is ready to download" : "Your app {$name} didn’t build",
+        );
     }
 
     public function content(): Content

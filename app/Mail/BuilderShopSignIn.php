@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\BuilderStore;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
@@ -14,7 +15,10 @@ class BuilderShopSignIn extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->code.' is your code for your orders at '.$this->store->name);
+        return new Envelope(
+            from: new Address(config('mail.senders.orders'), mb_strimwidth($this->store->name, 0, 60, '…').' via Owlvix'),
+            subject: $this->code.' is your code for your orders at '.$this->store->name,
+        );
     }
 
     public function content(): Content

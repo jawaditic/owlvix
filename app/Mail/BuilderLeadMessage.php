@@ -18,6 +18,7 @@ class BuilderLeadMessage extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
             subject: 'New lead from '.$this->form->site_name,
             replyTo: [new Address($this->lead->email, $this->lead->name ?: '')],
         );

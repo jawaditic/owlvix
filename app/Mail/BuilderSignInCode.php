@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
@@ -13,7 +14,10 @@ class BuilderSignInCode extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->code.' is your Owlvix page builder code');
+        return new Envelope(
+            from: new Address(config('mail.senders.noreply'), 'Owlvix'),
+            subject: $this->code.' is your Owlvix page builder code',
+        );
     }
 
     public function content(): Content
